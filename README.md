@@ -1,1 +1,1 @@
-# partial-common-ownership
+# Partial Common Ownership Smart Contract

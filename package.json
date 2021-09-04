@@ -1,0 +1,13 @@
+{
+  "name": "partial-common-ownership",
+  "version": "0.0.1",
+  "description": "Partial Common Ownership Smart Contract",
+  "main": "index.js",
+  "repository": "git@github.com:721labs/partial-common-ownership.git",
+  "author": "Will Holley <will@willholley.com>",
+  "license": "MIT",
+  "private": true,
+  "devDependencies": {
+    "hardhat": "^2.6.2"
+  }
+}
