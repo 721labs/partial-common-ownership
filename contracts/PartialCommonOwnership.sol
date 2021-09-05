@@ -11,7 +11,7 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 /// @notice The contract manages ownership of an ERC721 token and requires tax payments from
 /// the token's current owner through a Harberger Tax model; if payments are not made, the contract
 /// repossesses the token.
-/// @dev This code was originally forked from ThisArtworkIsAlwaysOnSale's ArtStewardV2 contract
+/// @dev This code was originally forked from ThisArtworkIsAlwaysOnSale's `v2_contracts/ArtSteward.sol` contract
 /// by Simon de la Rouviere.
 contract PartialCommonOwnership is IPartialCommonOwnership {
   using SafeMath for uint256;
@@ -19,16 +19,13 @@ contract PartialCommonOwnership is IPartialCommonOwnership {
   uint256 public price; //in wei
   IERC721 public art; // ERC721 NFT.
 
-  //@W WHAT'S THIS USED FOR?
   uint256 public totalCollected; // all patronage ever collected
 
   /* In the event that a foreclosure happens AFTER it should have been foreclosed already,
     this variable is backdated to when it should've occurred. Thus: timeHeld is accurate to actual deposit. */
   uint256 public timeLastCollected; // timestamp when last collection occurred
-  //@W ???
   uint256 public deposit; // funds for paying patronage
   address payable public artist; // beneficiary
-  //@W PROBABLY UNNECESSARY IN OUR CONTEXT
   uint256 public artistFund; // what artist has earned and can withdraw
 
   /*
@@ -70,13 +67,11 @@ contract PartialCommonOwnership is IPartialCommonOwnership {
   event LogForeclosure(address indexed prevOwner);
   event LogCollection(uint256 indexed collected);
 
-  /// @W RETURN TO
   modifier onlyPatron() {
     require(msg.sender == art.ownerOf(42), "Not patron");
     _;
   }
 
-  /// @W RETURN TO
   modifier collectPatronage() {
     _collectPatronage();
     _;
@@ -85,10 +80,10 @@ contract PartialCommonOwnership is IPartialCommonOwnership {
   /* public view functions */
   /* used internally in external actions */
 
-  // how much is owed from last collection to block.timestamp.
+  // how much is owed from last collection to now.
   function patronageOwed() public view returns (uint256 patronageDue) {
-    //return price.mul(block.timestamp.sub(timeLastCollected)).mul(patronageNumerator).div(patronageDenominator).div(365 days);
-    return price.mul(block.timestamp.sub(timeLastCollected)).div(365 days);
+    //return price.mul(now.sub(timeLastCollected)).mul(patronageNumerator).div(patronageDenominator).div(365 days);
+    return price.mul(now.sub(timeLastCollected)).div(365 days);
   }
 
   /* not used internally in external actions */
@@ -101,7 +96,6 @@ contract PartialCommonOwnership is IPartialCommonOwnership {
     return price.mul(_time).div(365 days);
   }
 
-  /// @W is this the amount that is currently in the contract?
   function currentCollected() public view returns (uint256 patronageDue) {
     if (timeLastCollected > timeAcquired) {
       return patronageOwedRange(timeLastCollected.sub(timeAcquired));
@@ -115,7 +109,7 @@ contract PartialCommonOwnership is IPartialCommonOwnership {
     view
     returns (uint256 patronageDue, uint256 timestamp)
   {
-    return (patronageOwed(), block.timestamp);
+    return (patronageOwed(), now);
   }
 
   function foreclosed() public view returns (bool) {
@@ -141,8 +135,8 @@ contract PartialCommonOwnership is IPartialCommonOwnership {
   }
 
   /*
-    block.timestamp + deposit/patronage per second 
-    block.timestamp + depositAbleToWithdraw/(price*nume/denom/365).
+    now + deposit/patronage per second 
+    now + depositAbleToWithdraw/(price*nume/denom/365).
     */
   function foreclosureTime() public view returns (uint256) {
     // patronage per second
@@ -151,18 +145,14 @@ contract PartialCommonOwnership is IPartialCommonOwnership {
     );
     uint256 daw = depositAbleToWithdraw();
     if (daw > 0) {
-      return block.timestamp + depositAbleToWithdraw().div(pps);
+      return now + depositAbleToWithdraw().div(pps);
     } else if (pps > 0) {
       // it is still active, but in foreclosure state
-      // it is block.timestamp or was in the past
+      // it is NOW or was in the past
       uint256 collection = patronageOwed();
       return
         timeLastCollected.add(
-          (
-            (block.timestamp.sub(timeLastCollected)).mul(deposit).div(
-              collection
-            )
-          )
+          ((now.sub(timeLastCollected)).mul(deposit).div(collection))
         );
     } else {
       // not active and actively foreclosed (price is zero)
@@ -183,11 +173,11 @@ contract PartialCommonOwnership is IPartialCommonOwnership {
         // up to when was it actually paid for?
         // TLC + (time_elapsed)*deposit/collection
         timeLastCollected = timeLastCollected.add(
-          (block.timestamp.sub(timeLastCollected)).mul(deposit).div(collection)
+          (now.sub(timeLastCollected)).mul(deposit).div(collection)
         );
         collection = deposit; // take what's left.
       } else {
-        timeLastCollected = block.timestamp;
+        timeLastCollected = now;
       } // normal collection
 
       deposit = deposit.sub(collection);
@@ -229,7 +219,7 @@ contract PartialCommonOwnership is IPartialCommonOwnership {
     }
 
     // new purchase
-    timeLastCollected = block.timestamp;
+    timeLastCollected = now;
 
     deposit = msg.value.sub(price);
     transferArtworkTo(currentOwner, msg.sender, _newPrice);
@@ -306,7 +296,7 @@ contract PartialCommonOwnership is IPartialCommonOwnership {
     art.transferFrom(_currentOwner, _newOwner, 42);
 
     price = _newPrice;
-    timeAcquired = block.timestamp;
+    timeAcquired = now;
     patrons[_newOwner] = true;
   }
 }
