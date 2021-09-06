@@ -4,7 +4,9 @@ pragma solidity 0.8.7;
 
 import "./interfaces/IPartialCommonOwnership.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "hardhat/console.sol";
 
 /// @title PartialCommonOwnership
 /// @author Simon de la Rouviere, Will Holley
@@ -13,11 +15,13 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 /// repossesses the token.
 /// @dev This code was originally forked from ThisArtworkIsAlwaysOnSale's `v2_contracts/ArtSteward.sol` contract
 /// by Simon de la Rouviere.
-contract PartialCommonOwnership is IPartialCommonOwnership {
+contract PartialCommonOwnership is IPartialCommonOwnership, IERC721Receiver {
   using SafeMath for uint256;
 
   uint256 public price; //in wei
   IERC721 public art; // ERC721 NFT.
+  uint256 public tokenId; // ERC721 Token ID.
+  address public assetAddress; // ERC721 contract address
 
   uint256 public totalCollected; // all patronage ever collected
 
@@ -45,21 +49,40 @@ contract PartialCommonOwnership is IPartialCommonOwnership {
 
   bool init;
 
-  constructor(address payable _artist, address _artwork) public {
+  constructor(address payable _artist, address _artwork) {
     //function setup(address payable _artist, address _artwork) public {
     // this is kept here in case you want to use this in an upgradeable contract
     require(init == false, "Steward already initialized.");
     // 100% patronage: only here for reference
     patronageNumerator = 1000000000000;
     patronageDenominator = 1000000000000;
-    art = IERC721(_artwork);
-    art.setup();
     artist = _artist;
-
-    //sets up initial parameters for foreclosure
-    _forecloseIfNecessary();
-
+    assetAddress = _artwork;
+    art = IERC721(_artwork);
     init = true;
+  }
+
+  /// @dev Takes possession of an ERC721 asset
+  /// @param _operator ERC721 Contract Address
+  /// @param _from Address of token's previous owner
+  /// @param _tokenId Token id
+  /// @param _data Calldata
+  function onERC721Received(
+    address _operator,
+    address _from,
+    uint256 _tokenId,
+    bytes calldata _data
+  ) public virtual override returns (bytes4) {
+    require(
+      msg.sender == assetAddress,
+      "Partial Common Ownership: Only accepts ERC721 from whitelisted address"
+    );
+
+    tokenId = _tokenId;
+    address currentOwner = art.ownerOf(tokenId);
+    transferArtworkTo(currentOwner, address(this), 0);
+
+    return this.onERC721Received.selector;
   }
 
   event LogBuy(address indexed owner, uint256 indexed price);
@@ -68,7 +91,7 @@ contract PartialCommonOwnership is IPartialCommonOwnership {
   event LogCollection(uint256 indexed collected);
 
   modifier onlyPatron() {
-    require(msg.sender == art.ownerOf(42), "Not patron");
+    require(msg.sender == art.ownerOf(tokenId), "Not patron");
     _;
   }
 
@@ -83,7 +106,7 @@ contract PartialCommonOwnership is IPartialCommonOwnership {
   // how much is owed from last collection to now.
   function patronageOwed() public view returns (uint256 patronageDue) {
     //return price.mul(now.sub(timeLastCollected)).mul(patronageNumerator).div(patronageDenominator).div(365 days);
-    return price.mul(now.sub(timeLastCollected)).div(365 days);
+    return price.mul(block.timestamp.sub(timeLastCollected)).div(365 days);
   }
 
   /* not used internally in external actions */
@@ -109,7 +132,7 @@ contract PartialCommonOwnership is IPartialCommonOwnership {
     view
     returns (uint256 patronageDue, uint256 timestamp)
   {
-    return (patronageOwed(), now);
+    return (patronageOwed(), block.timestamp);
   }
 
   function foreclosed() public view returns (bool) {
@@ -145,14 +168,18 @@ contract PartialCommonOwnership is IPartialCommonOwnership {
     );
     uint256 daw = depositAbleToWithdraw();
     if (daw > 0) {
-      return now + depositAbleToWithdraw().div(pps);
+      return block.timestamp + depositAbleToWithdraw().div(pps);
     } else if (pps > 0) {
       // it is still active, but in foreclosure state
       // it is NOW or was in the past
       uint256 collection = patronageOwed();
       return
         timeLastCollected.add(
-          ((now.sub(timeLastCollected)).mul(deposit).div(collection))
+          (
+            (block.timestamp.sub(timeLastCollected)).mul(deposit).div(
+              collection
+            )
+          )
         );
     } else {
       // not active and actively foreclosed (price is zero)
@@ -173,11 +200,11 @@ contract PartialCommonOwnership is IPartialCommonOwnership {
         // up to when was it actually paid for?
         // TLC + (time_elapsed)*deposit/collection
         timeLastCollected = timeLastCollected.add(
-          (now.sub(timeLastCollected)).mul(deposit).div(collection)
+          (block.timestamp.sub(timeLastCollected)).mul(deposit).div(collection)
         );
         collection = deposit; // take what's left.
       } else {
-        timeLastCollected = now;
+        timeLastCollected = block.timestamp;
       } // normal collection
 
       deposit = deposit.sub(collection);
@@ -203,13 +230,13 @@ contract PartialCommonOwnership is IPartialCommonOwnership {
     require(_newPrice > 0, "Price is zero");
     require(msg.value > price, "Not enough"); // >, coz need to have at least something for deposit
 
-    address currentOwner = art.ownerOf(42);
+    address currentOwner = art.ownerOf(tokenId);
 
     uint256 totalToPayBack = price.add(deposit);
     if (totalToPayBack > 0) {
       // this won't execute if steward owns it. price = 0. deposit = 0.
       // pay previous owner their price + deposit back.
-      address payable payableCurrentOwner = address(uint160(currentOwner));
+      address payable payableCurrentOwner = payable(currentOwner);
       bool transferSuccess = payableCurrentOwner.send(totalToPayBack);
 
       // if the send fails, keep the funds separate for the owner
@@ -219,7 +246,7 @@ contract PartialCommonOwnership is IPartialCommonOwnership {
     }
 
     // new purchase
-    timeLastCollected = now;
+    timeLastCollected = block.timestamp;
 
     deposit = msg.value.sub(price);
     transferArtworkTo(currentOwner, msg.sender, _newPrice);
@@ -260,7 +287,7 @@ contract PartialCommonOwnership is IPartialCommonOwnership {
     require(pullFunds[msg.sender] > 0, "No pull funds available.");
     uint256 toSend = pullFunds[msg.sender];
     pullFunds[msg.sender] = 0;
-    msg.sender.transfer(toSend);
+    payable(msg.sender).transfer(toSend);
   }
 
   /* internal */
@@ -269,7 +296,7 @@ contract PartialCommonOwnership is IPartialCommonOwnership {
     require(deposit >= _wei, "Withdrawing too much");
 
     deposit = deposit.sub(_wei);
-    msg.sender.transfer(_wei); // msg.sender == patron
+    payable(msg.sender).transfer(_wei); // msg.sender == patron
 
     _forecloseIfNecessary();
   }
@@ -277,7 +304,7 @@ contract PartialCommonOwnership is IPartialCommonOwnership {
   function _forecloseIfNecessary() internal {
     if (deposit == 0) {
       // become steward of artwork (aka foreclose)
-      address currentOwner = art.ownerOf(42);
+      address currentOwner = art.ownerOf(tokenId);
       transferArtworkTo(currentOwner, address(this), 0);
       emit LogForeclosure(currentOwner);
     }
@@ -293,10 +320,10 @@ contract PartialCommonOwnership is IPartialCommonOwnership {
       (timeLastCollected.sub(timeAcquired))
     );
 
-    art.transferFrom(_currentOwner, _newOwner, 42);
+    art.transferFrom(_currentOwner, _newOwner, tokenId);
 
     price = _newPrice;
-    timeAcquired = now;
+    timeAcquired = block.timestamp;
     patrons[_newOwner] = true;
   }
 }
