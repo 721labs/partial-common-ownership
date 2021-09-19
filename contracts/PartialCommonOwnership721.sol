@@ -126,6 +126,12 @@ contract PartialCommonOwnership721 is ERC721 {
     _;
   }
 
+  /// @notice Tax Rate getter
+  /// @return Percentage taxation rate
+  function taxRate() public view returns (uint256) {
+    return taxNumerator;
+  }
+
   /**
    * Public View Functions
    * Used internally by external methods.
