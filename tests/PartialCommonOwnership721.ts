@@ -69,7 +69,7 @@ describe("TAIAOS2_owed", function () {
       })
     );
 
-    ERC721 = await ethers.getContractFactory("TestToken");
+    ERC721 = await ethers.getContractFactory("Example721Token");
     ArtSteward = await ethers.getContractFactory("PartialCommonOwnership");
     Blocker = await ethers.getContractFactory("BlockReceiver");
     Blocker2 = await ethers.getContractFactory("Router");
