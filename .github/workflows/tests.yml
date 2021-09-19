@@ -1,0 +1,22 @@
+name: "tests"
+on:
+  push:
+    branches:
+      - "!*" # All branches
+jobs:
+  tests:
+    name: "tests"
+    runs-on: ubuntu-latest
+    needs: []
+    steps:
+      - name: "Checkout Repo"
+        uses: actions/checkout@master
+      - name: "Install Node"
+        uses: actions/setup-node@v2
+        with:
+          node-version: "16"
+          cache: "yarn"
+      - name: "Install JS Dependencies"
+        run: "yarn install --frozen-lockfile --dev"
+      - name: "Run tests"
+        run: "yarn test"
