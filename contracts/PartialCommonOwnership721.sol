@@ -126,6 +126,13 @@ contract PartialCommonOwnership721 is ERC721 {
     _;
   }
 
+  /// @notice Requires that token have been minted.
+  /// @param _tokenId ID of token to verify.
+  modifier tokenMinted(uint256 _tokenId) {
+    ownerOf(_tokenId);
+    _;
+  }
+
   /// @notice Tax Rate getter
   /// @return Percentage taxation rate
   function taxRate() public view returns (uint256) {
@@ -136,6 +143,18 @@ contract PartialCommonOwnership721 is ERC721 {
    * Public View Functions
    * Used internally by external methods.
    */
+
+  /// @notice Gets current price for a given token ID.
+  /// @param _tokenId ID of token requesting price for.
+  /// @return Price in Wei.
+  function priceOf(uint256 _tokenId)
+    public
+    view
+    tokenMinted(_tokenId)
+    returns (uint256)
+  {
+    return _price(_tokenId);
+  }
 
   /// @notice Gets current price for a given token ID.
   /// @param _tokenId ID of token requesting price for.
@@ -261,14 +280,10 @@ contract PartialCommonOwnership721 is ERC721 {
     }
   }
 
-  /**
-   * Public Methods
-   */
-
   /// @notice Collects tax.
   /// @param _tokenId ID of token to collect tax for.
   /// @dev Strictly envoked by modifier.
-  function _collectTax(uint256 _tokenId) public {
+  function _collectTax(uint256 _tokenId) private {
     uint256 price = _price(_tokenId);
     if (price != 0) {
       // If price > 0, contract has not foreclosed.
@@ -303,6 +318,10 @@ contract PartialCommonOwnership721 is ERC721 {
     }
   }
 
+  /**
+   * Public Methods
+   */
+
   /// @notice Buy the token.
   /// @param _tokenId ID of token the buyer wants to purchase.
   /// @param _purchasePrice Purchasing price. Must be greater or equal to current price.
@@ -314,7 +333,7 @@ contract PartialCommonOwnership721 is ERC721 {
     uint256 _tokenId,
     uint256 _purchasePrice,
     uint256 _currentPriceForVerification
-  ) public payable collectTax(_tokenId) {
+  ) public payable tokenMinted(_tokenId) collectTax(_tokenId) {
     uint256 currentPrice = _price(_tokenId);
     // Prevent front-run.
     require(
@@ -333,11 +352,14 @@ contract PartialCommonOwnership721 is ERC721 {
     // Value sent must be greater than purchase price; surplus is necessary for deposit.
     require(
       msg.value > _purchasePrice,
-      "Message does not contain enough value"
+      "Message does not contain surplus value for deposit"
     );
 
     // Seller or this contract if foreclosed.
     address currentOwner = ownerOf(_tokenId);
+
+    // Prevent an accidental re-purchase.
+    require(msg.sender != currentOwner, "Buyer is already owner");
 
     // Is asset currently owned by this contract due to foreclosure?
     // If so, there are no funds to remit.
@@ -482,7 +504,9 @@ contract PartialCommonOwnership721 is ERC721 {
       (lastCollectionTimes[_tokenId].sub(lastTransferTimes[_tokenId]))
     );
 
-    transferFrom(_currentOwner, _newOwner, _tokenId);
+    // Call `_transfer` directly rather than `_transferFrom()` because `_newOwner`
+    // does not require previous approval (as required by `_transferFrom()`) to purchase.
+    _transfer(_currentOwner, _newOwner, _tokenId);
 
     prices[_tokenId] = _newPrice;
 
