@@ -2,9 +2,6 @@
 
 import { time, balance } from "@openzeppelin/test-helpers";
 
-const delay = (duration) =>
-  new Promise((resolve) => setTimeout(resolve, duration));
-
 import { expect } from "chai";
 import { loadFixture } from "ethereum-waffle";
 import { ethers } from "hardhat";
@@ -12,12 +9,29 @@ import { getABI } from "../utils/abi";
 
 enum ErrorMessages {
   ONLY_OWNER = "Sender does not own this token",
+  BUY_ZERO_PRICE = "New Price cannot be zero",
+  BUY_INCORRECT_CURRENT_PRICE = "Current Price is incorrect",
+  BUY_PRICE_BELOW_CURRENT = "New Price must be >= current price",
+  BUY_LACKS_SURPLUS_VALUE = "Message does not contain surplus value for deposit",
+  BUY_ALREADY_OWNED = "Buyer is already owner",
+  NONEXISTENT_TOKEN = "ERC721: owner query for nonexistent token",
 }
 
 enum TOKENS {
   ONE = 1,
   TWO = 2,
   THREE = 3,
+}
+
+const INVALID_TOKEN_ID = 999;
+
+enum Events {
+  BUY = "LogBuy",
+  OUTSTANDING_REMITTANCE = "LogOutstandingRemittance",
+  PRICE_CHANGE = "LogPriceChange",
+  FORECLOSURE = "LogForeclosure",
+  COLLECTION = "LogCollection",
+  BENEFICIARY_REMITTANCE = "LogBeneficiaryRemittance",
 }
 
 const TEST_NAME = "721TEST";
@@ -64,6 +78,13 @@ describe("PartialCommonOwnership721", async () => {
   let signers;
   let accounts;
   let snapshot;
+
+  // Agents to perform situational tests
+  let contractAsOwner;
+  let contractAsBeneficiary;
+  let contractAsAlice;
+  let contractAsBob;
+
   const gasLimit = 9500000; // if gas limit is set, estimateGas isn't run superfluously, slowing tests down.
 
   /**
@@ -80,12 +101,21 @@ describe("PartialCommonOwnership721", async () => {
 
     contract = await contractFactory.deploy({ gasLimit });
     await contract.deployed();
+
     contractAddress = contract.address;
     expect(contractAddress).to.not.be.null;
+
+    contractAsOwner = contract.connect(signers[0]);
+    contractAsBeneficiary = contract.connect(signers[0]);
+    contractAsAlice = contract.connect(signers[1]);
+    contractAsBob = contract.connect(signers[2]);
 
     snapshot = await provider.send("evm_snapshot", []);
   });
 
+  /**
+   * Between each test wipe the state of the contract.
+   */
   beforeEach(async function () {
     await provider.send("evm_revert", [snapshot]);
     snapshot = await provider.send("evm_snapshot", []);
@@ -98,78 +128,199 @@ describe("PartialCommonOwnership721", async () => {
   });
 
   describe("#constructor()", async () => {
-    it("Sets name", async () => {
-      expect(await contract.name()).to.equal(TEST_NAME);
-    });
+    context("succeeds", async () => {
+      it("Setting name", async () => {
+        expect(await contract.name()).to.equal(TEST_NAME);
+      });
 
-    it("Sets symbol", async () => {
-      expect(await contract.symbol()).to.equal(TEST_SYMBOL);
-    });
+      it("Setting symbol", async () => {
+        expect(await contract.symbol()).to.equal(TEST_SYMBOL);
+      });
 
-    it("Sets beneficiary", async () => {
-      expect(await contract.beneficiary()).to.equal(accounts[0]);
-    });
+      /**
+       * For the purposes of testing, the beneficiary address is the address
+       * of the contract owner / deployer.
+       */
+      it("Setting beneficiary", async () => {
+        const beneficiary = await contract.beneficiary();
+        const ownerAddress = contractAsOwner.signer.address;
+        const beneficiaryAddress = contractAsBeneficiary.signer.address;
+        expect(ownerAddress).to.equal(beneficiaryAddress);
+        expect(beneficiary).to.equal(ownerAddress);
+        expect(beneficiary).to.equal(beneficiaryAddress);
+      });
 
-    it("Sets tax rate", async () => {
-      expect(await contract.taxRate()).to.equal(TAX_RATE);
+      it("Setting tax rate", async () => {
+        expect(await contract.taxRate()).to.equal(TAX_RATE);
+      });
     });
   });
 
   describe("#onlyOwner()", async () => {
-    context("when required by not present", async () => {
-      it("#depositWei(): fails", async () => {
-        await expect(
-          contract
-            .connect(signers[1])
-            .depositWei(TOKENS.ONE, { value: ethers.utils.parseEther("1") })
-        ).to.be.revertedWith(ErrorMessages.ONLY_OWNER);
-      });
+    context("fails", async () => {
+      context("when required but signer is not owner", async () => {
+        it("#depositWei()", async () => {
+          await expect(
+            contractAsAlice.depositWei(TOKENS.ONE, {
+              value: ethers.utils.parseEther("1"),
+            })
+          ).to.be.revertedWith(ErrorMessages.ONLY_OWNER);
+        });
 
-      it("#changePrice(): fails", async () => {
-        await expect(contract.changePrice(TOKENS.ONE, 500)).to.be.revertedWith(
-          ErrorMessages.ONLY_OWNER
-        );
-      });
+        it("#changePrice()", async () => {
+          await expect(
+            contractAsAlice.changePrice(TOKENS.ONE, 500)
+          ).to.be.revertedWith(ErrorMessages.ONLY_OWNER);
+        });
 
-      it("#withdrawDeposit(): fails", async () => {
-        await expect(
-          contract.withdrawDeposit(TOKENS.ONE, 10)
-        ).to.be.revertedWith(ErrorMessages.ONLY_OWNER);
-      });
+        it("#withdrawDeposit()", async () => {
+          await expect(
+            contractAsAlice.withdrawDeposit(TOKENS.ONE, 10)
+          ).to.be.revertedWith(ErrorMessages.ONLY_OWNER);
+        });
 
-      it("#exit(): fails", async () => {
-        await expect(contract.exit(TOKENS.ONE)).to.be.revertedWith(
-          ErrorMessages.ONLY_OWNER
-        );
+        it("#exit()", async () => {
+          await expect(contractAsAlice.exit(TOKENS.ONE)).to.be.revertedWith(
+            ErrorMessages.ONLY_OWNER
+          );
+        });
       });
     });
   });
 
-  // it("contract: init: buy with zero wei [fail payable]", async () => {
-  //   await expect(
-  //     contract.buy(1000, ETH0, { value: ethers.utils.parseEther("0") })
-  //   ).to.be.reverted;
-  // });
+  describe("#collectText()", async () => {});
 
-  // it("contract: init: buy with 1 ether but 0 price [fail on price]", async () => {
-  //   await expect(
-  //     contract.buy(0, ETH0, { value: ethers.utils.parseEther("1") })
-  //   ).to.be.revertedWith("Price is zero");
-  // });
+  describe("#tokenMinted()", async () => {
+    context("fails", async () => {
+      context("when token not minted but required", async () => {
+        it("#priceOf()", async () => {
+          await expect(contract.ownerOf(INVALID_TOKEN_ID)).to.be.revertedWith(
+            ErrorMessages.NONEXISTENT_TOKEN
+          );
+        });
+      });
+    });
+  });
 
-  // it("contract: init: buy with 2 ether, price of 1 success [price = 1 eth, deposit = 1 eth]", async () => {
-  //   await expect(
-  //     contract.connect(signers[2]).buy(ethers.utils.parseEther("1"), ETH0, {
-  //       value: ethers.utils.parseEther("1"),
-  //     })
-  //   )
-  //     .to.emit(contract, "LogBuy")
-  //     .withArgs(accounts[2], ethers.utils.parseEther("1"));
+  describe("#taxRate()", async () => {
+    context("succeeds", async () => {
+      it("returning expected tax rate [100%]", async () => {
+        expect(await contractAsAlice.taxRate()).to.equal(TAX_RATE);
+      });
+    });
+  });
 
-  //   expect(await contract.deposit()).to.equal(ethers.utils.parseEther("1"));
-  //   expect(await contract.price()).to.equal(ethers.utils.parseEther("1"));
-  //   expect(await contract.pullFunds(accounts[2])).to.equal(ETH0);
-  // });
+  describe("#priceOf()", async () => {
+    context("succeeds", async () => {
+      it("returning expected price [ETH0]", async () => {
+        expect(await contract.priceOf(TOKENS.ONE)).to.equal(ETH0);
+      });
+    });
+  });
+
+  describe("#taxOwed()", async () => {});
+
+  describe("#taxOwedSince()", async () => {});
+
+  describe("#taxOwedWithTimestamp()", async () => {});
+
+  describe("#currentCollected()", async () => {});
+
+  describe("#foreclosed()", async () => {});
+
+  describe("#withdrawableDeposit()", async () => {});
+
+  describe("#foreclosureTime()", async () => {});
+
+  describe("#buy()", async () => {
+    context("fails", async () => {
+      it("Attempting to buy an un-minted token", async () => {
+        await expect(
+          contractAsAlice.buy(INVALID_TOKEN_ID, ETH1, ETH1, { value: ETH1 })
+        ).to.be.revertedWith(ErrorMessages.NONEXISTENT_TOKEN);
+      });
+      it("Verifying incorrect Current Price", async () => {
+        await expect(
+          contractAsAlice.buy(
+            TOKENS.ONE,
+            ETH1, // Purchase price of 1
+            ETH1, // current price of 1 [should be ETH0]
+            { value: ETH1 }
+          )
+        ).to.be.revertedWith(ErrorMessages.BUY_INCORRECT_CURRENT_PRICE);
+      });
+      it("Attempting to buy with 0 Wei", async () => {
+        await expect(
+          contractAsAlice.buy(
+            TOKENS.ONE,
+            ETH0, // [must be greater than 0]
+            ETH0,
+            { value: ETH0 } // [must be greater than 0]
+          )
+        ).to.be.revertedWith(ErrorMessages.BUY_ZERO_PRICE);
+      });
+      it("When purchase price is less than message value", async () => {
+        await expect(
+          contractAsAlice.buy(
+            TOKENS.ONE,
+            ETH0, // Purchase price of zero
+            ETH0, // Current Price [correct]
+            { value: ETH1 } // Send 1 Eth
+          )
+        ).to.be.revertedWith(ErrorMessages.BUY_ZERO_PRICE);
+      });
+      it("Attempting to buy with price less than current price", async () => {
+        // Purchase as Bob for 2 ETH
+        await contractAsBob.buy(TOKENS.TWO, ETH2, ETH0, { value: ETH3 });
+
+        await expect(
+          contractAsAlice.buy(
+            TOKENS.TWO, // owned by Bob
+            ETH1, // [should be ETH2]
+            ETH2, // Correct
+            { value: ETH1 } // [should be ETH2]
+          )
+        ).to.be.revertedWith(ErrorMessages.BUY_PRICE_BELOW_CURRENT);
+      });
+      it("Attempting to buy without surplus value for deposit", async () => {
+        await expect(
+          contractAsAlice.buy(TOKENS.ONE, ETH1, ETH0, { value: ETH1 }) // [should be greater than ETH1]
+        ).to.be.revertedWith(ErrorMessages.BUY_LACKS_SURPLUS_VALUE);
+      });
+      it("Attempting to purchase a token it already owns", async () => {
+        // Purchase
+        await contractAsBob.buy(TOKENS.TWO, ETH2, ETH0, { value: ETH3 });
+        // Re-purchase
+        await expect(
+          contractAsBob.buy(TOKENS.TWO, ETH3, ETH2, { value: ETH4 })
+        ).to.be.revertedWith(ErrorMessages.BUY_ALREADY_OWNED);
+      });
+    });
+    // context("succeeds", async () => {
+    //   it("buy with 2 ether, price of 1 success [price = 1 eth, deposit = 1 eth]", async () => {
+    //     await expect(
+    //       contract.connect(signers[2]).buy(TOKENS.ONE, ETH1, ETH0, {
+    //         value: ETH1,
+    //       })
+    //     )
+    //       .to.emit(contract, Events.BUY)
+    //       .withArgs(accounts[2], ETH1);
+    //     expect(await contract.deposit()).to.equal(ETH1);
+    //     expect(await contract.price()).to.equal(ETH1);
+    //     expect(await contract.pullFunds(accounts[2])).to.equal(ETH0);
+    //   });
+    // });
+  });
+
+  describe("#depositWei()", async () => {});
+
+  describe("#changePrice()", async () => {});
+
+  describe("#withdrawDeposit()", async () => {});
+
+  describe("#exit()", async () => {});
+
+  describe("#withdrawOutstandingRemittance()", async () => {});
 
   /**
    * IGNORE FOR NOW
