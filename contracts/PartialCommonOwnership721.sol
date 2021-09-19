@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.7;
 
-import "./interfaces/IPartialCommonOwnership721.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "hardhat/console.sol";
@@ -13,7 +12,7 @@ import "hardhat/console.sol";
 /// using a Harberger Tax model; if payments are not made, the token is claimable by anybody for free.
 /// @dev This code was originally forked from ThisArtworkIsAlwaysOnSale's `v2_contracts/ArtSteward.sol` contract.
 /// by Simon de la Rouviere.
-contract PartialCommonOwnership721 is IPartialCommonOwnership721, ERC721 {
+contract PartialCommonOwnership721 is ERC721 {
   using SafeMath for uint256;
 
   /// @notice Alert of purchase.
