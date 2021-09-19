@@ -1,8 +1,9 @@
 name: "tests"
 on:
+  workflow_dispatch:
   push:
     branches:
-      - "!*" # All branches
+      - "*" # All branches
 jobs:
   tests:
     name: "tests"
