@@ -92,6 +92,8 @@ contract PartialCommonOwnership721 is ERC721 {
   mapping(address => uint256) public outstandingRemittances;
 
   /// @notice Mapping from token ID to Unix timestamp when last purchase occured.
+  /// @dev This is used to determine how much time has passed since last collection and the present
+  /// and resultingly how much tax is due in the present.
   /// @dev In the event that a foreclosure happens AFTER it should have, this
   /// variable is backdated to when it should've occurred. Thus: `chainOfTitle` is
   /// accurate to the actual possession period.
@@ -422,9 +424,13 @@ contract PartialCommonOwnership721 is ERC721 {
       }
     }
 
-    // TODO: Not entirely clear on why this needs to be set, but it needs to be
-    // in order to correctly calculate `taxOwed`.
-    lastCollectionTimes[_tokenId] = block.timestamp;
+    // If the token is being purchased for the first time or is being purchased
+    // from foreclosure,last collection time is set to now so that the contract
+    // does not incorrectly consider the taxable period to have begun prior to
+    // foreclosure and overtax the owner.
+    if (currentPrice == 0) {
+      lastCollectionTimes[_tokenId] = block.timestamp;
+    }
 
     // Update deposit with surplus value.
     deposits[_tokenId] = msg.value.sub(_purchasePrice);
