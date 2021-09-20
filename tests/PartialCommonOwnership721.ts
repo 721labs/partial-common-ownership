@@ -32,6 +32,7 @@ enum Events {
   FORECLOSURE = "LogForeclosure",
   COLLECTION = "LogCollection",
   BENEFICIARY_REMITTANCE = "LogBeneficiaryRemittance",
+  REMITTANCE = "LogRemittance",
 }
 
 const TEST_NAME = "721TEST";
@@ -85,6 +86,8 @@ describe("PartialCommonOwnership721", async () => {
   let contractAsAlice;
   let contractAsBob;
 
+  let initialBeneficiaryBalance;
+
   const gasLimit = 9500000; // if gas limit is set, estimateGas isn't run superfluously, slowing tests down.
 
   /**
@@ -109,6 +112,8 @@ describe("PartialCommonOwnership721", async () => {
     contractAsBeneficiary = contract.connect(signers[0]);
     contractAsAlice = contract.connect(signers[1]);
     contractAsBob = contract.connect(signers[2]);
+
+    initialBeneficiaryBalance = await contractAsBeneficiary.signer.getBalance();
 
     snapshot = await provider.send("evm_snapshot", []);
   });
@@ -198,6 +203,16 @@ describe("PartialCommonOwnership721", async () => {
             ErrorMessages.NONEXISTENT_TOKEN
           );
         });
+        it("#depositOf()", async () => {
+          await expect(contract.depositOf(INVALID_TOKEN_ID)).to.be.revertedWith(
+            ErrorMessages.NONEXISTENT_TOKEN
+          );
+        });
+        it("#buy()", async () => {
+          await expect(
+            contract.buy(INVALID_TOKEN_ID, ETH0, ETH0, { value: ETH0 })
+          ).to.be.revertedWith(ErrorMessages.NONEXISTENT_TOKEN);
+        });
       });
     });
   });
@@ -213,6 +228,14 @@ describe("PartialCommonOwnership721", async () => {
   describe("#priceOf()", async () => {
     context("succeeds", async () => {
       it("returning expected price [ETH0]", async () => {
+        expect(await contract.priceOf(TOKENS.ONE)).to.equal(ETH0);
+      });
+    });
+  });
+
+  describe("#depositOf", async () => {
+    context("succeeds", async () => {
+      it("returning expected deposit [ETH0]", async () => {
         expect(await contract.priceOf(TOKENS.ONE)).to.equal(ETH0);
       });
     });
@@ -296,20 +319,33 @@ describe("PartialCommonOwnership721", async () => {
         ).to.be.revertedWith(ErrorMessages.BUY_ALREADY_OWNED);
       });
     });
-    // context("succeeds", async () => {
-    //   it("buy with 2 ether, price of 1 success [price = 1 eth, deposit = 1 eth]", async () => {
-    //     await expect(
-    //       contract.connect(signers[2]).buy(TOKENS.ONE, ETH1, ETH0, {
-    //         value: ETH1,
-    //       })
-    //     )
-    //       .to.emit(contract, Events.BUY)
-    //       .withArgs(accounts[2], ETH1);
-    //     expect(await contract.deposit()).to.equal(ETH1);
-    //     expect(await contract.price()).to.equal(ETH1);
-    //     expect(await contract.pullFunds(accounts[2])).to.equal(ETH0);
-    //   });
-    // });
+    context("succeeds", async () => {
+      it("First-time purchase of token from contract", async () => {
+        const event = await contractAsAlice.buy(TOKENS.ONE, ETH1, ETH0, {
+          value: ETH2,
+        });
+        // Buy Event emitted
+        expect(event)
+          .to.emit(contract, Events.BUY)
+          .withArgs(TOKENS.ONE, contractAsAlice.signer.address, ETH1);
+        // Remittance Event emitted
+        expect(event)
+          .to.emit(contract, Events.REMITTANCE)
+          .withArgs(TOKENS.ONE, contractAsBeneficiary.signer.address, ETH1);
+        // Deposit updated
+        expect(await contract.depositOf(TOKENS.ONE)).to.equal(ETH1);
+        // Price updated
+        expect(await contract.priceOf(TOKENS.ONE)).to.equal(ETH1);
+        // Owned updated
+        expect(await contract.ownerOf(TOKENS.ONE)).to.equal(
+          contractAsAlice.signer.address
+        );
+        // Eth [price = 1 Eth] remitted to beneficiary
+        expect(await contractAsBeneficiary.signer.getBalance()).to.equal(
+          initialBeneficiaryBalance.add(ETH1)
+        );
+      });
+    });
   });
 
   describe("#depositWei()", async () => {});
