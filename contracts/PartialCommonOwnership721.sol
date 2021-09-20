@@ -6,6 +6,17 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "hardhat/console.sol";
 
+struct TitleTransferEvent {
+  /// @notice From address.
+  address from;
+  /// @notice To address.
+  address to;
+  /// @notice Unix timestamp.
+  uint256 at;
+  /// @notice Price in Wei
+  uint256 price;
+}
+
 /// @title PartialCommonOwnership721
 /// @author Simon de la Rouviere, Will Holley
 /// @notice Extends the ERC721 standard by requiring tax payments from the token's current owner
@@ -72,20 +83,16 @@ contract PartialCommonOwnership721 is ERC721 {
 
   /// @notice Mapping from token ID to Unix timestamp when last purchase occured.
   /// @dev In the event that a foreclosure happens AFTER it should have, this
-  /// variable is backdated to when it should've occurred. Thus: `heldTimes` is
-  /// accurate to the actual deposit period.
+  /// variable is backdated to when it should've occurred. Thus: `chainOfTitle` is
+  /// accurate to the actual possession period.
   mapping(uint256 => uint256) public lastCollectionTimes;
 
   /// @notice Mapping from token ID to Unix timestamp of when it was last transferred.
   mapping(uint256 => uint256) public lastTransferTimes;
 
-  /// @notice Mapping from token ID to map of sales (seller address -> buyer address).
-  /// @dev This includes foreclosures (foreclosed address -> contract address)
-  mapping(uint256 => mapping(address => address)) public chainOfTitle;
-
-  /// @notice Mapping from token ID to time held by previous owner.
-  /// @dev Set during transfer.
-  mapping(uint256 => mapping(address => uint256)) public heldTimes;
+  /// @notice Mapping from token ID to array of transfer events.
+  /// @dev This includes foreclosures.
+  mapping(uint256 => TitleTransferEvent[]) public chainOfTitle;
 
   /// @notice  Percentage taxation rate. e.g. 5% or 100%
   /// @dev Granular to an additionial 10 zeroes.
@@ -93,6 +100,9 @@ contract PartialCommonOwnership721 is ERC721 {
   /// e.g. 5% => 50000000000
   uint256 private immutable taxNumerator;
   uint256 private constant taxDenominator = 1000000000000;
+
+  /// @notice Over what period should taxation be applied? For now fixed at rate per annum.
+  uint256 private constant taxationPeriod = 365 days;
 
   /// @notice Creates the token and sets beneficiary & taxation amount.
   /// @param name_ ERC721 Token Name
@@ -168,12 +178,23 @@ contract PartialCommonOwnership721 is ERC721 {
   /// @return taxDue Tax Due in wei
   function taxOwed(uint256 _tokenId) public view returns (uint256 taxDue) {
     uint256 price = _price(_tokenId);
+
+    // Has there been a previous collection? If this is the first is envoked during
+    // the first collection, no. As such use the last (first-sale) transfer time.
+    uint256 prev;
+    uint256 lastCollectionTime = lastCollectionTimes[_tokenId];
+    if (lastCollectionTime == 0) {
+      prev = lastTransferTimes[_tokenId];
+    } else {
+      prev = lastCollectionTime;
+    }
+
     return
       price
-        .mul(block.timestamp.sub(lastCollectionTimes[_tokenId]))
+        .mul(block.timestamp.sub(prev))
         .mul(taxNumerator)
         .div(taxDenominator)
-        .div(365 days);
+        .div(taxationPeriod);
   }
 
   /// @notice Determines the taxable amount accumulated between now and
@@ -188,7 +209,10 @@ contract PartialCommonOwnership721 is ERC721 {
   {
     require(_time < block.timestamp, "Time must be in the past");
     uint256 price = _price(_tokenId);
-    return price.mul(_time).mul(taxNumerator).div(taxDenominator).div(365 days);
+    return
+      price.mul(_time).mul(taxNumerator).div(taxDenominator).div(
+        taxationPeriod
+      );
   }
 
   /// @notice Returns the tax owed with the current time.
@@ -256,7 +280,7 @@ contract PartialCommonOwnership721 is ERC721 {
   function foreclosureTime(uint256 _tokenId) public view returns (uint256) {
     uint256 price = _price(_tokenId);
     uint256 taxPerSecond = price.mul(taxNumerator).div(taxDenominator).div(
-      365 days
+      taxationPeriod
     );
     uint256 withdrawable = withdrawableDeposit(_tokenId);
     if (withdrawable > 0) {
@@ -293,11 +317,11 @@ contract PartialCommonOwnership721 is ERC721 {
       // If foreclosure should have occured in the past, last collection time will be
       // backdated to when the tax was last paid for.
       if (owed >= deposit) {
+        // Backdate:
         // TLC + (time_elapsed)*deposit/owed
-        lastCollectionTimes[_tokenId] = lastCollectionTimes[_tokenId].add(
-          (block.timestamp.sub(lastCollectionTimes[_tokenId])).mul(deposit).div(
-            owed
-          )
+        uint256 lastCollectionTime = lastCollectionTimes[_tokenId];
+        lastCollectionTimes[_tokenId] = lastCollectionTime.add(
+          (block.timestamp.sub(lastCollectionTime)).mul(deposit).div(owed)
         );
         // Take remaining deposit.
         owed = deposit;
@@ -381,11 +405,6 @@ contract PartialCommonOwnership721 is ERC721 {
         }
       }
     }
-
-    /// @notice Update purchase metadata.
-    /// @dev Remnant from TAIAOS – seemingly redundant b/c set in
-    /// `collectTax` above. TODO: Confirm should remove after completing tests.
-    //lastCollectionTimes[_tokenId] = block.timestamp;
 
     // Update deposit with surplus value.
     deposits[_tokenId] = msg.value.sub(_purchasePrice);
@@ -499,18 +518,19 @@ contract PartialCommonOwnership721 is ERC721 {
     address _newOwner,
     uint256 _newPrice
   ) internal {
-    /// @dev Includes time held in stewardship by this contract.
-    heldTimes[_tokenId][_currentOwner] = heldTimes[_tokenId][_currentOwner].add(
-      (lastCollectionTimes[_tokenId].sub(lastTransferTimes[_tokenId]))
-    );
-
     // Call `_transfer` directly rather than `_transferFrom()` because `_newOwner`
     // does not require previous approval (as required by `_transferFrom()`) to purchase.
     _transfer(_currentOwner, _newOwner, _tokenId);
 
     prices[_tokenId] = _newPrice;
 
-    chainOfTitle[_tokenId][_currentOwner] = _newOwner;
+    TitleTransferEvent memory transferEvent = TitleTransferEvent(
+      _currentOwner,
+      _newOwner,
+      block.timestamp,
+      _newPrice
+    );
+    chainOfTitle[_tokenId].push(transferEvent);
 
     lastTransferTimes[_tokenId] = block.timestamp;
   }
