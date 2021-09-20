@@ -197,23 +197,12 @@ contract PartialCommonOwnership721 is ERC721 {
 
   /// @notice How much is owed from the last collection until now?
   /// @param _tokenId ID of token requesting amount for.
-  /// @return taxDue Tax Due in wei
-  function taxOwed(uint256 _tokenId) public view returns (uint256 taxDue) {
+  /// @return Tax Due in wei
+  function taxOwed(uint256 _tokenId) public view returns (uint256) {
     uint256 price = _price(_tokenId);
-
-    // Has there been a previous collection? If this is the first is envoked during
-    // the first collection, no. As such use the last (first-sale) transfer time.
-    uint256 prev;
-    uint256 lastCollectionTime = lastCollectionTimes[_tokenId];
-    if (lastCollectionTime == 0) {
-      prev = lastTransferTimes[_tokenId];
-    } else {
-      prev = lastCollectionTime;
-    }
-
     return
       price
-        .mul(block.timestamp.sub(prev))
+        .mul(block.timestamp.sub(lastCollectionTimes[_tokenId]))
         .mul(taxNumerator)
         .div(taxDenominator)
         .div(taxationPeriod);
@@ -433,6 +422,10 @@ contract PartialCommonOwnership721 is ERC721 {
       }
     }
 
+    // TODO: Not entirely clear on why this needs to be set, but it needs to be
+    // in order to correctly calculate `taxOwed`.
+    lastCollectionTimes[_tokenId] = block.timestamp;
+
     // Update deposit with surplus value.
     deposits[_tokenId] = msg.value.sub(_purchasePrice);
 
@@ -448,8 +441,8 @@ contract PartialCommonOwnership721 is ERC721 {
   function depositWei(uint256 _tokenId)
     public
     payable
-    collectTax(_tokenId)
     onlyOwner(_tokenId)
+    collectTax(_tokenId)
   {
     deposits[_tokenId] = deposits[_tokenId].add(msg.value);
   }
@@ -460,8 +453,8 @@ contract PartialCommonOwnership721 is ERC721 {
   /// @param _newPrice New price in Wei.
   function changePrice(uint256 _tokenId, uint256 _newPrice)
     public
-    collectTax(_tokenId)
     onlyOwner(_tokenId)
+    collectTax(_tokenId)
   {
     uint256 price = prices[_tokenId];
     require(_newPrice > 0, "New price cannot be zero");
@@ -475,8 +468,8 @@ contract PartialCommonOwnership721 is ERC721 {
   /// @param _wei Amount of Wei to withdraw.
   function withdrawDeposit(uint256 _tokenId, uint256 _wei)
     public
-    collectTax(_tokenId)
     onlyOwner(_tokenId)
+    collectTax(_tokenId)
   {
     _withdrawDeposit(_tokenId, _wei);
   }
@@ -485,8 +478,8 @@ contract PartialCommonOwnership721 is ERC721 {
   /// @param _tokenId ID of token to withdraw against.
   function exit(uint256 _tokenId)
     public
-    collectTax(_tokenId)
     onlyOwner(_tokenId)
+    collectTax(_tokenId)
   {
     _withdrawDeposit(_tokenId, deposits[_tokenId]);
   }
