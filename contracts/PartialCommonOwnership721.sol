@@ -63,6 +63,16 @@ contract PartialCommonOwnership721 is ERC721 {
     uint256 indexed collected
   );
 
+  /// @notice Alert the remittance recipient that funds have been remitted to her.
+  /// @param tokenId ID of token.
+  /// @param recipient Recipient address.
+  /// @param amount Amount in Wei.
+  event LogRemittance(
+    uint256 indexed tokenId,
+    address indexed recipient,
+    uint256 indexed amount
+  );
+
   /// @notice Single (for now) beneficiary of tax payments.
   address payable public beneficiary;
 
@@ -73,7 +83,7 @@ contract PartialCommonOwnership721 is ERC721 {
   mapping(uint256 => uint256) public taxationCollected;
 
   /// @notice Mapping from token ID to funds for paying tax ("Deposit") in Wei.
-  mapping(uint256 => uint256) public deposits;
+  mapping(uint256 => uint256) private deposits;
 
   /// @notice Mapping of address to Wei.
   /// @dev If for whatever reason a remittance payment fails during a purchase, the amount
@@ -164,6 +174,18 @@ contract PartialCommonOwnership721 is ERC721 {
     returns (uint256)
   {
     return _price(_tokenId);
+  }
+
+  /// @notice Gets current deposit for a given token ID.
+  /// @param _tokenId ID of token requesting deposit for.
+  /// @return Deposit in Wei.
+  function depositOf(uint256 _tokenId)
+    public
+    view
+    tokenMinted(_tokenId)
+    returns (uint256)
+  {
+    return deposits[_tokenId];
   }
 
   /// @notice Gets current price for a given token ID.
@@ -385,24 +407,29 @@ contract PartialCommonOwnership721 is ERC721 {
     // Prevent an accidental re-purchase.
     require(msg.sender != currentOwner, "Buyer is already owner");
 
-    // Is asset currently owned by this contract due to foreclosure?
-    // If so, there are no funds to remit.
-    if (currentOwner != address(this)) {
-      // Remit the purchase price and the seller's deposit.
-      uint256 remittance = _purchasePrice.add(deposits[_tokenId]);
+    // Remit the purchase price and any available deposit.
+    uint256 remittance = _purchasePrice.add(deposits[_tokenId]);
 
-      if (remittance > 0) {
-        // Remit.
-        address payable payableCurrentOwner = payable(currentOwner);
-        bool success = payableCurrentOwner.send(remittance);
+    if (remittance > 0) {
+      // If token is owned by the contract, remit to the beneficiary.
+      address recipient;
+      if (currentOwner == address(this)) {
+        recipient = beneficiary;
+      } else {
+        recipient = currentOwner;
+      }
 
-        // If the remittance fails, hold funds for the seller to retrieve.
-        if (!success) {
-          outstandingRemittances[currentOwner] = outstandingRemittances[
-            currentOwner
-          ].add(remittance);
-          emit LogOutstandingRemittance(currentOwner);
-        }
+      // Remit.
+      address payable payableRecipient = payable(recipient);
+      bool success = payableRecipient.send(remittance);
+
+      // If the remittance fails, hold funds for the seller to retrieve.
+      if (!success) {
+        outstandingRemittances[recipient] = outstandingRemittances[recipient]
+          .add(remittance);
+        emit LogOutstandingRemittance(recipient);
+      } else {
+        emit LogRemittance(_tokenId, recipient, remittance);
       }
     }
 
