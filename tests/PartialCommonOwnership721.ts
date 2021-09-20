@@ -320,7 +320,7 @@ describe("PartialCommonOwnership721", async () => {
       });
     });
     context("succeeds", async () => {
-      it("First-time purchase of token from contract", async () => {
+      it("Purchasing token for the first-first (from contract)", async () => {
         const event = await contractAsAlice.buy(TOKENS.ONE, ETH1, ETH0, {
           value: ETH2,
         });
@@ -357,6 +357,21 @@ describe("PartialCommonOwnership721", async () => {
   describe("#exit()", async () => {});
 
   describe("#withdrawOutstandingRemittance()", async () => {});
+
+  describe("#transferToken()", async () => {
+    context("fails", async () => {
+      it("it's an internal method", async () => {
+        try {
+          await contract.transferToken();
+        } catch (error) {
+          expect(error).instanceOf(TypeError);
+          expect(error.message).to.equal(
+            "contract.transferToken is not a function"
+          );
+        }
+      });
+    });
+  });
 
   /**
    * IGNORE FOR NOW
