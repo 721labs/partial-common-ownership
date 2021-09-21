@@ -117,6 +117,10 @@ contract PartialCommonOwnership721 is ERC721 {
   /// @notice Over what period should taxation be applied? For now fixed at rate per annum.
   uint256 private constant taxationPeriod = 365 days;
 
+  /// @notice Mapping from token ID to purchase lock status
+  /// @dev Used to prevent reentrancy attacks
+  mapping(uint256 => bool) private locked;
+
   /// @notice Creates the token and sets beneficiary & taxation amount.
   /// @param name_ ERC721 Token Name
   /// @param symbol_ ERC721 Token Symbol
@@ -368,6 +372,9 @@ contract PartialCommonOwnership721 is ERC721 {
     uint256 _purchasePrice,
     uint256 _currentPriceForVerification
   ) public payable tokenMinted(_tokenId) collectTax(_tokenId) {
+    // Prevent re-entrancy attack
+    require(!locked[_tokenId], "Token is locked");
+
     uint256 currentPrice = _price(_tokenId);
     // Prevent front-run.
     require(
@@ -394,6 +401,9 @@ contract PartialCommonOwnership721 is ERC721 {
 
     // Prevent an accidental re-purchase.
     require(msg.sender != currentOwner, "Buyer is already owner");
+
+    // After all security checks have occured, lock the token.
+    locked[_tokenId] = true;
 
     // Remit the purchase price and any available deposit.
     uint256 remittance = _purchasePrice.add(deposits[_tokenId]);
@@ -434,6 +444,9 @@ contract PartialCommonOwnership721 is ERC721 {
 
     transferToken(_tokenId, currentOwner, msg.sender, _purchasePrice);
     emit LogBuy(_tokenId, msg.sender, _purchasePrice);
+
+    // Unlock token
+    locked[_tokenId] = false;
   }
 
   /**
