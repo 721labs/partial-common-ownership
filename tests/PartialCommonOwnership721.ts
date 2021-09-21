@@ -16,6 +16,8 @@ enum ErrorMessages {
   BUY_LACKS_SURPLUS_VALUE = "Message does not contain surplus value for deposit",
   BUY_ALREADY_OWNED = "Buyer is already owner",
   NONEXISTENT_TOKEN = "ERC721: owner query for nonexistent token",
+  NEW_PRICE_ZERO = "New price cannot be zero",
+  NEW_PRICE_SAME = "New price cannot be same",
 }
 
 enum TOKENS {
@@ -437,7 +439,47 @@ describe("PartialCommonOwnership721", async () => {
     });
   });
 
-  describe("#changePrice()", async () => {});
+  describe("#changePrice()", async () => {
+    context("fails", async () => {
+      it("only owner can update price", async () => {
+        await expect(
+          contractAsAlice.changePrice(TOKENS.ONE, 500)
+        ).to.be.revertedWith(ErrorMessages.ONLY_OWNER);
+      });
+      it("cannot have a new price of zero", async () => {
+        const token = TOKENS.ONE;
+        await contractAsAlice.buy(token, ETH1, ETH0, {
+          value: ETH2,
+        });
+        await expect(
+          contractAsAlice.changePrice(token, ETH0)
+        ).to.be.revertedWith(ErrorMessages.NEW_PRICE_ZERO);
+      });
+      it("cannot have price set to same amount", async () => {
+        const token = TOKENS.ONE;
+        await contractAsAlice.buy(token, ETH1, ETH0, {
+          value: ETH2,
+        });
+        await expect(
+          contractAsAlice.changePrice(token, ETH1)
+        ).to.be.revertedWith(ErrorMessages.NEW_PRICE_SAME);
+      });
+    });
+    context("succeeds", async () => {
+      it("owner can change price", async () => {
+        const token = TOKENS.ONE;
+        await contractAsAlice.buy(token, ETH1, ETH0, {
+          value: ETH2,
+        });
+
+        expect(await contractAsAlice.changePrice(token, ETH2))
+          .to.emit(contract, Events.PRICE_CHANGE)
+          .withArgs(TOKENS.ONE, ETH2);
+
+        expect(await contract.priceOf(token)).to.equal(ETH2);
+      });
+    });
+  });
 
   describe("#withdrawDeposit()", async () => {});
 
