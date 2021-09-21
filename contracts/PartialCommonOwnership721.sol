@@ -248,7 +248,11 @@ contract PartialCommonOwnership721 is ERC721 {
   /// @notice How much taxation has been collected since the last purchase?
   /// @param _tokenId ID of token requesting amount for.
   /// @return taxDue Tax Due in Wei.
-  function taxSinceTransfer(uint256 _tokenId) public view returns (uint256) {
+  function taxCollectedSinceLastTransfer(uint256 _tokenId)
+    public
+    view
+    returns (uint256)
+  {
     uint256 lastCollectionTime = lastCollectionTimes[_tokenId];
     uint256 lastTransferTime = lastTransferTimes[_tokenId];
     if (lastCollectionTime > lastTransferTime) {
@@ -348,7 +352,8 @@ contract PartialCommonOwnership721 is ERC721 {
       taxationCollected[_tokenId] = taxationCollected[_tokenId].add(owed);
       emit LogCollection(_tokenId, owed);
 
-      // Remit taxation to beneficiary
+      /// Remit taxation to beneficiary.
+      /// Note: This increases gas costs for all callers of `#_collectTax()`.
       beneficiary.transfer(owed);
       emit LogBeneficiaryRemittance(_tokenId, owed);
 
