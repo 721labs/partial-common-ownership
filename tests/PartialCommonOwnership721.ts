@@ -18,6 +18,8 @@ enum ErrorMessages {
   NONEXISTENT_TOKEN = "ERC721: owner query for nonexistent token",
   NEW_PRICE_ZERO = "New price cannot be zero",
   NEW_PRICE_SAME = "New price cannot be same",
+  // Not testing reentrancy lock, currently.
+  //LOCKED = "Token is locked",
 }
 
 enum TOKENS {
@@ -59,15 +61,13 @@ const TAX_RATE = 1000000000000; // 100%
 
 //$ Helper Functions
 
-async function stringTimeLatest() {
-  // 365 days
-  const timeBN = await time.latest();
-  return timeBN.toString();
-}
-
-async function bigTimeLatest() {
-  const STL = await stringTimeLatest();
-  return ethers.BigNumber.from(STL);
+/**
+ * Gets current time
+ * @returns Current Time as BigNumber
+ */
+async function now(): Promise<BigNumber> {
+  const bn = await time.latest();
+  return ethers.BigNumber.from(bn.toString());
 }
 
 /**
@@ -109,18 +109,15 @@ describe("PartialCommonOwnership721", async () => {
   let snapshot;
 
   // Agents to perform situational tests
-  let contractAsOwner;
   let contractAsBeneficiary;
   let contractAsAlice;
   let contractAsBob;
 
-  let initialBeneficiaryBalance;
+  let beneficiaryBalance;
 
   const gasLimit = 9500000; // if gas limit is set, estimateGas isn't run superfluously, slowing tests down.
 
-  /**
-   * Setup
-   */
+  //$ Setup
   before(async function () {
     provider = new ethers.providers.Web3Provider(web3.currentProvider);
     signers = await ethers.getSigners();
@@ -130,18 +127,20 @@ describe("PartialCommonOwnership721", async () => {
 
     const contractFactory = await ethers.getContractFactory("Test721Token");
 
-    contract = await contractFactory.deploy({ gasLimit });
+    contract = await contractFactory.deploy(accounts[1], { gasLimit });
     await contract.deployed();
 
     contractAddress = contract.address;
     expect(contractAddress).to.not.be.null;
 
-    contractAsOwner = contract.connect(signers[0]);
-    contractAsBeneficiary = contract.connect(signers[0]);
-    contractAsAlice = contract.connect(signers[1]);
-    contractAsBob = contract.connect(signers[2]);
+    contractAsBeneficiary = contract.connect(signers[1]);
+    contractAsAlice = contract.connect(signers[2]);
+    contractAsBob = contract.connect(signers[3]);
 
-    initialBeneficiaryBalance = await contractAsBeneficiary.signer.getBalance();
+    beneficiaryBalance = await balance.tracker(
+      contractAsBeneficiary.signer.address,
+      "wei"
+    );
 
     snapshot = await provider.send("evm_snapshot", []);
   });
@@ -150,14 +149,22 @@ describe("PartialCommonOwnership721", async () => {
    * Between each test wipe the state of the contract.
    */
   beforeEach(async function () {
+    // Reset contract state
     await provider.send("evm_revert", [snapshot]);
     snapshot = await provider.send("evm_snapshot", []);
+
+    // Reset beneficiary balance tracker
+    await beneficiaryBalance.get();
   });
 
-  it("Test contract mints three tokens during construction", async () => {
-    expect(await contract.ownerOf(TOKENS.ONE)).to.equal(contractAddress);
-    expect(await contract.ownerOf(TOKENS.TWO)).to.equal(contractAddress);
-    expect(await contract.ownerOf(TOKENS.THREE)).to.equal(contractAddress);
+  //$ Tests
+
+  describe("Test721Token", async () => {
+    it("mints three tokens during construction", async () => {
+      expect(await contract.ownerOf(TOKENS.ONE)).to.equal(contractAddress);
+      expect(await contract.ownerOf(TOKENS.TWO)).to.equal(contractAddress);
+      expect(await contract.ownerOf(TOKENS.THREE)).to.equal(contractAddress);
+    });
   });
 
   describe("#constructor()", async () => {
@@ -175,12 +182,9 @@ describe("PartialCommonOwnership721", async () => {
        * of the contract owner / deployer.
        */
       it("Setting beneficiary", async () => {
-        const beneficiary = await contract.beneficiary();
-        const ownerAddress = contractAsOwner.signer.address;
-        const beneficiaryAddress = contractAsBeneficiary.signer.address;
-        expect(ownerAddress).to.equal(beneficiaryAddress);
-        expect(beneficiary).to.equal(ownerAddress);
-        expect(beneficiary).to.equal(beneficiaryAddress);
+        expect(await contract.beneficiary()).to.equal(
+          contractAsBeneficiary.signer.address
+        );
       });
 
       it("Setting tax rate", async () => {
@@ -221,9 +225,56 @@ describe("PartialCommonOwnership721", async () => {
     });
   });
 
-  describe("#collectTax()", async () => {
+  describe("#_collectTax()", async () => {
     context("fails", async () => {});
-    context("succeeds", async () => {});
+    context("succeeds", async () => {
+      it("collects after 10m", async () => {
+        const price = ETH1;
+        const token = TOKENS.ONE;
+        await contractAsAlice.buy(token, price, ETH0, {
+          value: ETH2,
+        });
+
+        // Sanity check & update baseline beneficiary balance
+        expect(
+          ethers.BigNumber.from((await beneficiaryBalance.delta()).toString())
+        ).to.equal(price);
+
+        const timeBefore = await now();
+        const depositBefore = await contract.depositOf(token);
+
+        await time.increase(time.duration.minutes(10));
+
+        const event = await contractAsAlice._collectTax(token, { gasLimit });
+
+        const timeAfter = await now();
+        const depositAfter = await contract.depositOf(token);
+
+        const lastCollectionTime = await contract.lastCollectionTimes(token);
+        const taxSinceTransfer = await contract.taxSinceTransfer(token);
+        const lifetimeCollected = await contract.taxationCollected(token);
+
+        const due = getTaxDue(depositBefore, timeAfter, timeBefore);
+
+        // Events emitted
+        expect(event).to.emit(contract, Events.COLLECTION).withArgs(token, due);
+        expect(event)
+          .to.emit(contract, Events.BENEFICIARY_REMITTANCE)
+          .withArgs(token, due);
+        // Deposit updates
+        expect(depositAfter).to.equal(price.sub(due));
+        // Token collection statistics update
+        expect(lastCollectionTime).to.equal(timeAfter);
+        expect(taxSinceTransfer).to.equal(due);
+        expect(lifetimeCollected).to.equal(due);
+        // Beneficiary is remitted the expected amount
+        expect(
+          ethers.BigNumber.from((await beneficiaryBalance.delta()).toString())
+        ).to.equal(due);
+      });
+
+      it("collects after 10m and subsequently after 10m", async () => {});
+    });
   });
 
   describe("#tokenMinted()", async () => {
@@ -318,7 +369,7 @@ describe("PartialCommonOwnership721", async () => {
 
   describe("#taxOwedWithTimestamp()", async () => {});
 
-  describe("#currentCollected()", async () => {});
+  describe("#taxSinceTransfer()", async () => {});
 
   describe("#foreclosed()", async () => {});
 
@@ -412,9 +463,9 @@ describe("PartialCommonOwnership721", async () => {
           contractAsAlice.signer.address
         );
         // Eth [price = 1 Eth] remitted to beneficiary
-        expect(await contractAsBeneficiary.signer.getBalance()).to.equal(
-          initialBeneficiaryBalance.add(ETH1)
-        );
+        expect(
+          ethers.BigNumber.from((await beneficiaryBalance.delta()).toString())
+        ).to.equal(ETH1);
       });
     });
   });

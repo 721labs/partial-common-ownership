@@ -8,13 +8,8 @@ import "./PartialCommonOwnership721.sol";
 /// @dev 100% patronage
 contract Test721Token is PartialCommonOwnership721 {
   /// @notice Constructs token and mints 1 - 3.
-  constructor()
-    PartialCommonOwnership721(
-      "721TEST",
-      "TEST",
-      payable(msg.sender),
-      1000000000000
-    )
+  constructor(address payable _beneficiary)
+    PartialCommonOwnership721("721TEST", "TEST", _beneficiary, 1000000000000)
   {
     _safeMint(address(this), 1);
     _safeMint(address(this), 2);
