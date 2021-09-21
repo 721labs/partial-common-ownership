@@ -244,11 +244,7 @@ contract PartialCommonOwnership721 is ERC721 {
   /// @notice How much taxation has been collected since the last purchase?
   /// @param _tokenId ID of token requesting amount for.
   /// @return taxDue Tax Due in Wei.
-  function currentCollected(uint256 _tokenId)
-    public
-    view
-    returns (uint256 taxDue)
-  {
+  function taxSinceTransfer(uint256 _tokenId) public view returns (uint256) {
     uint256 lastCollectionTime = lastCollectionTimes[_tokenId];
     uint256 lastTransferTime = lastTransferTimes[_tokenId];
     if (lastCollectionTime > lastTransferTime) {
@@ -320,8 +316,8 @@ contract PartialCommonOwnership721 is ERC721 {
 
   /// @notice Collects tax.
   /// @param _tokenId ID of token to collect tax for.
-  /// @dev Strictly envoked by modifier.
-  function _collectTax(uint256 _tokenId) private {
+  /// @dev Strictly envoked by modifier but can be called publically.
+  function _collectTax(uint256 _tokenId) public {
     uint256 price = _price(_tokenId);
     if (price != 0) {
       // If price > 0, contract has not foreclosed.
