@@ -19,10 +19,11 @@ struct TitleTransferEvent {
 
 /// @title PartialCommonOwnership721
 /// @author Simon de la Rouviere, Will Holley
-/// @notice Extends the ERC721 standard by requiring tax payments from the token's current owner
-/// using a Harberger Tax model; if payments are not made, the token is claimable by anybody for free.
-/// @dev This code was originally forked from ThisArtworkIsAlwaysOnSale's `v2_contracts/ArtSteward.sol` contract.
-/// by Simon de la Rouviere.
+/// @notice Extends the ERC721 standard by requiring tax payments from a token's current owner
+/// using a Harberger Tax model; if payments are not made, the token is repossessed by the contract
+/// and can be repurchased at any price > 0.
+/// @dev This code was originally forked from ThisArtworkIsAlwaysOnSale's `v2_contracts/ArtSteward.sol`
+/// contract by Simon de la Rouviere.
 contract PartialCommonOwnership721 is ERC721 {
   using SafeMath for uint256;
 
@@ -465,8 +466,8 @@ contract PartialCommonOwnership721 is ERC721 {
     uint256 price = prices[_tokenId];
     require(_newPrice > 0, "New price cannot be zero");
     require(_newPrice != price, "New price cannot be same");
-    price = _newPrice;
-    emit LogPriceChange(_tokenId, price);
+    prices[_tokenId] = _newPrice;
+    emit LogPriceChange(_tokenId, _newPrice);
   }
 
   /// @notice Enables owner to withdraw some amount of their deposit.
