@@ -821,6 +821,24 @@ describe("PartialCommonOwnership721", async () => {
           contractAsAlice.signer.address
         );
       });
+      it("Owner prior to foreclosure re-purchases", async () => {
+        const token = TOKENS.ONE;
+        await contractAsAlice.buy(token, ETH1, ETH0, {
+          value: ETH2,
+        });
+
+        // Exhaust deposit
+        await time.increase(time.duration.days(366));
+
+        // Buy out of foreclosure
+        await contractAsAlice.buy(token, ETH1, ETH0, {
+          value: ETH2,
+        });
+
+        expect(await contract.ownerOf(token)).to.equal(
+          contractAsAlice.signer.address
+        );
+      });
       it("Updating chain of title", async () => {
         const token = TOKENS.ONE;
         const trx1 = await contractAsBob.buy(token, ETH1, ETH0, {
@@ -898,7 +916,7 @@ describe("PartialCommonOwnership721", async () => {
       });
     });
     context("succeeds", async () => {
-      it("owner can change price", async () => {
+      it("owner can change price to more", async () => {
         const token = TOKENS.ONE;
         await contractAsAlice.buy(token, ETH1, ETH0, {
           value: ETH2,
@@ -909,6 +927,19 @@ describe("PartialCommonOwnership721", async () => {
           .withArgs(TOKENS.ONE, ETH2);
 
         expect(await contract.priceOf(token)).to.equal(ETH2);
+      });
+
+      it("owner can change price to less", async () => {
+        const token = TOKENS.ONE;
+        await contractAsAlice.buy(token, ETH2, ETH0, {
+          value: ETH3,
+        });
+
+        expect(await contractAsAlice.changePrice(token, ETH1))
+          .to.emit(contract, Events.PRICE_CHANGE)
+          .withArgs(TOKENS.ONE, ETH1);
+
+        expect(await contract.priceOf(token)).to.equal(ETH1);
       });
     });
   });
