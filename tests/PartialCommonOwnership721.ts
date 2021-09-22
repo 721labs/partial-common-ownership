@@ -22,6 +22,7 @@ enum ErrorMessages {
   // Not testing reentrancy lock, currently.
   //LOCKED = "Token is locked",
   CANNOT_WITHDRAW_MORE_THAN_DEPOSITED = "Cannot withdraw more than deposited",
+  NO_OUTSTANDING_REMITTANCE = "No outstanding remittance",
 }
 
 enum TOKENS {
@@ -967,7 +968,17 @@ describe("PartialCommonOwnership721", async () => {
     });
   });
 
-  describe("#withdrawOutstandingRemittance()", async () => {});
+  describe("#withdrawOutstandingRemittance()", async () => {
+    context("fails", async () => {
+      it("when no outstanding remittance", async () => {
+        await expect(
+          contractAsAlice.withdrawOutstandingRemittance()
+        ).to.be.revertedWith(ErrorMessages.NO_OUTSTANDING_REMITTANCE);
+      });
+    });
+    // TODO: Add force buy remittance to fail with a blocker contract.
+    context("succeeds", async () => {});
+  });
 
   describe("#transferToken()", async () => {
     context("fails", async () => {
