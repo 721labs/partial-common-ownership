@@ -51,10 +51,7 @@ const ETH2 = ethers.utils.parseEther("2");
 const ETH3 = ethers.utils.parseEther("3");
 const ETH4 = ethers.utils.parseEther("4");
 
-// for 5% patronage
-// const TenMinDue = ethers.BigNumber.from('951293759512'); // price of 1 ETH
-// const TenMinOneSecDue = ethers.BigNumber.from('952879249112'); // price of 1 ETH
-
+// 100% Tax Rate
 const TenMinDue = ethers.BigNumber.from("19025875190258"); // price of 1 ETH
 const TenMinOneSecDue = ethers.BigNumber.from("19057584982242"); // price of 1 ETH
 const TAX_RATE = 1000000000000; // 100%
@@ -114,6 +111,8 @@ describe("PartialCommonOwnership721", async () => {
   let contractAsBob;
 
   let beneficiaryBalance;
+  let aliceBalance;
+  let bobBalance;
 
   const gasLimit = 9500000; // if gas limit is set, estimateGas isn't run superfluously, slowing tests down.
 
@@ -143,6 +142,9 @@ describe("PartialCommonOwnership721", async () => {
       "wei"
     );
 
+    aliceBalance = await balance.tracker(contractAsAlice.signer.address, "wei");
+    bobBalance = await balance.tracker(contractAsBob.signer.address, "wei");
+
     snapshot = await provider.send("evm_snapshot", []);
   });
 
@@ -154,8 +156,10 @@ describe("PartialCommonOwnership721", async () => {
     await provider.send("evm_revert", [snapshot]);
     snapshot = await provider.send("evm_snapshot", []);
 
-    // Reset beneficiary balance tracker
+    // Reset balance trackers
     await beneficiaryBalance.get();
+    await aliceBalance.get();
+    await bobBalance.get();
   });
 
   //$ Tests
@@ -587,7 +591,7 @@ describe("PartialCommonOwnership721", async () => {
       });
     });
     context("succeeds", async () => {
-      it("Purchasing token for the first-first (from contract)", async () => {
+      it("Purchasing token for the first-time (from contract)", async () => {
         const event = await contractAsAlice.buy(TOKENS.ONE, ETH1, ETH0, {
           value: ETH2,
         });
@@ -611,6 +615,95 @@ describe("PartialCommonOwnership721", async () => {
         expect(
           ethers.BigNumber.from((await beneficiaryBalance.delta()).toString())
         ).to.equal(ETH1);
+      });
+      it("Purchasing token from current owner", async () => {
+        const token = TOKENS.ONE;
+        await contractAsAlice.buy(token, ETH1, ETH0, {
+          value: ETH2,
+        });
+
+        // Baseline Alice's balance
+        await aliceBalance.get();
+
+        await time.increase(time.duration.minutes(10));
+
+        // Get current deposit and tax owed to determine how much will be
+        // collected from Alice's deposit when `#buy()` is called.
+        const depositBefore = await contract.depositOf(token);
+
+        // Deposit - due + 2ETH (from sale)
+        const expectedRemittance = depositBefore.sub(TenMinOneSecDue).add(ETH2);
+
+        // Buy
+        const event = await contractAsBob.buy(token, ETH2, ETH1, {
+          value: ETH3,
+        });
+
+        // Buy Event emitted
+        expect(event)
+          .to.emit(contract, Events.BUY)
+          .withArgs(token, contractAsBob.signer.address, ETH2);
+
+        // Remittance Event emitted
+        expect(event)
+          .to.emit(contract, Events.REMITTANCE)
+          .withArgs(token, contractAsAlice.signer.address, expectedRemittance);
+
+        // Deposit updated
+        expect(await contract.depositOf(token)).to.equal(ETH1);
+
+        // Price updated
+        expect(await contract.priceOf(token)).to.equal(ETH2);
+
+        // Owned updated
+        expect(await contract.ownerOf(token)).to.equal(
+          contractAsBob.signer.address
+        );
+
+        // Alice's balance should reflect received remittance
+        expect(
+          ethers.BigNumber.from((await aliceBalance.delta()).toString())
+        ).to.equal(expectedRemittance);
+      });
+      it("Purchasing token from foreclosure", async () => {
+        const token = TOKENS.ONE;
+        await contractAsAlice.buy(token, ETH1, ETH0, {
+          value: ETH2,
+        });
+
+        // Exhaust deposit
+        await time.increase(time.duration.days(366));
+
+        // Buy out of foreclosure
+        await contractAsBob.buy(token, ETH1, ETH0, {
+          value: ETH2,
+        });
+
+        expect(await contract.ownerOf(token)).to.equal(
+          contractAsBob.signer.address
+        );
+      });
+      it("Purchasing token from current owner who purchased from foreclosure", async () => {
+        const token = TOKENS.ONE;
+        await contractAsAlice.buy(token, ETH1, ETH0, {
+          value: ETH2,
+        });
+
+        // Exhaust deposit
+        await time.increase(time.duration.days(366));
+
+        // Buy out of foreclosure
+        await contractAsBob.buy(token, ETH1, ETH0, {
+          value: ETH2,
+        });
+
+        await contractAsAlice.buy(token, ETH2, ETH1, {
+          value: ETH3,
+        });
+
+        expect(await contract.ownerOf(token)).to.equal(
+          contractAsAlice.signer.address
+        );
       });
     });
   });
