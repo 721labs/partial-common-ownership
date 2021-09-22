@@ -461,9 +461,41 @@ describe("PartialCommonOwnership721", async () => {
             due
           );
         });
-        // TODO: After `#foreclosed()`
-        it("when foreclosed", async () => {});
-        it("after purchase from foreclosure", async () => {});
+        it("when foreclosed", async () => {
+          const token = TOKENS.ONE;
+          await contractAsAlice.buy(token, ETH1, ETH0, { value: ETH2 });
+          await time.increase(time.duration.days(366));
+          expect(await contract.foreclosed(token)).to.equal(true);
+          await time.increase(time.duration.days(1));
+          expect(await contract.taxCollectedSinceLastTransfer(token)).to.equal(
+            0
+          );
+        });
+        it("after purchase from foreclosure", async () => {
+          const token = TOKENS.ONE;
+          await contractAsAlice.buy(token, ETH1, ETH0, { value: ETH2 });
+
+          await time.increase(time.duration.days(366));
+          expect(await contract.foreclosed(token)).to.equal(true);
+
+          await time.increase(time.duration.days(1));
+          // Purchase out of foreclosure
+          await contractAsBob.buy(token, ETH1, ETH0, {
+            value: ETH2,
+          });
+
+          const before = await now();
+
+          await time.increase(time.duration.minutes(1));
+
+          await contract._collectTax(token);
+
+          const due = getTaxDue(ETH1, await now(), before);
+
+          expect(await contract.taxCollectedSinceLastTransfer(token)).to.equal(
+            due
+          );
+        });
       });
     });
   });
