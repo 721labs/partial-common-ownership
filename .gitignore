@@ -1,6 +1,7 @@
 #Hardhat files
 cache
 artifacts
+bin
 
 # Dependencies
 node_modules
