@@ -25,7 +25,7 @@ import "./PartialCommonOwnership721.sol";
 contract YourToken is PartialCommonOwnership721 {
   constructor()
     PartialCommonOwnership721(
-      "Your Token",
+      "YourToken",
       "TOKEN",
       payable(msg.sender),
       1000000000000
