@@ -18,7 +18,7 @@ enum ErrorMessages {
   NONEXISTENT_TOKEN = "ERC721: owner query for nonexistent token",
   NEW_PRICE_ZERO = "New price cannot be zero",
   NEW_PRICE_SAME = "New price cannot be same",
-  NO_FUTURE = "Time must be in the past",
+  REQUIRES_PAST = "Time must be in the past",
   // Not testing reentrancy lock, currently.
   //LOCKED = "Token is locked",
 }
@@ -421,7 +421,7 @@ describe("PartialCommonOwnership721", async () => {
       it("Time must be in the past", async () => {
         await expect(
           contract.taxOwedSince(TOKENS.ONE, await now())
-        ).to.revertedWith(ErrorMessages.NO_FUTURE);
+        ).to.revertedWith(ErrorMessages.REQUIRES_PAST);
       });
     });
     context("succeeds", async () => {
