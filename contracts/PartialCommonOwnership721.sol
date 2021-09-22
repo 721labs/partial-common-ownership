@@ -4,7 +4,6 @@ pragma solidity 0.8.7;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "hardhat/console.sol";
 
 struct TitleTransferEvent {
   /// @notice From address.
@@ -592,5 +591,38 @@ contract PartialCommonOwnership721 is ERC721 {
     chainOfTitle[_tokenId].push(transferEvent);
 
     lastTransferTimes[_tokenId] = block.timestamp;
+  }
+
+  /**
+   * Override ERC721 public transfer methods to ensure that purchasing and
+   * foreclosure are the only way tokens can transfer possession.
+   */
+
+  /// @dev Override to make effectively-private.
+  function transferFrom(
+    address from,
+    address to,
+    uint256 tokenId
+  ) public pure override {
+    revert("Transfers may only occur via purchase/foreclosure");
+  }
+
+  /// @dev Override to make effectively-private.
+  function safeTransferFrom(
+    address from,
+    address to,
+    uint256 tokenId
+  ) public pure override {
+    revert("Transfers may only occur via purchase/foreclosure");
+  }
+
+  /// @dev Override to make effectively-private.
+  function safeTransferFrom(
+    address from,
+    address to,
+    uint256 tokenId,
+    bytes memory _data
+  ) public pure override {
+    revert("Transfers may only occur via purchase/foreclosure");
   }
 }

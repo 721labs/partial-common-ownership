@@ -23,6 +23,7 @@ enum ErrorMessages {
   //LOCKED = "Token is locked",
   CANNOT_WITHDRAW_MORE_THAN_DEPOSITED = "Cannot withdraw more than deposited",
   NO_OUTSTANDING_REMITTANCE = "No outstanding remittance",
+  PROHIBITED_TRANSFER_METHOD = "Transfers may only occur via purchase/foreclosure",
 }
 
 enum TOKENS {
@@ -171,6 +172,39 @@ describe("PartialCommonOwnership721", async () => {
       expect(await contract.ownerOf(TOKENS.ONE)).to.equal(contractAddress);
       expect(await contract.ownerOf(TOKENS.TWO)).to.equal(contractAddress);
       expect(await contract.ownerOf(TOKENS.THREE)).to.equal(contractAddress);
+    });
+  });
+
+  describe("Prevent non-buy/foreclosure (i.e. ERC721) transfers", async () => {
+    context("fails", async () => {
+      it("#transferFrom()", async () => {
+        await expect(
+          contract.transferFrom(
+            contractAddress,
+            contractAsAlice.signer.address,
+            TOKENS.ONE
+          )
+        ).to.be.revertedWith(ErrorMessages.PROHIBITED_TRANSFER_METHOD);
+      });
+
+      it("#safeTransferFrom()", async () => {
+        await expect(
+          contract.functions["safeTransferFrom(address,address,uint256)"](
+            contractAddress,
+            contractAsAlice.signer.address,
+            TOKENS.ONE
+          )
+        ).to.be.revertedWith(ErrorMessages.PROHIBITED_TRANSFER_METHOD);
+
+        await expect(
+          contract.functions["safeTransferFrom(address,address,uint256,bytes)"](
+            contractAddress,
+            contractAsAlice.signer.address,
+            TOKENS.ONE,
+            0x0
+          )
+        ).to.be.revertedWith(ErrorMessages.PROHIBITED_TRANSFER_METHOD);
+      });
     });
   });
 
