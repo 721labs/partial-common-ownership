@@ -425,6 +425,11 @@ describe("PartialCommonOwnership721", async () => {
       });
     });
     context("succeeds", async () => {
+      it("Returns zero if no purchase", async () => {
+        expect(
+          await contract.taxOwedSince(TOKENS.ONE, (await now()).sub(1))
+        ).to.equal(0);
+      });
       it("Returns correct amount", async () => {
         const token = TOKENS.ONE;
         const price = ETH1;
