@@ -205,7 +205,7 @@ contract PartialCommonOwnership721 is ERC721 {
   /// @notice How much is owed from the last collection until now?
   /// @param _tokenId ID of token requesting amount for.
   /// @return Tax Due in wei
-  function taxOwed(uint256 _tokenId) public view returns (uint256) {
+  function _taxOwed(uint256 _tokenId) private view returns (uint256) {
     uint256 price = _price(_tokenId);
     return
       price
@@ -233,16 +233,17 @@ contract PartialCommonOwnership721 is ERC721 {
       );
   }
 
-  /// @notice Returns the tax owed with the current time.
+  /// @notice Public method for the tax owed. Returns with the current time.
+  /// for use calculating expected tax obligations.
   /// @param _tokenId ID of token requesting amount for.
   /// @return taxDue Tax Due in Wei.
   /// @return timestamp Now as Unix timestamp.
-  function taxOwedWithTimestamp(uint256 _tokenId)
+  function taxOwed(uint256 _tokenId)
     public
     view
     returns (uint256 taxDue, uint256 timestamp)
   {
-    return (taxOwed(_tokenId), block.timestamp);
+    return (_taxOwed(_tokenId), block.timestamp);
   }
 
   /// @notice How much taxation has been collected since the last purchase?
@@ -270,7 +271,7 @@ contract PartialCommonOwnership721 is ERC721 {
   /// @param _tokenId ID of token requesting foreclosure status for.
   /// @return Returns boolean indicating whether or not the contract is foreclosed.
   function foreclosed(uint256 _tokenId) public view returns (bool) {
-    uint256 owed = taxOwed(_tokenId);
+    uint256 owed = _taxOwed(_tokenId);
     if (owed >= deposits[_tokenId]) {
       return true;
     } else {
@@ -283,7 +284,7 @@ contract PartialCommonOwnership721 is ERC721 {
   /// @param _tokenId ID of token requesting withdrawable deposit for.
   /// @return amount in Wei.
   function withdrawableDeposit(uint256 _tokenId) public view returns (uint256) {
-    uint256 owed = taxOwed(_tokenId);
+    uint256 owed = _taxOwed(_tokenId);
     uint256 deposit = deposits[_tokenId];
     if (owed >= deposit) {
       return 0;
@@ -307,7 +308,7 @@ contract PartialCommonOwnership721 is ERC721 {
     } else if (taxPerSecond > 0) {
       // Token is active but in foreclosure state;
       // time <= block.timestamp.
-      uint256 owed = taxOwed(_tokenId);
+      uint256 owed = _taxOwed(_tokenId);
       return
         lastCollectionTimes[_tokenId].add(
           (
@@ -329,7 +330,7 @@ contract PartialCommonOwnership721 is ERC721 {
     uint256 price = _price(_tokenId);
     if (price != 0) {
       // If price > 0, contract has not foreclosed.
-      uint256 owed = taxOwed(_tokenId);
+      uint256 owed = _taxOwed(_tokenId);
       uint256 deposit = deposits[_tokenId];
 
       // If foreclosure should have occured in the past, last collection time will be

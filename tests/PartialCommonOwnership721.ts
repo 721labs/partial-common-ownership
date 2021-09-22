@@ -384,7 +384,7 @@ describe("PartialCommonOwnership721", async () => {
         const lastCollectionTime = await contract.lastCollectionTimes(token);
         await time.increase(1);
 
-        const owed = await contract.taxOwedWithTimestamp(token);
+        const owed = await contract.taxOwed(token);
 
         const due = getTaxDue(ETH1, owed.timestamp, lastCollectionTime);
 
@@ -403,7 +403,7 @@ describe("PartialCommonOwnership721", async () => {
       const lastCollectionTime = await contract.lastCollectionTimes(token);
       await time.increase(time.duration.days(365));
 
-      const owed = await contract.taxOwedWithTimestamp(token);
+      const owed = await contract.taxOwed(token);
 
       const due = getTaxDue(ETH1, owed.timestamp, lastCollectionTime);
       expect(due).to.equal(ETH1); // Ensure that the helper util is correct
@@ -413,8 +413,6 @@ describe("PartialCommonOwnership721", async () => {
   });
 
   describe("#taxOwedSince()", async () => {});
-
-  describe("#taxOwedWithTimestamp()", async () => {});
 
   describe("#taxCollectedSinceLastTransfer()", async () => {
     context("fails", async () => {});
