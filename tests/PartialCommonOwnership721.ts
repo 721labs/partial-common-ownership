@@ -468,7 +468,23 @@ describe("PartialCommonOwnership721", async () => {
     });
   });
 
-  describe("#foreclosed()", async () => {});
+  describe("#foreclosed()", async () => {
+    context("fails", async () => {});
+    context("succeeds", async () => {
+      it("true positive", async () => {
+        const token = TOKENS.ONE;
+        await contractAsAlice.buy(token, ETH1, ETH0, { value: ETH2 });
+        await time.increase(time.duration.days(366)); // Entire deposit will be exceeded after 1yr
+        expect(await contract.foreclosed(token)).to.equal(true);
+      });
+      it("true negative", async () => {
+        const token = TOKENS.ONE;
+        await contractAsAlice.buy(token, ETH1, ETH0, { value: ETH2 });
+        await time.increase(time.duration.minutes(1));
+        expect(await contract.foreclosed(token)).to.equal(false);
+      });
+    });
+  });
 
   describe("#withdrawableDeposit()", async () => {});
 
