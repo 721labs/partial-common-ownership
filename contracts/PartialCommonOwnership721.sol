@@ -12,7 +12,7 @@ struct TitleTransferEvent {
   /// @notice To address.
   address to;
   /// @notice Unix timestamp.
-  uint256 at;
+  uint256 timestamp;
   /// @notice Price in Wei
   uint256 price;
 }
@@ -110,7 +110,7 @@ contract PartialCommonOwnership721 is ERC721 {
 
   /// @notice Mapping from token ID to array of transfer events.
   /// @dev This includes foreclosures.
-  mapping(uint256 => TitleTransferEvent[]) public chainOfTitle;
+  mapping(uint256 => TitleTransferEvent[]) private chainOfTitle;
 
   /// @notice  Percentage taxation rate. e.g. 5% or 100%
   /// @dev Granular to an additionial 10 zeroes.
@@ -169,6 +169,15 @@ contract PartialCommonOwnership721 is ERC721 {
   /// @return Percentage taxation rate
   function taxRate() public view returns (uint256) {
     return taxNumerator;
+  }
+
+  function titleChainOf(uint256 _tokenId)
+    public
+    view
+    tokenMinted(_tokenId)
+    returns (TitleTransferEvent[] memory)
+  {
+    return chainOfTitle[_tokenId];
   }
 
   /**

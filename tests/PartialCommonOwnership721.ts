@@ -773,8 +773,33 @@ describe("PartialCommonOwnership721", async () => {
           contractAsAlice.signer.address
         );
       });
-      // TODO:
-      it("Updating chain of title", async () => {});
+      it("Updating chain of title", async () => {
+        const token = TOKENS.ONE;
+        const trx1 = await contractAsBob.buy(token, ETH1, ETH0, {
+          value: ETH2,
+        });
+        const block1 = await provider.getBlock(trx1.blockNumber);
+
+        const trx2 = await contractAsAlice.buy(token, ETH2, ETH1, {
+          value: ETH3,
+        });
+        const block2 = await provider.getBlock(trx2.blockNumber);
+
+        const chainOfTitle = await contract.titleChainOf(token);
+
+        expect(chainOfTitle[0].from).to.equal(contractAddress);
+        expect(chainOfTitle[0].to).to.equal(contractAsBob.signer.address);
+        expect(chainOfTitle[0].price).to.equal(ETH1);
+        expect(chainOfTitle[0].timestamp).to.equal(
+          ethers.BigNumber.from(block1.timestamp)
+        );
+        expect(chainOfTitle[1].from).to.equal(contractAsBob.signer.address);
+        expect(chainOfTitle[1].to).to.equal(contractAsAlice.signer.address);
+        expect(chainOfTitle[1].price).to.equal(ETH2);
+        expect(chainOfTitle[1].timestamp).to.equal(
+          ethers.BigNumber.from(block2.timestamp)
+        );
+      });
     });
   });
 
