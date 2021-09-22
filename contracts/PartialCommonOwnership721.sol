@@ -74,6 +74,11 @@ contract PartialCommonOwnership721 is ERC721 {
     uint256 indexed amount
   );
 
+  /// @notice Alert deposit withdrawn.
+  /// @param tokenId ID of token deposit.
+  /// @param amount Amount withdrawn in Wei.
+  event LogDepositWithdrawal(uint256 indexed tokenId, uint256 indexed amount);
+
   /// @notice Single (for now) beneficiary of tax payments.
   address payable public beneficiary;
 
@@ -533,6 +538,8 @@ contract PartialCommonOwnership721 is ERC721 {
 
     deposits[_tokenId] = deposit.sub(_wei);
     payable(msg.sender).transfer(_wei);
+
+    emit LogDepositWithdrawal(_tokenId, _wei);
 
     _forecloseIfNecessary(_tokenId);
   }
