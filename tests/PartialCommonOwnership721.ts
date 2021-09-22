@@ -392,7 +392,7 @@ describe("PartialCommonOwnership721", async () => {
 
         const due = getTaxDue(ETH1, owed.timestamp, lastCollectionTime);
 
-        expect(owed.taxDue).to.equal(due);
+        expect(owed.amount).to.equal(due);
       });
     });
 
@@ -411,8 +411,8 @@ describe("PartialCommonOwnership721", async () => {
 
       const due = getTaxDue(ETH1, owed.timestamp, lastCollectionTime);
       expect(due).to.equal(ETH1); // Ensure that the helper util is correct
-      expect(owed.taxDue).to.equal(due);
-      expect(owed.taxDue).to.equal(ETH1); // 100% over 365 days
+      expect(owed.amount).to.equal(due);
+      expect(owed.amount).to.equal(ETH1); // 100% over 365 days
     });
   });
 
@@ -556,7 +556,34 @@ describe("PartialCommonOwnership721", async () => {
     });
   });
 
-  describe("#withdrawableDeposit()", async () => {});
+  describe("#withdrawableDeposit()", async () => {
+    context("fails", async () => {});
+    context("succeeds", async () => {
+      it("Returns zero when owed >= deposit", async () => {
+        const token = TOKENS.ONE;
+        await contractAsAlice.buy(token, ETH1, ETH0, {
+          value: ETH2,
+        });
+        // Exhaust deposit
+        await time.increase(time.duration.days(366));
+
+        expect(await contract.withdrawableDeposit(token)).to.equal(0);
+      });
+      it("Returns (deposit - owed) when owed < deposit", async () => {
+        const token = TOKENS.ONE;
+        await contractAsAlice.buy(token, ETH1, ETH0, {
+          value: ETH2,
+        });
+
+        await time.increase(time.duration.days(1));
+        const owed = await contract.taxOwed(token);
+
+        expect(await contract.withdrawableDeposit(token)).to.equal(
+          ETH1.sub(owed.amount)
+        );
+      });
+    });
+  });
 
   describe("#foreclosureTime()", async () => {});
 
