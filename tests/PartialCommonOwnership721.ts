@@ -21,6 +21,7 @@ enum ErrorMessages {
   REQUIRES_PAST = "Time must be in the past",
   // Not testing reentrancy lock, currently.
   //LOCKED = "Token is locked",
+  CANNOT_WITHDRAW_MORE_THAN_DEPOSITED = "Cannot withdraw more than deposited",
 }
 
 enum TOKENS {
@@ -37,6 +38,7 @@ enum Events {
   COLLECTION = "LogCollection",
   BENEFICIARY_REMITTANCE = "LogBeneficiaryRemittance",
   REMITTANCE = "LogRemittance",
+  DEPOSIT_WITHDRAWAL = "LogDepositWithdrawal",
 }
 
 //$ Constants
@@ -770,6 +772,8 @@ describe("PartialCommonOwnership721", async () => {
           contractAsAlice.signer.address
         );
       });
+      // TODO:
+      it("Updating chain of title", async () => {});
     });
   });
 
@@ -835,9 +839,133 @@ describe("PartialCommonOwnership721", async () => {
     });
   });
 
-  describe("#withdrawDeposit()", async () => {});
+  describe("#withdrawDeposit()", async () => {
+    context("fails", async () => {
+      it("Non-owner", async () => {
+        await expect(
+          contractAsAlice.withdrawDeposit(TOKENS.ONE, 10)
+        ).to.be.revertedWith(ErrorMessages.ONLY_OWNER);
+      });
 
-  describe("#exit()", async () => {});
+      it("Cannot withdraw more than deposited", async () => {
+        const token = TOKENS.ONE;
+        await contractAsAlice.buy(token, ETH1, ETH0, {
+          value: ETH2,
+        });
+
+        await expect(
+          contractAsAlice.withdrawDeposit(token, ETH2)
+        ).to.be.revertedWith(ErrorMessages.CANNOT_WITHDRAW_MORE_THAN_DEPOSITED);
+      });
+    });
+
+    context("succeeds", async () => {
+      it("Withdraws expected amount", async () => {
+        const token = TOKENS.ONE;
+        const price = ETH1;
+        await contractAsAlice.buy(token, price, ETH0, {
+          value: ETH3,
+        });
+
+        expect(await contract.depositOf(token)).to.equal(ETH2);
+
+        // Baseline Alice's balance
+        await aliceBalance.get();
+
+        // Necessary to determine tax due on exit
+        const lastCollectionTime = await contract.lastCollectionTimes(token);
+
+        const trx = await contractAsAlice.withdrawDeposit(token, ETH1);
+        const { timestamp } = await provider.getBlock(trx.blockNumber);
+
+        // Emits
+        expect(trx)
+          .to.emit(contract, Events.DEPOSIT_WITHDRAWAL)
+          .withArgs(token, ETH1);
+
+        // current deposit - tax on exit
+        const taxedAmt = getTaxDue(
+          price,
+          ethers.BigNumber.from(timestamp),
+          lastCollectionTime
+        );
+
+        // Deposit should be 1 ETH - taxed amount.
+        expect(await contract.depositOf(token)).to.equal(ETH1.sub(taxedAmt));
+
+        // Alice's balance should reflect returned deposit [1 ETH] minus fees
+        const { delta, fees } = await aliceBalance.deltaWithFees();
+
+        const expectedRemittanceMinusGas = ETH1.sub(
+          ethers.BigNumber.from(fees.toString())
+        );
+
+        expect(ethers.BigNumber.from(delta.toString())).to.equal(
+          expectedRemittanceMinusGas
+        );
+      });
+    });
+  });
+
+  describe("#exit()", async () => {
+    context("fails", async () => {
+      it("Non-owner", async () => {
+        await expect(
+          contractAsAlice.withdrawDeposit(TOKENS.ONE, 10)
+        ).to.be.revertedWith(ErrorMessages.ONLY_OWNER);
+      });
+    });
+
+    context("succeeds", async () => {
+      it("Withdraws entire deposit", async () => {
+        const token = TOKENS.ONE;
+
+        await contractAsAlice.buy(token, ETH1, ETH0, {
+          value: ETH2,
+        });
+
+        // Baseline Alice's balance
+        await aliceBalance.get();
+
+        // Determine tax due on exit
+        const lastCollectionTime = await contract.lastCollectionTimes(token);
+
+        const trx = await contractAsAlice.exit(token);
+        const { timestamp } = await provider.getBlock(trx.blockNumber);
+
+        // current deposit - tax on exit
+        const taxedAmt = getTaxDue(
+          ETH1,
+          ethers.BigNumber.from(timestamp),
+          lastCollectionTime
+        );
+
+        const expectedRemittance = ETH1.sub(taxedAmt);
+
+        // Emits
+        expect(trx)
+          .to.emit(contract, Events.DEPOSIT_WITHDRAWAL)
+          .withArgs(token, expectedRemittance);
+
+        // Alice's balance should reflect returned deposit minus fees
+        const { delta, fees } = await aliceBalance.deltaWithFees();
+
+        const expectedRemittanceMinusGas = expectedRemittance.sub(
+          ethers.BigNumber.from(fees.toString())
+        );
+
+        expect(ethers.BigNumber.from(delta.toString())).to.equal(
+          expectedRemittanceMinusGas
+        );
+
+        // Deposit should be zero
+        expect(await contract.depositOf(token)).to.equal(0);
+
+        // Token should foreclose
+        expect(await contract.priceOf(token)).to.equal(0);
+      });
+    });
+  });
 
   describe("#withdrawOutstandingRemittance()", async () => {});
 
