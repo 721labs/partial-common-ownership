@@ -237,12 +237,12 @@ contract PartialCommonOwnership721 is ERC721 {
   /// @notice Public method for the tax owed. Returns with the current time.
   /// for use calculating expected tax obligations.
   /// @param _tokenId ID of token requesting amount for.
-  /// @return taxDue Tax Due in Wei.
+  /// @return amount Tax Due in Wei.
   /// @return timestamp Now as Unix timestamp.
   function taxOwed(uint256 _tokenId)
     public
     view
-    returns (uint256 taxDue, uint256 timestamp)
+    returns (uint256 amount, uint256 timestamp)
   {
     return (_taxOwed(_tokenId), block.timestamp);
   }
