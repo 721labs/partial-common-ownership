@@ -674,10 +674,14 @@ describe("PartialCommonOwnership721", async () => {
         // Exhaust deposit
         await time.increase(time.duration.days(366));
 
-        // Buy out of foreclosure
-        await contractAsBob.buy(token, ETH1, ETH0, {
-          value: ETH2,
-        });
+        // Trigger foreclosure & buy it out of foreclosure
+        expect(
+          await contractAsBob.buy(token, ETH1, ETH0, {
+            value: ETH2,
+          })
+        )
+          .to.emit(contract, Events.FORECLOSURE)
+          .withArgs(token, contractAsAlice.signer.address);
 
         expect(await contract.ownerOf(token)).to.equal(
           contractAsBob.signer.address
