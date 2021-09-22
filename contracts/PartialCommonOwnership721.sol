@@ -223,6 +223,7 @@ contract PartialCommonOwnership721 is ERC721 {
   function taxOwedSince(uint256 _tokenId, uint256 _time)
     public
     view
+    tokenMinted(_tokenId)
     returns (uint256 taxDue)
   {
     require(_time < block.timestamp, "Time must be in the past");

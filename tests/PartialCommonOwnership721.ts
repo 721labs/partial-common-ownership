@@ -18,6 +18,7 @@ enum ErrorMessages {
   NONEXISTENT_TOKEN = "ERC721: owner query for nonexistent token",
   NEW_PRICE_ZERO = "New price cannot be zero",
   NEW_PRICE_SAME = "New price cannot be same",
+  NO_FUTURE = "Time must be in the past",
   // Not testing reentrancy lock, currently.
   //LOCKED = "Token is locked",
 }
@@ -56,6 +57,10 @@ const TenMinDue = ethers.BigNumber.from("19025875190258"); // price of 1 ETH
 const TenMinOneSecDue = ethers.BigNumber.from("19057584982242"); // price of 1 ETH
 const TAX_RATE = 1000000000000; // 100%
 
+const TAX_NUMERATOR = ethers.BigNumber.from(TAX_RATE);
+const TAX_DENOMINATOR = ethers.BigNumber.from("1000000000000");
+const TAXATION_PERIOD = ethers.BigNumber.from("31536000");
+
 //$ Helper Functions
 
 /**
@@ -84,15 +89,9 @@ function getTaxDue(
     .mul(
       now.sub(lastCollectionTime) // time since last collection
     )
-    .mul(
-      ethers.BigNumber.from(TAX_RATE) // numerator
-    )
-    .div(
-      ethers.BigNumber.from("1000000000000") // denominator
-    )
-    .div(
-      ethers.BigNumber.from("31536000") // 365 days;
-    );
+    .mul(TAX_NUMERATOR)
+    .div(TAX_DENOMINATOR)
+    .div(TAXATION_PERIOD);
 }
 
 //$ Tests
@@ -342,6 +341,11 @@ describe("PartialCommonOwnership721", async () => {
             contract.buy(INVALID_TOKEN_ID, ETH0, ETH0, { value: ETH0 })
           ).to.be.revertedWith(ErrorMessages.NONEXISTENT_TOKEN);
         });
+        it("#taxOwedSince()", async () => {
+          await expect(
+            contract.taxOwedSince(INVALID_TOKEN_ID, await now())
+          ).to.be.revertedWith(ErrorMessages.NONEXISTENT_TOKEN);
+        });
       });
     });
   });
@@ -412,7 +416,34 @@ describe("PartialCommonOwnership721", async () => {
     });
   });
 
-  describe("#taxOwedSince()", async () => {});
+  describe("#taxOwedSince()", async () => {
+    context("fails", async () => {
+      it("Time must be in the past", async () => {
+        await expect(
+          contract.taxOwedSince(TOKENS.ONE, await now())
+        ).to.revertedWith(ErrorMessages.NO_FUTURE);
+      });
+    });
+    context("succeeds", async () => {
+      it("Returns correct amount", async () => {
+        const token = TOKENS.ONE;
+        const price = ETH1;
+        await contractAsAlice.buy(token, price, ETH0, {
+          value: ETH2,
+        });
+
+        const time = (await now()).sub(1);
+
+        const expected = price
+          .mul(time)
+          .mul(TAX_NUMERATOR)
+          .div(TAX_DENOMINATOR)
+          .div(TAXATION_PERIOD);
+
+        expect(await contract.taxOwedSince(token, time)).to.equal(expected);
+      });
+    });
+  });
 
   describe("#taxCollectedSinceLastTransfer()", async () => {
     context("fails", async () => {});
