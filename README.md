@@ -62,4 +62,4 @@ Please report any security issues you find in [Issues](https://github.com/721lab
 
 ## License
 
-721 Labs' Partial Common Ownership is released under the [MIT License](LICENSE).
+721 Labs' _Partial Common Ownership Tokens_ is released under the [MIT License](LICENSE).
