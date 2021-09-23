@@ -1,4 +1,4 @@
-// contracts/PartialCommonOwnership.sol
+// contracts/PartialCommonOwnership721.sol
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.7;
 
