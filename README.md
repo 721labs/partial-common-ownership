@@ -21,7 +21,7 @@ To learn more, see:
 ## Installation
 
 ```console
-$ yarn install
+$ ./scripts/install.sh
 ```
 
 ## Usage
