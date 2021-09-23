@@ -4,15 +4,27 @@
 
 ## Overview
 
-**Adding [Partial Common Ownership](https://www.radicalxchange.org/concepts/partial-common-ownership/) to the ERC721 Token Standard.** Enable a new way of managing ERC721 tokens that is "fairer and more efficient than those under capitalism or communism."
+This project aims to establish a standard, open source implementation of Partial Common Ownership for ERC721, ERC1155 and future non-fungible tokens.  It builds upon work done by RadicalxChange, Simon de la Rouviere, and others.
 
-### Installation
+### Partial Common Ownership
+
+> Partial common ownership is a new way of managing assets that is fairer and more efficient than those under capitalism or communism.
+>
+> In partial common ownership systems (also known under the acronyms COST and SALSA), assets belong to no one and everyone. An asset’s current possessor, must self-assess and declare its value. Based on the self-assessed value, they pay a fee, which can be used to fund public goods, or distributed as a social dividend. If somebody bids more for that asset, current possessors sell it for their self-assessed value, resulting in more benefits for the public. [RadicalxChange](https://www.radicalxchange.org/concepts/partial-common-ownership/)
+
+To learn more, see:
+
+- [Educational Resources](https://www.radicalxchange.org/concepts/partial-common-ownership/)
+- [RadicalxChange](https://www.radicalxchange.org/)
+- [This Artwork Is Always On Sale](https://thisartworkisalwaysonsale.com/)
+
+## Installation
 
 ```console
 $ yarn install
 ```
 
-### Usage
+## Usage
 
 Once installed, you can use the contracts by importing and inheriting from them:
 
@@ -46,7 +58,6 @@ Please report any security issues you find in [Issues](https://github.com/721lab
 
 ## Authors
 
-- [Simon de la Rouviere](https://twitter.com/simondlr)
 - [Will Holley](https://twitter.com/waholleyiv)
 
 ## License
