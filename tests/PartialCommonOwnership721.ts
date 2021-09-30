@@ -57,8 +57,10 @@ const ETH3 = ethers.utils.parseEther("3");
 const ETH4 = ethers.utils.parseEther("4");
 
 // 100% Tax Rate
-const TenMinDue = ethers.BigNumber.from("19025875190258"); // price of 1 ETH
-const TenMinOneSecDue = ethers.BigNumber.from("19057584982242"); // price of 1 ETH
+const AnnualTenMinDue = ethers.BigNumber.from("19025875190258"); // price of 1 ETH
+const AnnualTenMinOneSecDue = ethers.BigNumber.from("19057584982242"); // price of 1 ETH
+const MonthlyTenMinDue = ethers.BigNumber.from("231481481481481"); // price of 1 ETH
+const MonthlyTenMinOneSecDue = ethers.BigNumber.from("231867283950617"); // price of 1 ETH
 const TAX_RATE = 1000000000000; // 100%
 
 const TAX_NUMERATOR = ethers.BigNumber.from(TAX_RATE);
@@ -81,7 +83,7 @@ async function now(): Promise<BigNumber> {
  * @returns Period, as BigNumber, in seconds.
  */
 function taxationPeriodToSeconds(period: number): ethers.BigNumber {
-  return ethers.BigNumber.from(period * 86400);
+  return ethers.BigNumber.from(period * 86400); // 86,400 seconds in a day
 }
 
 /**
@@ -113,6 +115,7 @@ describe("PartialCommonOwnership721", async () => {
   let contract;
   let monthlyContract;
   let contractAddress;
+  let monthlyContractAddress;
   let provider;
   let signers;
   let accounts;
@@ -122,10 +125,14 @@ describe("PartialCommonOwnership721", async () => {
   let contractAsBeneficiary;
   let contractAsAlice;
   let contractAsBob;
+  let monthlyContractAsAlice;
+  let monthlyContractAsBob;
 
   let beneficiaryBalance;
   let aliceBalance;
   let bobBalance;
+  let monthlyAliceBalance;
+  let monthlyBobBalance;
 
   const gasLimit = 9500000; // if gas limit is set, estimateGas isn't run superfluously, slowing tests down.
 
@@ -140,10 +147,29 @@ describe("PartialCommonOwnership721", async () => {
 
     const contractFactory = await ethers.getContractFactory("Test721Token");
 
+    //$ monthly
+
     // 30-day taxation period
     monthlyContract = await contractFactory.deploy(accounts[1], 30, {
       gasLimit,
     });
+
+    monthlyContractAddress = monthlyContract.address;
+    expect(monthlyContractAddress).to.not.be.null;
+
+    monthlyContractAsAlice = monthlyContract.connect(signers[2]);
+    monthlyContractAsBob = monthlyContract.connect(signers[3]);
+
+    monthlyAliceBalance = await balance.tracker(
+      monthlyContractAsAlice.signer.address,
+      "wei"
+    );
+    monthlyBobBalance = await balance.tracker(
+      monthlyContractAsBob.signer.address,
+      "wei"
+    );
+
+    //$ annual
 
     // 365-day taxation period
     contract = await contractFactory.deploy(accounts[1], 365, { gasLimit });
@@ -179,6 +205,8 @@ describe("PartialCommonOwnership721", async () => {
     await beneficiaryBalance.get();
     await aliceBalance.get();
     await bobBalance.get();
+    await monthlyAliceBalance.get();
+    await monthlyBobBalance.get();
   });
 
   //$ Tests
@@ -285,6 +313,52 @@ describe("PartialCommonOwnership721", async () => {
   describe("#_collectTax()", async () => {
     context("fails", async () => {});
     context("succeeds", async () => {
+      it("30d: collects after 10m", async () => {
+        const price = ETH1;
+        const token = TOKENS.ONE;
+        await monthlyContractAsAlice.buy(token, price, ETH0, {
+          value: ETH2,
+        });
+
+        // Sanity check & update baseline beneficiary balance
+        expect(
+          ethers.BigNumber.from((await beneficiaryBalance.delta()).toString())
+        ).to.equal(price);
+
+        const timeBefore = await now();
+
+        await time.increase(time.duration.minutes(10));
+
+        const event = await monthlyContract._collectTax(token, { gasLimit });
+
+        const timeAfter = await now();
+        const depositAfter = await monthlyContract.depositOf(token);
+
+        const due = getTaxDue(price, timeAfter, timeBefore, 30);
+
+        // Events emitted
+        expect(event)
+          .to.emit(monthlyContract, Events.COLLECTION)
+          .withArgs(token, due);
+        expect(event)
+          .to.emit(monthlyContract, Events.BENEFICIARY_REMITTANCE)
+          .withArgs(token, due);
+        // Deposit updates
+        expect(depositAfter).to.equal(price.sub(due));
+        // Token collection statistics update
+        expect(await monthlyContract.lastCollectionTimes(token)).to.equal(
+          timeAfter
+        );
+        expect(
+          await monthlyContract.taxCollectedSinceLastTransfer(token)
+        ).to.equal(due);
+        expect(await monthlyContract.taxationCollected(token)).to.equal(due);
+        // Beneficiary is remitted the expected amount
+        expect(
+          ethers.BigNumber.from((await beneficiaryBalance.delta()).toString())
+        ).to.equal(due);
+      });
+
       it("annual: collects after 10m", async () => {
         const price = ETH1;
         const token = TOKENS.ONE;
@@ -322,6 +396,52 @@ describe("PartialCommonOwnership721", async () => {
         );
         expect(await contract.taxationCollected(token)).to.equal(due);
         // Beneficiary is remitted the expected amount
+        expect(
+          ethers.BigNumber.from((await beneficiaryBalance.delta()).toString())
+        ).to.equal(due);
+      });
+
+      it("30d: collects after 10m and subsequently after 10m", async () => {
+        const price = ETH1;
+        const token = TOKENS.ONE;
+        await monthlyContractAsAlice.buy(token, price, ETH0, {
+          value: ETH2,
+        });
+
+        // Baseline the beneficiary balance.
+        await beneficiaryBalance.get();
+
+        const timeBefore = await now();
+        const depositBefore = await monthlyContract.depositOf(token);
+
+        await time.increase(time.duration.minutes(10));
+        await monthlyContract._collectTax(token, { gasLimit });
+
+        const timeAfter10m = await now();
+
+        const due10m = getTaxDue(price, timeAfter10m, timeBefore, 30);
+
+        await time.increase(time.duration.minutes(10));
+        await monthlyContract._collectTax(token, { gasLimit });
+
+        const timeAfter20m = await now();
+        const due20m = getTaxDue(price, timeAfter20m, timeAfter10m, 30);
+
+        const depositAfter = await monthlyContract.depositOf(token);
+
+        const due = due10m.add(due20m);
+
+        // Correct amount is deducted from deposit
+        expect(depositAfter).to.equal(depositBefore.sub(due));
+        // Token collection statistics update
+        expect(await monthlyContract.lastCollectionTimes(token)).to.equal(
+          timeAfter20m
+        );
+        expect(
+          await monthlyContract.taxCollectedSinceLastTransfer(token)
+        ).to.equal(due);
+        expect(await monthlyContract.taxationCollected(token)).to.equal(due);
+        // Beneficiary is remitted due 10m + due 20m
         expect(
           ethers.BigNumber.from((await beneficiaryBalance.delta()).toString())
         ).to.equal(due);
@@ -430,6 +550,26 @@ describe("PartialCommonOwnership721", async () => {
   describe("#taxOwed()", async () => {
     context("fails", async () => {});
     context("succeeds", async () => {
+      it("30d: Returns correct taxation after 1 second", async () => {
+        const token = TOKENS.ONE;
+
+        await monthlyContractAsAlice.buy(token, ETH1, ETH0, {
+          value: ETH2,
+          gasLimit,
+        });
+
+        const lastCollectionTime = await monthlyContract.lastCollectionTimes(
+          token
+        );
+        await time.increase(1);
+
+        const owed = await monthlyContract.taxOwed(token);
+
+        const due = getTaxDue(ETH1, owed.timestamp, lastCollectionTime, 30);
+
+        expect(owed.amount).to.equal(due);
+      });
+
       it("annual: Returns correct taxation after 1 second", async () => {
         const token = TOKENS.ONE;
 
@@ -447,6 +587,27 @@ describe("PartialCommonOwnership721", async () => {
 
         expect(owed.amount).to.equal(due);
       });
+    });
+
+    it("30d: Returns correct taxation after 1 year", async () => {
+      const token = TOKENS.ONE;
+
+      await monthlyContractAsAlice.buy(token, ETH1, ETH0, {
+        value: ETH2,
+        gasLimit,
+      });
+
+      const lastCollectionTime = await monthlyContract.lastCollectionTimes(
+        token
+      );
+      await time.increase(time.duration.days(30));
+
+      const owed = await monthlyContract.taxOwed(token);
+
+      const due = getTaxDue(ETH1, owed.timestamp, lastCollectionTime, 30);
+      expect(due).to.equal(ETH1); // Ensure that the helper util is correct
+      expect(owed.amount).to.equal(due);
+      expect(owed.amount).to.equal(ETH1); // 100% over 30 days
     });
 
     it("annual: Returns correct taxation after 1 year", async () => {
@@ -483,6 +644,27 @@ describe("PartialCommonOwnership721", async () => {
           await contract.taxOwedSince(TOKENS.ONE, (await now()).sub(1))
         ).to.equal(0);
       });
+
+      it("30d: Returns correct amount", async () => {
+        const token = TOKENS.ONE;
+        const price = ETH1;
+        await monthlyContractAsAlice.buy(token, price, ETH0, {
+          value: ETH2,
+        });
+
+        const time = (await now()).sub(1);
+
+        const expected = price
+          .mul(time)
+          .mul(TAX_NUMERATOR)
+          .div(TAX_DENOMINATOR)
+          .div(taxationPeriodToSeconds(30));
+
+        expect(await monthlyContract.taxOwedSince(token, time)).to.equal(
+          expected
+        );
+      });
+
       it("annual: Returns correct amount", async () => {
         const token = TOKENS.ONE;
         const price = ETH1;
@@ -512,6 +694,26 @@ describe("PartialCommonOwnership721", async () => {
             await contract.taxCollectedSinceLastTransfer(TOKENS.ONE)
           ).to.equal(0);
         });
+
+        it("30d: after initial purchase", async () => {
+          const token = TOKENS.ONE;
+          await monthlyContractAsAlice.buy(token, ETH1, ETH0, {
+            value: ETH2,
+          });
+
+          const before = await now();
+
+          await time.increase(time.duration.minutes(1));
+
+          await monthlyContract._collectTax(token);
+
+          const due = getTaxDue(ETH1, await now(), before, 30);
+
+          expect(
+            await monthlyContract.taxCollectedSinceLastTransfer(token)
+          ).to.equal(due);
+        });
+
         it("annual: after initial purchase", async () => {
           const token = TOKENS.ONE;
           await contractAsAlice.buy(token, ETH1, ETH0, {
@@ -530,6 +732,30 @@ describe("PartialCommonOwnership721", async () => {
             due
           );
         });
+
+        it("30d: after 1 secondary-purchase", async () => {
+          const token = TOKENS.ONE;
+          await monthlyContractAsAlice.buy(token, ETH1, ETH0, { value: ETH2 });
+
+          await time.increase(time.duration.minutes(1));
+
+          await monthlyContract._collectTax(token);
+
+          await monthlyContractAsBob.buy(token, ETH2, ETH1, { value: ETH3 });
+
+          const before = await now();
+
+          await time.increase(time.duration.minutes(1));
+
+          await monthlyContract._collectTax(token);
+
+          const due = getTaxDue(ETH2, await now(), before, 30);
+
+          expect(
+            await monthlyContract.taxCollectedSinceLastTransfer(token)
+          ).to.equal(due);
+        });
+
         it("annual: after 1 secondary-purchase", async () => {
           const token = TOKENS.ONE;
           await contractAsAlice.buy(token, ETH1, ETH0, { value: ETH2 });
@@ -552,6 +778,7 @@ describe("PartialCommonOwnership721", async () => {
             due
           );
         });
+
         it("when foreclosed", async () => {
           const token = TOKENS.ONE;
           await contractAsAlice.buy(token, ETH1, ETH0, { value: ETH2 });
@@ -562,6 +789,33 @@ describe("PartialCommonOwnership721", async () => {
             0
           );
         });
+
+        it("30d: after purchase from foreclosure", async () => {
+          const token = TOKENS.ONE;
+          await monthlyContractAsAlice.buy(token, ETH1, ETH0, { value: ETH2 });
+
+          await time.increase(time.duration.days(31));
+          expect(await monthlyContract.foreclosed(token)).to.equal(true);
+
+          await time.increase(time.duration.days(1));
+          // Purchase out of foreclosure
+          await monthlyContractAsBob.buy(token, ETH1, ETH0, {
+            value: ETH2,
+          });
+
+          const before = await now();
+
+          await time.increase(time.duration.minutes(1));
+
+          await monthlyContract._collectTax(token);
+
+          const due = getTaxDue(ETH1, await now(), before, 30);
+
+          expect(
+            await monthlyContract.taxCollectedSinceLastTransfer(token)
+          ).to.equal(due);
+        });
+
         it("annual: after purchase from foreclosure", async () => {
           const token = TOKENS.ONE;
           await contractAsAlice.buy(token, ETH1, ETH0, { value: ETH2 });
@@ -641,11 +895,27 @@ describe("PartialCommonOwnership721", async () => {
   describe("#foreclosureTime()", async () => {
     context("fails", async () => {});
     context("succeeds", async () => {
+      it("30d: time is 10m into the future", async () => {
+        const token = TOKENS.ONE;
+        await monthlyContractAsAlice.buy(token, ETH1, ETH0, {
+          // Deposit a surplus 10 min of patronage
+          value: ETH1.add(MonthlyTenMinDue),
+        });
+
+        const tenMinutesFromNow = (await now()).add(
+          ethers.BigNumber.from(time.duration.minutes(10).toString())
+        );
+
+        expect(await monthlyContract.foreclosureTime(token)).to.equal(
+          tenMinutesFromNow
+        );
+      });
+
       it("annual: time is 10m into the future", async () => {
         const token = TOKENS.ONE;
         await contractAsAlice.buy(token, ETH1, ETH0, {
           // Deposit a surplus 10 min of patronage
-          value: ETH1.add(TenMinDue),
+          value: ETH1.add(AnnualTenMinDue),
         });
 
         const tenMinutesFromNow = (await now()).add(
@@ -656,11 +926,43 @@ describe("PartialCommonOwnership721", async () => {
         );
       });
 
+      it("30d: returns backdated time if foreclosed", async () => {
+        const token = TOKENS.ONE;
+        await monthlyContractAsAlice.buy(token, ETH1, ETH0, {
+          // Deposit a surplus 10 min of patronage
+          value: ETH1.add(MonthlyTenMinDue),
+        });
+
+        await time.increase(time.duration.minutes(10));
+        const shouldForecloseAt = await now();
+
+        // Foreclosure should be backdated to when token was in foreclosed state.
+        const forecloseAt = await monthlyContract.foreclosureTime(token);
+        expect(forecloseAt).to.equal(shouldForecloseAt);
+
+        // Trigger foreclosure
+        await monthlyContract._collectTax(token);
+
+        expect(await monthlyContract.ownerOf(token)).to.equal(
+          monthlyContractAddress
+        );
+
+        // Value should remain unchained after foreclosure has taken place
+        const oneSecond = ethers.BigNumber.from(
+          (await time.duration.seconds(1)).toString()
+        );
+        expect(await monthlyContract.foreclosureTime(token)).to.equal(
+          //! This is necessary; not sure why.  Seems related to 1 Wei issue within
+          //! "collects after 10m and subsequently after 10m"
+          forecloseAt.sub(oneSecond)
+        );
+      });
+
       it("annual: returns backdated time if foreclosed", async () => {
         const token = TOKENS.ONE;
         await contractAsAlice.buy(token, ETH1, ETH0, {
           // Deposit a surplus 10 min of patronage
-          value: ETH1.add(TenMinDue),
+          value: ETH1.add(AnnualTenMinDue),
         });
 
         await time.increase(time.duration.minutes(10));
@@ -778,6 +1080,63 @@ describe("PartialCommonOwnership721", async () => {
           ethers.BigNumber.from((await beneficiaryBalance.delta()).toString())
         ).to.equal(ETH1);
       });
+
+      it("30d: Purchasing token from current owner", async () => {
+        const token = TOKENS.ONE;
+        await monthlyContractAsAlice.buy(token, ETH1, ETH0, {
+          value: ETH2,
+        });
+
+        // Baseline Alice's balance
+        await monthlyAliceBalance.get();
+
+        await time.increase(time.duration.minutes(10));
+
+        // Get current deposit and tax owed to determine how much will be
+        // collected from Alice's deposit when `#buy()` is called.
+        const depositBefore = await monthlyContract.depositOf(token);
+
+        // Deposit - due + 2ETH (from sale)
+        const expectedRemittance = depositBefore
+          .sub(MonthlyTenMinOneSecDue)
+          .add(ETH2);
+
+        // Buy
+        const event = await monthlyContractAsBob.buy(token, ETH2, ETH1, {
+          value: ETH3,
+        });
+
+        // Buy Event emitted
+        expect(event)
+          .to.emit(monthlyContract, Events.BUY)
+          .withArgs(token, monthlyContractAsBob.signer.address, ETH2);
+
+        // Remittance Event emitted
+        expect(event)
+          .to.emit(monthlyContract, Events.REMITTANCE)
+          .withArgs(
+            token,
+            monthlyContractAsAlice.signer.address,
+            expectedRemittance
+          );
+
+        // Deposit updated
+        expect(await monthlyContract.depositOf(token)).to.equal(ETH1);
+
+        // Price updated
+        expect(await monthlyContract.priceOf(token)).to.equal(ETH2);
+
+        // Owned updated
+        expect(await monthlyContract.ownerOf(token)).to.equal(
+          monthlyContractAsBob.signer.address
+        );
+
+        // Alice's balance should reflect received remittance
+        expect(
+          ethers.BigNumber.from((await monthlyAliceBalance.delta()).toString())
+        ).to.equal(expectedRemittance);
+      });
+
       it("annual: Purchasing token from current owner", async () => {
         const token = TOKENS.ONE;
         await contractAsAlice.buy(token, ETH1, ETH0, {
@@ -794,7 +1153,9 @@ describe("PartialCommonOwnership721", async () => {
         const depositBefore = await contract.depositOf(token);
 
         // Deposit - due + 2ETH (from sale)
-        const expectedRemittance = depositBefore.sub(TenMinOneSecDue).add(ETH2);
+        const expectedRemittance = depositBefore
+          .sub(AnnualTenMinOneSecDue)
+          .add(ETH2);
 
         // Buy
         const event = await contractAsBob.buy(token, ETH2, ETH1, {
@@ -827,6 +1188,7 @@ describe("PartialCommonOwnership721", async () => {
           ethers.BigNumber.from((await aliceBalance.delta()).toString())
         ).to.equal(expectedRemittance);
       });
+
       it("Purchasing token from foreclosure", async () => {
         const token = TOKENS.ONE;
         await contractAsAlice.buy(token, ETH1, ETH0, {
@@ -1015,6 +1377,56 @@ describe("PartialCommonOwnership721", async () => {
     });
 
     context("succeeds", async () => {
+      it("30d: Withdraws expected amount", async () => {
+        const token = TOKENS.ONE;
+        const price = ETH1;
+        await monthlyContractAsAlice.buy(token, price, ETH0, {
+          value: ETH3,
+        });
+
+        expect(await monthlyContract.depositOf(token)).to.equal(ETH2);
+
+        // Baseline Alice's balance
+        await aliceBalance.get();
+
+        // Necessary to determine tax due on exit
+        const lastCollectionTime = await monthlyContract.lastCollectionTimes(
+          token
+        );
+
+        const trx = await monthlyContractAsAlice.withdrawDeposit(token, ETH1);
+        const { timestamp } = await provider.getBlock(trx.blockNumber);
+
+        // Emits
+        expect(trx)
+          .to.emit(monthlyContract, Events.DEPOSIT_WITHDRAWAL)
+          .withArgs(token, ETH1);
+
+        // current deposit - tax on exit
+        const taxedAmt = getTaxDue(
+          price,
+          ethers.BigNumber.from(timestamp),
+          lastCollectionTime,
+          30
+        );
+
+        // Deposit should be 1 ETH - taxed amount.
+        expect(await monthlyContract.depositOf(token)).to.equal(
+          ETH1.sub(taxedAmt)
+        );
+
+        // Alice's balance should reflect returned deposit [1 ETH] minus fees
+        const { delta, fees } = await aliceBalance.deltaWithFees();
+
+        const expectedRemittanceMinusGas = ETH1.sub(
+          ethers.BigNumber.from(fees.toString())
+        );
+
+        expect(ethers.BigNumber.from(delta.toString())).to.equal(
+          expectedRemittanceMinusGas
+        );
+      });
+
       it("annual: Withdraws expected amount", async () => {
         const token = TOKENS.ONE;
         const price = ETH1;
@@ -1073,6 +1485,57 @@ describe("PartialCommonOwnership721", async () => {
     });
 
     context("succeeds", async () => {
+      it("30d: Withdraws entire deposit", async () => {
+        const token = TOKENS.ONE;
+
+        await monthlyContractAsAlice.buy(token, ETH1, ETH0, {
+          value: ETH2,
+        });
+
+        // Baseline Alice's balance
+        await aliceBalance.get();
+
+        // Determine tax due on exit
+        const lastCollectionTime = await monthlyContract.lastCollectionTimes(
+          token
+        );
+
+        const trx = await monthlyContractAsAlice.exit(token);
+        const { timestamp } = await provider.getBlock(trx.blockNumber);
+
+        // current deposit - tax on exit
+        const taxedAmt = getTaxDue(
+          ETH1,
+          ethers.BigNumber.from(timestamp),
+          lastCollectionTime,
+          30
+        );
+
+        const expectedRemittance = ETH1.sub(taxedAmt);
+
+        // Emits
+        expect(trx)
+          .to.emit(monthlyContract, Events.DEPOSIT_WITHDRAWAL)
+          .withArgs(token, expectedRemittance);
+
+        // Alice's balance should reflect returned deposit minus fees
+        const { delta, fees } = await aliceBalance.deltaWithFees();
+
+        const expectedRemittanceMinusGas = expectedRemittance.sub(
+          ethers.BigNumber.from(fees.toString())
+        );
+
+        expect(ethers.BigNumber.from(delta.toString())).to.equal(
+          expectedRemittanceMinusGas
+        );
+
+        // Deposit should be zero
+        expect(await monthlyContract.depositOf(token)).to.equal(0);
+
+        // Token should foreclose
+        expect(await monthlyContract.priceOf(token)).to.equal(0);
+      });
+
       it("annual: Withdraws entire deposit", async () => {
         const token = TOKENS.ONE;
 
