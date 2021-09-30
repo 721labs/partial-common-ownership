@@ -63,7 +63,6 @@ const TAX_RATE = 1000000000000; // 100%
 
 const TAX_NUMERATOR = ethers.BigNumber.from(TAX_RATE);
 const TAX_DENOMINATOR = ethers.BigNumber.from("1000000000000");
-const TAXATION_PERIOD = ethers.BigNumber.from("31536000");
 
 //$ Helper Functions
 
@@ -77,6 +76,15 @@ async function now(): Promise<BigNumber> {
 }
 
 /**
+ * Converts a taxation period, in days to seconds, as a big number.
+ * @param period Period, as integer, in days.
+ * @returns Period, as BigNumber, in seconds.
+ */
+function taxationPeriodToSeconds(period: number): ethers.BigNumber {
+  return ethers.BigNumber.from(period * 86400);
+}
+
+/**
  * Calculates the tax due.
  * price * (now - timeLastCollected) * patronageNumerator / patronageDenominator / 365 days;
  * @param price Current price
@@ -87,7 +95,8 @@ async function now(): Promise<BigNumber> {
 function getTaxDue(
   price: BigNumber,
   now: BigNumber,
-  lastCollectionTime: BigNumber
+  lastCollectionTime: BigNumber,
+  taxationPeriod: number
 ): BigNumber {
   return price
     .mul(
@@ -95,7 +104,7 @@ function getTaxDue(
     )
     .mul(TAX_NUMERATOR)
     .div(TAX_DENOMINATOR)
-    .div(TAXATION_PERIOD);
+    .div(taxationPeriodToSeconds(taxationPeriod));
 }
 
 //$ Tests
@@ -297,7 +306,7 @@ describe("PartialCommonOwnership721", async () => {
         const timeAfter = await now();
         const depositAfter = await contract.depositOf(token);
 
-        const due = getTaxDue(price, timeAfter, timeBefore);
+        const due = getTaxDue(price, timeAfter, timeBefore, 365);
 
         // Events emitted
         expect(event).to.emit(contract, Events.COLLECTION).withArgs(token, due);
@@ -336,13 +345,13 @@ describe("PartialCommonOwnership721", async () => {
 
         const timeAfter10m = await now();
 
-        const due10m = getTaxDue(price, timeAfter10m, timeBefore);
+        const due10m = getTaxDue(price, timeAfter10m, timeBefore, 365);
 
         await time.increase(time.duration.minutes(10));
         await contract._collectTax(token, { gasLimit });
 
         const timeAfter20m = await now();
-        const due20m = getTaxDue(price, timeAfter20m, timeAfter10m);
+        const due20m = getTaxDue(price, timeAfter20m, timeAfter10m, 365);
 
         const depositAfter = await contract.depositOf(token);
 
@@ -434,7 +443,7 @@ describe("PartialCommonOwnership721", async () => {
 
         const owed = await contract.taxOwed(token);
 
-        const due = getTaxDue(ETH1, owed.timestamp, lastCollectionTime);
+        const due = getTaxDue(ETH1, owed.timestamp, lastCollectionTime, 365);
 
         expect(owed.amount).to.equal(due);
       });
@@ -453,7 +462,7 @@ describe("PartialCommonOwnership721", async () => {
 
       const owed = await contract.taxOwed(token);
 
-      const due = getTaxDue(ETH1, owed.timestamp, lastCollectionTime);
+      const due = getTaxDue(ETH1, owed.timestamp, lastCollectionTime, 365);
       expect(due).to.equal(ETH1); // Ensure that the helper util is correct
       expect(owed.amount).to.equal(due);
       expect(owed.amount).to.equal(ETH1); // 100% over 365 days
@@ -487,7 +496,7 @@ describe("PartialCommonOwnership721", async () => {
           .mul(time)
           .mul(TAX_NUMERATOR)
           .div(TAX_DENOMINATOR)
-          .div(TAXATION_PERIOD);
+          .div(taxationPeriodToSeconds(365));
 
         expect(await contract.taxOwedSince(token, time)).to.equal(expected);
       });
@@ -515,7 +524,7 @@ describe("PartialCommonOwnership721", async () => {
 
           await contract._collectTax(token);
 
-          const due = getTaxDue(ETH1, await now(), before);
+          const due = getTaxDue(ETH1, await now(), before, 365);
 
           expect(await contract.taxCollectedSinceLastTransfer(token)).to.equal(
             due
@@ -537,7 +546,7 @@ describe("PartialCommonOwnership721", async () => {
 
           await contract._collectTax(token);
 
-          const due = getTaxDue(ETH2, await now(), before);
+          const due = getTaxDue(ETH2, await now(), before, 365);
 
           expect(await contract.taxCollectedSinceLastTransfer(token)).to.equal(
             due
@@ -572,7 +581,7 @@ describe("PartialCommonOwnership721", async () => {
 
           await contract._collectTax(token);
 
-          const due = getTaxDue(ETH1, await now(), before);
+          const due = getTaxDue(ETH1, await now(), before, 365);
 
           expect(await contract.taxCollectedSinceLastTransfer(token)).to.equal(
             due
@@ -1033,7 +1042,8 @@ describe("PartialCommonOwnership721", async () => {
         const taxedAmt = getTaxDue(
           price,
           ethers.BigNumber.from(timestamp),
-          lastCollectionTime
+          lastCollectionTime,
+          365
         );
 
         // Deposit should be 1 ETH - taxed amount.
@@ -1083,7 +1093,8 @@ describe("PartialCommonOwnership721", async () => {
         const taxedAmt = getTaxDue(
           ETH1,
           ethers.BigNumber.from(timestamp),
-          lastCollectionTime
+          lastCollectionTime,
+          365
         );
 
         const expectedRemittance = ETH1.sub(taxedAmt);
