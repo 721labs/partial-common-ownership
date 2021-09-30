@@ -8,13 +8,13 @@ import "./PartialCommonOwnership721.sol";
 /// @dev Requires 100% patronage per 365 days
 contract Test721Token is PartialCommonOwnership721 {
   /// @notice Constructs token and mints 1 - 3.
-  constructor(address payable _beneficiary)
+  constructor(address payable _beneficiary, uint256 taxationPeriod_)
     PartialCommonOwnership721(
       "721TEST",
       "TEST",
       _beneficiary,
       1000000000000,
-      365
+      taxationPeriod_
     )
   {
     _safeMint(address(this), 1);

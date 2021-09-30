@@ -130,7 +130,7 @@ describe("PartialCommonOwnership721", async () => {
 
     const contractFactory = await ethers.getContractFactory("Test721Token");
 
-    contract = await contractFactory.deploy(accounts[1], { gasLimit });
+    contract = await contractFactory.deploy(accounts[1], 365, { gasLimit });
     await contract.deployed();
 
     contractAddress = contract.address;
