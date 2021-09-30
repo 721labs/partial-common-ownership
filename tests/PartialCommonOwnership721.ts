@@ -479,15 +479,24 @@ describe("PartialCommonOwnership721", async () => {
 
         // Correct amount is deducted from deposit
         expect(depositAfter).to.equal(depositBefore.sub(due));
-        // Token collection statistics update
+
+        // Token collection statistics update:
+        // Last collection time updates
         expect(await contract.lastCollectionTimes(token)).to.equal(
           timeAfter20m
         );
-        expect(await contract.taxCollectedSinceLastTransfer(token)).to.equal(
-          // ! Patch: `due` is 1 wei less; not sure why...
-          due.add(1)
-        );
-        expect(await contract.taxationCollected(token)).to.equal(due);
+
+        // Tax collected since last transfer updates
+        const collectedSinceLastTransfer =
+          await contract.taxCollectedSinceLastTransfer(token);
+        expect(collectedSinceLastTransfer).to.equal(due);
+
+        // Lifetime taxation collected updates
+        const lifetimeCollected = await contract.taxationCollected(token);
+        expect(lifetimeCollected).to.equal(due);
+
+        expect(collectedSinceLastTransfer).to.equal(lifetimeCollected);
+
         // Beneficiary is remitted due 10m + due 20m
         expect(
           ethers.BigNumber.from((await beneficiaryBalance.delta()).toString())

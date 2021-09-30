@@ -87,6 +87,9 @@ contract PartialCommonOwnership721 is ERC721 {
   /// @notice Mapping from token ID to taxation collected over lifetime in Wei.
   mapping(uint256 => uint256) public taxationCollected;
 
+  /// @notice Mapping from token ID to taxation collected since last transfer in Wei.
+  mapping(uint256 => uint256) public taxCollectedSinceLastTransfer;
+
   /// @notice Mapping from token ID to funds for paying tax ("Deposit") in Wei.
   mapping(uint256 => uint256) private deposits;
 
@@ -263,23 +266,6 @@ contract PartialCommonOwnership721 is ERC721 {
     return (_taxOwed(_tokenId), block.timestamp);
   }
 
-  /// @notice How much taxation has been collected since the last purchase?
-  /// @param _tokenId ID of token requesting amount for.
-  /// @return taxDue Tax Due in Wei.
-  function taxCollectedSinceLastTransfer(uint256 _tokenId)
-    public
-    view
-    returns (uint256)
-  {
-    uint256 lastCollectionTime = lastCollectionTimes[_tokenId];
-    uint256 lastTransferTime = lastTransferTimes[_tokenId];
-    if (lastCollectionTime > lastTransferTime) {
-      return taxOwedSince(_tokenId, lastCollectionTime.sub(lastTransferTime));
-    } else {
-      return 0;
-    }
-  }
-
   /// @notice Is the token in a foreclosed state?  If so, price should be zero and anyone can
   /// purchase this asset for the cost of the gas fee.
   /// Token enters forclosure if deposit cannot cover the taxation due.
@@ -368,6 +354,9 @@ contract PartialCommonOwnership721 is ERC721 {
       // Normal collection
       deposits[_tokenId] = deposit.sub(owed);
       taxationCollected[_tokenId] = taxationCollected[_tokenId].add(owed);
+      taxCollectedSinceLastTransfer[_tokenId] = taxCollectedSinceLastTransfer[
+        _tokenId
+      ].add(owed);
       emit LogCollection(_tokenId, owed);
 
       /// Remit taxation to beneficiary.
@@ -594,6 +583,9 @@ contract PartialCommonOwnership721 is ERC721 {
     chainOfTitle[_tokenId].push(transferEvent);
 
     lastTransferTimes[_tokenId] = block.timestamp;
+
+    // Reset
+    taxCollectedSinceLastTransfer[_tokenId] = 0;
   }
 
   /**
