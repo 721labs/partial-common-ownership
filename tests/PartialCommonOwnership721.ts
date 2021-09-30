@@ -73,8 +73,8 @@ const TAX_DENOMINATOR = ethers.BigNumber.from("1000000000000");
  * @returns Current Time as BigNumber
  */
 async function now(): Promise<BigNumber> {
-  const bn = await time.latest();
-  return ethers.BigNumber.from(`0x${bn.toString(16)}`);
+  const latest = await web3.eth.getBlock("latest");
+  return ethers.BigNumber.from(latest.timestamp);
 }
 
 /**
