@@ -40,7 +40,8 @@ contract YourToken is PartialCommonOwnership721 {
       "YourToken",
       "TOKEN",
       payable(msg.sender),
-      1000000000000
+      1000000000000,
+      365
     )
   {}
 }

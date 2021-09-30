@@ -118,8 +118,8 @@ contract PartialCommonOwnership721 is ERC721 {
   uint256 private immutable taxNumerator;
   uint256 private constant taxDenominator = 1000000000000;
 
-  /// @notice Over what period should taxation be applied? For now fixed at rate per annum.
-  uint256 private constant taxationPeriod = 365 days;
+  /// @notice Over what period, in days, should taxation be applied?
+  uint256 public taxationPeriod;
 
   /// @notice Mapping from token ID to purchase lock status
   /// @dev Used to prevent reentrancy attacks
@@ -130,14 +130,17 @@ contract PartialCommonOwnership721 is ERC721 {
   /// @param symbol_ ERC721 Token Symbol
   /// @param beneficiary_ Recipient of tax payments
   /// @param taxNumerator_ The taxation rate up to 10 decimal places.
+  /// @param taxationPeriod_ The number of days that constitute one taxation period.
   constructor(
     string memory name_,
     string memory symbol_,
     address payable beneficiary_,
-    uint256 taxNumerator_
+    uint256 taxNumerator_,
+    uint256 taxationPeriod_
   ) ERC721(name_, symbol_) {
     beneficiary = beneficiary_;
     taxNumerator = taxNumerator_;
+    taxationPeriod = taxationPeriod_ * 1 days;
   }
 
   /// @notice Checks whether message sender owns a given token id
