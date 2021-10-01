@@ -4,7 +4,7 @@ import { time, balance } from "@openzeppelin/test-helpers";
 
 import { expect } from "chai";
 import { BigNumber } from "ethers";
-import { ethers } from "hardhat";
+import { ethers, web3 } from "hardhat";
 
 //$ Enums
 
@@ -640,13 +640,7 @@ describe("PartialCommonOwnership721", async () => {
   });
 
   describe("#taxOwedSince()", async () => {
-    context("fails", async () => {
-      it("Time must be in the past", async () => {
-        await expect(
-          contract.taxOwedSince(TOKENS.ONE, await now())
-        ).to.revertedWith(ErrorMessages.REQUIRES_PAST);
-      });
-    });
+    context("fails", async () => {});
     context("succeeds", async () => {
       it("Returns zero if no purchase", async () => {
         expect(
@@ -907,7 +901,7 @@ describe("PartialCommonOwnership721", async () => {
       it("30d: time is 10m into the future", async () => {
         const token = TOKENS.ONE;
         await monthlyContractAsAlice.buy(token, ETH1, ETH0, {
-          // Deposit a surplus 10 min of patronage
+          // Deposit a surplus 10 min
           value: ETH1.add(MonthlyTenMinDue),
         });
 
@@ -923,7 +917,7 @@ describe("PartialCommonOwnership721", async () => {
       it("annual: time is 10m into the future", async () => {
         const token = TOKENS.ONE;
         await contractAsAlice.buy(token, ETH1, ETH0, {
-          // Deposit a surplus 10 min of patronage
+          // Deposit a surplus 10 min
           value: ETH1.add(AnnualTenMinDue),
         });
 
@@ -938,63 +932,79 @@ describe("PartialCommonOwnership721", async () => {
       it("30d: returns backdated time if foreclosed", async () => {
         const token = TOKENS.ONE;
         await monthlyContractAsAlice.buy(token, ETH1, ETH0, {
-          // Deposit a surplus 10 min of patronage
+          // Deposit a surplus 10 min
           value: ETH1.add(MonthlyTenMinDue),
         });
 
+        // Foreclosure should be in 10 minutes
+        const shouldForecloseAt = await monthlyContract.foreclosureTime(token);
+
+        // At the 10 minute mark
         await time.increase(time.duration.minutes(10));
-        const shouldForecloseAt = await now();
+        const owed = await monthlyContract.taxOwed(token);
+        expect(owed.amount).to.equal(MonthlyTenMinDue);
+        expect(owed.timestamp).to.equal(shouldForecloseAt);
+
+        // Increase time putting the contract into foreclosure state
+        await time.increase(time.duration.minutes(10));
+        expect(await monthlyContract.foreclosed(token)).to.equal(true);
 
         // Foreclosure should be backdated to when token was in foreclosed state.
-        const forecloseAt = await monthlyContract.foreclosureTime(token);
-        expect(forecloseAt).to.equal(shouldForecloseAt);
+        expect(await monthlyContract.foreclosureTime(token)).to.equal(
+          shouldForecloseAt
+        );
 
-        // Trigger foreclosure
+        // Foreclose (monotonically increments the block number + time by 1s)
         await monthlyContract._collectTax(token);
 
+        // Value should remain backdated after foreclosure has been processed
+        const postAt = await monthlyContract.foreclosureTime(token);
+
+        // Note: Need to subtract 1 b/c Solidity rounds down on integer division.
+        expect(postAt).to.equal(shouldForecloseAt - 1);
+
+        // Foreclosure has occurred
         expect(await monthlyContract.ownerOf(token)).to.equal(
           monthlyContractAddress
         );
-
-        // Value should remain unchained after foreclosure has taken place
-        const oneSecond = ethers.BigNumber.from(
-          (await time.duration.seconds(1)).toString()
-        );
-        expect(await monthlyContract.foreclosureTime(token)).to.equal(
-          //! This is necessary; not sure why.  Seems related to 1 Wei issue within
-          //! "collects after 10m and subsequently after 10m"
-          forecloseAt.sub(oneSecond)
-        );
       });
 
-      it("annual: returns backdated time if foreclosed", async () => {
+      it("30d: returns backdated time if foreclosed", async () => {
         const token = TOKENS.ONE;
         await contractAsAlice.buy(token, ETH1, ETH0, {
-          // Deposit a surplus 10 min of patronage
+          // Deposit a surplus 10 min
           value: ETH1.add(AnnualTenMinDue),
         });
 
+        // Foreclosure should be in 10 minutes
+        const shouldForecloseAt = await contract.foreclosureTime(token);
+
+        // At the 10 minute mark
         await time.increase(time.duration.minutes(10));
-        const shouldForecloseAt = await now();
+        const owed = await contract.taxOwed(token);
+        expect(owed.amount).to.equal(AnnualTenMinDue);
+        expect(owed.timestamp).to.equal(shouldForecloseAt);
+
+        // Increase time putting the contract into foreclosure state
+        await time.increase(time.duration.minutes(10));
+        expect(await contract.foreclosed(token)).to.equal(true);
 
         // Foreclosure should be backdated to when token was in foreclosed state.
-        const forecloseAt = await contract.foreclosureTime(token);
-        expect(forecloseAt).to.equal(shouldForecloseAt);
+        expect(await contract.foreclosureTime(token)).to.equal(
+          shouldForecloseAt - 1
+        );
 
-        // Trigger foreclosure
+        // Foreclose (monotonically increments the block number + time by 1s)
         await contract._collectTax(token);
 
-        expect(await contract.ownerOf(token)).to.equal(contractAddress);
+        // Value should remain backdated after foreclosure has been processed
+        const postAt = await contract.foreclosureTime(token);
 
-        // Value should remain unchained after foreclosure has taken place
-        const oneSecond = ethers.BigNumber.from(
-          (await time.duration.seconds(1)).toString()
-        );
-        expect(await contract.foreclosureTime(token)).to.equal(
-          //! This is necessary; not sure why.  Seems related to 1 Wei issue within
-          //! "collects after 10m and subsequently after 10m"
-          forecloseAt.sub(oneSecond)
-        );
+        // Note: Need to subtract 1 b/c Solidity rounds down on integer division.
+        expect(postAt).to.equal(shouldForecloseAt - 1);
+
+        // Foreclosure has occurred
+        expect(await contract.ownerOf(token)).to.equal(contractAddress);
       });
     });
   });
