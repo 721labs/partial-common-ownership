@@ -290,10 +290,7 @@ contract PartialCommonOwnership721 is ERC721 {
   /// @param _tokenId ID of token requesting foreclosure time for.
   /// @return Unix timestamp
   function foreclosureTime(uint256 _tokenId) public view returns (uint256) {
-    uint256 price = _price(_tokenId);
-    uint256 taxPerSecond = ((price * taxNumerator) / taxDenominator) /
-      taxationPeriod;
-
+    uint256 taxPerSecond = taxOwedSince(_tokenId, 1);
     uint256 withdrawable = withdrawableDeposit(_tokenId);
     if (withdrawable > 0) {
       // Time until deposited surplus no longer surpasses amount owed.
@@ -332,12 +329,11 @@ contract PartialCommonOwnership721 is ERC721 {
         lastCollectionTimes[_tokenId] = block.timestamp;
       }
 
-      // Normal collection
-      deposits[_tokenId] = deposit - owed;
-      taxationCollected[_tokenId] = taxationCollected[_tokenId] + owed;
-      taxCollectedSinceLastTransfer[_tokenId] =
-        taxCollectedSinceLastTransfer[_tokenId] +
-        owed;
+      // Update state
+      deposits[_tokenId] -= owed;
+      taxationCollected[_tokenId] += owed;
+      taxCollectedSinceLastTransfer[_tokenId] += owed;
+
       emit LogCollection(_tokenId, owed);
 
       /// Remit taxation to beneficiary.
@@ -416,9 +412,7 @@ contract PartialCommonOwnership721 is ERC721 {
 
       // If the remittance fails, hold funds for the seller to retrieve.
       if (!success) {
-        outstandingRemittances[recipient] =
-          outstandingRemittances[recipient] +
-          remittance;
+        outstandingRemittances[recipient] += remittance;
         emit LogOutstandingRemittance(recipient);
       } else {
         emit LogRemittance(_tokenId, recipient, remittance);
@@ -454,7 +448,7 @@ contract PartialCommonOwnership721 is ERC721 {
     onlyOwner(_tokenId)
     collectTax(_tokenId)
   {
-    deposits[_tokenId] = deposits[_tokenId] + msg.value;
+    deposits[_tokenId] += msg.value;
   }
 
   /// @notice Enables owner to change price in accordance with
@@ -518,7 +512,7 @@ contract PartialCommonOwnership721 is ERC721 {
     uint256 deposit = deposits[_tokenId];
     require(_wei <= deposit, "Cannot withdraw more than deposited");
 
-    deposits[_tokenId] = deposit - _wei;
+    deposits[_tokenId] -= _wei;
     payable(msg.sender).transfer(_wei);
 
     emit LogDepositWithdrawal(_tokenId, _wei);
