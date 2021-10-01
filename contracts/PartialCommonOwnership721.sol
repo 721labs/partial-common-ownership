@@ -298,7 +298,7 @@ contract PartialCommonOwnership721 is ERC721 {
     uint256 last = lastCollectionTimes[_tokenId];
     return
       last +
-      ((block.timestamp - last * deposits[_tokenId]) / _taxOwed(_tokenId));
+      (((block.timestamp - last) * deposits[_tokenId]) / _taxOwed(_tokenId));
   }
 
   /// @notice Determines how long a token owner has until forclosure.
