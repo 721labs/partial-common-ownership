@@ -589,7 +589,7 @@ describe("PartialCommonOwnership721", async () => {
       });
     });
 
-    it("30d: Returns correct taxation after 1 year", async () => {
+    it("30d: Returns correct taxation after 30 days", async () => {
       const token = TOKENS.ONE;
 
       await monthlyContractAsAlice.buy(token, ETH1, ETH0, {
@@ -608,6 +608,27 @@ describe("PartialCommonOwnership721", async () => {
       expect(due).to.equal(ETH1); // Ensure that the helper util is correct
       expect(owed.amount).to.equal(due);
       expect(owed.amount).to.equal(ETH1); // 100% over 30 days
+    });
+
+    it("30d: Returns correct taxation after 60 days", async () => {
+      const token = TOKENS.ONE;
+
+      await monthlyContractAsAlice.buy(token, ETH1, ETH0, {
+        value: ETH2,
+        gasLimit,
+      });
+
+      const lastCollectionTime = await monthlyContract.lastCollectionTimes(
+        token
+      );
+      await time.increase(time.duration.days(60));
+
+      const owed = await monthlyContract.taxOwed(token);
+
+      const due = getTaxDue(ETH1, owed.timestamp, lastCollectionTime, 30);
+      expect(due).to.equal(ETH2); // Ensure that the helper util is correct
+      expect(owed.amount).to.equal(due);
+      expect(owed.amount).to.equal(ETH2); // 200% over 60 days
     });
 
     it("annual: Returns correct taxation after 1 year", async () => {
