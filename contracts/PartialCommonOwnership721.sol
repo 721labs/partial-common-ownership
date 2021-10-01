@@ -229,7 +229,7 @@ contract PartialCommonOwnership721 is ERC721 {
   /// @notice Determines the taxable amount accumulated between now and
   /// a given time in the past.
   /// @param _tokenId ID of token requesting amount for.
-  /// @param _time Unix timestamp.
+  /// @param _time Time in seconds.
   /// @return taxDue Tax Due in Wei.
   function taxOwedSince(uint256 _tokenId, uint256 _time)
     public
@@ -237,14 +237,15 @@ contract PartialCommonOwnership721 is ERC721 {
     tokenMinted(_tokenId)
     returns (uint256 taxDue)
   {
-    require(_time < block.timestamp, "Time must be in the past");
     return
-      ((_price(_tokenId) * _time * taxNumerator) / taxDenominator) /
+      (_price(_tokenId) * _time * taxNumerator) /
+      taxDenominator /
       taxationPeriod;
   }
 
-  /// @notice Public method for the tax owed since last collection. Returns with the current time.
-  /// for use calculating expected tax obligations.
+  /// @notice Public method returning the tax owed since last collection
+  /// along with the current block's timestamp.
+  /// @dev Useful for calculating expected tax obligations.
   /// @param _tokenId ID of token requesting amount for.
   /// @return amount Tax Due in Wei.
   /// @return timestamp Now as Unix timestamp.
@@ -256,9 +257,8 @@ contract PartialCommonOwnership721 is ERC721 {
     return (_taxOwed(_tokenId), block.timestamp);
   }
 
-  /// @notice Is the token in a foreclosed state?  If so, price should be zero and anyone can
-  /// purchase this asset for the cost of the gas fee.
-  /// Token enters forclosure if deposit cannot cover the taxation due.
+  /// @notice Is the token in a foreclosed state?  This does not necessarily mean that
+  /// the contract has processed the foreclosure.
   /// @dev This is a useful helper function when price should be zero, but contract doesn't
   /// reflect it yet.
   /// @param _tokenId ID of token requesting foreclosure status for.
@@ -286,6 +286,21 @@ contract PartialCommonOwnership721 is ERC721 {
     }
   }
 
+  /// @notice Returns the time when tax owed exceeded deposits.
+  /// @dev last collected time + ((time_elapsed * deposit) / owed)
+  /// @param _tokenId ID of token requesting
+  /// @return Unix timestamp
+  function _backdatedForeclosureTime(uint256 _tokenId)
+    private
+    view
+    returns (uint256)
+  {
+    uint256 last = lastCollectionTimes[_tokenId];
+    return
+      last +
+      ((block.timestamp - last * deposits[_tokenId]) / _taxOwed(_tokenId));
+  }
+
   /// @notice Determines how long a token owner has until forclosure.
   /// @param _tokenId ID of token requesting foreclosure time for.
   /// @return Unix timestamp
@@ -296,12 +311,9 @@ contract PartialCommonOwnership721 is ERC721 {
       // Time until deposited surplus no longer surpasses amount owed.
       return block.timestamp + (withdrawable / taxPerSecond);
     } else if (taxPerSecond > 0) {
-      // Token is active but in foreclosure state.
-      // last collected time + (time_elapsed * deposit / owed)
-      uint256 last = lastCollectionTimes[_tokenId];
-      return
-        last +
-        (((block.timestamp - last) * deposits[_tokenId]) / _taxOwed(_tokenId));
+      // Token is active but in foreclosed state.
+      // Returns when foreclosure should have occured i.e. when tax owed > deposits.
+      return _backdatedForeclosureTime(_tokenId);
     } else {
       // Actively foreclosed (price is 0)
       return lastCollectionTimes[_tokenId];
@@ -321,8 +333,7 @@ contract PartialCommonOwnership721 is ERC721 {
       // If foreclosure should have occured in the past, last collection time will be
       // backdated to when the tax was last paid for.
       if (owed >= deposit) {
-        // Backdate: Will derive value from `taxPerSecond > 0` clause.
-        lastCollectionTimes[_tokenId] = foreclosureTime(_tokenId);
+        lastCollectionTimes[_tokenId] = _backdatedForeclosureTime(_tokenId);
         // Take remaining deposit.
         owed = deposit;
       } else {
