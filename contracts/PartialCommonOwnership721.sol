@@ -3,7 +3,6 @@
 pragma solidity 0.8.7;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 struct TitleTransferEvent {
   /// @notice From address.
@@ -24,8 +23,6 @@ struct TitleTransferEvent {
 /// @dev This code was originally forked from ThisArtworkIsAlwaysOnSale's `v2_contracts/ArtSteward.sol`
 /// contract by Simon de la Rouviere.
 contract PartialCommonOwnership721 is ERC721 {
-  using SafeMath for uint256;
-
   /// @notice Alert of purchase.
   /// @param tokenId ID of token.
   /// @param owner Address of new token owner.
@@ -225,13 +222,8 @@ contract PartialCommonOwnership721 is ERC721 {
   /// @param _tokenId ID of token requesting amount for.
   /// @return Tax Due in wei
   function _taxOwed(uint256 _tokenId) private view returns (uint256) {
-    uint256 price = _price(_tokenId);
-    return
-      price
-        .mul(block.timestamp.sub(lastCollectionTimes[_tokenId]))
-        .mul(taxNumerator)
-        .div(taxDenominator)
-        .div(taxationPeriod);
+    uint256 timeElapsed = block.timestamp - lastCollectionTimes[_tokenId];
+    return taxOwedSince(_tokenId, timeElapsed);
   }
 
   /// @notice Determines the taxable amount accumulated between now and
@@ -246,14 +238,12 @@ contract PartialCommonOwnership721 is ERC721 {
     returns (uint256 taxDue)
   {
     require(_time < block.timestamp, "Time must be in the past");
-    uint256 price = _price(_tokenId);
     return
-      price.mul(_time).mul(taxNumerator).div(taxDenominator).div(
-        taxationPeriod
-      );
+      ((_price(_tokenId) * _time * taxNumerator) / taxDenominator) /
+      taxationPeriod;
   }
 
-  /// @notice Public method for the tax owed. Returns with the current time.
+  /// @notice Public method for the tax owed since last collection. Returns with the current time.
   /// for use calculating expected tax obligations.
   /// @param _tokenId ID of token requesting amount for.
   /// @return amount Tax Due in Wei.
@@ -292,7 +282,7 @@ contract PartialCommonOwnership721 is ERC721 {
     if (owed >= deposit) {
       return 0;
     } else {
-      return deposit.sub(owed);
+      return deposit - owed;
     }
   }
 
@@ -301,24 +291,20 @@ contract PartialCommonOwnership721 is ERC721 {
   /// @return Unix timestamp
   function foreclosureTime(uint256 _tokenId) public view returns (uint256) {
     uint256 price = _price(_tokenId);
-    uint256 taxPerSecond = price.mul(taxNumerator).div(taxDenominator).div(
-      taxationPeriod
-    );
+    uint256 taxPerSecond = ((price * taxNumerator) / taxDenominator) /
+      taxationPeriod;
+
     uint256 withdrawable = withdrawableDeposit(_tokenId);
     if (withdrawable > 0) {
       // Time until deposited surplus no longer surpasses amount owed.
-      return block.timestamp + withdrawable.div(taxPerSecond);
+      return block.timestamp + (withdrawable / taxPerSecond);
     } else if (taxPerSecond > 0) {
       // Token is active but in foreclosure state.
       // last collected time + (time_elapsed * deposit / owed)
+      uint256 last = lastCollectionTimes[_tokenId];
       return
-        lastCollectionTimes[_tokenId].add(
-          (
-            (block.timestamp.sub(lastCollectionTimes[_tokenId]))
-              .mul(deposits[_tokenId])
-              .div(_taxOwed(_tokenId))
-          )
-        );
+        last +
+        (((block.timestamp - last) * deposits[_tokenId]) / _taxOwed(_tokenId));
     } else {
       // Actively foreclosed (price is 0)
       return lastCollectionTimes[_tokenId];
@@ -347,11 +333,11 @@ contract PartialCommonOwnership721 is ERC721 {
       }
 
       // Normal collection
-      deposits[_tokenId] = deposit.sub(owed);
-      taxationCollected[_tokenId] = taxationCollected[_tokenId].add(owed);
-      taxCollectedSinceLastTransfer[_tokenId] = taxCollectedSinceLastTransfer[
-        _tokenId
-      ].add(owed);
+      deposits[_tokenId] = deposit - owed;
+      taxationCollected[_tokenId] = taxationCollected[_tokenId] + owed;
+      taxCollectedSinceLastTransfer[_tokenId] =
+        taxCollectedSinceLastTransfer[_tokenId] +
+        owed;
       emit LogCollection(_tokenId, owed);
 
       /// Remit taxation to beneficiary.
@@ -413,7 +399,7 @@ contract PartialCommonOwnership721 is ERC721 {
     locked[_tokenId] = true;
 
     // Remit the purchase price and any available deposit.
-    uint256 remittance = _purchasePrice.add(deposits[_tokenId]);
+    uint256 remittance = _purchasePrice + deposits[_tokenId];
 
     if (remittance > 0) {
       // If token is owned by the contract, remit to the beneficiary.
@@ -430,8 +416,9 @@ contract PartialCommonOwnership721 is ERC721 {
 
       // If the remittance fails, hold funds for the seller to retrieve.
       if (!success) {
-        outstandingRemittances[recipient] = outstandingRemittances[recipient]
-          .add(remittance);
+        outstandingRemittances[recipient] =
+          outstandingRemittances[recipient] +
+          remittance;
         emit LogOutstandingRemittance(recipient);
       } else {
         emit LogRemittance(_tokenId, recipient, remittance);
@@ -447,7 +434,7 @@ contract PartialCommonOwnership721 is ERC721 {
     }
 
     // Update deposit with surplus value.
-    deposits[_tokenId] = msg.value.sub(_purchasePrice);
+    deposits[_tokenId] = msg.value - _purchasePrice;
 
     transferToken(_tokenId, currentOwner, msg.sender, _purchasePrice);
     emit LogBuy(_tokenId, msg.sender, _purchasePrice);
@@ -467,7 +454,7 @@ contract PartialCommonOwnership721 is ERC721 {
     onlyOwner(_tokenId)
     collectTax(_tokenId)
   {
-    deposits[_tokenId] = deposits[_tokenId].add(msg.value);
+    deposits[_tokenId] = deposits[_tokenId] + msg.value;
   }
 
   /// @notice Enables owner to change price in accordance with
@@ -531,7 +518,7 @@ contract PartialCommonOwnership721 is ERC721 {
     uint256 deposit = deposits[_tokenId];
     require(_wei <= deposit, "Cannot withdraw more than deposited");
 
-    deposits[_tokenId] = deposit.sub(_wei);
+    deposits[_tokenId] = deposit - _wei;
     payable(msg.sender).transfer(_wei);
 
     emit LogDepositWithdrawal(_tokenId, _wei);
