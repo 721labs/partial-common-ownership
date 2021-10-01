@@ -307,17 +307,16 @@ contract PartialCommonOwnership721 is ERC721 {
     uint256 withdrawable = withdrawableDeposit(_tokenId);
     if (withdrawable > 0) {
       // Time until deposited surplus no longer surpasses amount owed.
-      return block.timestamp + withdrawableDeposit(_tokenId).div(taxPerSecond);
+      return block.timestamp + withdrawable.div(taxPerSecond);
     } else if (taxPerSecond > 0) {
-      // Token is active but in foreclosure state;
-      // time <= block.timestamp.
-      uint256 owed = _taxOwed(_tokenId);
+      // Token is active but in foreclosure state.
+      // last collected time + (time_elapsed * deposit / owed)
       return
         lastCollectionTimes[_tokenId].add(
           (
             (block.timestamp.sub(lastCollectionTimes[_tokenId]))
               .mul(deposits[_tokenId])
-              .div(owed)
+              .div(_taxOwed(_tokenId))
           )
         );
     } else {
@@ -339,12 +338,8 @@ contract PartialCommonOwnership721 is ERC721 {
       // If foreclosure should have occured in the past, last collection time will be
       // backdated to when the tax was last paid for.
       if (owed >= deposit) {
-        // Backdate:
-        // TLC + (time_elapsed)*deposit/owed
-        uint256 lastCollectionTime = lastCollectionTimes[_tokenId];
-        lastCollectionTimes[_tokenId] = lastCollectionTime.add(
-          (block.timestamp.sub(lastCollectionTime)).mul(deposit).div(owed)
-        );
+        // Backdate: Will derive value from `taxPerSecond > 0` clause.
+        lastCollectionTimes[_tokenId] = foreclosureTime(_tokenId);
         // Take remaining deposit.
         owed = deposit;
       } else {
