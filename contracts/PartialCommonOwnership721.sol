@@ -3,7 +3,6 @@
 pragma solidity 0.8.7;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 struct TitleTransferEvent {
   /// @notice From address.
@@ -24,8 +23,6 @@ struct TitleTransferEvent {
 /// @dev This code was originally forked from ThisArtworkIsAlwaysOnSale's `v2_contracts/ArtSteward.sol`
 /// contract by Simon de la Rouviere.
 contract PartialCommonOwnership721 is ERC721 {
-  using SafeMath for uint256;
-
   /// @notice Alert of purchase.
   /// @param tokenId ID of token.
   /// @param owner Address of new token owner.
@@ -224,11 +221,10 @@ contract PartialCommonOwnership721 is ERC721 {
   function _taxOwed(uint256 _tokenId) private view returns (uint256) {
     uint256 price = _price(_tokenId);
     return
-      price
-        .mul(block.timestamp.sub(lastCollectionTimes[_tokenId]))
-        .mul(taxNumerator)
-        .div(taxDenominator)
-        .div(taxationPeriod);
+      ((price * (block.timestamp - lastCollectionTimes[_tokenId])) *
+        taxNumerator) /
+      taxDenominator /
+      taxationPeriod;
   }
 
   /// @notice Determines the taxable amount accumulated between now and
@@ -244,10 +240,7 @@ contract PartialCommonOwnership721 is ERC721 {
   {
     require(_time < block.timestamp, "Time must be in the past");
     uint256 price = _price(_tokenId);
-    return
-      price.mul(_time).mul(taxNumerator).div(taxDenominator).div(
-        taxationPeriod
-      );
+    return (price * _time * taxNumerator) / taxDenominator / taxationPeriod;
   }
 
   /// @notice Public method for the tax owed. Returns with the current time.
@@ -274,7 +267,7 @@ contract PartialCommonOwnership721 is ERC721 {
     uint256 lastCollectionTime = lastCollectionTimes[_tokenId];
     uint256 lastTransferTime = lastTransferTimes[_tokenId];
     if (lastCollectionTime > lastTransferTime) {
-      return taxOwedSince(_tokenId, lastCollectionTime.sub(lastTransferTime));
+      return taxOwedSince(_tokenId, (lastCollectionTime - lastTransferTime));
     } else {
       return 0;
     }
@@ -306,7 +299,7 @@ contract PartialCommonOwnership721 is ERC721 {
     if (owed >= deposit) {
       return 0;
     } else {
-      return deposit.sub(owed);
+      return deposit - owed;
     }
   }
 
@@ -315,25 +308,22 @@ contract PartialCommonOwnership721 is ERC721 {
   /// @return Unix timestamp
   function foreclosureTime(uint256 _tokenId) public view returns (uint256) {
     uint256 price = _price(_tokenId);
-    uint256 taxPerSecond = price.mul(taxNumerator).div(taxDenominator).div(
-      taxationPeriod
-    );
+    uint256 taxPerSecond = (price * taxNumerator) /
+      taxDenominator /
+      taxationPeriod;
+
     uint256 withdrawable = withdrawableDeposit(_tokenId);
     if (withdrawable > 0) {
       // Time until deposited surplus no longer surpasses amount owed.
-      return block.timestamp + withdrawableDeposit(_tokenId).div(taxPerSecond);
+      return block.timestamp + withdrawableDeposit(_tokenId) / taxPerSecond;
     } else if (taxPerSecond > 0) {
       // Token is active but in foreclosure state;
       // time <= block.timestamp.
       uint256 owed = _taxOwed(_tokenId);
       return
-        lastCollectionTimes[_tokenId].add(
-          (
-            (block.timestamp.sub(lastCollectionTimes[_tokenId]))
-              .mul(deposits[_tokenId])
-              .div(owed)
-          )
-        );
+        lastCollectionTimes[_tokenId] +
+        (((block.timestamp - lastCollectionTimes[_tokenId]) *
+          deposits[_tokenId]) / owed);
     } else {
       // Actively foreclosed (price is 0)
       return lastCollectionTimes[_tokenId];
@@ -356,9 +346,9 @@ contract PartialCommonOwnership721 is ERC721 {
         // Backdate:
         // TLC + (time_elapsed)*deposit/owed
         uint256 lastCollectionTime = lastCollectionTimes[_tokenId];
-        lastCollectionTimes[_tokenId] = lastCollectionTime.add(
-          (block.timestamp.sub(lastCollectionTime)).mul(deposit).div(owed)
-        );
+        lastCollectionTimes[_tokenId] +=
+          ((block.timestamp - lastCollectionTime) * deposit) /
+          owed;
         // Take remaining deposit.
         owed = deposit;
       } else {
@@ -366,8 +356,8 @@ contract PartialCommonOwnership721 is ERC721 {
       }
 
       // Normal collection
-      deposits[_tokenId] = deposit.sub(owed);
-      taxationCollected[_tokenId] = taxationCollected[_tokenId].add(owed);
+      deposits[_tokenId] -= owed;
+      taxationCollected[_tokenId] += owed;
       emit LogCollection(_tokenId, owed);
 
       /// Remit taxation to beneficiary.
@@ -429,7 +419,7 @@ contract PartialCommonOwnership721 is ERC721 {
     locked[_tokenId] = true;
 
     // Remit the purchase price and any available deposit.
-    uint256 remittance = _purchasePrice.add(deposits[_tokenId]);
+    uint256 remittance = _purchasePrice + deposits[_tokenId];
 
     if (remittance > 0) {
       // If token is owned by the contract, remit to the beneficiary.
@@ -446,8 +436,7 @@ contract PartialCommonOwnership721 is ERC721 {
 
       // If the remittance fails, hold funds for the seller to retrieve.
       if (!success) {
-        outstandingRemittances[recipient] = outstandingRemittances[recipient]
-          .add(remittance);
+        outstandingRemittances[recipient] += remittance;
         emit LogOutstandingRemittance(recipient);
       } else {
         emit LogRemittance(_tokenId, recipient, remittance);
@@ -463,7 +452,7 @@ contract PartialCommonOwnership721 is ERC721 {
     }
 
     // Update deposit with surplus value.
-    deposits[_tokenId] = msg.value.sub(_purchasePrice);
+    deposits[_tokenId] = msg.value - _purchasePrice;
 
     transferToken(_tokenId, currentOwner, msg.sender, _purchasePrice);
     emit LogBuy(_tokenId, msg.sender, _purchasePrice);
@@ -483,7 +472,7 @@ contract PartialCommonOwnership721 is ERC721 {
     onlyOwner(_tokenId)
     collectTax(_tokenId)
   {
-    deposits[_tokenId] = deposits[_tokenId].add(msg.value);
+    deposits[_tokenId] += msg.value;
   }
 
   /// @notice Enables owner to change price in accordance with
@@ -547,7 +536,7 @@ contract PartialCommonOwnership721 is ERC721 {
     uint256 deposit = deposits[_tokenId];
     require(_wei <= deposit, "Cannot withdraw more than deposited");
 
-    deposits[_tokenId] = deposit.sub(_wei);
+    deposits[_tokenId] -= _wei;
     payable(msg.sender).transfer(_wei);
 
     emit LogDepositWithdrawal(_tokenId, _wei);
