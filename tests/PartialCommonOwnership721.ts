@@ -484,7 +484,7 @@ describe("PartialCommonOwnership721", async () => {
           timeAfter20m
         );
         expect(await contract.taxCollectedSinceLastTransfer(token)).to.equal(
-          // ! Patch: `due` is 1 wei less; not sure why...
+          //! Patch: integer division rounding down
           due.add(1)
         );
         expect(await contract.taxationCollected(token)).to.equal(due);
@@ -973,8 +973,7 @@ describe("PartialCommonOwnership721", async () => {
           (await time.duration.seconds(1)).toString()
         );
         expect(await monthlyContract.foreclosureTime(token)).to.equal(
-          //! This is necessary; not sure why.  Seems related to 1 Wei issue within
-          //! "collects after 10m and subsequently after 10m"
+          //! Patch: integer division rounding down
           forecloseAt.sub(oneSecond)
         );
       });
@@ -1003,8 +1002,7 @@ describe("PartialCommonOwnership721", async () => {
           (await time.duration.seconds(1)).toString()
         );
         expect(await contract.foreclosureTime(token)).to.equal(
-          //! This is necessary; not sure why.  Seems related to 1 Wei issue within
-          //! "collects after 10m and subsequently after 10m"
+          //! Patch: integer division rounding down
           forecloseAt.sub(oneSecond)
         );
       });
