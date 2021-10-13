@@ -111,6 +111,28 @@ function getTaxDue(
     .div(taxationPeriodToSeconds(taxationPeriod));
 }
 
+/**
+ * Deploys the contract with a given taxation period.
+ * @param taxationPeriod Taxation period in days
+ * @param beneficiaryAddress Address to remit taxes to
+ * @returns contract interface
+ */
+async function deploy(
+  taxationPeriod: number,
+  beneficiaryAddress: string = this.signers[1].address
+): Promise<any> {
+  const contract = await this.factory.deploy(
+    beneficiaryAddress,
+    taxationPeriod,
+    this.globalTrxConfig
+  );
+
+  await contract.deployed();
+  expect(contract.address).to.not.be.null;
+
+  return contract;
+}
+
 //$ Tests
 
 describe("PartialCommonOwnership721", async function () {
@@ -118,12 +140,9 @@ describe("PartialCommonOwnership721", async function () {
 
   before(async function () {
     this.provider = new ethers.providers.Web3Provider(web3.currentProvider);
-    const signers = await ethers.getSigners();
-    const accounts = await Promise.all(
-      signers.map(async (signer) => await signer.getAddress())
-    );
+    this.signers = await ethers.getSigners();
 
-    const contractFactory = await ethers.getContractFactory("Test721Token");
+    this.factory = await ethers.getContractFactory("Test721Token");
 
     //$ Set up contracts
 
@@ -131,33 +150,19 @@ describe("PartialCommonOwnership721", async function () {
       gasLimit: 9500000, // if gas limit is set, estimateGas isn't run superfluously, slowing tests down.
     };
 
-    this.monthlyContract = await contractFactory.deploy(
-      accounts[1],
-      30, // 30-day taxation period
-      this.globalTrxConfig
-    );
-    this.contract = await contractFactory.deploy(
-      accounts[1],
-      365, // 365-day taxation period
-      this.globalTrxConfig
-    );
-
-    await this.monthlyContract.deployed();
-    await this.contract.deployed();
+    this.monthlyContract = await deploy.apply(this, [30]);
+    this.contract = await deploy.apply(this, [365]);
 
     this.monthlyContractAddress = this.monthlyContract.address;
-    expect(this.monthlyContractAddress).to.not.be.null;
-
     this.contractAddress = this.contract.address;
-    expect(this.contractAddress).to.not.be.null;
 
     //$ Set up wallets
 
-    this.beneficiary = new Wallet(this.contract, signers[1]);
-    this.alice = new Wallet(this.contract, signers[2]);
-    this.bob = new Wallet(this.contract, signers[3]);
-    this.monthlyAlice = new Wallet(this.monthlyContract, signers[2]);
-    this.monthlyBob = new Wallet(this.monthlyContract, signers[3]);
+    this.beneficiary = new Wallet(this.contract, this.signers[1]);
+    this.alice = new Wallet(this.contract, this.signers[2]);
+    this.bob = new Wallet(this.contract, this.signers[3]);
+    this.monthlyAlice = new Wallet(this.monthlyContract, this.signers[2]);
+    this.monthlyBob = new Wallet(this.monthlyContract, this.signers[3]);
 
     await Promise.all(
       [
