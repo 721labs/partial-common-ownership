@@ -113,7 +113,7 @@ function getTaxDue(
 
 //$ Tests
 
-describe("PartialCommonOwnership721", async () => {
+describe("PartialCommonOwnership721", async function () {
   let contract;
   let monthlyContract;
   let contractAddress;
@@ -201,23 +201,23 @@ describe("PartialCommonOwnership721", async () => {
 
   //$ Tests
 
-  describe("Test721Token", async () => {
-    it("mints three tokens during construction", async () => {
+  describe("Test721Token", async function () {
+    it("mints three tokens during construction", async function () {
       expect(await contract.ownerOf(TOKENS.ONE)).to.equal(contractAddress);
       expect(await contract.ownerOf(TOKENS.TWO)).to.equal(contractAddress);
       expect(await contract.ownerOf(TOKENS.THREE)).to.equal(contractAddress);
     });
   });
 
-  describe("Prevent non-buy/foreclosure (i.e. ERC721) transfers", async () => {
-    context("fails", async () => {
-      it("#transferFrom()", async () => {
+  describe("Prevent non-buy/foreclosure (i.e. ERC721) transfers", async function () {
+    context("fails", async function () {
+      it("#transferFrom()", async function () {
         await expect(
           contract.transferFrom(contractAddress, alice.address, TOKENS.ONE)
         ).to.be.revertedWith(ErrorMessages.PROHIBITED_TRANSFER_METHOD);
       });
 
-      it("#safeTransferFrom()", async () => {
+      it("#safeTransferFrom()", async function () {
         await expect(
           contract.functions["safeTransferFrom(address,address,uint256)"](
             contractAddress,
@@ -238,13 +238,13 @@ describe("PartialCommonOwnership721", async () => {
     });
   });
 
-  describe("#constructor()", async () => {
-    context("succeeds", async () => {
-      it("Setting name", async () => {
+  describe("#constructor()", async function () {
+    context("succeeds", async function () {
+      it("Setting name", async function () {
         expect(await contract.name()).to.equal(TEST_NAME);
       });
 
-      it("Setting symbol", async () => {
+      it("Setting symbol", async function () {
         expect(await contract.symbol()).to.equal(TEST_SYMBOL);
       });
 
@@ -252,20 +252,20 @@ describe("PartialCommonOwnership721", async () => {
        * For the purposes of testing, the beneficiary address is the address
        * of the contract owner / deployer.
        */
-      it("Setting beneficiary", async () => {
+      it("Setting beneficiary", async function () {
         expect(await contract.beneficiary()).to.equal(beneficiary.address);
       });
 
-      it("Setting tax rate", async () => {
+      it("Setting tax rate", async function () {
         expect(await contract.taxRate()).to.equal(TAX_RATE);
       });
     });
   });
 
-  describe("#onlyOwner()", async () => {
-    context("fails", async () => {
-      context("when required but signer is not owner", async () => {
-        it("#depositWei()", async () => {
+  describe("#onlyOwner()", async function () {
+    context("fails", async function () {
+      context("when required but signer is not owner", async function () {
+        it("#depositWei()", async function () {
           await expect(
             alice.contract.depositWei(TOKENS.ONE, {
               value: ethers.utils.parseEther("1"),
@@ -273,19 +273,19 @@ describe("PartialCommonOwnership721", async () => {
           ).to.be.revertedWith(ErrorMessages.ONLY_OWNER);
         });
 
-        it("#changePrice()", async () => {
+        it("#changePrice()", async function () {
           await expect(
             alice.contract.changePrice(TOKENS.ONE, 500)
           ).to.be.revertedWith(ErrorMessages.ONLY_OWNER);
         });
 
-        it("#withdrawDeposit()", async () => {
+        it("#withdrawDeposit()", async function () {
           await expect(
             alice.contract.withdrawDeposit(TOKENS.ONE, 10)
           ).to.be.revertedWith(ErrorMessages.ONLY_OWNER);
         });
 
-        it("#exit()", async () => {
+        it("#exit()", async function () {
           await expect(alice.contract.exit(TOKENS.ONE)).to.be.revertedWith(
             ErrorMessages.ONLY_OWNER
           );
@@ -294,10 +294,10 @@ describe("PartialCommonOwnership721", async () => {
     });
   });
 
-  describe("#_collectTax()", async () => {
-    context("fails", async () => {});
-    context("succeeds", async () => {
-      it("30d: collects after 10m", async () => {
+  describe("#_collectTax()", async function () {
+    context("fails", async function () {});
+    context("succeeds", async function () {
+      it("30d: collects after 10m", async function () {
         const price = ETH1;
         const token = TOKENS.ONE;
         await monthlyAlice.contract.buy(token, price, ETH0, {
@@ -343,7 +343,7 @@ describe("PartialCommonOwnership721", async () => {
         ).to.equal(due);
       });
 
-      it("annual: collects after 10m", async () => {
+      it("annual: collects after 10m", async function () {
         const price = ETH1;
         const token = TOKENS.ONE;
         await alice.contract.buy(token, price, ETH0, {
@@ -385,7 +385,7 @@ describe("PartialCommonOwnership721", async () => {
         ).to.equal(due);
       });
 
-      it("30d: collects after 10m and subsequently after 10m", async () => {
+      it("30d: collects after 10m and subsequently after 10m", async function () {
         const price = ETH1;
         const token = TOKENS.ONE;
         await monthlyAlice.contract.buy(token, price, ETH0, {
@@ -431,7 +431,7 @@ describe("PartialCommonOwnership721", async () => {
         ).to.equal(due);
       });
 
-      it("annual: collects after 10m and subsequently after 10m", async () => {
+      it("annual: collects after 10m and subsequently after 10m", async function () {
         const price = ETH1;
         const token = TOKENS.ONE;
         await alice.contract.buy(token, price, ETH0, {
@@ -480,25 +480,25 @@ describe("PartialCommonOwnership721", async () => {
     });
   });
 
-  describe("#tokenMinted()", async () => {
-    context("fails", async () => {
-      context("when token not minted but required", async () => {
-        it("#priceOf()", async () => {
+  describe("#tokenMinted()", async function () {
+    context("fails", async function () {
+      context("when token not minted but required", async function () {
+        it("#priceOf()", async function () {
           await expect(contract.ownerOf(INVALID_TOKEN_ID)).to.be.revertedWith(
             ErrorMessages.NONEXISTENT_TOKEN
           );
         });
-        it("#depositOf()", async () => {
+        it("#depositOf()", async function () {
           await expect(contract.depositOf(INVALID_TOKEN_ID)).to.be.revertedWith(
             ErrorMessages.NONEXISTENT_TOKEN
           );
         });
-        it("#buy()", async () => {
+        it("#buy()", async function () {
           await expect(
             contract.buy(INVALID_TOKEN_ID, ETH0, ETH0, { value: ETH0 })
           ).to.be.revertedWith(ErrorMessages.NONEXISTENT_TOKEN);
         });
-        it("#taxOwedSince()", async () => {
+        it("#taxOwedSince()", async function () {
           await expect(
             contract.taxOwedSince(INVALID_TOKEN_ID, await now())
           ).to.be.revertedWith(ErrorMessages.NONEXISTENT_TOKEN);
@@ -507,34 +507,34 @@ describe("PartialCommonOwnership721", async () => {
     });
   });
 
-  describe("#taxRate()", async () => {
-    context("succeeds", async () => {
-      it("returning expected tax rate [100%]", async () => {
+  describe("#taxRate()", async function () {
+    context("succeeds", async function () {
+      it("returning expected tax rate [100%]", async function () {
         expect(await alice.contract.taxRate()).to.equal(TAX_RATE);
       });
     });
   });
 
-  describe("#priceOf()", async () => {
-    context("succeeds", async () => {
-      it("returning expected price [ETH0]", async () => {
+  describe("#priceOf()", async function () {
+    context("succeeds", async function () {
+      it("returning expected price [ETH0]", async function () {
         expect(await contract.priceOf(TOKENS.ONE)).to.equal(ETH0);
       });
     });
   });
 
-  describe("#depositOf", async () => {
-    context("succeeds", async () => {
-      it("returning expected deposit [ETH0]", async () => {
+  describe("#depositOf", async function () {
+    context("succeeds", async function () {
+      it("returning expected deposit [ETH0]", async function () {
         expect(await contract.priceOf(TOKENS.ONE)).to.equal(ETH0);
       });
     });
   });
 
-  describe("#taxOwed()", async () => {
-    context("fails", async () => {});
-    context("succeeds", async () => {
-      it("30d: Returns correct taxation after 1 second", async () => {
+  describe("#taxOwed()", async function () {
+    context("fails", async function () {});
+    context("succeeds", async function () {
+      it("30d: Returns correct taxation after 1 second", async function () {
         const token = TOKENS.ONE;
 
         await monthlyAlice.contract.buy(token, ETH1, ETH0, {
@@ -554,7 +554,7 @@ describe("PartialCommonOwnership721", async () => {
         expect(owed.amount).to.equal(due);
       });
 
-      it("annual: Returns correct taxation after 1 second", async () => {
+      it("annual: Returns correct taxation after 1 second", async function () {
         const token = TOKENS.ONE;
 
         await alice.contract.buy(token, ETH1, ETH0, {
@@ -573,7 +573,7 @@ describe("PartialCommonOwnership721", async () => {
       });
     });
 
-    it("30d: Returns correct taxation after 30 days", async () => {
+    it("30d: Returns correct taxation after 30 days", async function () {
       const token = TOKENS.ONE;
 
       await monthlyAlice.contract.buy(token, ETH1, ETH0, {
@@ -594,7 +594,7 @@ describe("PartialCommonOwnership721", async () => {
       expect(owed.amount).to.equal(ETH1); // 100% over 30 days
     });
 
-    it("30d: Returns correct taxation after 60 days", async () => {
+    it("30d: Returns correct taxation after 60 days", async function () {
       const token = TOKENS.ONE;
 
       await monthlyAlice.contract.buy(token, ETH1, ETH0, {
@@ -615,7 +615,7 @@ describe("PartialCommonOwnership721", async () => {
       expect(owed.amount).to.equal(ETH2); // 200% over 60 days
     });
 
-    it("annual: Returns correct taxation after 1 year", async () => {
+    it("annual: Returns correct taxation after 1 year", async function () {
       const token = TOKENS.ONE;
 
       await alice.contract.buy(token, ETH1, ETH0, {
@@ -635,22 +635,22 @@ describe("PartialCommonOwnership721", async () => {
     });
   });
 
-  describe("#taxOwedSince()", async () => {
-    context("fails", async () => {
-      it("Time must be in the past", async () => {
+  describe("#taxOwedSince()", async function () {
+    context("fails", async function () {
+      it("Time must be in the past", async function () {
         await expect(
           contract.taxOwedSince(TOKENS.ONE, await now())
         ).to.revertedWith(ErrorMessages.REQUIRES_PAST);
       });
     });
-    context("succeeds", async () => {
-      it("Returns zero if no purchase", async () => {
+    context("succeeds", async function () {
+      it("Returns zero if no purchase", async function () {
         expect(
           await contract.taxOwedSince(TOKENS.ONE, (await now()).sub(1))
         ).to.equal(0);
       });
 
-      it("30d: Returns correct amount", async () => {
+      it("30d: Returns correct amount", async function () {
         const token = TOKENS.ONE;
         const price = ETH1;
         await monthlyAlice.contract.buy(token, price, ETH0, {
@@ -670,7 +670,7 @@ describe("PartialCommonOwnership721", async () => {
         );
       });
 
-      it("annual: Returns correct amount", async () => {
+      it("annual: Returns correct amount", async function () {
         const token = TOKENS.ONE;
         const price = ETH1;
         await alice.contract.buy(token, price, ETH0, {
@@ -690,17 +690,17 @@ describe("PartialCommonOwnership721", async () => {
     });
   });
 
-  describe("#taxCollectedSinceLastTransfer()", async () => {
-    context("fails", async () => {});
-    context("succeeds", async () => {
-      context("returning correct amount", async () => {
-        it("if never transferred", async () => {
+  describe("#taxCollectedSinceLastTransfer()", async function () {
+    context("fails", async function () {});
+    context("succeeds", async function () {
+      context("returning correct amount", async function () {
+        it("if never transferred", async function () {
           expect(
             await contract.taxCollectedSinceLastTransfer(TOKENS.ONE)
           ).to.equal(0);
         });
 
-        it("30d: after initial purchase", async () => {
+        it("30d: after initial purchase", async function () {
           const token = TOKENS.ONE;
           await monthlyAlice.contract.buy(token, ETH1, ETH0, {
             value: ETH2,
@@ -719,7 +719,7 @@ describe("PartialCommonOwnership721", async () => {
           ).to.equal(due);
         });
 
-        it("annual: after initial purchase", async () => {
+        it("annual: after initial purchase", async function () {
           const token = TOKENS.ONE;
           await alice.contract.buy(token, ETH1, ETH0, {
             value: ETH2,
@@ -738,7 +738,7 @@ describe("PartialCommonOwnership721", async () => {
           );
         });
 
-        it("30d: after 1 secondary-purchase", async () => {
+        it("30d: after 1 secondary-purchase", async function () {
           const token = TOKENS.ONE;
           await monthlyAlice.contract.buy(token, ETH1, ETH0, {
             value: ETH2,
@@ -765,7 +765,7 @@ describe("PartialCommonOwnership721", async () => {
           ).to.equal(due);
         });
 
-        it("annual: after 1 secondary-purchase", async () => {
+        it("annual: after 1 secondary-purchase", async function () {
           const token = TOKENS.ONE;
           await alice.contract.buy(token, ETH1, ETH0, { value: ETH2 });
 
@@ -788,7 +788,7 @@ describe("PartialCommonOwnership721", async () => {
           );
         });
 
-        it("when foreclosed", async () => {
+        it("when foreclosed", async function () {
           const token = TOKENS.ONE;
           await alice.contract.buy(token, ETH1, ETH0, { value: ETH2 });
           await time.increase(time.duration.days(366));
@@ -799,7 +799,7 @@ describe("PartialCommonOwnership721", async () => {
           );
         });
 
-        it("30d: after purchase from foreclosure", async () => {
+        it("30d: after purchase from foreclosure", async function () {
           const token = TOKENS.ONE;
           await monthlyAlice.contract.buy(token, ETH1, ETH0, {
             value: ETH2,
@@ -827,7 +827,7 @@ describe("PartialCommonOwnership721", async () => {
           ).to.equal(due);
         });
 
-        it("annual: after purchase from foreclosure", async () => {
+        it("annual: after purchase from foreclosure", async function () {
           const token = TOKENS.ONE;
           await alice.contract.buy(token, ETH1, ETH0, { value: ETH2 });
 
@@ -856,16 +856,16 @@ describe("PartialCommonOwnership721", async () => {
     });
   });
 
-  describe("#foreclosed()", async () => {
-    context("fails", async () => {});
-    context("succeeds", async () => {
-      it("true positive", async () => {
+  describe("#foreclosed()", async function () {
+    context("fails", async function () {});
+    context("succeeds", async function () {
+      it("true positive", async function () {
         const token = TOKENS.ONE;
         await alice.contract.buy(token, ETH1, ETH0, { value: ETH2 });
         await time.increase(time.duration.days(366)); // Entire deposit will be exceeded after 1yr
         expect(await contract.foreclosed(token)).to.equal(true);
       });
-      it("true negative", async () => {
+      it("true negative", async function () {
         const token = TOKENS.ONE;
         await alice.contract.buy(token, ETH1, ETH0, { value: ETH2 });
         await time.increase(time.duration.minutes(1));
@@ -874,10 +874,10 @@ describe("PartialCommonOwnership721", async () => {
     });
   });
 
-  describe("#withdrawableDeposit()", async () => {
-    context("fails", async () => {});
-    context("succeeds", async () => {
-      it("Returns zero when owed >= deposit", async () => {
+  describe("#withdrawableDeposit()", async function () {
+    context("fails", async function () {});
+    context("succeeds", async function () {
+      it("Returns zero when owed >= deposit", async function () {
         const token = TOKENS.ONE;
         await alice.contract.buy(token, ETH1, ETH0, {
           value: ETH2,
@@ -887,7 +887,7 @@ describe("PartialCommonOwnership721", async () => {
 
         expect(await contract.withdrawableDeposit(token)).to.equal(0);
       });
-      it("Returns (deposit - owed) when owed < deposit", async () => {
+      it("Returns (deposit - owed) when owed < deposit", async function () {
         const token = TOKENS.ONE;
         await alice.contract.buy(token, ETH1, ETH0, {
           value: ETH2,
@@ -903,10 +903,10 @@ describe("PartialCommonOwnership721", async () => {
     });
   });
 
-  describe("#foreclosureTime()", async () => {
-    context("fails", async () => {});
-    context("succeeds", async () => {
-      it("30d: time is 10m into the future", async () => {
+  describe("#foreclosureTime()", async function () {
+    context("fails", async function () {});
+    context("succeeds", async function () {
+      it("30d: time is 10m into the future", async function () {
         const token = TOKENS.ONE;
         await monthlyAlice.contract.buy(token, ETH1, ETH0, {
           // Deposit a surplus 10 min of patronage
@@ -922,7 +922,7 @@ describe("PartialCommonOwnership721", async () => {
         );
       });
 
-      it("annual: time is 10m into the future", async () => {
+      it("annual: time is 10m into the future", async function () {
         const token = TOKENS.ONE;
         await alice.contract.buy(token, ETH1, ETH0, {
           // Deposit a surplus 10 min of patronage
@@ -937,7 +937,7 @@ describe("PartialCommonOwnership721", async () => {
         );
       });
 
-      it("30d: returns backdated time if foreclosed", async () => {
+      it("30d: returns backdated time if foreclosed", async function () {
         const token = TOKENS.ONE;
         await monthlyAlice.contract.buy(token, ETH1, ETH0, {
           // Deposit a surplus 10 min of patronage
@@ -969,7 +969,7 @@ describe("PartialCommonOwnership721", async () => {
         );
       });
 
-      it("annual: returns backdated time if foreclosed", async () => {
+      it("annual: returns backdated time if foreclosed", async function () {
         const token = TOKENS.ONE;
         await alice.contract.buy(token, ETH1, ETH0, {
           // Deposit a surplus 10 min of patronage
@@ -1001,14 +1001,14 @@ describe("PartialCommonOwnership721", async () => {
     });
   });
 
-  describe("#buy()", async () => {
-    context("fails", async () => {
-      it("Attempting to buy an un-minted token", async () => {
+  describe("#buy()", async function () {
+    context("fails", async function () {
+      it("Attempting to buy an un-minted token", async function () {
         await expect(
           alice.contract.buy(INVALID_TOKEN_ID, ETH1, ETH1, { value: ETH1 })
         ).to.be.revertedWith(ErrorMessages.NONEXISTENT_TOKEN);
       });
-      it("Verifying incorrect Current Price", async () => {
+      it("Verifying incorrect Current Price", async function () {
         await expect(
           alice.contract.buy(
             TOKENS.ONE,
@@ -1018,7 +1018,7 @@ describe("PartialCommonOwnership721", async () => {
           )
         ).to.be.revertedWith(ErrorMessages.BUY_INCORRECT_CURRENT_PRICE);
       });
-      it("Attempting to buy with 0 Wei", async () => {
+      it("Attempting to buy with 0 Wei", async function () {
         await expect(
           alice.contract.buy(
             TOKENS.ONE,
@@ -1028,7 +1028,7 @@ describe("PartialCommonOwnership721", async () => {
           )
         ).to.be.revertedWith(ErrorMessages.BUY_ZERO_PRICE);
       });
-      it("When purchase price is less than message value", async () => {
+      it("When purchase price is less than message value", async function () {
         await expect(
           alice.contract.buy(
             TOKENS.ONE,
@@ -1038,7 +1038,7 @@ describe("PartialCommonOwnership721", async () => {
           )
         ).to.be.revertedWith(ErrorMessages.BUY_ZERO_PRICE);
       });
-      it("Attempting to buy with price less than current price", async () => {
+      it("Attempting to buy with price less than current price", async function () {
         // Purchase as Bob for 2 ETH
         await bob.contract.buy(TOKENS.TWO, ETH2, ETH0, { value: ETH3 });
 
@@ -1051,12 +1051,12 @@ describe("PartialCommonOwnership721", async () => {
           )
         ).to.be.revertedWith(ErrorMessages.BUY_PRICE_BELOW_CURRENT);
       });
-      it("Attempting to buy without surplus value for deposit", async () => {
+      it("Attempting to buy without surplus value for deposit", async function () {
         await expect(
           alice.contract.buy(TOKENS.ONE, ETH1, ETH0, { value: ETH1 }) // [should be greater than ETH1]
         ).to.be.revertedWith(ErrorMessages.BUY_LACKS_SURPLUS_VALUE);
       });
-      it("Attempting to purchase a token it already owns", async () => {
+      it("Attempting to purchase a token it already owns", async function () {
         // Purchase
         await bob.contract.buy(TOKENS.TWO, ETH2, ETH0, { value: ETH3 });
         // Re-purchase
@@ -1065,8 +1065,8 @@ describe("PartialCommonOwnership721", async () => {
         ).to.be.revertedWith(ErrorMessages.BUY_ALREADY_OWNED);
       });
     });
-    context("succeeds", async () => {
-      it("Purchasing token for the first-time (from contract)", async () => {
+    context("succeeds", async function () {
+      it("Purchasing token for the first-time (from contract)", async function () {
         const event = await alice.contract.buy(TOKENS.ONE, ETH1, ETH0, {
           value: ETH2,
         });
@@ -1090,7 +1090,7 @@ describe("PartialCommonOwnership721", async () => {
         ).to.equal(ETH1);
       });
 
-      it("30d: Purchasing token from current owner", async () => {
+      it("30d: Purchasing token from current owner", async function () {
         const token = TOKENS.ONE;
         await monthlyAlice.contract.buy(token, ETH1, ETH0, {
           value: ETH2,
@@ -1146,7 +1146,7 @@ describe("PartialCommonOwnership721", async () => {
         ).to.equal(expectedRemittance);
       });
 
-      it("annual: Purchasing token from current owner", async () => {
+      it("annual: Purchasing token from current owner", async function () {
         const token = TOKENS.ONE;
         await alice.contract.buy(token, ETH1, ETH0, {
           value: ETH2,
@@ -1198,7 +1198,7 @@ describe("PartialCommonOwnership721", async () => {
         ).to.equal(expectedRemittance);
       });
 
-      it("Purchasing token from foreclosure", async () => {
+      it("Purchasing token from foreclosure", async function () {
         const token = TOKENS.ONE;
         await alice.contract.buy(token, ETH1, ETH0, {
           value: ETH2,
@@ -1220,7 +1220,7 @@ describe("PartialCommonOwnership721", async () => {
           bob.contract.signer.address
         );
       });
-      it("Purchasing token from current owner who purchased from foreclosure", async () => {
+      it("Purchasing token from current owner who purchased from foreclosure", async function () {
         const token = TOKENS.ONE;
         await alice.contract.buy(token, ETH1, ETH0, {
           value: ETH2,
@@ -1240,7 +1240,7 @@ describe("PartialCommonOwnership721", async () => {
 
         expect(await contract.ownerOf(token)).to.equal(alice.address);
       });
-      it("Owner prior to foreclosure re-purchases", async () => {
+      it("Owner prior to foreclosure re-purchases", async function () {
         const token = TOKENS.ONE;
         await alice.contract.buy(token, ETH1, ETH0, {
           value: ETH2,
@@ -1256,7 +1256,7 @@ describe("PartialCommonOwnership721", async () => {
 
         expect(await contract.ownerOf(token)).to.equal(alice.address);
       });
-      it("Updating chain of title", async () => {
+      it("Updating chain of title", async function () {
         const token = TOKENS.ONE;
         const trx1 = await bob.contract.buy(token, ETH1, ETH0, {
           value: ETH2,
@@ -1286,9 +1286,9 @@ describe("PartialCommonOwnership721", async () => {
     });
   });
 
-  describe("#depositWei()", async () => {
-    context("fails", async () => {
-      it("is not deposited by owner", async () => {
+  describe("#depositWei()", async function () {
+    context("fails", async function () {
+      it("is not deposited by owner", async function () {
         await expect(
           alice.contract.depositWei(TOKENS.ONE, {
             value: ethers.utils.parseEther("1"),
@@ -1296,24 +1296,25 @@ describe("PartialCommonOwnership721", async () => {
         ).to.be.revertedWith(ErrorMessages.ONLY_OWNER);
       });
     });
-    context("succeeds", async () => {
-      it("owner can deposit", async () => {
+    context("succeeds", async function () {
+      it("owner can deposit", async function () {
         const token = TOKENS.ONE;
         await alice.contract.buy(token, ETH1, ETH0, { value: ETH2 });
-        await expect(alice.contract.depositWei(token, { value: ETH1 })).to.not
-          .reverted;
+        await expect(
+          alice.contract.depositWei(token, { value: ETH1 })
+        ).to.not.reverted;
       });
     });
   });
 
-  describe("#changePrice()", async () => {
-    context("fails", async () => {
-      it("only owner can update price", async () => {
+  describe("#changePrice()", async function () {
+    context("fails", async function () {
+      it("only owner can update price", async function () {
         await expect(
           alice.contract.changePrice(TOKENS.ONE, 500)
         ).to.be.revertedWith(ErrorMessages.ONLY_OWNER);
       });
-      it("cannot have a new price of zero", async () => {
+      it("cannot have a new price of zero", async function () {
         const token = TOKENS.ONE;
         await alice.contract.buy(token, ETH1, ETH0, {
           value: ETH2,
@@ -1322,7 +1323,7 @@ describe("PartialCommonOwnership721", async () => {
           alice.contract.changePrice(token, ETH0)
         ).to.be.revertedWith(ErrorMessages.NEW_PRICE_ZERO);
       });
-      it("cannot have price set to same amount", async () => {
+      it("cannot have price set to same amount", async function () {
         const token = TOKENS.ONE;
         await alice.contract.buy(token, ETH1, ETH0, {
           value: ETH2,
@@ -1332,8 +1333,8 @@ describe("PartialCommonOwnership721", async () => {
         ).to.be.revertedWith(ErrorMessages.NEW_PRICE_SAME);
       });
     });
-    context("succeeds", async () => {
-      it("owner can change price to more", async () => {
+    context("succeeds", async function () {
+      it("owner can change price to more", async function () {
         const token = TOKENS.ONE;
         await alice.contract.buy(token, ETH1, ETH0, {
           value: ETH2,
@@ -1346,7 +1347,7 @@ describe("PartialCommonOwnership721", async () => {
         expect(await contract.priceOf(token)).to.equal(ETH2);
       });
 
-      it("owner can change price to less", async () => {
+      it("owner can change price to less", async function () {
         const token = TOKENS.ONE;
         await alice.contract.buy(token, ETH2, ETH0, {
           value: ETH3,
@@ -1361,15 +1362,15 @@ describe("PartialCommonOwnership721", async () => {
     });
   });
 
-  describe("#withdrawDeposit()", async () => {
-    context("fails", async () => {
-      it("Non-owner", async () => {
+  describe("#withdrawDeposit()", async function () {
+    context("fails", async function () {
+      it("Non-owner", async function () {
         await expect(
           alice.contract.withdrawDeposit(TOKENS.ONE, 10)
         ).to.be.revertedWith(ErrorMessages.ONLY_OWNER);
       });
 
-      it("Cannot withdraw more than deposited", async () => {
+      it("Cannot withdraw more than deposited", async function () {
         const token = TOKENS.ONE;
         await alice.contract.buy(token, ETH1, ETH0, {
           value: ETH2,
@@ -1381,8 +1382,8 @@ describe("PartialCommonOwnership721", async () => {
       });
     });
 
-    context("succeeds", async () => {
-      it("30d: Withdraws expected amount", async () => {
+    context("succeeds", async function () {
+      it("30d: Withdraws expected amount", async function () {
         const token = TOKENS.ONE;
         const price = ETH1;
         await monthlyAlice.contract.buy(token, price, ETH0, {
@@ -1432,7 +1433,7 @@ describe("PartialCommonOwnership721", async () => {
         );
       });
 
-      it("annual: Withdraws expected amount", async () => {
+      it("annual: Withdraws expected amount", async function () {
         const token = TOKENS.ONE;
         const price = ETH1;
         await alice.contract.buy(token, price, ETH0, {
@@ -1480,17 +1481,17 @@ describe("PartialCommonOwnership721", async () => {
     });
   });
 
-  describe("#exit()", async () => {
-    context("fails", async () => {
-      it("Non-owner", async () => {
+  describe("#exit()", async function () {
+    context("fails", async function () {
+      it("Non-owner", async function () {
         await expect(
           alice.contract.withdrawDeposit(TOKENS.ONE, 10)
         ).to.be.revertedWith(ErrorMessages.ONLY_OWNER);
       });
     });
 
-    context("succeeds", async () => {
-      it("30d: Withdraws entire deposit", async () => {
+    context("succeeds", async function () {
+      it("30d: Withdraws entire deposit", async function () {
         const token = TOKENS.ONE;
 
         await monthlyAlice.contract.buy(token, ETH1, ETH0, {
@@ -1541,7 +1542,7 @@ describe("PartialCommonOwnership721", async () => {
         expect(await monthlyContract.priceOf(token)).to.equal(0);
       });
 
-      it("annual: Withdraws entire deposit", async () => {
+      it("annual: Withdraws entire deposit", async function () {
         const token = TOKENS.ONE;
 
         await alice.contract.buy(token, ETH1, ETH0, {
@@ -1592,21 +1593,21 @@ describe("PartialCommonOwnership721", async () => {
     });
   });
 
-  describe("#withdrawOutstandingRemittance()", async () => {
-    context("fails", async () => {
-      it("when no outstanding remittance", async () => {
+  describe("#withdrawOutstandingRemittance()", async function () {
+    context("fails", async function () {
+      it("when no outstanding remittance", async function () {
         await expect(
           alice.contract.withdrawOutstandingRemittance()
         ).to.be.revertedWith(ErrorMessages.NO_OUTSTANDING_REMITTANCE);
       });
     });
     // TODO: Add force buy remittance to fail with a blocker contract.
-    context("succeeds", async () => {});
+    context("succeeds", async function () {});
   });
 
-  describe("#transferToken()", async () => {
-    context("fails", async () => {
-      it("it's an internal method", async () => {
+  describe("#transferToken()", async function () {
+    context("fails", async function () {
+      it("it's an internal method", async function () {
         try {
           await contract.transferToken();
         } catch (error) {
