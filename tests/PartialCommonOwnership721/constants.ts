@@ -30,7 +30,6 @@ export {
   ETH4,
   AnnualTenMinDue,
   MonthlyTenMinDue,
-  TAX_RATE,
   TAX_NUMERATOR,
   TAX_DENOMINATOR,
 };

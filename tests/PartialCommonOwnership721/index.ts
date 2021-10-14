@@ -18,12 +18,14 @@ import {
   ETH4,
   AnnualTenMinDue,
   MonthlyTenMinDue,
-  TAX_RATE,
   TAX_NUMERATOR,
   TAX_DENOMINATOR,
 } from "./constants";
 import { now } from "../helpers/Time";
 import { taxationPeriodToSeconds, getTaxDue } from "./utils";
+import { fromRAY } from "../DSMath/utils";
+
+const taxRate = TAX_NUMERATOR.div(TAX_DENOMINATOR);
 
 //$ Tests
 
@@ -394,7 +396,7 @@ describe("PartialCommonOwnership721", async function () {
       });
 
       it("Setting tax rate", async function () {
-        expect(await this.contract.taxRate()).to.equal(TAX_RATE);
+        expect(fromRAY(await this.contract.taxRate())).to.equal(taxRate);
       });
     });
   });
@@ -553,7 +555,7 @@ describe("PartialCommonOwnership721", async function () {
   describe("#taxRate()", async function () {
     context("succeeds", async function () {
       it("returning expected tax rate [100%]", async function () {
-        expect(await this.alice.contract.taxRate()).to.equal(TAX_RATE);
+        expect(fromRAY(await this.alice.contract.taxRate())).to.equal(taxRate);
       });
     });
   });
