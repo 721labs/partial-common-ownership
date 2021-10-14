@@ -1,9 +1,8 @@
 //@ts-nocheck
 
-import { time, balance } from "@openzeppelin/test-helpers";
+import { time } from "@openzeppelin/test-helpers";
 
 import { expect } from "chai";
-import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 
 import Wallet from "../helpers/Wallet";
@@ -31,8 +30,6 @@ import { taxationPeriodToSeconds, getTaxDue } from "./utils";
 //$ Tests
 
 describe("PartialCommonOwnership721", async function () {
-  const _this = this;
-
   //$ Helpers
 
   /**
@@ -52,6 +49,13 @@ describe("PartialCommonOwnership721", async function () {
     expect(contract.address).to.not.be.null;
 
     return contract;
+  }
+
+  /**
+   * Scopes a snapshot of the EVM.
+   */
+  async function snapshotEVM(): Promise<void> {
+    this.snapshot = await this.provider.send("evm_snapshot", []);
   }
 
   //$ Setup
@@ -93,7 +97,7 @@ describe("PartialCommonOwnership721", async function () {
       })
     );
 
-    this.snapshot = await this.provider.send("evm_snapshot", []);
+    await snapshotEVM.apply(this);
   });
 
   /**
@@ -102,7 +106,7 @@ describe("PartialCommonOwnership721", async function () {
   beforeEach(async function () {
     // Reset contract state
     await this.provider.send("evm_revert", [this.snapshot]);
-    this.snapshot = await this.provider.send("evm_snapshot", []);
+    await snapshotEVM.apply(this);
 
     // Reset balance trackers
     await this.beneficiary.balance.get();
