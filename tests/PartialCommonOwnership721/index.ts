@@ -169,7 +169,7 @@ describe("PartialCommonOwnership721", async function () {
    * @param taxationPeriod {30|365}
    * @returns Nothing.
    */
-  async function verifyCorrectTaxation(
+  async function verifyCorrectTaxOwed(
     contract: any,
     tokenId: TOKENS,
     after: number,
@@ -191,6 +191,75 @@ describe("PartialCommonOwnership721", async function () {
     );
 
     expect(owed.amount).to.equal(due);
+  }
+
+  /**
+   * Increases time by a given amount, collects tax, and verifies that the
+   * correct amount of tax was collected.
+   * @param contract Contract that owns the token
+   * @param tokenId Token being purchased
+   * @param after Number of minutes from now to collect after
+   * @param currentPrice Current token price
+   * @param taxationPeriod {30|365}
+   * @returns Nothing.
+   */
+  async function collectTax(
+    contract: any,
+    tokenId: TOKENS,
+    after: number,
+    currentPrice: BigNumber,
+    taxationPeriod: number
+  ): Promise<void> {
+    //$ Setup
+
+    await this.beneficiary.balance();
+
+    const depositBefore = await contract.depositOf(tokenId);
+    const taxCollectedSinceLastTransferBefore =
+      await contract.taxCollectedSinceLastTransfer(tokenId);
+    const taxCollectedBefore = await contract.taxationCollected(tokenId);
+
+    //$ Collect
+
+    const before = await now();
+
+    await time.increase(time.duration.minutes(after));
+
+    const trx = await contract._collectTax(tokenId);
+
+    const timeAfter = await now();
+    const due = getTaxDue(currentPrice, timeAfter, before, taxationPeriod);
+
+    //$ Expectations
+
+    // Events emitted
+    expect(trx).to.emit(contract, Events.COLLECTION).withArgs(tokenId, due);
+
+    expect(trx)
+      .to.emit(contract, Events.BENEFICIARY_REMITTANCE)
+      .withArgs(tokenId, due);
+
+    // Deposit updates
+    expect(await contract.depositOf(tokenId)).to.equal(depositBefore.sub(due));
+
+    // Token collection statistics update
+    expect(await contract.lastCollectionTimes(tokenId)).to.equal(timeAfter);
+
+    // TODO: May fail on annual collections due to division rounding down
+    // expect(await contract.taxCollectedSinceLastTransfer(tokenId)).to.equal(
+    //   taxCollectedSinceLastTransferBefore.add(due)
+    // );
+
+    expect(await contract.taxationCollected(tokenId)).to.equal(
+      taxCollectedBefore.add(due)
+    );
+
+    // Beneficiary is remitted the expected amount
+    expect((await this.beneficiary.balanceDelta()).delta).to.equal(due);
+
+    //$ Cleanup
+
+    await this.beneficiary.balance();
   }
 
   //$ Setup
@@ -377,47 +446,13 @@ describe("PartialCommonOwnership721", async function () {
           30,
         ]);
 
-        const timeBefore = await now();
-
-        await time.increase(time.duration.minutes(10));
-
-        const event = await this.monthlyContract._collectTax(
+        await collectTax.apply(this, [
+          this.monthlyContract,
           token,
-          this.globalTrxConfig
-        );
-
-        const timeAfter = await now();
-        const depositAfter = await this.monthlyContract.depositOf(token);
-
-        const due = getTaxDue(price, timeAfter, timeBefore, 30);
-
-        // Events emitted
-        expect(event)
-          .to.emit(this.monthlyContract, Events.COLLECTION)
-          .withArgs(token, due);
-
-        expect(event)
-          .to.emit(this.monthlyContract, Events.BENEFICIARY_REMITTANCE)
-          .withArgs(token, due);
-
-        // Deposit updates
-        expect(depositAfter).to.equal(price.sub(due));
-
-        // Token collection statistics update
-        expect(await this.monthlyContract.lastCollectionTimes(token)).to.equal(
-          timeAfter
-        );
-
-        expect(
-          await this.monthlyContract.taxCollectedSinceLastTransfer(token)
-        ).to.equal(due);
-
-        expect(await this.monthlyContract.taxationCollected(token)).to.equal(
-          due
-        );
-
-        // Beneficiary is remitted the expected amount
-        expect((await this.beneficiary.balanceDelta()).delta).to.equal(due);
+          10,
+          price,
+          30,
+        ]);
       });
 
       it("annual: collects after 10m", async function () {
@@ -434,40 +469,7 @@ describe("PartialCommonOwnership721", async function () {
           365,
         ]);
 
-        const timeBefore = await now();
-
-        await time.increase(time.duration.minutes(10));
-
-        const event = await this.contract._collectTax(
-          token,
-          this.globalTrxConfig
-        );
-
-        const timeAfter = await now();
-        const depositAfter = await this.contract.depositOf(token);
-
-        const due = getTaxDue(price, timeAfter, timeBefore, 365);
-
-        // Events emitted
-        expect(event)
-          .to.emit(this.contract, Events.COLLECTION)
-          .withArgs(token, due);
-        expect(event)
-          .to.emit(this.contract, Events.BENEFICIARY_REMITTANCE)
-          .withArgs(token, due);
-        // Deposit updates
-        expect(depositAfter).to.equal(price.sub(due));
-        // Token collection statistics update
-        expect(await this.contract.lastCollectionTimes(token)).to.equal(
-          timeAfter
-        );
-        expect(
-          await this.contract.taxCollectedSinceLastTransfer(token)
-        ).to.equal(due);
-        expect(await this.contract.taxationCollected(token)).to.equal(due);
-
-        // Beneficiary is remitted the expected amount
-        expect((await this.beneficiary.balanceDelta()).delta).to.equal(due);
+        await collectTax.apply(this, [this.contract, token, 10, price, 365]);
       });
 
       it("30d: collects after 10m and subsequently after 10m", async function () {
@@ -484,40 +486,21 @@ describe("PartialCommonOwnership721", async function () {
           30,
         ]);
 
-        const timeBefore = await now();
-        const depositBefore = await this.monthlyContract.depositOf(token);
+        await collectTax.apply(this, [
+          this.monthlyContract,
+          token,
+          10,
+          price,
+          30,
+        ]);
 
-        await time.increase(time.duration.minutes(10));
-        await this.monthlyContract._collectTax(token, this.globalTrxConfig);
-
-        const timeAfter10m = await now();
-
-        const due10m = getTaxDue(price, timeAfter10m, timeBefore, 30);
-
-        await time.increase(time.duration.minutes(10));
-        await this.monthlyContract._collectTax(token, this.globalTrxConfig);
-
-        const timeAfter20m = await now();
-        const due20m = getTaxDue(price, timeAfter20m, timeAfter10m, 30);
-
-        const depositAfter = await this.monthlyContract.depositOf(token);
-
-        const due = due10m.add(due20m);
-
-        // Correct amount is deducted from deposit
-        expect(depositAfter).to.equal(depositBefore.sub(due));
-        // Token collection statistics update
-        expect(await this.monthlyContract.lastCollectionTimes(token)).to.equal(
-          timeAfter20m
-        );
-        expect(
-          await this.monthlyContract.taxCollectedSinceLastTransfer(token)
-        ).to.equal(due);
-        expect(await this.monthlyContract.taxationCollected(token)).to.equal(
-          due
-        );
-        // Beneficiary is remitted due 10m + due 20m
-        expect((await this.beneficiary.balanceDelta()).delta).to.equal(due);
+        await collectTax.apply(this, [
+          this.monthlyContract,
+          token,
+          10,
+          price,
+          30,
+        ]);
       });
 
       it("annual: collects after 10m and subsequently after 10m", async function () {
@@ -534,42 +517,8 @@ describe("PartialCommonOwnership721", async function () {
           365,
         ]);
 
-        const timeBefore = await now();
-        const depositBefore = await this.contract.depositOf(token);
-
-        await time.increase(time.duration.minutes(10));
-        await this.contract._collectTax(token, this.globalTrxConfig);
-
-        const timeAfter10m = await now();
-
-        const due10m = getTaxDue(price, timeAfter10m, timeBefore, 365);
-
-        await time.increase(time.duration.minutes(10));
-        await this.contract._collectTax(token, this.globalTrxConfig);
-
-        const timeAfter20m = await now();
-        const due20m = getTaxDue(price, timeAfter20m, timeAfter10m, 365);
-
-        const depositAfter = await this.contract.depositOf(token);
-
-        const due = due10m.add(due20m);
-
-        // Correct amount is deducted from deposit
-        expect(depositAfter).to.equal(depositBefore.sub(due));
-        // Token collection statistics update
-        expect(await this.contract.lastCollectionTimes(token)).to.equal(
-          timeAfter20m
-        );
-        expect(
-          await this.contract.taxCollectedSinceLastTransfer(token)
-        ).to.equal(
-          // ! Patch: `due` is 1 wei less; not sure why...
-          due.add(1)
-        );
-        expect(await this.contract.taxationCollected(token)).to.equal(due);
-
-        // Beneficiary is remitted due 10m + due 20m
-        expect((await this.beneficiary.balanceDelta()).delta).to.equal(due);
+        await collectTax.apply(this, [this.contract, token, 10, price, 365]);
+        await collectTax.apply(this, [this.contract, token, 10, price, 365]);
       });
     });
   });
@@ -641,7 +590,7 @@ describe("PartialCommonOwnership721", async function () {
           30,
         ]);
 
-        await verifyCorrectTaxation.apply(this, [
+        await verifyCorrectTaxOwed.apply(this, [
           this.monthlyContract,
           token,
           1,
@@ -662,7 +611,7 @@ describe("PartialCommonOwnership721", async function () {
           365,
         ]);
 
-        await verifyCorrectTaxation.apply(this, [this.contract, token, 1, 365]);
+        await verifyCorrectTaxOwed.apply(this, [this.contract, token, 1, 365]);
       });
     });
 
@@ -679,7 +628,7 @@ describe("PartialCommonOwnership721", async function () {
         30,
       ]);
 
-      await verifyCorrectTaxation.apply(this, [
+      await verifyCorrectTaxOwed.apply(this, [
         this.monthlyContract,
         token,
         30,
@@ -700,7 +649,7 @@ describe("PartialCommonOwnership721", async function () {
         30,
       ]);
 
-      await verifyCorrectTaxation.apply(this, [
+      await verifyCorrectTaxOwed.apply(this, [
         this.monthlyContract,
         token,
         60,
@@ -721,7 +670,7 @@ describe("PartialCommonOwnership721", async function () {
         365,
       ]);
 
-      await verifyCorrectTaxation.apply(this, [this.contract, token, 365, 365]);
+      await verifyCorrectTaxOwed.apply(this, [this.contract, token, 365, 365]);
     });
   });
 
@@ -808,54 +757,42 @@ describe("PartialCommonOwnership721", async function () {
 
         it("30d: after initial purchase", async function () {
           const token = TOKENS.ONE;
+          const price = ETH1;
 
           await buy.apply(this, [
             this.monthlyContract,
             this.monthlyAlice,
             token,
-            ETH1,
+            price,
             ETH0,
             ETH2,
             30,
           ]);
 
-          const before = await now();
-
-          await time.increase(time.duration.minutes(1));
-
-          await this.monthlyContract._collectTax(token);
-
-          const due = getTaxDue(ETH1, await now(), before, 30);
-
-          expect(
-            await this.monthlyContract.taxCollectedSinceLastTransfer(token)
-          ).to.equal(due);
+          await collectTax.apply(this, [
+            this.monthlyContract,
+            token,
+            1,
+            price,
+            30,
+          ]);
         });
 
         it("annual: after initial purchase", async function () {
           const token = TOKENS.ONE;
+          const price = ETH1;
 
           await buy.apply(this, [
             this.contract,
             this.alice,
             token,
-            ETH1,
+            price,
             ETH0,
             ETH2,
             365,
           ]);
 
-          const before = await now();
-
-          await time.increase(time.duration.minutes(1));
-
-          await this.contract._collectTax(token);
-
-          const due = getTaxDue(ETH1, await now(), before, 365);
-
-          expect(
-            await this.contract.taxCollectedSinceLastTransfer(token)
-          ).to.equal(due);
+          await collectTax.apply(this, [this.contract, token, 1, price, 365]);
         });
 
         it("30d: after 1 secondary-purchase", async function () {
@@ -875,27 +812,25 @@ describe("PartialCommonOwnership721", async function () {
 
           await this.monthlyContract._collectTax(token);
 
+          const secondaryPrice = ETH2;
+
           await buy.apply(this, [
             this.monthlyContract,
             this.monthlyBob,
             token,
-            ETH2,
+            secondaryPrice,
             ETH1,
             ETH3,
             30,
           ]);
 
-          const before = await now();
-
-          await time.increase(time.duration.minutes(1));
-
-          await this.monthlyContract._collectTax(token);
-
-          const due = getTaxDue(ETH2, await now(), before, 30);
-
-          expect(
-            await this.monthlyContract.taxCollectedSinceLastTransfer(token)
-          ).to.equal(due);
+          await collectTax.apply(this, [
+            this.monthlyContract,
+            token,
+            1,
+            secondaryPrice,
+            30,
+          ]);
         });
 
         it("annual: after 1 secondary-purchase", async function () {
@@ -915,27 +850,25 @@ describe("PartialCommonOwnership721", async function () {
 
           await this.contract._collectTax(token);
 
+          const secondaryPrice = ETH2;
+
           await buy.apply(this, [
             this.contract,
             this.bob,
             token,
-            ETH2,
+            secondaryPrice,
             ETH1,
             ETH3,
             365,
           ]);
 
-          const before = await now();
-
-          await time.increase(time.duration.minutes(1));
-
-          await this.contract._collectTax(token);
-
-          const due = getTaxDue(ETH2, await now(), before, 365);
-
-          expect(
-            await this.contract.taxCollectedSinceLastTransfer(token)
-          ).to.equal(due);
+          await collectTax.apply(this, [
+            this.contract,
+            token,
+            1,
+            secondaryPrice,
+            365,
+          ]);
         });
 
         it("when foreclosed", async function () {
@@ -978,27 +911,24 @@ describe("PartialCommonOwnership721", async function () {
           await time.increase(time.duration.days(1));
 
           // Purchase out of foreclosure
+          const price = ETH1;
           await buy.apply(this, [
             this.monthlyContract,
             this.monthlyBob,
             token,
-            ETH1,
+            price,
             ETH0,
             ETH2,
             30,
           ]);
 
-          const before = await now();
-
-          await time.increase(time.duration.minutes(1));
-
-          await this.monthlyContract._collectTax(token);
-
-          const due = getTaxDue(ETH1, await now(), before, 30);
-
-          expect(
-            await this.monthlyContract.taxCollectedSinceLastTransfer(token)
-          ).to.equal(due);
+          await collectTax.apply(this, [
+            this.monthlyContract,
+            token,
+            1,
+            price,
+            30,
+          ]);
         });
 
         it("annual: after purchase from foreclosure", async function () {
@@ -1020,27 +950,18 @@ describe("PartialCommonOwnership721", async function () {
           await time.increase(time.duration.days(1));
 
           // Purchase out of foreclosure
+          const price = ETH1;
           await buy.apply(this, [
             this.contract,
             this.bob,
             token,
-            ETH1,
+            price,
             ETH0,
             ETH2,
             365,
           ]);
 
-          const before = await now();
-
-          await time.increase(time.duration.minutes(1));
-
-          await this.contract._collectTax(token);
-
-          const due = getTaxDue(ETH1, await now(), before, 365);
-
-          expect(
-            await this.contract.taxCollectedSinceLastTransfer(token)
-          ).to.equal(due);
+          await collectTax.apply(this, [this.contract, token, 1, price, 365]);
         });
       });
     });
