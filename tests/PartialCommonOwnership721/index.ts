@@ -303,9 +303,7 @@ describe("PartialCommonOwnership721", async function () {
       context("when required but signer is not owner", async function () {
         it("#depositWei()", async function () {
           await expect(
-            this.alice.contract.depositWei(TOKENS.ONE, {
-              value: ethers.utils.parseEther("1"),
-            })
+            this.alice.contract.depositWei(TOKENS.ONE, { value: ETH1 })
           ).to.be.revertedWith(ErrorMessages.ONLY_OWNER);
         });
 
