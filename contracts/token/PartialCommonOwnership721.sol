@@ -311,7 +311,7 @@ contract PartialCommonOwnership721 is ERC721 {
     uint256 withdrawable = withdrawableDeposit(_tokenId);
     if (withdrawable > 0) {
       // Time until deposited surplus no longer surpasses amount owed.
-      return block.timestamp + withdrawableDeposit(_tokenId) / taxPerSecond;
+      return block.timestamp + withdrawable / taxPerSecond;
     } else if (taxPerSecond > 0) {
       // Token is active but in foreclosure state;
       // time <= block.timestamp.
