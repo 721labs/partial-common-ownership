@@ -256,7 +256,6 @@ contract PartialCommonOwnership721 is ERC721 {
     return (_taxOwed(_tokenId), block.timestamp);
   }
 
-
   /// @notice Is the token in a foreclosed state?  If so, price should be zero and anyone can
   /// purchase this asset for the cost of the gas fee.
   /// Token enters forclosure if deposit cannot cover the taxation due.
@@ -287,6 +286,20 @@ contract PartialCommonOwnership721 is ERC721 {
     }
   }
 
+  /// @notice Returns the time when tax owed initially exceeded deposits.
+  /// @dev last collected time + ((time_elapsed * deposit) / owed)
+  /// @param _tokenId ID of token requesting
+  /// @return Unix timestamp
+  function _backdatedForeclosureTime(uint256 _tokenId)
+    private
+    view
+    returns (uint256)
+  {
+    uint256 last = lastCollectionTimes[_tokenId];
+    uint256 timeElapsed = block.timestamp - last;
+    return last + ((timeElapsed * deposits[_tokenId]) / _taxOwed(_tokenId));
+  }
+
   /// @notice Determines how long a token owner has until forclosure.
   /// @param _tokenId ID of token requesting foreclosure time for.
   /// @return Unix timestamp
@@ -300,13 +313,9 @@ contract PartialCommonOwnership721 is ERC721 {
       // Time until deposited surplus no longer surpasses amount owed.
       return block.timestamp + withdrawable / taxPerSecond;
     } else if (taxPerSecond > 0) {
-      // Token is active but in foreclosure state;
-      // time <= block.timestamp.
-      uint256 owed = _taxOwed(_tokenId);
-      return
-        lastCollectionTimes[_tokenId] +
-        (((block.timestamp - lastCollectionTimes[_tokenId]) *
-          deposits[_tokenId]) / owed);
+      // Token is active but in foreclosed state.
+      // Returns when foreclosure should have occured i.e. when tax owed > deposits.
+      return _backdatedForeclosureTime(_tokenId);
     } else {
       // Actively foreclosed (price is 0)
       return lastCollectionTimes[_tokenId];
@@ -326,12 +335,7 @@ contract PartialCommonOwnership721 is ERC721 {
       // If foreclosure should have occured in the past, last collection time will be
       // backdated to when the tax was last paid for.
       if (owed >= deposit) {
-        // Backdate:
-        // TLC + (time_elapsed)*deposit/owed
-        uint256 lastCollectionTime = lastCollectionTimes[_tokenId];
-        lastCollectionTimes[_tokenId] +=
-          ((block.timestamp - lastCollectionTime) * deposit) /
-          owed;
+        lastCollectionTimes[_tokenId] = _backdatedForeclosureTime(_tokenId);
         // Take remaining deposit.
         owed = deposit;
       } else {
