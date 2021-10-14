@@ -677,13 +677,7 @@ describe("PartialCommonOwnership721", async function () {
   });
 
   describe("#taxOwedSince()", async function () {
-    context("fails", async function () {
-      it("Time must be in the past", async function () {
-        await expect(
-          this.contract.taxOwedSince(TOKENS.ONE, await now())
-        ).to.revertedWith(ErrorMessages.REQUIRES_PAST);
-      });
-    });
+    context("fails", async function () {});
     context("succeeds", async function () {
       it("Returns zero if no purchase", async function () {
         expect(

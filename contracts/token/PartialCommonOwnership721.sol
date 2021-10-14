@@ -221,11 +221,8 @@ contract PartialCommonOwnership721 is ERC721 {
   /// @return Tax Due in wei
   function _taxOwed(uint256 _tokenId) private view returns (uint256) {
     uint256 price = _price(_tokenId);
-    return
-      ((price * (block.timestamp - lastCollectionTimes[_tokenId])) *
-        taxNumerator) /
-      taxDenominator /
-      taxationPeriod;
+    uint256 timeElapsed = block.timestamp - lastCollectionTimes[_tokenId];
+    return taxOwedSince(_tokenId, timeElapsed);
   }
 
   /// @notice Determines the taxable amount accumulated between now and
@@ -239,9 +236,8 @@ contract PartialCommonOwnership721 is ERC721 {
     tokenMinted(_tokenId)
     returns (uint256 taxDue)
   {
-    require(_time < block.timestamp, "Time must be in the past");
     uint256 price = _price(_tokenId);
-    return (price * _time * taxNumerator) / taxDenominator / taxationPeriod;
+    return ((price * _time) / taxationPeriod) * (taxNumerator / taxDenominator);
   }
 
   /// @notice Public method for the tax owed. Returns with the current time.
@@ -309,9 +305,8 @@ contract PartialCommonOwnership721 is ERC721 {
   /// @return Unix timestamp
   function foreclosureTime(uint256 _tokenId) public view returns (uint256) {
     uint256 price = _price(_tokenId);
-    uint256 taxPerSecond = (price * taxNumerator) /
-      taxDenominator /
-      taxationPeriod;
+    uint256 taxPerSecond = (price / taxationPeriod) *
+      (taxNumerator / taxDenominator);
 
     uint256 withdrawable = withdrawableDeposit(_tokenId);
     if (withdrawable > 0) {
