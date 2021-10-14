@@ -6,142 +6,59 @@ import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 
-import Wallet from "./helpers/Wallet";
-
-//$ Enums
-
-enum ErrorMessages {
-  ONLY_OWNER = "Sender does not own this token",
-  BUY_ZERO_PRICE = "New Price cannot be zero",
-  BUY_INCORRECT_CURRENT_PRICE = "Current Price is incorrect",
-  BUY_PRICE_BELOW_CURRENT = "New Price must be >= current price",
-  BUY_LACKS_SURPLUS_VALUE = "Message does not contain surplus value for deposit",
-  BUY_ALREADY_OWNED = "Buyer is already owner",
-  NONEXISTENT_TOKEN = "ERC721: owner query for nonexistent token",
-  NEW_PRICE_ZERO = "New price cannot be zero",
-  NEW_PRICE_SAME = "New price cannot be same",
-  REQUIRES_PAST = "Time must be in the past",
-  // Not testing reentrancy lock, currently.
-  //LOCKED = "Token is locked",
-  CANNOT_WITHDRAW_MORE_THAN_DEPOSITED = "Cannot withdraw more than deposited",
-  NO_OUTSTANDING_REMITTANCE = "No outstanding remittance",
-  PROHIBITED_TRANSFER_METHOD = "Transfers may only occur via purchase/foreclosure",
-}
-
-enum TOKENS {
-  ONE = 1,
-  TWO = 2,
-  THREE = 3,
-}
-
-enum Events {
-  BUY = "LogBuy",
-  OUTSTANDING_REMITTANCE = "LogOutstandingRemittance",
-  PRICE_CHANGE = "LogPriceChange",
-  FORECLOSURE = "LogForeclosure",
-  COLLECTION = "LogCollection",
-  BENEFICIARY_REMITTANCE = "LogBeneficiaryRemittance",
-  REMITTANCE = "LogRemittance",
-  DEPOSIT_WITHDRAWAL = "LogDepositWithdrawal",
-}
-
-//$ Constants
-
-const TEST_NAME = "721TEST";
-const TEST_SYMBOL = "TEST";
-
-const INVALID_TOKEN_ID = 999;
-
-const ETH0 = ethers.BigNumber.from("0");
-const ETH1 = ethers.utils.parseEther("1");
-const ETH2 = ethers.utils.parseEther("2");
-const ETH3 = ethers.utils.parseEther("3");
-const ETH4 = ethers.utils.parseEther("4");
-
-// 100% Tax Rate
-const AnnualTenMinDue = ethers.BigNumber.from("19025875190258"); // price of 1 ETH
-const AnnualTenMinOneSecDue = ethers.BigNumber.from("19057584982242"); // price of 1 ETH
-const MonthlyTenMinDue = ethers.BigNumber.from("231481481481481"); // price of 1 ETH
-const MonthlyTenMinOneSecDue = ethers.BigNumber.from("231867283950617"); // price of 1 ETH
-const TAX_RATE = 1000000000000; // 100%
-
-const TAX_NUMERATOR = ethers.BigNumber.from(TAX_RATE);
-const TAX_DENOMINATOR = ethers.BigNumber.from("1000000000000");
-
-//$ Helper Functions
-
-/**
- * Gets current time
- * @returns Current Time as BigNumber
- */
-async function now(): Promise<BigNumber> {
-  const bn = await time.latest();
-  return ethers.BigNumber.from(`0x${bn.toString(16)}`);
-}
-
-/**
- * Converts a taxation period, in days to seconds, as a big number.
- * @param period Period, as integer, in days.
- * @returns Period, as BigNumber, in seconds.
- */
-function taxationPeriodToSeconds(period: number): ethers.BigNumber {
-  return ethers.BigNumber.from(period * 86400); // 86,400 seconds in a day
-}
-
-/**
- * Calculates the tax due.
- * price * (now - timeLastCollected) * patronageNumerator / patronageDenominator / 365 days;
- * @param price Current price
- * @param now Unix timestamp when request was made
- * @param lastCollectionTime Unix timestamp of last tax collection
- * @returns Tax due between now and last collection.
- */
-function getTaxDue(
-  price: BigNumber,
-  now: BigNumber,
-  lastCollectionTime: BigNumber,
-  taxationPeriod: number
-): BigNumber {
-  return price
-    .mul(
-      now.sub(lastCollectionTime) // time since last collection
-    )
-    .mul(TAX_NUMERATOR)
-    .div(TAX_DENOMINATOR)
-    .div(taxationPeriodToSeconds(taxationPeriod));
-}
-
-/**
- * Deploys the contract with a given taxation period.
- * @param taxationPeriod Taxation period in days
- * @param beneficiaryAddress Address to remit taxes to
- * @returns contract interface
- */
-async function deploy(
-  taxationPeriod: number,
-  beneficiaryAddress: string = this.signers[1].address
-): Promise<any> {
-  const contract = await this.factory.deploy(
-    beneficiaryAddress,
-    taxationPeriod,
-    this.globalTrxConfig
-  );
-
-  await contract.deployed();
-  expect(contract.address).to.not.be.null;
-
-  return contract;
-}
+import Wallet from "../helpers/Wallet";
+import { ErrorMessages, TOKENS, Events } from "./types";
+import {
+  TEST_NAME,
+  TEST_SYMBOL,
+  INVALID_TOKEN_ID,
+  ETH0,
+  ETH1,
+  ETH2,
+  ETH3,
+  ETH4,
+  AnnualTenMinDue,
+  AnnualTenMinOneSecDue,
+  MonthlyTenMinDue,
+  MonthlyTenMinOneSecDue,
+  TAX_RATE,
+  TAX_NUMERATOR,
+  TAX_DENOMINATOR,
+} from "./constants";
+import { now } from "../helpers/Time";
+import { taxationPeriodToSeconds, getTaxDue } from "./utils";
 
 //$ Tests
 
 describe("PartialCommonOwnership721", async function () {
+  const _this = this;
+
+  //$ Helpers
+
+  /**
+   * Deploys the contract with a given taxation period.
+   * @param taxationPeriod Taxation period in days
+   * @param beneficiaryAddress Address to remit taxes to
+   * @returns contract interface
+   */
+  async function deploy(taxationPeriod: number): Promise<any> {
+    const contract = await this.factory.deploy(
+      this.signers[1].address,
+      taxationPeriod,
+      this.globalTrxConfig
+    );
+
+    await contract.deployed();
+    expect(contract.address).to.not.be.null;
+
+    return contract;
+  }
+
   //$ Setup
 
   before(async function () {
     this.provider = new ethers.providers.Web3Provider(web3.currentProvider);
     this.signers = await ethers.getSigners();
-
     this.factory = await ethers.getContractFactory("Test721Token");
 
     //$ Set up contracts
