@@ -305,8 +305,7 @@ contract PartialCommonOwnership721 is ERC721 {
   /// @return Unix timestamp
   function foreclosureTime(uint256 _tokenId) public view returns (uint256) {
     uint256 price = _price(_tokenId);
-    uint256 taxPerSecond = (price / taxationPeriod) *
-      (taxNumerator / taxDenominator);
+    uint256 taxPerSecond = taxOwedSince(_tokenId, 1);
 
     uint256 withdrawable = withdrawableDeposit(_tokenId);
     if (withdrawable > 0) {
