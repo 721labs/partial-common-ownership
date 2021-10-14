@@ -566,7 +566,7 @@ describe("PartialCommonOwnership721", async function () {
     });
   });
 
-  describe("#depositOf", async function () {
+  describe("#depositOf()", async function () {
     context("succeeds", async function () {
       it("returning expected deposit [ETH0]", async function () {
         expect(await this.contract.priceOf(TOKENS.ONE)).to.equal(ETH0);
@@ -797,20 +797,25 @@ describe("PartialCommonOwnership721", async function () {
 
         it("30d: after 1 secondary-purchase", async function () {
           const token = TOKENS.ONE;
+          const price = ETH1;
 
           await buy.apply(this, [
             this.monthlyContract,
             this.monthlyAlice,
             token,
-            ETH1,
+            price,
             ETH0,
             ETH2,
             30,
           ]);
 
-          await time.increase(time.duration.minutes(1));
-
-          await this.monthlyContract._collectTax(token);
+          await collectTax.apply(this, [
+            this.monthlyContract,
+            token,
+            1,
+            price,
+            30,
+          ]);
 
           const secondaryPrice = ETH2;
 
@@ -835,20 +840,19 @@ describe("PartialCommonOwnership721", async function () {
 
         it("annual: after 1 secondary-purchase", async function () {
           const token = TOKENS.ONE;
+          const price = ETH1;
 
           await buy.apply(this, [
             this.contract,
             this.alice,
             token,
-            ETH1,
+            price,
             ETH0,
             ETH2,
             365,
           ]);
 
-          await time.increase(time.duration.minutes(1));
-
-          await this.contract._collectTax(token);
+          await collectTax.apply(this, [this.contract, token, 1, price, 365]);
 
           const secondaryPrice = ETH2;
 
@@ -1525,7 +1529,7 @@ describe("PartialCommonOwnership721", async function () {
       });
     });
     context("succeeds", async function () {
-      it("owner can change price to more", async function () {
+      it("owner can increase price", async function () {
         const token = TOKENS.ONE;
 
         await buy.apply(this, [
@@ -1545,7 +1549,7 @@ describe("PartialCommonOwnership721", async function () {
         expect(await this.contract.priceOf(token)).to.equal(ETH2);
       });
 
-      it("owner can change price to less", async function () {
+      it("owner can decrease price", async function () {
         const token = TOKENS.ONE;
 
         await buy.apply(this, [
