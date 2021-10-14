@@ -113,7 +113,7 @@ describe("PartialCommonOwnership721", async function () {
     // Reset balance trackers
     await Promise.all(
       this.wallets.map(function (wallet) {
-        return wallet.balance.get();
+        return wallet.balance();
       })
     );
   });
@@ -233,11 +233,7 @@ describe("PartialCommonOwnership721", async function () {
         });
 
         // Sanity check & update baseline beneficiary balance
-        expect(
-          ethers.BigNumber.from(
-            (await this.beneficiary.balance.delta()).toString()
-          )
-        ).to.equal(price);
+        expect((await this.beneficiary.balanceDelta()).delta).to.equal(price);
 
         const timeBefore = await now();
 
@@ -273,11 +269,7 @@ describe("PartialCommonOwnership721", async function () {
           due
         );
         // Beneficiary is remitted the expected amount
-        expect(
-          ethers.BigNumber.from(
-            (await this.beneficiary.balance.delta()).toString()
-          )
-        ).to.equal(due);
+        expect((await this.beneficiary.balanceDelta()).delta).to.equal(due);
       });
 
       it("annual: collects after 10m", async function () {
@@ -288,11 +280,7 @@ describe("PartialCommonOwnership721", async function () {
         });
 
         // Sanity check & update baseline beneficiary balance
-        expect(
-          ethers.BigNumber.from(
-            (await this.beneficiary.balance.delta()).toString()
-          )
-        ).to.equal(price);
+        expect((await this.beneficiary.balanceDelta()).delta).to.equal(price);
 
         const timeBefore = await now();
 
@@ -325,12 +313,9 @@ describe("PartialCommonOwnership721", async function () {
           await this.contract.taxCollectedSinceLastTransfer(token)
         ).to.equal(due);
         expect(await this.contract.taxationCollected(token)).to.equal(due);
+
         // Beneficiary is remitted the expected amount
-        expect(
-          ethers.BigNumber.from(
-            (await this.beneficiary.balance.delta()).toString()
-          )
-        ).to.equal(due);
+        expect((await this.beneficiary.balanceDelta()).delta).to.equal(due);
       });
 
       it("30d: collects after 10m and subsequently after 10m", async function () {
@@ -341,7 +326,7 @@ describe("PartialCommonOwnership721", async function () {
         });
 
         // Baseline the beneficiary balance.
-        await this.beneficiary.balance.get();
+        await this.beneficiary.balance();
 
         const timeBefore = await now();
         const depositBefore = await this.monthlyContract.depositOf(token);
@@ -376,11 +361,7 @@ describe("PartialCommonOwnership721", async function () {
           due
         );
         // Beneficiary is remitted due 10m + due 20m
-        expect(
-          ethers.BigNumber.from(
-            (await this.beneficiary.balance.delta()).toString()
-          )
-        ).to.equal(due);
+        expect((await this.beneficiary.balanceDelta()).delta).to.equal(due);
       });
 
       it("annual: collects after 10m and subsequently after 10m", async function () {
@@ -391,7 +372,7 @@ describe("PartialCommonOwnership721", async function () {
         });
 
         // Baseline the beneficiary balance.
-        await this.beneficiary.balance.get();
+        await this.beneficiary.balance();
 
         const timeBefore = await now();
         const depositBefore = await this.contract.depositOf(token);
@@ -426,12 +407,9 @@ describe("PartialCommonOwnership721", async function () {
           due.add(1)
         );
         expect(await this.contract.taxationCollected(token)).to.equal(due);
+
         // Beneficiary is remitted due 10m + due 20m
-        expect(
-          ethers.BigNumber.from(
-            (await this.beneficiary.balance.delta()).toString()
-          )
-        ).to.equal(due);
+        expect((await this.beneficiary.balanceDelta()).delta).to.equal(due);
       });
     });
   });
@@ -1048,11 +1026,7 @@ describe("PartialCommonOwnership721", async function () {
           this.alice.address
         );
         // Eth [price = 1 Eth] remitted to beneficiary
-        expect(
-          ethers.BigNumber.from(
-            (await this.beneficiary.balance.delta()).toString()
-          )
-        ).to.equal(ETH1);
+        expect((await this.beneficiary.balanceDelta()).delta).to.equal(ETH1);
       });
 
       it("30d: Purchasing token from current owner", async function () {
@@ -1062,7 +1036,7 @@ describe("PartialCommonOwnership721", async function () {
         });
 
         // Baseline Alice's balance
-        await this.monthlyAlice.balance.get();
+        await this.monthlyAlice.balance();
 
         await time.increase(time.duration.minutes(10));
 
@@ -1106,11 +1080,9 @@ describe("PartialCommonOwnership721", async function () {
         );
 
         // Alice's balance should reflect received remittance
-        expect(
-          ethers.BigNumber.from(
-            (await this.monthlyAlice.balance.delta()).toString()
-          )
-        ).to.equal(expectedRemittance);
+        expect((await this.monthlyAlice.balanceDelta()).delta).to.equal(
+          expectedRemittance
+        );
       });
 
       it("annual: Purchasing token from current owner", async function () {
@@ -1120,7 +1092,7 @@ describe("PartialCommonOwnership721", async function () {
         });
 
         // Baseline Alice's balance
-        await this.alice.balance.get();
+        await this.alice.balance();
 
         await time.increase(time.duration.minutes(10));
 
@@ -1160,9 +1132,9 @@ describe("PartialCommonOwnership721", async function () {
         );
 
         // Alice's balance should reflect received remittance
-        expect(
-          ethers.BigNumber.from((await this.alice.balance.delta()).toString())
-        ).to.equal(expectedRemittance);
+        expect((await this.alice.balanceDelta()).delta).to.equal(
+          expectedRemittance
+        );
       });
 
       it("Purchasing token from foreclosure", async function () {
@@ -1360,7 +1332,7 @@ describe("PartialCommonOwnership721", async function () {
         expect(await this.monthlyContract.depositOf(token)).to.equal(ETH2);
 
         // Baseline Alice's balance
-        await this.alice.balance.get();
+        await this.alice.balance();
 
         // Necessary to determine tax due on exit
         const lastCollectionTime =
@@ -1391,15 +1363,11 @@ describe("PartialCommonOwnership721", async function () {
         );
 
         // Alice's balance should reflect returned deposit [1 ETH] minus fees
-        const { delta, fees } = await this.alice.balance.deltaWithFees();
+        const { delta, fees } = await this.alice.balanceDelta();
 
-        const expectedRemittanceMinusGas = ETH1.sub(
-          ethers.BigNumber.from(fees.toString())
-        );
+        const expectedRemittanceMinusGas = ETH1.sub(fees);
 
-        expect(ethers.BigNumber.from(delta.toString())).to.equal(
-          expectedRemittanceMinusGas
-        );
+        expect(delta).to.equal(expectedRemittanceMinusGas);
       });
 
       it("annual: Withdraws expected amount", async function () {
@@ -1412,7 +1380,7 @@ describe("PartialCommonOwnership721", async function () {
         expect(await this.contract.depositOf(token)).to.equal(ETH2);
 
         // Baseline Alice's balance
-        await this.alice.balance.get();
+        await this.alice.balance();
 
         // Necessary to determine tax due on exit
         const lastCollectionTime = await this.contract.lastCollectionTimes(
@@ -1441,15 +1409,11 @@ describe("PartialCommonOwnership721", async function () {
         );
 
         // Alice's balance should reflect returned deposit [1 ETH] minus fees
-        const { delta, fees } = await this.alice.balance.deltaWithFees();
+        const { delta, fees } = await this.alice.balanceDelta();
 
-        const expectedRemittanceMinusGas = ETH1.sub(
-          ethers.BigNumber.from(fees.toString())
-        );
+        const expectedRemittanceMinusGas = ETH1.sub(fees);
 
-        expect(ethers.BigNumber.from(delta.toString())).to.equal(
-          expectedRemittanceMinusGas
-        );
+        expect(delta).to.equal(expectedRemittanceMinusGas);
       });
     });
   });
@@ -1472,7 +1436,7 @@ describe("PartialCommonOwnership721", async function () {
         });
 
         // Baseline Alice's balance
-        await this.alice.balance.get();
+        await this.alice.balance();
 
         // Determine tax due on exit
         const lastCollectionTime =
@@ -1497,15 +1461,11 @@ describe("PartialCommonOwnership721", async function () {
           .withArgs(token, expectedRemittance);
 
         // Alice's balance should reflect returned deposit minus fees
-        const { delta, fees } = await this.alice.balance.deltaWithFees();
+        const { delta, fees } = await this.alice.balanceDelta();
 
-        const expectedRemittanceMinusGas = expectedRemittance.sub(
-          ethers.BigNumber.from(fees.toString())
-        );
+        const expectedRemittanceMinusGas = expectedRemittance.sub(fees);
 
-        expect(ethers.BigNumber.from(delta.toString())).to.equal(
-          expectedRemittanceMinusGas
-        );
+        expect(delta).to.equal(expectedRemittanceMinusGas);
 
         // Deposit should be zero
         expect(await this.monthlyContract.depositOf(token)).to.equal(0);
@@ -1522,7 +1482,7 @@ describe("PartialCommonOwnership721", async function () {
         });
 
         // Baseline Alice's balance
-        await this.alice.balance.get();
+        await this.alice.balance();
 
         // Determine tax due on exit
         const lastCollectionTime = await this.contract.lastCollectionTimes(
@@ -1548,15 +1508,11 @@ describe("PartialCommonOwnership721", async function () {
           .withArgs(token, expectedRemittance);
 
         // Alice's balance should reflect returned deposit minus fees
-        const { delta, fees } = await this.alice.balance.deltaWithFees();
+        const { delta, fees } = await this.alice.balanceDelta();
 
-        const expectedRemittanceMinusGas = expectedRemittance.sub(
-          ethers.BigNumber.from(fees.toString())
-        );
+        const expectedRemittanceMinusGas = expectedRemittance.sub(fees);
 
-        expect(ethers.BigNumber.from(delta.toString())).to.equal(
-          expectedRemittanceMinusGas
-        );
+        expect(delta).to.equal(expectedRemittanceMinusGas);
 
         // Deposit should be zero
         expect(await this.contract.depositOf(token)).to.equal(0);
