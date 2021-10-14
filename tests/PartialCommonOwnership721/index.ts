@@ -247,10 +247,9 @@ describe("PartialCommonOwnership721", async function () {
     // Token collection statistics update
     expect(await contract.lastCollectionTimes(tokenId)).to.equal(timeAfter);
 
-    // TODO: May fail on annual collections due to division rounding down
-    // expect(await contract.taxCollectedSinceLastTransfer(tokenId)).to.equal(
-    //   taxCollectedSinceLastTransferBefore.add(due)
-    // );
+    expect(await contract.taxCollectedSinceLastTransfer(tokenId)).to.equal(
+      taxCollectedSinceLastTransferBefore.add(due)
+    );
 
     expect(await contract.taxationCollected(tokenId)).to.equal(
       taxCollectedBefore.add(due)
