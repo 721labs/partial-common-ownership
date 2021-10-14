@@ -161,6 +161,38 @@ describe("PartialCommonOwnership721", async function () {
     return { trx, block };
   }
 
+  /**
+   * Verifies that, after a given amount of time, taxation due is correct.
+   * @param contract Contract that owns the token
+   * @param tokenId Token being purchased
+   * @param after Number of days from now to verify after
+   * @param taxationPeriod {30|365}
+   * @returns Nothing.
+   */
+  async function verifyCorrectTaxation(
+    contract: any,
+    tokenId: TOKENS,
+    after: number,
+    taxationPeriod: number
+  ): Promise<void> {
+    const lastCollectionTime = await contract.lastCollectionTimes(tokenId);
+
+    await time.increase(after);
+
+    const owed = await contract.taxOwed(tokenId);
+
+    const price = await contract.priceOf(tokenId);
+
+    const due = getTaxDue(
+      price,
+      owed.timestamp,
+      lastCollectionTime,
+      taxationPeriod
+    );
+
+    expect(owed.amount).to.equal(due);
+  }
+
   //$ Setup
 
   before(async function () {
@@ -609,15 +641,12 @@ describe("PartialCommonOwnership721", async function () {
           30,
         ]);
 
-        const lastCollectionTime =
-          await this.monthlyContract.lastCollectionTimes(token);
-        await time.increase(1);
-
-        const owed = await this.monthlyContract.taxOwed(token);
-
-        const due = getTaxDue(ETH1, owed.timestamp, lastCollectionTime, 30);
-
-        expect(owed.amount).to.equal(due);
+        await verifyCorrectTaxation.apply(this, [
+          this.monthlyContract,
+          token,
+          1,
+          30,
+        ]);
       });
 
       it("annual: Returns correct taxation after 1 second", async function () {
@@ -633,16 +662,7 @@ describe("PartialCommonOwnership721", async function () {
           365,
         ]);
 
-        const lastCollectionTime = await this.contract.lastCollectionTimes(
-          token
-        );
-        await time.increase(1);
-
-        const owed = await this.contract.taxOwed(token);
-
-        const due = getTaxDue(ETH1, owed.timestamp, lastCollectionTime, 365);
-
-        expect(owed.amount).to.equal(due);
+        await verifyCorrectTaxation.apply(this, [this.contract, token, 1, 365]);
       });
     });
 
@@ -659,17 +679,12 @@ describe("PartialCommonOwnership721", async function () {
         30,
       ]);
 
-      const lastCollectionTime = await this.monthlyContract.lastCollectionTimes(
-        token
-      );
-      await time.increase(time.duration.days(30));
-
-      const owed = await this.monthlyContract.taxOwed(token);
-
-      const due = getTaxDue(ETH1, owed.timestamp, lastCollectionTime, 30);
-      expect(due).to.equal(ETH1); // Ensure that the helper util is correct
-      expect(owed.amount).to.equal(due);
-      expect(owed.amount).to.equal(ETH1); // 100% over 30 days
+      await verifyCorrectTaxation.apply(this, [
+        this.monthlyContract,
+        token,
+        30,
+        30,
+      ]);
     });
 
     it("30d: Returns correct taxation after 60 days", async function () {
@@ -685,17 +700,12 @@ describe("PartialCommonOwnership721", async function () {
         30,
       ]);
 
-      const lastCollectionTime = await this.monthlyContract.lastCollectionTimes(
-        token
-      );
-      await time.increase(time.duration.days(60));
-
-      const owed = await this.monthlyContract.taxOwed(token);
-
-      const due = getTaxDue(ETH1, owed.timestamp, lastCollectionTime, 30);
-      expect(due).to.equal(ETH2); // Ensure that the helper util is correct
-      expect(owed.amount).to.equal(due);
-      expect(owed.amount).to.equal(ETH2); // 200% over 60 days
+      await verifyCorrectTaxation.apply(this, [
+        this.monthlyContract,
+        token,
+        60,
+        30,
+      ]);
     });
 
     it("annual: Returns correct taxation after 1 year", async function () {
@@ -711,15 +721,7 @@ describe("PartialCommonOwnership721", async function () {
         365,
       ]);
 
-      const lastCollectionTime = await this.contract.lastCollectionTimes(token);
-      await time.increase(time.duration.days(365));
-
-      const owed = await this.contract.taxOwed(token);
-
-      const due = getTaxDue(ETH1, owed.timestamp, lastCollectionTime, 365);
-      expect(due).to.equal(ETH1); // Ensure that the helper util is correct
-      expect(owed.amount).to.equal(due);
-      expect(owed.amount).to.equal(ETH1); // 100% over 365 days
+      await verifyCorrectTaxation.apply(this, [this.contract, token, 365, 365]);
     });
   });
 
@@ -1422,6 +1424,7 @@ describe("PartialCommonOwnership721", async function () {
 
         expect(await this.contract.ownerOf(token)).to.equal(this.bob.address);
       });
+
       it("Purchasing token from current owner who purchased from foreclosure", async function () {
         const token = TOKENS.ONE;
 
@@ -1459,6 +1462,7 @@ describe("PartialCommonOwnership721", async function () {
           365,
         ]);
       });
+
       it("Owner prior to foreclosure re-purchases", async function () {
         const token = TOKENS.ONE;
 
@@ -1486,6 +1490,7 @@ describe("PartialCommonOwnership721", async function () {
           365,
         ]);
       });
+
       it("Updating chain of title", async function () {
         const token = TOKENS.ONE;
 
