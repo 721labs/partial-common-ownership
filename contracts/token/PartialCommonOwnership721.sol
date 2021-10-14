@@ -188,7 +188,8 @@ contract PartialCommonOwnership721 is ERC721 {
    * Used internally by external methods.
    */
 
-  /// @notice Gets current price for a given token ID.
+  /// @notice Gets current price for a given token ID. Requires that
+  /// the token has been minted.
   /// @param _tokenId ID of token requesting price for.
   /// @return Price in Wei.
   function priceOf(uint256 _tokenId)
@@ -277,12 +278,10 @@ contract PartialCommonOwnership721 is ERC721 {
   /// @param _tokenId ID of token requesting withdrawable deposit for.
   /// @return amount in Wei.
   function withdrawableDeposit(uint256 _tokenId) public view returns (uint256) {
-    uint256 owed = _taxOwed(_tokenId);
-    uint256 deposit = deposits[_tokenId];
-    if (owed >= deposit) {
+    if (foreclosed(_tokenId)) {
       return 0;
     } else {
-      return deposit - owed;
+      return deposits[_tokenId] - _taxOwed(_tokenId);
     }
   }
 
@@ -304,9 +303,7 @@ contract PartialCommonOwnership721 is ERC721 {
   /// @param _tokenId ID of token requesting foreclosure time for.
   /// @return Unix timestamp
   function foreclosureTime(uint256 _tokenId) public view returns (uint256) {
-    uint256 price = _price(_tokenId);
     uint256 taxPerSecond = taxOwedSince(_tokenId, 1);
-
     uint256 withdrawable = withdrawableDeposit(_tokenId);
     if (withdrawable > 0) {
       // Time until deposited surplus no longer surpasses amount owed.
@@ -329,14 +326,13 @@ contract PartialCommonOwnership721 is ERC721 {
     if (price != 0) {
       // If price > 0, contract has not foreclosed.
       uint256 owed = _taxOwed(_tokenId);
-      uint256 deposit = deposits[_tokenId];
 
       // If foreclosure should have occured in the past, last collection time will be
       // backdated to when the tax was last paid for.
-      if (owed >= deposit) {
+      if (foreclosed(_tokenId)) {
         lastCollectionTimes[_tokenId] = _backdatedForeclosureTime(_tokenId);
         // Take remaining deposit.
-        owed = deposit;
+        owed = deposits[_tokenId];
       } else {
         lastCollectionTimes[_tokenId] = block.timestamp;
       }
