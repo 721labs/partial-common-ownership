@@ -13,7 +13,7 @@ function taxationPeriodToSeconds(period: number): BigNumber {
 
 /**
  * Calculates the tax due.
- * price * (now - timeLastCollected) * patronageNumerator / patronageDenominator / 365 days;
+ * price * % of tax period completed (represented from 0 - 1) * tax rate;
  * @param price Current price
  * @param now Unix timestamp when request was made
  * @param lastCollectionTime Unix timestamp of last tax collection
@@ -25,13 +25,13 @@ function getTaxDue(
   lastCollectionTime: BigNumber,
   taxationPeriod: number
 ): BigNumber {
+  const secondsSinceLastCollection = now.sub(lastCollectionTime);
+  const taxPeriodAsSeconds = taxationPeriodToSeconds(taxationPeriod);
+  const taxRate = TAX_DENOMINATOR.div(TAX_DENOMINATOR);
   return price
-    .mul(
-      now.sub(lastCollectionTime) // time since last collection
-    )
-    .mul(TAX_NUMERATOR)
-    .div(TAX_DENOMINATOR)
-    .div(taxationPeriodToSeconds(taxationPeriod));
+    .mul(secondsSinceLastCollection)
+    .div(taxPeriodAsSeconds)
+    .mul(taxRate);
 }
 
 export { taxationPeriodToSeconds, getTaxDue };
