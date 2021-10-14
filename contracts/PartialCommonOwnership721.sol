@@ -96,7 +96,7 @@ contract PartialCommonOwnership721 is ERC721 {
   /// owner can withdraw it.
   mapping(address => uint256) public outstandingRemittances;
 
-  /// @notice Mapping from token ID to Unix timestamp when last purchase occured.
+  /// @notice Mapping from token ID to Unix timestamp when last tax collection occured.
   /// @dev This is used to determine how much time has passed since last collection and the present
   /// and resultingly how much tax is due in the present.
   /// @dev In the event that a foreclosure happens AFTER it should have, this
