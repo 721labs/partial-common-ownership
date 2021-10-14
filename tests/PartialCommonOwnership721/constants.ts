@@ -13,9 +13,7 @@ const ETH4 = ethers.utils.parseEther("4");
 
 // 100% Tax Rate
 const AnnualTenMinDue = ethers.BigNumber.from("19025875190258"); // price of 1 ETH
-const AnnualTenMinOneSecDue = ethers.BigNumber.from("19057584982242"); // price of 1 ETH
 const MonthlyTenMinDue = ethers.BigNumber.from("231481481481481"); // price of 1 ETH
-const MonthlyTenMinOneSecDue = ethers.BigNumber.from("231867283950617"); // price of 1 ETH
 const TAX_RATE = 1000000000000; // 100%
 
 const TAX_NUMERATOR = ethers.BigNumber.from(TAX_RATE);
@@ -31,9 +29,7 @@ export {
   ETH3,
   ETH4,
   AnnualTenMinDue,
-  AnnualTenMinOneSecDue,
   MonthlyTenMinDue,
-  MonthlyTenMinOneSecDue,
   TAX_RATE,
   TAX_NUMERATOR,
   TAX_DENOMINATOR,
