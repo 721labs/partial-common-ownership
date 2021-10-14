@@ -85,14 +85,16 @@ describe("PartialCommonOwnership721", async function () {
     this.monthlyAlice = new Wallet(this.monthlyContract, this.signers[2]);
     this.monthlyBob = new Wallet(this.monthlyContract, this.signers[3]);
 
+    this.wallets = [
+      this.beneficiary,
+      this.monthlyAlice,
+      this.monthlyBob,
+      this.alice,
+      this.bob,
+    ];
+
     await Promise.all(
-      [
-        this.beneficiary,
-        this.monthlyAlice,
-        this.monthlyBob,
-        this.alice,
-        this.bob,
-      ].map(function (wallet) {
+      this.wallets.map(function (wallet) {
         return wallet.setup();
       })
     );
@@ -109,12 +111,11 @@ describe("PartialCommonOwnership721", async function () {
     await snapshotEVM.apply(this);
 
     // Reset balance trackers
-    await this.beneficiary.balance.get();
-    await this.alice.balance.get();
-    await this.bob.balance.get();
-
-    await this.monthlyAlice.balance.get();
-    await this.monthlyBob.balance.get();
+    await Promise.all(
+      this.wallets.map(function (wallet) {
+        return wallet.balance.get();
+      })
+    );
   });
 
   //$ Tests
