@@ -1,0 +1,3 @@
+name: "100% Annually"
+collectionFrequency: 365
+taxRate: 1000000000000 # 100%

@@ -1,6 +1,5 @@
 import { ethers } from "hardhat";
 import { BigNumber } from "ethers";
-import { TAX_NUMERATOR, TAX_DENOMINATOR } from "./constants";
 
 /**
  * Converts a taxation period, in days to seconds, as a big number.
@@ -23,11 +22,11 @@ function getTaxDue(
   price: BigNumber,
   now: BigNumber,
   lastCollectionTime: BigNumber,
-  taxationPeriod: number
+  taxationPeriod: number,
+  taxRate: BigNumber
 ): BigNumber {
   const secondsSinceLastCollection = now.sub(lastCollectionTime);
   const taxPeriodAsSeconds = taxationPeriodToSeconds(taxationPeriod);
-  const taxRate = TAX_NUMERATOR.div(TAX_DENOMINATOR);
   return price
     .mul(secondsSinceLastCollection)
     .div(taxPeriodAsSeconds)

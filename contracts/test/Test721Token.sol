@@ -5,16 +5,21 @@ pragma solidity 0.8.7;
 import "../token/PartialCommonOwnership721.sol";
 
 /// @title Test721Token – Example implementation of PCO for 721 for use in testing.
-/// @dev Requires 100% patronage per 365 days
 contract Test721Token is PartialCommonOwnership721 {
   /// @notice Constructs token and mints 1 - 3.
-  constructor(address payable _beneficiary, uint256 taxationPeriod_)
+  constructor(
+    string memory _name,
+    string memory _symbol,
+    address payable _beneficiary,
+    uint256 _taxRate,
+    uint256 _taxationPeriod
+  )
     PartialCommonOwnership721(
-      "721TEST",
-      "TEST",
+      _name,
+      _symbol,
       _beneficiary,
-      1000000000000,
-      taxationPeriod_
+      _taxRate,
+      _taxationPeriod
     )
   {
     _safeMint(address(this), 1);
