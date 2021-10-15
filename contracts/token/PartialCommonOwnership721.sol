@@ -116,7 +116,6 @@ contract PartialCommonOwnership721 is ERC721 {
   /// e.g. 100% => 1000000000000
   /// e.g. 5% => 50000000000
   uint256 private immutable taxNumerator;
-  uint256 private constant taxDenominator = 1000000000000;
 
   /// @notice Over what period, in days, should taxation be applied?
   uint256 public taxationPeriod;
@@ -168,9 +167,9 @@ contract PartialCommonOwnership721 is ERC721 {
   }
 
   /// @notice Gets tax rate
-  /// @return Tax Rate as RAY
+  /// @return Tax Rate
   function taxRate() public view returns (uint256) {
-    return taxNumerator / taxDenominator;
+    return taxNumerator / 1000000000000;
   }
 
   function titleChainOf(uint256 _tokenId)
