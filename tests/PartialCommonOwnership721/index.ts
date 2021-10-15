@@ -92,10 +92,23 @@ describe("PartialCommonOwnership721", async function () {
         ? this.beneficiary
         : this.walletsByAddress[currentOwner];
 
-    // Determine the expected remittance
-    // (Deposit - due + sale price)
-    const depositBefore = await contract.depositOf(tokenId);
-    const { amount, timestamp } = await contract.taxOwed(tokenId);
+    let depositUponPurchase;
+
+    // Check if foreclosed
+    if (await contract.foreclosed(tokenId)) {
+      // Entire deposit will be taken in the foreclosure
+      depositUponPurchase = ETH0;
+    } else {
+      // Get the balance and then determine how much will be deducted by taxation
+      const taxDue = getTaxDue(
+        currentPriceForVerification,
+        (await now()).add(1), // block timestamp
+        await contract.lastCollectionTimes(tokenId),
+        taxationPeriod
+      );
+
+      depositUponPurchase = (await contract.depositOf(tokenId)).sub(taxDue);
+    }
 
     //$ Buy
 
@@ -107,15 +120,6 @@ describe("PartialCommonOwnership721", async function () {
     );
 
     const block = await this.provider.getBlock(trx.blockNumber);
-
-    // Determine how much tax obligation was accrued between `#taxOwed()`
-    // call and trx occurring.
-    const interimAmount = getTaxDue(
-      currentPriceForVerification,
-      ethers.BigNumber.from(block.timestamp),
-      timestamp,
-      taxationPeriod
-    );
 
     //$ Test Cases
 
@@ -144,21 +148,17 @@ describe("PartialCommonOwnership721", async function () {
     // Owned updated
     expect(await contract.ownerOf(tokenId)).to.equal(wallet.address);
 
-    const expectedRemittance = depositBefore
-      .sub(amount)
-      .sub(interimAmount)
-      .add(purchasePrice);
-
+    const expectedRemittance = depositUponPurchase.add(purchasePrice);
     if (expectedRemittance.gt(0)) {
       // Remittance Event emitted
-      // TODO:
-      // expect(trx)
-      //   .to.emit(contract, Events.REMITTANCE)
-      //   .withArgs(
-      //     tokenId,
-      //     remittanceRecipientWallet.address,
-      //     expectedRemittance
-      //   );
+      expect(trx)
+        .to.emit(contract, Events.REMITTANCE)
+        .withArgs(
+          tokenId,
+          remittanceRecipientWallet.address,
+          expectedRemittance
+        );
+
       // // TODO:
       // // Eth remitted to beneficiary
       // const { delta } = await remittanceRecipientWallet.balanceDelta();
