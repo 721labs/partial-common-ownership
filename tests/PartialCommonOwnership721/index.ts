@@ -23,7 +23,6 @@ import {
 } from "./constants";
 import { now } from "../helpers/Time";
 import { taxationPeriodToSeconds, getTaxDue } from "./utils";
-import { fromRAY } from "../DSMath/utils";
 
 const taxRate = TAX_NUMERATOR.div(TAX_DENOMINATOR);
 
@@ -411,7 +410,7 @@ describe("PartialCommonOwnership721", async function () {
       });
 
       it("Setting tax rate", async function () {
-        expect(fromRAY(await this.contract.taxRate())).to.equal(taxRate);
+        expect(await this.contract.taxRate()).to.equal(taxRate);
       });
     });
   });
@@ -570,7 +569,7 @@ describe("PartialCommonOwnership721", async function () {
   describe("#taxRate()", async function () {
     context("succeeds", async function () {
       it("returning expected tax rate [100%]", async function () {
-        expect(fromRAY(await this.alice.contract.taxRate())).to.equal(taxRate);
+        expect(await this.alice.contract.taxRate()).to.equal(taxRate);
       });
     });
   });

@@ -3,7 +3,6 @@
 pragma solidity 0.8.7;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "../utils/DSMath.sol";
 
 struct TitleTransferEvent {
   /// @notice From address.
@@ -171,7 +170,7 @@ contract PartialCommonOwnership721 is ERC721 {
   /// @notice Gets tax rate
   /// @return Tax Rate as RAY
   function taxRate() public view returns (uint256) {
-    return DSMath.rdiv(taxNumerator, taxDenominator);
+    return taxNumerator / taxDenominator;
   }
 
   function titleChainOf(uint256 _tokenId)
@@ -241,7 +240,7 @@ contract PartialCommonOwnership721 is ERC721 {
     returns (uint256 taxDue)
   {
     uint256 price = _price(_tokenId);
-    return ((price * _time) / taxationPeriod) * (taxNumerator / taxDenominator);
+    return ((price * _time) / taxationPeriod) * (taxRate());
   }
 
   /// @notice Public method for the tax owed. Returns with the current time.
