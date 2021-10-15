@@ -116,6 +116,7 @@ contract PartialCommonOwnership721 is ERC721 {
   /// e.g. 100% => 1000000000000
   /// e.g. 5% => 50000000000
   uint256 private immutable taxNumerator;
+  uint256 private constant taxDenominator = 1000000000000;
 
   /// @notice Over what period, in days, should taxation be applied?
   uint256 public taxationPeriod;
@@ -166,10 +167,10 @@ contract PartialCommonOwnership721 is ERC721 {
     _;
   }
 
-  /// @notice Gets tax rate
+  /// @notice Returns tax numerator
   /// @return Tax Rate
   function taxRate() public view returns (uint256) {
-    return taxNumerator / 1000000000000;
+    return taxNumerator;
   }
 
   function titleChainOf(uint256 _tokenId)
@@ -239,7 +240,7 @@ contract PartialCommonOwnership721 is ERC721 {
     returns (uint256 taxDue)
   {
     uint256 price = _price(_tokenId);
-    return ((price * _time) / taxationPeriod) * taxRate();
+    return (((price * _time) / taxationPeriod) * taxNumerator) / taxDenominator;
   }
 
   /// @notice Public method for the tax owed. Returns with the current time.
@@ -297,7 +298,7 @@ contract PartialCommonOwnership721 is ERC721 {
   {
     uint256 last = lastCollectionTimes[_tokenId];
     uint256 timeElapsed = block.timestamp - last;
-    return last + (timeElapsed * deposits[_tokenId] / _taxOwed(_tokenId));
+    return last + ((timeElapsed * deposits[_tokenId]) / _taxOwed(_tokenId));
   }
 
   /// @notice Determines how long a token owner has until forclosure.
