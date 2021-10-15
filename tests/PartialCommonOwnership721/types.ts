@@ -1,3 +1,9 @@
+interface TestConfiguration {
+  name: string;
+  collectionFrequency: number;
+  taxRate: number;
+}
+
 enum ErrorMessages {
   ONLY_OWNER = "Sender does not own this token",
   BUY_ZERO_PRICE = "New Price cannot be zero",
@@ -35,3 +41,4 @@ enum Events {
 }
 
 export { ErrorMessages, TOKENS, Events };
+export type { TestConfiguration };

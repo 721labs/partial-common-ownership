@@ -23,12 +23,13 @@ import {
 } from "./constants";
 import { now } from "../helpers/Time";
 import { taxationPeriodToSeconds, getTaxDue } from "./utils";
+import type { TestConfiguration } from "./types";
 
 const taxRate = TAX_NUMERATOR.div(TAX_DENOMINATOR);
 
 //$ Tests
 
-describe("PartialCommonOwnership721", async function () {
+async function tests(config: TestConfiguration): Promise<void> {
   //$ Helpers
 
   /**
@@ -1923,4 +1924,6 @@ describe("PartialCommonOwnership721", async function () {
       });
     });
   });
-});
+}
+
+export default tests;
