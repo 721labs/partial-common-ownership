@@ -84,10 +84,12 @@ describe("PartialCommonOwnership721", async function () {
     //$ Setup
 
     // Determine whether remittance recipient is the previous owner
-    // or the beneficiary (if the token is owned by the contract)
+    // or the beneficiary (if the token is owned by the contract). Note:
+    // owner may be previous even though foreclosure is pending.
     const currentOwner = await contract.ownerOf(tokenId);
+    const foreclosed = await contract.foreclosed(tokenId);
     const remittanceRecipientWallet =
-      currentOwner === contract.address
+      foreclosed || currentOwner === contract.address
         ? this.beneficiary
         : this.walletsByAddress[currentOwner];
 
@@ -116,14 +118,10 @@ describe("PartialCommonOwnership721", async function () {
       taxationPeriod
     );
 
-    const expectedRemittance = depositBefore
-      .sub(amount)
-      .sub(interimAmount)
-      .add(purchasePrice);
-
     //$ Test Cases
 
     // Buy Event emitted
+
     expect(trx)
       .to.emit(contract, Events.BUY)
       .withArgs(tokenId, wallet.address, purchasePrice);
@@ -143,16 +141,30 @@ describe("PartialCommonOwnership721", async function () {
     // Owned updated
     expect(await contract.ownerOf(tokenId)).to.equal(wallet.address);
 
-    // Remittance Event emitted
-    // TODO: These may fail because of division rounding down; fix in pull/12
-    // expect(trx)
-    //   .to.emit(contract, Events.REMITTANCE)
-    //   .withArgs(tokenId, remittanceRecipientWallet.address, expectedRemittance);
+    const expectedRemittance = depositBefore
+      .sub(amount)
+      .sub(interimAmount)
+      .add(purchasePrice);
 
-    // // Eth remitted to beneficiary
-    // expect((await remittanceRecipientWallet.balanceDelta()).delta).to.equal(
-    //   expectedRemittance
-    // );
+    if (expectedRemittance.gt(0)) {
+      // Remittance Event emitted
+      // TODO:
+      // expect(trx)
+      //   .to.emit(contract, Events.REMITTANCE)
+      //   .withArgs(
+      //     tokenId,
+      //     remittanceRecipientWallet.address,
+      //     expectedRemittance
+      //   );
+      // // TODO:
+      // // Eth remitted to beneficiary
+      // const { delta } = await remittanceRecipientWallet.balanceDelta();
+      // if (!delta.eq(expectedRemittance)) {
+      //   // remittanceBalanceBefore
+      //   debugger;
+      // }
+      //expect(delta).to.equal(expectedRemittance);
+    }
 
     //$ Cleanup
 
