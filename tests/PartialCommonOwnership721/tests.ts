@@ -316,7 +316,7 @@ async function tests(config: TestConfiguration): Promise<void> {
 
   /**
    * Verifies that a given token forecloses at the expected time.
-   * Note: Allows for +/- 1s variation from shouldForecloseAt due to
+   * Note: Allows for +/- 2s variation from shouldForecloseAt due to
    * integer division-based slippages between subsequently returned times.
    * @param contract Contract that owns the token
    * @param tokenId id of the token
@@ -328,7 +328,7 @@ async function tests(config: TestConfiguration): Promise<void> {
   ): Promise<void> {
     expect(await contract.foreclosureTime(tokenId)).to.be.closeTo(
       shouldForecloseAt,
-      1
+      2
     );
   }
 

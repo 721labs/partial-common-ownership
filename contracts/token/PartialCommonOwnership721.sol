@@ -286,7 +286,7 @@ contract PartialCommonOwnership721 is ERC721 {
 
   /// @notice Returns the time when tax owed initially exceeded deposits.
   /// @dev last collected time + ((time_elapsed * deposit) / owed)
-  /// @dev Returns within +/- 1s of previous values due to Solidity rounding
+  /// @dev Returns within +/- 2s of previous values due to Solidity rounding
   /// down integer division without regard for significant digits, which produces
   /// variable results e.g. `599.9999999999851` becomes `599`.
   /// @param _tokenId ID of token requesting
