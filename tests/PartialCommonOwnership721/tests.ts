@@ -163,6 +163,9 @@ async function tests(config: TestConfiguration): Promise<void> {
       block.timestamp
     );
 
+    // Last transfer time
+    expect(await contract.lastTransferTimes(tokenId)).to.equal(block.timestamp);
+
     // Owned updated
     expect(await contract.ownerOf(tokenId)).to.equal(wallet.address);
 
@@ -667,10 +670,17 @@ async function tests(config: TestConfiguration): Promise<void> {
       it("true positive", async function () {
         const token = TOKENS.ONE;
 
-        await buy(alice, token, ETH1, ETH0, ETH2);
+        const { block, trx } = await buy(alice, token, ETH1, ETH0, ETH2);
 
         await time.increase(time.duration.days(366)); // Entire deposit will be exceeded after 1yr
         expect(await contract.foreclosed(token)).to.equal(true);
+
+        expect(trx).to.emit(contract, Events.TRANSFER);
+
+        // Transfer time is set during foreclosure
+        expect(await contract.lastTransferTimes(token)).to.equal(
+          block.timestamp
+        );
       });
       it("true negative", async function () {
         const token = TOKENS.ONE;
