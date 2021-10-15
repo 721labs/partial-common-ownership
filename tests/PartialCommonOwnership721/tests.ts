@@ -16,8 +16,6 @@ import {
   ETH2,
   ETH3,
   ETH4,
-  AnnualTenMinDue,
-  MonthlyTenMinDue,
   TAX_DENOMINATOR,
 } from "./constants";
 import { now } from "../helpers/Time";
@@ -49,6 +47,8 @@ async function tests(config: TestConfiguration): Promise<void> {
   let wallets;
   let walletsByAddress;
   let snapshot;
+  let AnnualTenMinDue;
+  let MonthlyTenMinDue;
 
   //$ Helpers
 
@@ -331,6 +331,12 @@ async function tests(config: TestConfiguration): Promise<void> {
 
   before(async function () {
     taxRate = ethers.BigNumber.from(config.taxRate).div(TAX_DENOMINATOR);
+
+    // Compute tax rate for 1ETH over 10 minutes
+    const tenMin = await now();
+    const prior = tenMin.sub(600);
+    AnnualTenMinDue = getTaxDue(ETH1, tenMin, prior, 365, taxRate);
+    MonthlyTenMinDue = getTaxDue(ETH1, tenMin, prior, 30, taxRate);
 
     provider = new ethers.providers.Web3Provider(web3.currentProvider);
     signers = await ethers.getSigners();
