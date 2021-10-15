@@ -19,7 +19,7 @@ import {
   TAX_DENOMINATOR,
 } from "./constants";
 import { now } from "../helpers/Time";
-import { taxationPeriodToSeconds, getTaxDue } from "./utils";
+import { taxationPeriodToSeconds } from "./utils";
 import type { TestConfiguration } from "./types";
 
 //$ Tests
@@ -30,8 +30,14 @@ async function tests(config: TestConfiguration): Promise<void> {
     gasLimit: 9500000, // if gas limit is set, estimateGas isn't run superfluously, slowing tests down.
   };
 
+  const TAX_NUMERATOR = ethers.BigNumber.from(config.taxRate);
+
+  // If wallet does not redeposit funds after purchasing,
+  // how many days until the entire deposit is exhausted?
+  const DAYS_TILL_FORECLOSURE_WITHOUT_REDEPOSIT =
+    config.collectionFrequency / (config.taxRate / 10 ** 12) + 1;
+
   //$ Constants declared during setup
-  let taxRate;
   let provider;
   let signers;
   let factory;
@@ -46,6 +52,30 @@ async function tests(config: TestConfiguration): Promise<void> {
   let tenMinDue;
 
   //$ Helpers
+
+  /**
+   * Calculates the tax due.
+   * price * % of tax period completed (represented from 0 - 1) * tax rate;
+   * @param price Current price
+   * @param now Unix timestamp when request was made
+   * @param lastCollectionTime Unix timestamp of last tax collection
+   * @returns Tax due between now and last collection.
+   */
+  function getTaxDue(
+    price: BigNumber,
+    now: BigNumber,
+    lastCollectionTime: BigNumber
+  ): BigNumber {
+    const secondsSinceLastCollection = now.sub(lastCollectionTime);
+    const taxPeriodAsSeconds = taxationPeriodToSeconds(
+      config.collectionFrequency
+    );
+    return price
+      .mul(secondsSinceLastCollection)
+      .div(taxPeriodAsSeconds)
+      .mul(TAX_NUMERATOR)
+      .div(TAX_DENOMINATOR);
+  }
 
   /**
    * Deploys the contract with a given taxation period.
@@ -120,9 +150,7 @@ async function tests(config: TestConfiguration): Promise<void> {
       const taxDue = getTaxDue(
         currentPriceForVerification,
         (await now()).add(1), // block timestamp
-        await contract.lastCollectionTimes(tokenId),
-        config.collectionFrequency,
-        taxRate
+        await contract.lastCollectionTimes(tokenId)
       );
 
       depositUponPurchase = (await contract.depositOf(tokenId)).sub(taxDue);
@@ -216,13 +244,7 @@ async function tests(config: TestConfiguration): Promise<void> {
 
     const price = await contract.priceOf(tokenId);
 
-    const due = getTaxDue(
-      price,
-      owed.timestamp,
-      lastCollectionTime,
-      config.collectionFrequency,
-      taxRate
-    );
+    const due = getTaxDue(price, owed.timestamp, lastCollectionTime);
 
     expect(owed.amount).to.equal(due);
   }
@@ -259,13 +281,7 @@ async function tests(config: TestConfiguration): Promise<void> {
     const trx = await contract._collectTax(tokenId);
 
     const timeAfter = await now();
-    const due = getTaxDue(
-      currentPrice,
-      timeAfter,
-      before,
-      config.collectionFrequency,
-      taxRate
-    );
+    const due = getTaxDue(currentPrice, timeAfter, before);
 
     //$ Expectations
 
@@ -319,18 +335,10 @@ async function tests(config: TestConfiguration): Promise<void> {
   //$ Setup
 
   before(async function () {
-    taxRate = ethers.BigNumber.from(config.taxRate).div(TAX_DENOMINATOR);
-
     // Compute tax rate for 1ETH over 10 minutes
     const tenMin = await now();
     const prior = tenMin.sub(600);
-    tenMinDue = getTaxDue(
-      ETH1,
-      tenMin,
-      prior,
-      config.collectionFrequency,
-      taxRate
-    );
+    tenMinDue = getTaxDue(ETH1, tenMin, prior);
 
     provider = new ethers.providers.Web3Provider(web3.currentProvider);
     signers = await ethers.getSigners();
@@ -436,8 +444,8 @@ async function tests(config: TestConfiguration): Promise<void> {
         expect(await contract.beneficiary()).to.equal(beneficiary.address);
       });
 
-      it("Setting tax rate", async function () {
-        expect(await contract.taxRate()).to.equal(taxRate);
+      it(`Setting tax rate`, async function () {
+        expect(await contract.taxRate()).to.equal(TAX_NUMERATOR);
       });
     });
   });
@@ -525,8 +533,8 @@ async function tests(config: TestConfiguration): Promise<void> {
 
   describe("#taxRate()", async function () {
     context("succeeds", async function () {
-      it("returning expected tax rate [100%]", async function () {
-        expect(await alice.contract.taxRate()).to.equal(taxRate);
+      it(`returning expected tax rate`, async function () {
+        expect(await alice.contract.taxRate()).to.equal(TAX_NUMERATOR);
       });
     });
   });
@@ -590,7 +598,8 @@ async function tests(config: TestConfiguration): Promise<void> {
         const expected = price
           .mul(time)
           .div(taxationPeriodToSeconds(config.collectionFrequency))
-          .mul(taxRate);
+          .mul(TAX_NUMERATOR)
+          .div(TAX_DENOMINATOR);
 
         expect(await contract.taxOwedSince(token, time)).to.equal(expected);
       });
@@ -636,8 +645,11 @@ async function tests(config: TestConfiguration): Promise<void> {
 
           await buy(alice, token, ETH1, ETH0, ETH2);
 
-          await time.increase(time.duration.days(366));
+          await time.increase(
+            time.duration.days(DAYS_TILL_FORECLOSURE_WITHOUT_REDEPOSIT)
+          );
           expect(await contract.foreclosed(token)).to.equal(true);
+
           await time.increase(time.duration.days(1));
           expect(await contract.taxCollectedSinceLastTransfer(token)).to.equal(
             0
@@ -649,7 +661,9 @@ async function tests(config: TestConfiguration): Promise<void> {
 
           await buy(alice, token, ETH1, ETH0, ETH2);
 
-          await time.increase(time.duration.days(366));
+          await time.increase(
+            time.duration.days(DAYS_TILL_FORECLOSURE_WITHOUT_REDEPOSIT)
+          );
           expect(await contract.foreclosed(token)).to.equal(true);
 
           await time.increase(time.duration.days(1));
@@ -672,7 +686,9 @@ async function tests(config: TestConfiguration): Promise<void> {
 
         const { block, trx } = await buy(alice, token, ETH1, ETH0, ETH2);
 
-        await time.increase(time.duration.days(366)); // Entire deposit will be exceeded after 1yr
+        await time.increase(
+          time.duration.days(DAYS_TILL_FORECLOSURE_WITHOUT_REDEPOSIT)
+        ); // Entire deposit will be exceeded after 1yr
         expect(await contract.foreclosed(token)).to.equal(true);
 
         expect(trx).to.emit(contract, Events.TRANSFER);
@@ -702,7 +718,9 @@ async function tests(config: TestConfiguration): Promise<void> {
         await buy(alice, token, ETH1, ETH0, ETH2);
 
         // Exhaust deposit
-        await time.increase(time.duration.days(366));
+        await time.increase(
+          time.duration.days(DAYS_TILL_FORECLOSURE_WITHOUT_REDEPOSIT)
+        );
 
         expect(await contract.withdrawableDeposit(token)).to.equal(0);
       });
@@ -887,7 +905,9 @@ async function tests(config: TestConfiguration): Promise<void> {
         await buy(alice, token, ETH1, ETH0, ETH2);
 
         // Exhaust deposit
-        await time.increase(time.duration.days(366));
+        await time.increase(
+          time.duration.days(DAYS_TILL_FORECLOSURE_WITHOUT_REDEPOSIT)
+        );
 
         // Trigger foreclosure & buy it out of foreclosure
         expect(
@@ -907,7 +927,9 @@ async function tests(config: TestConfiguration): Promise<void> {
         await buy(alice, token, ETH1, ETH0, ETH2);
 
         // Exhaust deposit
-        await time.increase(time.duration.days(366));
+        await time.increase(
+          time.duration.days(DAYS_TILL_FORECLOSURE_WITHOUT_REDEPOSIT)
+        );
 
         // Buy out of foreclosure
         await buy(bob, token, ETH1, ETH0, ETH2);
@@ -921,7 +943,9 @@ async function tests(config: TestConfiguration): Promise<void> {
         await buy(alice, token, ETH1, ETH0, ETH2);
 
         // Exhaust deposit
-        await time.increase(time.duration.days(366));
+        await time.increase(
+          time.duration.days(DAYS_TILL_FORECLOSURE_WITHOUT_REDEPOSIT)
+        );
 
         // Buy out of foreclosure
         await buy(alice, token, ETH1, ETH0, ETH2);
@@ -1067,9 +1091,7 @@ async function tests(config: TestConfiguration): Promise<void> {
         const taxedAmt = getTaxDue(
           price,
           ethers.BigNumber.from(timestamp),
-          lastCollectionTime,
-          config.collectionFrequency,
-          taxRate
+          lastCollectionTime
         );
 
         // Deposit should be 1 ETH - taxed amount.
@@ -1110,9 +1132,7 @@ async function tests(config: TestConfiguration): Promise<void> {
         const taxedAmt = getTaxDue(
           ETH1,
           ethers.BigNumber.from(timestamp),
-          lastCollectionTime,
-          config.collectionFrequency,
-          taxRate
+          lastCollectionTime
         );
 
         const expectedRemittance = ETH1.sub(taxedAmt);

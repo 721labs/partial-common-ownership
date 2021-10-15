@@ -1,0 +1,3 @@
+name: "5% Quarterly"
+collectionFrequency: 90
+taxRate: 50000000000 # 5%
