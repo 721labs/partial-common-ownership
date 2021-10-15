@@ -29,7 +29,7 @@ import type { TestConfiguration } from "./types";
 
 async function tests(config: TestConfiguration): Promise<void> {
   //$ Constants
-  const globalTrxConfig = {
+  const GLOBAL_TRX_CONFIG = {
     gasLimit: 9500000, // if gas limit is set, estimateGas isn't run superfluously, slowing tests down.
   };
 
@@ -63,7 +63,7 @@ async function tests(config: TestConfiguration): Promise<void> {
     const contract = await factory.deploy(
       signers[1].address,
       taxationPeriod,
-      globalTrxConfig
+      GLOBAL_TRX_CONFIG
     );
 
     await contract.deployed();
@@ -141,7 +141,7 @@ async function tests(config: TestConfiguration): Promise<void> {
       tokenId,
       purchasePrice,
       currentPriceForVerification,
-      { value, ...globalTrxConfig }
+      { value, ...GLOBAL_TRX_CONFIG }
     );
 
     const block = await provider.getBlock(trx.blockNumber);
