@@ -18,7 +18,6 @@ import {
   ETH4,
   AnnualTenMinDue,
   MonthlyTenMinDue,
-  TAX_NUMERATOR,
   TAX_DENOMINATOR,
 } from "./constants";
 import { now } from "../helpers/Time";
@@ -331,7 +330,6 @@ async function tests(config: TestConfiguration): Promise<void> {
   //$ Setup
 
   before(async function () {
-    //$ Set up constructed constants
     taxRate = ethers.BigNumber.from(config.taxRate).div(TAX_DENOMINATOR);
 
     provider = new ethers.providers.Web3Provider(web3.currentProvider);
@@ -639,8 +637,7 @@ async function tests(config: TestConfiguration): Promise<void> {
         const expected = price
           .mul(time)
           .div(taxationPeriodToSeconds(30))
-          .mul(TAX_NUMERATOR)
-          .div(TAX_DENOMINATOR);
+          .mul(taxRate);
 
         expect(await monthlyContract.taxOwedSince(token, time)).to.equal(
           expected
@@ -658,8 +655,7 @@ async function tests(config: TestConfiguration): Promise<void> {
         const expected = price
           .mul(time)
           .div(taxationPeriodToSeconds(365))
-          .mul(TAX_NUMERATOR)
-          .div(TAX_DENOMINATOR);
+          .mul(taxRate);
 
         expect(await contract.taxOwedSince(token, time)).to.equal(expected);
       });

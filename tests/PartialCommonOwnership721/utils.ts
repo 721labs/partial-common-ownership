@@ -1,6 +1,5 @@
 import { ethers } from "hardhat";
 import { BigNumber } from "ethers";
-import { TAX_NUMERATOR, TAX_DENOMINATOR } from "./constants";
 
 /**
  * Converts a taxation period, in days to seconds, as a big number.
