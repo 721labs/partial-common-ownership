@@ -92,10 +92,12 @@ describe("PartialCommonOwnership721", async function () {
         ? this.beneficiary
         : this.walletsByAddress[currentOwner];
 
+    const depositBefore = await contract.depositOf(tokenId);
+
     let depositUponPurchase;
 
     // Check if foreclosed
-    if (await contract.foreclosed(tokenId)) {
+    if (foreclosed) {
       // Entire deposit will be taken in the foreclosure
       depositUponPurchase = ETH0;
     } else {
@@ -159,14 +161,13 @@ describe("PartialCommonOwnership721", async function () {
           expectedRemittance
         );
 
-      // // TODO:
-      // // Eth remitted to beneficiary
-      // const { delta } = await remittanceRecipientWallet.balanceDelta();
-      // if (!delta.eq(expectedRemittance)) {
-      //   // remittanceBalanceBefore
-      //   debugger;
-      // }
-      //expect(delta).to.equal(expectedRemittance);
+      // Eth remitted to beneficiary
+      const { delta } = await remittanceRecipientWallet.balanceDelta();
+      expect(delta).to.equal(
+        foreclosed
+          ? depositBefore.add(expectedRemittance) // Beneficiary will receive the deposit from tax collection in addition
+          : expectedRemittance
+      );
     }
 
     //$ Cleanup
