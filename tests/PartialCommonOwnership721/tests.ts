@@ -28,8 +28,28 @@ import type { TestConfiguration } from "./types";
 //$ Tests
 
 async function tests(config: TestConfiguration): Promise<void> {
+  //$ Constants
+  const globalTrxConfig = {
+    gasLimit: 9500000, // if gas limit is set, estimateGas isn't run superfluously, slowing tests down.
+  };
+
   //$ Constructed Constants
   let TAX_RATE;
+  let provider;
+  let signers;
+  let factory;
+  let monthlyContract;
+  let contract;
+  let monthlyContractAddress;
+  let contractAddress;
+  let beneficiary;
+  let alice;
+  let bob;
+  let monthlyAlice;
+  let monthlyBob;
+  let wallets;
+  let walletsByAddress;
+  let snapshot;
 
   //$ Helpers
 
@@ -40,10 +60,10 @@ async function tests(config: TestConfiguration): Promise<void> {
    * @returns contract interface
    */
   async function deploy(taxationPeriod: number): Promise<any> {
-    const contract = await this.factory.deploy(
-      this.signers[1].address,
+    const contract = await factory.deploy(
+      signers[1].address,
       taxationPeriod,
-      this.globalTrxConfig
+      globalTrxConfig
     );
 
     await contract.deployed();
@@ -56,7 +76,7 @@ async function tests(config: TestConfiguration): Promise<void> {
    * Scopes a snapshot of the EVM.
    */
   async function snapshotEVM(): Promise<void> {
-    this.snapshot = await this.provider.send("evm_snapshot", []);
+    snapshot = await provider.send("evm_snapshot", []);
   }
 
   /**
@@ -91,8 +111,8 @@ async function tests(config: TestConfiguration): Promise<void> {
     const foreclosed = await contract.foreclosed(tokenId);
     const remittanceRecipientWallet =
       foreclosed || currentOwner === contract.address
-        ? this.beneficiary
-        : this.walletsByAddress[currentOwner];
+        ? beneficiary
+        : walletsByAddress[currentOwner];
 
     const depositBefore = await contract.depositOf(tokenId);
 
@@ -121,10 +141,10 @@ async function tests(config: TestConfiguration): Promise<void> {
       tokenId,
       purchasePrice,
       currentPriceForVerification,
-      { value, ...this.globalTrxConfig }
+      { value, ...globalTrxConfig }
     );
 
-    const block = await this.provider.getBlock(trx.blockNumber);
+    const block = await provider.getBlock(trx.blockNumber);
 
     //$ Test Cases
 
@@ -234,7 +254,7 @@ async function tests(config: TestConfiguration): Promise<void> {
   ): Promise<void> {
     //$ Setup
 
-    await this.beneficiary.balance();
+    await beneficiary.balance();
 
     const depositBefore = await contract.depositOf(tokenId);
     const taxCollectedSinceLastTransferBefore =
@@ -282,11 +302,11 @@ async function tests(config: TestConfiguration): Promise<void> {
     );
 
     // Beneficiary is remitted the expected amount
-    expect((await this.beneficiary.balanceDelta()).delta).to.equal(due);
+    expect((await beneficiary.balanceDelta()).delta).to.equal(due);
 
     //$ Cleanup
 
-    await this.beneficiary.balance();
+    await beneficiary.balance();
   }
 
   /**
@@ -314,63 +334,53 @@ async function tests(config: TestConfiguration): Promise<void> {
     //$ Set up constructed constants
     TAX_RATE = ethers.BigNumber.from(config.taxRate).div(TAX_DENOMINATOR);
 
-    this.provider = new ethers.providers.Web3Provider(web3.currentProvider);
-    this.signers = await ethers.getSigners();
-    this.factory = await ethers.getContractFactory("Test721Token");
+    provider = new ethers.providers.Web3Provider(web3.currentProvider);
+    signers = await ethers.getSigners();
+    factory = await ethers.getContractFactory("Test721Token");
 
     //$ Set up contracts
 
-    this.globalTrxConfig = {
-      gasLimit: 9500000, // if gas limit is set, estimateGas isn't run superfluously, slowing tests down.
-    };
+    monthlyContract = await deploy(30);
+    contract = await deploy(365);
 
-    this.monthlyContract = await deploy.apply(this, [30]);
-    this.contract = await deploy.apply(this, [365]);
-
-    this.monthlyContractAddress = this.monthlyContract.address;
-    this.contractAddress = this.contract.address;
+    monthlyContractAddress = monthlyContract.address;
+    contractAddress = contract.address;
 
     //$ Set up wallets
 
-    this.beneficiary = new Wallet(this.contract, this.signers[1]);
-    this.alice = new Wallet(this.contract, this.signers[2]);
-    this.bob = new Wallet(this.contract, this.signers[3]);
-    this.monthlyAlice = new Wallet(this.monthlyContract, this.signers[4]);
-    this.monthlyBob = new Wallet(this.monthlyContract, this.signers[5]);
+    beneficiary = new Wallet(contract, signers[1]);
+    alice = new Wallet(contract, signers[2]);
+    bob = new Wallet(contract, signers[3]);
+    monthlyAlice = new Wallet(monthlyContract, signers[4]);
+    monthlyBob = new Wallet(monthlyContract, signers[5]);
 
-    this.wallets = [
-      this.beneficiary,
-      this.monthlyAlice,
-      this.monthlyBob,
-      this.alice,
-      this.bob,
-    ];
+    wallets = [beneficiary, monthlyAlice, monthlyBob, alice, bob];
 
-    this.walletsByAddress = this.wallets.reduce(
+    walletsByAddress = wallets.reduce(
       (memo, wallet) => ({ ...memo, [wallet.address]: wallet }),
       {}
     );
 
     await Promise.all(
-      this.wallets.map(function (wallet) {
+      wallets.map(function (wallet) {
         return wallet.setup();
       })
     );
 
-    await snapshotEVM.apply(this);
+    await snapshotEVM();
   });
 
   /**
-   * Between each test wipe the state of the this.contract.
+   * Between each test wipe the state of the contract.
    */
   beforeEach(async function () {
     // Reset contract state
-    await this.provider.send("evm_revert", [this.snapshot]);
-    await snapshotEVM.apply(this);
+    await provider.send("evm_revert", [snapshot]);
+    await snapshotEVM();
 
     // Reset balance trackers
     await Promise.all(
-      this.wallets.map(function (wallet) {
+      wallets.map(function (wallet) {
         return wallet.balance();
       })
     );
@@ -380,15 +390,9 @@ async function tests(config: TestConfiguration): Promise<void> {
 
   describe("Test721Token", async function () {
     it("mints three tokens during construction", async function () {
-      expect(await this.contract.ownerOf(TOKENS.ONE)).to.equal(
-        this.contractAddress
-      );
-      expect(await this.contract.ownerOf(TOKENS.TWO)).to.equal(
-        this.contractAddress
-      );
-      expect(await this.contract.ownerOf(TOKENS.THREE)).to.equal(
-        this.contractAddress
-      );
+      expect(await contract.ownerOf(TOKENS.ONE)).to.equal(contractAddress);
+      expect(await contract.ownerOf(TOKENS.TWO)).to.equal(contractAddress);
+      expect(await contract.ownerOf(TOKENS.THREE)).to.equal(contractAddress);
     });
   });
 
@@ -396,27 +400,26 @@ async function tests(config: TestConfiguration): Promise<void> {
     context("fails", async function () {
       it("#transferFrom()", async function () {
         await expect(
-          this.contract.transferFrom(
-            this.contractAddress,
-            this.alice.address,
-            TOKENS.ONE
-          )
+          contract.transferFrom(contractAddress, alice.address, TOKENS.ONE)
         ).to.be.revertedWith(ErrorMessages.PROHIBITED_TRANSFER_METHOD);
       });
 
       it("#safeTransferFrom()", async function () {
         await expect(
-          this.contract.functions["safeTransferFrom(address,address,uint256)"](
-            this.contractAddress,
-            this.alice.address,
+          contract.functions["safeTransferFrom(address,address,uint256)"](
+            contractAddress,
+            alice.address,
             TOKENS.ONE
           )
         ).to.be.revertedWith(ErrorMessages.PROHIBITED_TRANSFER_METHOD);
 
         await expect(
-          this.contract.functions[
-            "safeTransferFrom(address,address,uint256,bytes)"
-          ](this.contractAddress, this.alice.address, TOKENS.ONE, 0x0)
+          contract.functions["safeTransferFrom(address,address,uint256,bytes)"](
+            contractAddress,
+            alice.address,
+            TOKENS.ONE,
+            0x0
+          )
         ).to.be.revertedWith(ErrorMessages.PROHIBITED_TRANSFER_METHOD);
       });
     });
@@ -425,11 +428,11 @@ async function tests(config: TestConfiguration): Promise<void> {
   describe("#constructor()", async function () {
     context("succeeds", async function () {
       it("Setting name", async function () {
-        expect(await this.contract.name()).to.equal(TEST_NAME);
+        expect(await contract.name()).to.equal(TEST_NAME);
       });
 
       it("Setting symbol", async function () {
-        expect(await this.contract.symbol()).to.equal(TEST_SYMBOL);
+        expect(await contract.symbol()).to.equal(TEST_SYMBOL);
       });
 
       /**
@@ -437,13 +440,11 @@ async function tests(config: TestConfiguration): Promise<void> {
        * of the contract owner / deployer.
        */
       it("Setting beneficiary", async function () {
-        expect(await this.contract.beneficiary()).to.equal(
-          this.beneficiary.address
-        );
+        expect(await contract.beneficiary()).to.equal(beneficiary.address);
       });
 
       it("Setting tax rate", async function () {
-        expect(await this.contract.taxRate()).to.equal(TAX_RATE);
+        expect(await contract.taxRate()).to.equal(TAX_RATE);
       });
     });
   });
@@ -453,24 +454,24 @@ async function tests(config: TestConfiguration): Promise<void> {
       context("when required but signer is not owner", async function () {
         it("#depositWei()", async function () {
           await expect(
-            this.alice.contract.depositWei(TOKENS.ONE, { value: ETH1 })
+            alice.contract.depositWei(TOKENS.ONE, { value: ETH1 })
           ).to.be.revertedWith(ErrorMessages.ONLY_OWNER);
         });
 
         it("#changePrice()", async function () {
           await expect(
-            this.alice.contract.changePrice(TOKENS.ONE, 500)
+            alice.contract.changePrice(TOKENS.ONE, 500)
           ).to.be.revertedWith(ErrorMessages.ONLY_OWNER);
         });
 
         it("#withdrawDeposit()", async function () {
           await expect(
-            this.alice.contract.withdrawDeposit(TOKENS.ONE, 10)
+            alice.contract.withdrawDeposit(TOKENS.ONE, 10)
           ).to.be.revertedWith(ErrorMessages.ONLY_OWNER);
         });
 
         it("#exit()", async function () {
-          await expect(this.alice.contract.exit(TOKENS.ONE)).to.be.revertedWith(
+          await expect(alice.contract.exit(TOKENS.ONE)).to.be.revertedWith(
             ErrorMessages.ONLY_OWNER
           );
         });
@@ -485,89 +486,39 @@ async function tests(config: TestConfiguration): Promise<void> {
         const price = ETH1;
         const token = TOKENS.ONE;
 
-        await buy.apply(this, [
-          this.monthlyContract,
-          this.monthlyAlice,
-          token,
-          price,
-          ETH0,
-          ETH2,
-          30,
-        ]);
+        await buy(monthlyContract, monthlyAlice, token, price, ETH0, ETH2, 30);
 
-        await collectTax.apply(this, [
-          this.monthlyContract,
-          token,
-          10,
-          price,
-          30,
-        ]);
+        await collectTax(monthlyContract, token, 10, price, 30);
       });
 
       it("annual: collects after 10m", async function () {
         const price = ETH1;
         const token = TOKENS.ONE;
 
-        await buy.apply(this, [
-          this.contract,
-          this.alice,
-          token,
-          price,
-          ETH0,
-          ETH2,
-          365,
-        ]);
+        await buy(contract, alice, token, price, ETH0, ETH2, 365);
 
-        await collectTax.apply(this, [this.contract, token, 10, price, 365]);
+        await collectTax(contract, token, 10, price, 365);
       });
 
       it("30d: collects after 10m and subsequently after 10m", async function () {
         const price = ETH1;
         const token = TOKENS.ONE;
 
-        await buy.apply(this, [
-          this.monthlyContract,
-          this.monthlyAlice,
-          token,
-          price,
-          ETH0,
-          ETH2,
-          30,
-        ]);
+        await buy(monthlyContract, monthlyAlice, token, price, ETH0, ETH2, 30);
 
-        await collectTax.apply(this, [
-          this.monthlyContract,
-          token,
-          10,
-          price,
-          30,
-        ]);
+        await collectTax(monthlyContract, token, 10, price, 30);
 
-        await collectTax.apply(this, [
-          this.monthlyContract,
-          token,
-          10,
-          price,
-          30,
-        ]);
+        await collectTax(monthlyContract, token, 10, price, 30);
       });
 
       it("annual: collects after 10m and subsequently after 10m", async function () {
         const price = ETH1;
         const token = TOKENS.ONE;
 
-        await buy.apply(this, [
-          this.contract,
-          this.alice,
-          token,
-          price,
-          ETH0,
-          ETH2,
-          365,
-        ]);
+        await buy(contract, alice, token, price, ETH0, ETH2, 365);
 
-        await collectTax.apply(this, [this.contract, token, 10, price, 365]);
-        await collectTax.apply(this, [this.contract, token, 10, price, 365]);
+        await collectTax(contract, token, 10, price, 365);
+        await collectTax(contract, token, 10, price, 365);
       });
     });
   });
@@ -576,23 +527,23 @@ async function tests(config: TestConfiguration): Promise<void> {
     context("fails", async function () {
       context("when token not minted but required", async function () {
         it("#priceOf()", async function () {
-          await expect(
-            this.contract.ownerOf(INVALID_TOKEN_ID)
-          ).to.be.revertedWith(ErrorMessages.NONEXISTENT_TOKEN);
+          await expect(contract.ownerOf(INVALID_TOKEN_ID)).to.be.revertedWith(
+            ErrorMessages.NONEXISTENT_TOKEN
+          );
         });
         it("#depositOf()", async function () {
-          await expect(
-            this.contract.depositOf(INVALID_TOKEN_ID)
-          ).to.be.revertedWith(ErrorMessages.NONEXISTENT_TOKEN);
+          await expect(contract.depositOf(INVALID_TOKEN_ID)).to.be.revertedWith(
+            ErrorMessages.NONEXISTENT_TOKEN
+          );
         });
         it("#buy()", async function () {
           await expect(
-            this.contract.buy(INVALID_TOKEN_ID, ETH0, ETH0, { value: ETH0 })
+            contract.buy(INVALID_TOKEN_ID, ETH0, ETH0, { value: ETH0 })
           ).to.be.revertedWith(ErrorMessages.NONEXISTENT_TOKEN);
         });
         it("#taxOwedSince()", async function () {
           await expect(
-            this.contract.taxOwedSince(INVALID_TOKEN_ID, await now())
+            contract.taxOwedSince(INVALID_TOKEN_ID, await now())
           ).to.be.revertedWith(ErrorMessages.NONEXISTENT_TOKEN);
         });
       });
@@ -602,7 +553,7 @@ async function tests(config: TestConfiguration): Promise<void> {
   describe("#taxRate()", async function () {
     context("succeeds", async function () {
       it("returning expected tax rate [100%]", async function () {
-        expect(await this.alice.contract.taxRate()).to.equal(TAX_RATE);
+        expect(await alice.contract.taxRate()).to.equal(TAX_RATE);
       });
     });
   });
@@ -610,7 +561,7 @@ async function tests(config: TestConfiguration): Promise<void> {
   describe("#priceOf()", async function () {
     context("succeeds", async function () {
       it("returning expected price [ETH0]", async function () {
-        expect(await this.contract.priceOf(TOKENS.ONE)).to.equal(ETH0);
+        expect(await contract.priceOf(TOKENS.ONE)).to.equal(ETH0);
       });
     });
   });
@@ -618,7 +569,7 @@ async function tests(config: TestConfiguration): Promise<void> {
   describe("#depositOf()", async function () {
     context("succeeds", async function () {
       it("returning expected deposit [ETH0]", async function () {
-        expect(await this.contract.priceOf(TOKENS.ONE)).to.equal(ETH0);
+        expect(await contract.priceOf(TOKENS.ONE)).to.equal(ETH0);
       });
     });
   });
@@ -629,97 +580,42 @@ async function tests(config: TestConfiguration): Promise<void> {
       it("30d: Returns correct taxation after 1 second", async function () {
         const token = TOKENS.ONE;
 
-        await buy.apply(this, [
-          this.monthlyContract,
-          this.monthlyAlice,
-          token,
-          ETH1,
-          ETH0,
-          ETH2,
-          30,
-        ]);
+        await buy(monthlyContract, monthlyAlice, token, ETH1, ETH0, ETH2, 30);
 
-        await verifyCorrectTaxOwed.apply(this, [
-          this.monthlyContract,
-          token,
-          1,
-          30,
-        ]);
+        await verifyCorrectTaxOwed(monthlyContract, token, 1, 30);
       });
 
       it("annual: Returns correct taxation after 1 second", async function () {
         const token = TOKENS.ONE;
 
-        await buy.apply(this, [
-          this.contract,
-          this.alice,
-          token,
-          ETH1,
-          ETH0,
-          ETH2,
-          365,
-        ]);
+        await buy(contract, alice, token, ETH1, ETH0, ETH2, 365);
 
-        await verifyCorrectTaxOwed.apply(this, [this.contract, token, 1, 365]);
+        await verifyCorrectTaxOwed(contract, token, 1, 365);
       });
     });
 
     it("30d: Returns correct taxation after 30 days", async function () {
       const token = TOKENS.ONE;
 
-      await buy.apply(this, [
-        this.monthlyContract,
-        this.monthlyAlice,
-        token,
-        ETH1,
-        ETH0,
-        ETH2,
-        30,
-      ]);
+      await buy(monthlyContract, monthlyAlice, token, ETH1, ETH0, ETH2, 30);
 
-      await verifyCorrectTaxOwed.apply(this, [
-        this.monthlyContract,
-        token,
-        30,
-        30,
-      ]);
+      await verifyCorrectTaxOwed(monthlyContract, token, 30, 30);
     });
 
     it("30d: Returns correct taxation after 60 days", async function () {
       const token = TOKENS.ONE;
 
-      await buy.apply(this, [
-        this.monthlyContract,
-        this.monthlyAlice,
-        token,
-        ETH1,
-        ETH0,
-        ETH2,
-        30,
-      ]);
+      await buy(monthlyContract, monthlyAlice, token, ETH1, ETH0, ETH2, 30);
 
-      await verifyCorrectTaxOwed.apply(this, [
-        this.monthlyContract,
-        token,
-        60,
-        30,
-      ]);
+      await verifyCorrectTaxOwed(monthlyContract, token, 60, 30);
     });
 
     it("annual: Returns correct taxation after 1 year", async function () {
       const token = TOKENS.ONE;
 
-      await buy.apply(this, [
-        this.contract,
-        this.alice,
-        token,
-        ETH1,
-        ETH0,
-        ETH2,
-        365,
-      ]);
+      await buy(contract, alice, token, ETH1, ETH0, ETH2, 365);
 
-      await verifyCorrectTaxOwed.apply(this, [this.contract, token, 365, 365]);
+      await verifyCorrectTaxOwed(contract, token, 365, 365);
     });
   });
 
@@ -728,7 +624,7 @@ async function tests(config: TestConfiguration): Promise<void> {
     context("succeeds", async function () {
       it("Returns zero if no purchase", async function () {
         expect(
-          await this.contract.taxOwedSince(TOKENS.ONE, (await now()).sub(1))
+          await contract.taxOwedSince(TOKENS.ONE, (await now()).sub(1))
         ).to.equal(0);
       });
 
@@ -736,15 +632,7 @@ async function tests(config: TestConfiguration): Promise<void> {
         const token = TOKENS.ONE;
         const price = ETH1;
 
-        await buy.apply(this, [
-          this.monthlyContract,
-          this.monthlyAlice,
-          token,
-          price,
-          ETH0,
-          ETH2,
-          30,
-        ]);
+        await buy(monthlyContract, monthlyAlice, token, price, ETH0, ETH2, 30);
 
         const time = (await now()).sub(1);
 
@@ -754,7 +642,7 @@ async function tests(config: TestConfiguration): Promise<void> {
           .mul(TAX_NUMERATOR)
           .div(TAX_DENOMINATOR);
 
-        expect(await this.monthlyContract.taxOwedSince(token, time)).to.equal(
+        expect(await monthlyContract.taxOwedSince(token, time)).to.equal(
           expected
         );
       });
@@ -763,15 +651,7 @@ async function tests(config: TestConfiguration): Promise<void> {
         const token = TOKENS.ONE;
         const price = ETH1;
 
-        await buy.apply(this, [
-          this.contract,
-          this.alice,
-          token,
-          price,
-          ETH0,
-          ETH2,
-          365,
-        ]);
+        await buy(contract, alice, token, price, ETH0, ETH2, 365);
 
         const time = (await now()).sub(1);
 
@@ -781,9 +661,7 @@ async function tests(config: TestConfiguration): Promise<void> {
           .mul(TAX_NUMERATOR)
           .div(TAX_DENOMINATOR);
 
-        expect(await this.contract.taxOwedSince(token, time)).to.equal(
-          expected
-        );
+        expect(await contract.taxOwedSince(token, time)).to.equal(expected);
       });
     });
   });
@@ -794,7 +672,7 @@ async function tests(config: TestConfiguration): Promise<void> {
       context("returning correct amount", async function () {
         it("if never transferred", async function () {
           expect(
-            await this.contract.taxCollectedSinceLastTransfer(TOKENS.ONE)
+            await contract.taxCollectedSinceLastTransfer(TOKENS.ONE)
           ).to.equal(0);
         });
 
@@ -802,213 +680,119 @@ async function tests(config: TestConfiguration): Promise<void> {
           const token = TOKENS.ONE;
           const price = ETH1;
 
-          await buy.apply(this, [
-            this.monthlyContract,
-            this.monthlyAlice,
+          await buy(
+            monthlyContract,
+            monthlyAlice,
             token,
             price,
             ETH0,
             ETH2,
-            30,
-          ]);
+            30
+          );
 
-          await collectTax.apply(this, [
-            this.monthlyContract,
-            token,
-            1,
-            price,
-            30,
-          ]);
+          await collectTax(monthlyContract, token, 1, price, 30);
         });
 
         it("annual: after initial purchase", async function () {
           const token = TOKENS.ONE;
           const price = ETH1;
 
-          await buy.apply(this, [
-            this.contract,
-            this.alice,
-            token,
-            price,
-            ETH0,
-            ETH2,
-            365,
-          ]);
+          await buy(contract, alice, token, price, ETH0, ETH2, 365);
 
-          await collectTax.apply(this, [this.contract, token, 1, price, 365]);
+          await collectTax(contract, token, 1, price, 365);
         });
 
         it("30d: after 1 secondary-purchase", async function () {
           const token = TOKENS.ONE;
           const price = ETH1;
 
-          await buy.apply(this, [
-            this.monthlyContract,
-            this.monthlyAlice,
+          await buy(
+            monthlyContract,
+            monthlyAlice,
             token,
             price,
             ETH0,
             ETH2,
-            30,
-          ]);
+            30
+          );
 
-          await collectTax.apply(this, [
-            this.monthlyContract,
-            token,
-            1,
-            price,
-            30,
-          ]);
+          await collectTax(monthlyContract, token, 1, price, 30);
 
           const secondaryPrice = ETH2;
 
-          await buy.apply(this, [
-            this.monthlyContract,
-            this.monthlyBob,
+          await buy(
+            monthlyContract,
+            monthlyBob,
             token,
             secondaryPrice,
             ETH1,
             ETH3,
-            30,
-          ]);
+            30
+          );
 
-          await collectTax.apply(this, [
-            this.monthlyContract,
-            token,
-            1,
-            secondaryPrice,
-            30,
-          ]);
+          await collectTax(monthlyContract, token, 1, secondaryPrice, 30);
         });
 
         it("annual: after 1 secondary-purchase", async function () {
           const token = TOKENS.ONE;
           const price = ETH1;
 
-          await buy.apply(this, [
-            this.contract,
-            this.alice,
-            token,
-            price,
-            ETH0,
-            ETH2,
-            365,
-          ]);
+          await buy(contract, alice, token, price, ETH0, ETH2, 365);
 
-          await collectTax.apply(this, [this.contract, token, 1, price, 365]);
+          await collectTax(contract, token, 1, price, 365);
 
           const secondaryPrice = ETH2;
 
-          await buy.apply(this, [
-            this.contract,
-            this.bob,
-            token,
-            secondaryPrice,
-            ETH1,
-            ETH3,
-            365,
-          ]);
+          await buy(contract, bob, token, secondaryPrice, ETH1, ETH3, 365);
 
-          await collectTax.apply(this, [
-            this.contract,
-            token,
-            1,
-            secondaryPrice,
-            365,
-          ]);
+          await collectTax(contract, token, 1, secondaryPrice, 365);
         });
 
         it("when foreclosed", async function () {
           const token = TOKENS.ONE;
 
-          await buy.apply(this, [
-            this.contract,
-            this.alice,
-            token,
-            ETH1,
-            ETH0,
-            ETH2,
-            365,
-          ]);
+          await buy(contract, alice, token, ETH1, ETH0, ETH2, 365);
 
           await time.increase(time.duration.days(366));
-          expect(await this.contract.foreclosed(token)).to.equal(true);
+          expect(await contract.foreclosed(token)).to.equal(true);
           await time.increase(time.duration.days(1));
-          expect(
-            await this.contract.taxCollectedSinceLastTransfer(token)
-          ).to.equal(0);
+          expect(await contract.taxCollectedSinceLastTransfer(token)).to.equal(
+            0
+          );
         });
 
         it("30d: after purchase from foreclosure", async function () {
           const token = TOKENS.ONE;
 
-          await buy.apply(this, [
-            this.monthlyContract,
-            this.monthlyAlice,
-            token,
-            ETH1,
-            ETH0,
-            ETH2,
-            30,
-          ]);
+          await buy(monthlyContract, monthlyAlice, token, ETH1, ETH0, ETH2, 30);
 
           await time.increase(time.duration.days(31));
-          expect(await this.monthlyContract.foreclosed(token)).to.equal(true);
+          expect(await monthlyContract.foreclosed(token)).to.equal(true);
 
           await time.increase(time.duration.days(1));
 
           // Purchase out of foreclosure
           const price = ETH1;
-          await buy.apply(this, [
-            this.monthlyContract,
-            this.monthlyBob,
-            token,
-            price,
-            ETH0,
-            ETH2,
-            30,
-          ]);
+          await buy(monthlyContract, monthlyBob, token, price, ETH0, ETH2, 30);
 
-          await collectTax.apply(this, [
-            this.monthlyContract,
-            token,
-            1,
-            price,
-            30,
-          ]);
+          await collectTax(monthlyContract, token, 1, price, 30);
         });
 
         it("annual: after purchase from foreclosure", async function () {
           const token = TOKENS.ONE;
 
-          await buy.apply(this, [
-            this.contract,
-            this.alice,
-            token,
-            ETH1,
-            ETH0,
-            ETH2,
-            365,
-          ]);
+          await buy(contract, alice, token, ETH1, ETH0, ETH2, 365);
 
           await time.increase(time.duration.days(366));
-          expect(await this.contract.foreclosed(token)).to.equal(true);
+          expect(await contract.foreclosed(token)).to.equal(true);
 
           await time.increase(time.duration.days(1));
 
           // Purchase out of foreclosure
           const price = ETH1;
-          await buy.apply(this, [
-            this.contract,
-            this.bob,
-            token,
-            price,
-            ETH0,
-            ETH2,
-            365,
-          ]);
+          await buy(contract, bob, token, price, ETH0, ETH2, 365);
 
-          await collectTax.apply(this, [this.contract, token, 1, price, 365]);
+          await collectTax(contract, token, 1, price, 365);
         });
       });
     });
@@ -1020,34 +804,18 @@ async function tests(config: TestConfiguration): Promise<void> {
       it("true positive", async function () {
         const token = TOKENS.ONE;
 
-        await buy.apply(this, [
-          this.contract,
-          this.alice,
-          token,
-          ETH1,
-          ETH0,
-          ETH2,
-          365,
-        ]);
+        await buy(contract, alice, token, ETH1, ETH0, ETH2, 365);
 
         await time.increase(time.duration.days(366)); // Entire deposit will be exceeded after 1yr
-        expect(await this.contract.foreclosed(token)).to.equal(true);
+        expect(await contract.foreclosed(token)).to.equal(true);
       });
       it("true negative", async function () {
         const token = TOKENS.ONE;
 
-        await buy.apply(this, [
-          this.contract,
-          this.alice,
-          token,
-          ETH1,
-          ETH0,
-          ETH2,
-          365,
-        ]);
+        await buy(contract, alice, token, ETH1, ETH0, ETH2, 365);
 
         await time.increase(time.duration.minutes(1));
-        expect(await this.contract.foreclosed(token)).to.equal(false);
+        expect(await contract.foreclosed(token)).to.equal(false);
       });
     });
   });
@@ -1058,38 +826,22 @@ async function tests(config: TestConfiguration): Promise<void> {
       it("Returns zero when owed >= deposit", async function () {
         const token = TOKENS.ONE;
 
-        await buy.apply(this, [
-          this.contract,
-          this.alice,
-          token,
-          ETH1,
-          ETH0,
-          ETH2,
-          365,
-        ]);
+        await buy(contract, alice, token, ETH1, ETH0, ETH2, 365);
 
         // Exhaust deposit
         await time.increase(time.duration.days(366));
 
-        expect(await this.contract.withdrawableDeposit(token)).to.equal(0);
+        expect(await contract.withdrawableDeposit(token)).to.equal(0);
       });
       it("Returns (deposit - owed) when owed < deposit", async function () {
         const token = TOKENS.ONE;
 
-        await buy.apply(this, [
-          this.contract,
-          this.alice,
-          token,
-          ETH1,
-          ETH0,
-          ETH2,
-          365,
-        ]);
+        await buy(contract, alice, token, ETH1, ETH0, ETH2, 365);
 
         await time.increase(time.duration.days(1));
-        const owed = await this.contract.taxOwed(token);
+        const owed = await contract.taxOwed(token);
 
-        expect(await this.contract.withdrawableDeposit(token)).to.equal(
+        expect(await contract.withdrawableDeposit(token)).to.equal(
           ETH1.sub(owed.amount)
         );
       });
@@ -1102,15 +854,15 @@ async function tests(config: TestConfiguration): Promise<void> {
       it("consistently returns within +/- 1s", async function () {
         const token = TOKENS.ONE;
 
-        await buy.apply(this, [
-          this.contract,
-          this.alice,
+        await buy(
+          contract,
+          alice,
           token,
           ETH1,
           ETH0,
           ETH1.add(AnnualTenMinDue),
-          365,
-        ]);
+          365
+        );
 
         // Future:
 
@@ -1120,159 +872,133 @@ async function tests(config: TestConfiguration): Promise<void> {
           ethers.BigNumber.from(tenMinutes.toString())
         );
 
-        await verifyExpectedForeclosureTime.apply(this, [
-          this.contract,
-          token,
-          shouldForecloseAt,
-        ]);
+        await verifyExpectedForeclosureTime(contract, token, shouldForecloseAt);
 
         // Present:
 
         await time.increase(tenMinutes);
 
         // Foreclosure should be backdated to when token was in foreclosed state.
-        await verifyExpectedForeclosureTime.apply(this, [
-          this.contract,
-          token,
-          shouldForecloseAt,
-        ]);
+        await verifyExpectedForeclosureTime(contract, token, shouldForecloseAt);
 
         // Trigger foreclosure
-        await this.contract._collectTax(token);
+        await contract._collectTax(token);
 
         // Past:
 
         await time.increase(tenMinutes);
 
-        await verifyExpectedForeclosureTime.apply(this, [
-          this.contract,
-          token,
-          shouldForecloseAt,
-        ]);
+        await verifyExpectedForeclosureTime(contract, token, shouldForecloseAt);
       });
 
       it("30d: time is 10m into the future", async function () {
         const token = TOKENS.ONE;
 
-        await buy.apply(this, [
-          this.monthlyContract,
-          this.monthlyAlice,
+        await buy(
+          monthlyContract,
+          monthlyAlice,
           token,
           ETH1,
           ETH0,
           ETH1.add(MonthlyTenMinDue), // Deposit a surplus 10 min of patronage
-          30,
-        ]);
+          30
+        );
 
         const tenMinutesFromNow = (await now()).add(
           ethers.BigNumber.from(time.duration.minutes(10).toString())
         );
 
-        await verifyExpectedForeclosureTime.apply(this, [
-          this.monthlyContract,
+        await verifyExpectedForeclosureTime(
+          monthlyContract,
           token,
-          tenMinutesFromNow,
-        ]);
+          tenMinutesFromNow
+        );
       });
 
       it("annual: time is 10m into the future", async function () {
         const token = TOKENS.ONE;
 
-        await buy.apply(this, [
-          this.contract,
-          this.alice,
+        await buy(
+          contract,
+          alice,
           token,
           ETH1,
           ETH0,
           ETH1.add(AnnualTenMinDue), // Deposit a surplus 10 min of patronage
-          365,
-        ]);
+          365
+        );
 
         const tenMinutesFromNow = (await now()).add(
           ethers.BigNumber.from(time.duration.minutes(10).toString())
         );
 
-        await verifyExpectedForeclosureTime.apply(this, [
-          this.contract,
-          token,
-          tenMinutesFromNow,
-        ]);
+        await verifyExpectedForeclosureTime(contract, token, tenMinutesFromNow);
       });
 
       it("30d: returns backdated time if foreclosed", async function () {
         const token = TOKENS.ONE;
 
-        await buy.apply(this, [
-          this.monthlyContract,
-          this.monthlyAlice,
+        await buy(
+          monthlyContract,
+          monthlyAlice,
           token,
           ETH1,
           ETH0,
           ETH1.add(MonthlyTenMinDue), // Deposit a surplus 10 min of patronage
-          30,
-        ]);
+          30
+        );
 
         await time.increase(time.duration.minutes(10));
         const shouldForecloseAt = await now();
 
         // Foreclosure should be backdated to when token was in foreclosed state.
-        await verifyExpectedForeclosureTime.apply(this, [
-          this.monthlyContract,
+        await verifyExpectedForeclosureTime(
+          monthlyContract,
           token,
-          shouldForecloseAt,
-        ]);
+          shouldForecloseAt
+        );
 
         // Trigger foreclosure
-        await this.monthlyContract._collectTax(token);
+        await monthlyContract._collectTax(token);
 
-        expect(await this.monthlyContract.ownerOf(token)).to.equal(
-          this.monthlyContractAddress
+        expect(await monthlyContract.ownerOf(token)).to.equal(
+          monthlyContractAddress
         );
 
         // Value should remain within +/- 1s after foreclosure has taken place
-        await verifyExpectedForeclosureTime.apply(this, [
-          this.monthlyContract,
+        await verifyExpectedForeclosureTime(
+          monthlyContract,
           token,
-          shouldForecloseAt,
-        ]);
+          shouldForecloseAt
+        );
       });
 
       it("annual: returns backdated time if foreclosed", async function () {
         const token = TOKENS.ONE;
 
-        await buy.apply(this, [
-          this.contract,
-          this.alice,
+        await buy(
+          contract,
+          alice,
           token,
           ETH1,
           ETH0,
           ETH1.add(AnnualTenMinDue), // Deposit a surplus 10 min of patronage
-          365,
-        ]);
+          365
+        );
 
         await time.increase(time.duration.minutes(10));
         const shouldForecloseAt = await now();
 
         // Foreclosure should be backdated to when token was in foreclosed state.
-        await verifyExpectedForeclosureTime.apply(this, [
-          this.contract,
-          token,
-          shouldForecloseAt,
-        ]);
+        await verifyExpectedForeclosureTime(contract, token, shouldForecloseAt);
 
         // Trigger foreclosure
-        await this.contract._collectTax(token);
+        await contract._collectTax(token);
 
-        expect(await this.contract.ownerOf(token)).to.equal(
-          this.contractAddress
-        );
+        expect(await contract.ownerOf(token)).to.equal(contractAddress);
 
         // Value should remain within +/- 1s after foreclosure has taken place
-        await verifyExpectedForeclosureTime.apply(this, [
-          this.contract,
-          token,
-          shouldForecloseAt,
-        ]);
+        await verifyExpectedForeclosureTime(contract, token, shouldForecloseAt);
       });
     });
   });
@@ -1281,12 +1007,12 @@ async function tests(config: TestConfiguration): Promise<void> {
     context("fails", async function () {
       it("Attempting to buy an un-minted token", async function () {
         await expect(
-          this.alice.contract.buy(INVALID_TOKEN_ID, ETH1, ETH1, { value: ETH1 })
+          alice.contract.buy(INVALID_TOKEN_ID, ETH1, ETH1, { value: ETH1 })
         ).to.be.revertedWith(ErrorMessages.NONEXISTENT_TOKEN);
       });
       it("Verifying incorrect Current Price", async function () {
         await expect(
-          this.alice.contract.buy(
+          alice.contract.buy(
             TOKENS.ONE,
             ETH1, // Purchase price of 1
             ETH1, // current price of 1 [should be ETH0]
@@ -1296,7 +1022,7 @@ async function tests(config: TestConfiguration): Promise<void> {
       });
       it("Attempting to buy with 0 Wei", async function () {
         await expect(
-          this.alice.contract.buy(
+          alice.contract.buy(
             TOKENS.ONE,
             ETH0, // [must be greater than 0]
             ETH0,
@@ -1306,7 +1032,7 @@ async function tests(config: TestConfiguration): Promise<void> {
       });
       it("When purchase price is less than message value", async function () {
         await expect(
-          this.alice.contract.buy(
+          alice.contract.buy(
             TOKENS.ONE,
             ETH0, // Purchase price of zero
             ETH0, // Current Price [correct]
@@ -1316,18 +1042,10 @@ async function tests(config: TestConfiguration): Promise<void> {
       });
       it("Attempting to buy with price less than current price", async function () {
         // Purchase as Bob for 2 ETH
-        await buy.apply(this, [
-          this.contract,
-          this.bob,
-          TOKENS.TWO,
-          ETH2,
-          ETH0,
-          ETH3,
-          365,
-        ]);
+        await buy(contract, bob, TOKENS.TWO, ETH2, ETH0, ETH3, 365);
 
         await expect(
-          this.alice.contract.buy(
+          alice.contract.buy(
             TOKENS.TWO, // owned by Bob
             ETH1, // [should be ETH2]
             ETH2, // Correct
@@ -1337,218 +1055,122 @@ async function tests(config: TestConfiguration): Promise<void> {
       });
       it("Attempting to buy without surplus value for deposit", async function () {
         await expect(
-          this.alice.contract.buy(TOKENS.ONE, ETH1, ETH0, { value: ETH1 }) // [should be greater than ETH1]
+          alice.contract.buy(TOKENS.ONE, ETH1, ETH0, { value: ETH1 }) // [should be greater than ETH1]
         ).to.be.revertedWith(ErrorMessages.BUY_LACKS_SURPLUS_VALUE);
       });
       it("Attempting to purchase a token it already owns", async function () {
         // Purchase
-        await buy.apply(this, [
-          this.contract,
-          this.bob,
-          TOKENS.TWO,
-          ETH2,
-          ETH0,
-          ETH3,
-          365,
-        ]);
+        await buy(contract, bob, TOKENS.TWO, ETH2, ETH0, ETH3, 365);
         // Re-purchase
         await expect(
-          this.bob.contract.buy(TOKENS.TWO, ETH3, ETH2, { value: ETH4 })
+          bob.contract.buy(TOKENS.TWO, ETH3, ETH2, { value: ETH4 })
         ).to.be.revertedWith(ErrorMessages.BUY_ALREADY_OWNED);
       });
     });
     context("succeeds", async function () {
       it("Purchasing token for the first-time (from contract)", async function () {
-        await buy.apply(this, [
-          this.contract,
-          this.alice,
-          TOKENS.ONE,
-          ETH1,
-          ETH0,
-          ETH2,
-          365,
-        ]);
+        await buy(contract, alice, TOKENS.ONE, ETH1, ETH0, ETH2, 365);
       });
 
       it("30d: Purchasing token from current owner", async function () {
         const token = TOKENS.ONE;
 
-        await buy.apply(this, [
-          this.monthlyContract,
-          this.monthlyAlice,
-          token,
-          ETH1,
-          ETH0,
-          ETH2,
-          30,
-        ]);
+        await buy(monthlyContract, monthlyAlice, token, ETH1, ETH0, ETH2, 30);
 
         await time.increase(time.duration.minutes(10));
 
-        await buy.apply(this, [
-          this.monthlyContract,
-          this.monthlyBob,
-          token,
-          ETH2,
-          ETH1,
-          ETH3,
-          30,
-        ]);
+        await buy(monthlyContract, monthlyBob, token, ETH2, ETH1, ETH3, 30);
       });
 
       it("annual: Purchasing token from current owner", async function () {
         const token = TOKENS.ONE;
 
-        await buy.apply(this, [
-          this.contract,
-          this.alice,
-          token,
-          ETH1,
-          ETH0,
-          ETH2,
-          365,
-        ]);
+        await buy(contract, alice, token, ETH1, ETH0, ETH2, 365);
 
         await time.increase(time.duration.minutes(10));
 
-        await buy.apply(this, [
-          this.contract,
-          this.bob,
-          token,
-          ETH2,
-          ETH1,
-          ETH3,
-          365,
-        ]);
+        await buy(contract, bob, token, ETH2, ETH1, ETH3, 365);
       });
 
       it("Purchasing token from foreclosure", async function () {
         const token = TOKENS.ONE;
 
-        await buy.apply(this, [
-          this.contract,
-          this.alice,
-          token,
-          ETH1,
-          ETH0,
-          ETH2,
-          365,
-        ]);
+        await buy(contract, alice, token, ETH1, ETH0, ETH2, 365);
 
         // Exhaust deposit
         await time.increase(time.duration.days(366));
 
         // Trigger foreclosure & buy it out of foreclosure
         expect(
-          await this.bob.contract.buy(token, ETH1, ETH0, {
+          await bob.contract.buy(token, ETH1, ETH0, {
             value: ETH2,
           })
         )
-          .to.emit(this.contract, Events.FORECLOSURE)
-          .withArgs(token, this.alice.address);
+          .to.emit(contract, Events.FORECLOSURE)
+          .withArgs(token, alice.address);
 
-        expect(await this.contract.ownerOf(token)).to.equal(this.bob.address);
+        expect(await contract.ownerOf(token)).to.equal(bob.address);
       });
 
       it("Purchasing token from current owner who purchased from foreclosure", async function () {
         const token = TOKENS.ONE;
 
-        await buy.apply(this, [
-          this.contract,
-          this.alice,
-          token,
-          ETH1,
-          ETH0,
-          ETH2,
-          365,
-        ]);
+        await buy(contract, alice, token, ETH1, ETH0, ETH2, 365);
 
         // Exhaust deposit
         await time.increase(time.duration.days(366));
 
         // Buy out of foreclosure
-        await buy.apply(this, [
-          this.contract,
-          this.bob,
-          token,
-          ETH1,
-          ETH0,
-          ETH2,
-          365,
-        ]);
+        await buy(contract, bob, token, ETH1, ETH0, ETH2, 365);
 
-        await buy.apply(this, [
-          this.contract,
-          this.alice,
-          token,
-          ETH2,
-          ETH1,
-          ETH3,
-          365,
-        ]);
+        await buy(contract, alice, token, ETH2, ETH1, ETH3, 365);
       });
 
       it("Owner prior to foreclosure re-purchases", async function () {
         const token = TOKENS.ONE;
 
-        await buy.apply(this, [
-          this.contract,
-          this.alice,
-          token,
-          ETH1,
-          ETH0,
-          ETH2,
-          365,
-        ]);
+        await buy(contract, alice, token, ETH1, ETH0, ETH2, 365);
 
         // Exhaust deposit
         await time.increase(time.duration.days(366));
 
         // Buy out of foreclosure
-        await buy.apply(this, [
-          this.contract,
-          this.alice,
-          token,
-          ETH1,
-          ETH0,
-          ETH2,
-          365,
-        ]);
+        await buy(contract, alice, token, ETH1, ETH0, ETH2, 365);
       });
 
       it("Updating chain of title", async function () {
         const token = TOKENS.ONE;
 
-        const { block: block1 } = await buy.apply(this, [
-          this.contract,
-          this.bob,
+        const { block: block1 } = await buy(
+          contract,
+          bob,
           token,
           ETH1,
           ETH0,
           ETH2,
-          365,
-        ]);
+          365
+        );
 
-        const { block: block2 } = await buy.apply(this, [
-          this.contract,
-          this.alice,
+        const { block: block2 } = await buy(
+          contract,
+          alice,
           token,
           ETH2,
           ETH1,
           ETH3,
-          365,
-        ]);
+          365
+        );
 
-        const chainOfTitle = await this.contract.titleChainOf(token);
+        const chainOfTitle = await contract.titleChainOf(token);
 
-        expect(chainOfTitle[0].from).to.equal(this.contractAddress);
-        expect(chainOfTitle[0].to).to.equal(this.bob.address);
+        expect(chainOfTitle[0].from).to.equal(contractAddress);
+        expect(chainOfTitle[0].to).to.equal(bob.address);
         expect(chainOfTitle[0].price).to.equal(ETH1);
         expect(chainOfTitle[0].timestamp).to.equal(
           ethers.BigNumber.from(block1.timestamp)
         );
-        expect(chainOfTitle[1].from).to.equal(this.bob.address);
-        expect(chainOfTitle[1].to).to.equal(this.alice.address);
+        expect(chainOfTitle[1].from).to.equal(bob.address);
+        expect(chainOfTitle[1].to).to.equal(alice.address);
         expect(chainOfTitle[1].price).to.equal(ETH2);
         expect(chainOfTitle[1].timestamp).to.equal(
           ethers.BigNumber.from(block2.timestamp)
@@ -1561,7 +1183,7 @@ async function tests(config: TestConfiguration): Promise<void> {
     context("fails", async function () {
       it("is not deposited by owner", async function () {
         await expect(
-          this.alice.contract.depositWei(TOKENS.ONE, {
+          alice.contract.depositWei(TOKENS.ONE, {
             value: ethers.utils.parseEther("1"),
           })
         ).to.be.revertedWith(ErrorMessages.ONLY_OWNER);
@@ -1571,18 +1193,10 @@ async function tests(config: TestConfiguration): Promise<void> {
       it("owner can deposit", async function () {
         const token = TOKENS.ONE;
 
-        await buy.apply(this, [
-          this.contract,
-          this.alice,
-          token,
-          ETH1,
-          ETH0,
-          ETH2,
-          365,
-        ]);
+        await buy(contract, alice, token, ETH1, ETH0, ETH2, 365);
 
         await expect(
-          this.alice.contract.depositWei(token, { value: ETH1 })
+          alice.contract.depositWei(token, { value: ETH1 })
         ).to.not.reverted;
       });
     });
@@ -1592,39 +1206,23 @@ async function tests(config: TestConfiguration): Promise<void> {
     context("fails", async function () {
       it("only owner can update price", async function () {
         await expect(
-          this.alice.contract.changePrice(TOKENS.ONE, 500)
+          alice.contract.changePrice(TOKENS.ONE, 500)
         ).to.be.revertedWith(ErrorMessages.ONLY_OWNER);
       });
       it("cannot have a new price of zero", async function () {
         const token = TOKENS.ONE;
 
-        await buy.apply(this, [
-          this.contract,
-          this.alice,
-          token,
-          ETH1,
-          ETH0,
-          ETH2,
-          365,
-        ]);
+        await buy(contract, alice, token, ETH1, ETH0, ETH2, 365);
         await expect(
-          this.alice.contract.changePrice(token, ETH0)
+          alice.contract.changePrice(token, ETH0)
         ).to.be.revertedWith(ErrorMessages.NEW_PRICE_ZERO);
       });
       it("cannot have price set to same amount", async function () {
         const token = TOKENS.ONE;
 
-        await buy.apply(this, [
-          this.contract,
-          this.alice,
-          token,
-          ETH1,
-          ETH0,
-          ETH2,
-          365,
-        ]);
+        await buy(contract, alice, token, ETH1, ETH0, ETH2, 365);
         await expect(
-          this.alice.contract.changePrice(token, ETH1)
+          alice.contract.changePrice(token, ETH1)
         ).to.be.revertedWith(ErrorMessages.NEW_PRICE_SAME);
       });
     });
@@ -1632,41 +1230,25 @@ async function tests(config: TestConfiguration): Promise<void> {
       it("owner can increase price", async function () {
         const token = TOKENS.ONE;
 
-        await buy.apply(this, [
-          this.contract,
-          this.alice,
-          token,
-          ETH1,
-          ETH0,
-          ETH2,
-          365,
-        ]);
+        await buy(contract, alice, token, ETH1, ETH0, ETH2, 365);
 
-        expect(await this.alice.contract.changePrice(token, ETH2))
-          .to.emit(this.contract, Events.PRICE_CHANGE)
+        expect(await alice.contract.changePrice(token, ETH2))
+          .to.emit(contract, Events.PRICE_CHANGE)
           .withArgs(TOKENS.ONE, ETH2);
 
-        expect(await this.contract.priceOf(token)).to.equal(ETH2);
+        expect(await contract.priceOf(token)).to.equal(ETH2);
       });
 
       it("owner can decrease price", async function () {
         const token = TOKENS.ONE;
 
-        await buy.apply(this, [
-          this.contract,
-          this.alice,
-          token,
-          ETH2,
-          ETH0,
-          ETH3,
-          365,
-        ]);
+        await buy(contract, alice, token, ETH2, ETH0, ETH3, 365);
 
-        expect(await this.alice.contract.changePrice(token, ETH1))
-          .to.emit(this.contract, Events.PRICE_CHANGE)
+        expect(await alice.contract.changePrice(token, ETH1))
+          .to.emit(contract, Events.PRICE_CHANGE)
           .withArgs(TOKENS.ONE, ETH1);
 
-        expect(await this.contract.priceOf(token)).to.equal(ETH1);
+        expect(await contract.priceOf(token)).to.equal(ETH1);
       });
     });
   });
@@ -1675,25 +1257,17 @@ async function tests(config: TestConfiguration): Promise<void> {
     context("fails", async function () {
       it("Non-owner", async function () {
         await expect(
-          this.alice.contract.withdrawDeposit(TOKENS.ONE, 10)
+          alice.contract.withdrawDeposit(TOKENS.ONE, 10)
         ).to.be.revertedWith(ErrorMessages.ONLY_OWNER);
       });
 
       it("Cannot withdraw more than deposited", async function () {
         const token = TOKENS.ONE;
 
-        await buy.apply(this, [
-          this.contract,
-          this.alice,
-          token,
-          ETH1,
-          ETH0,
-          ETH2,
-          365,
-        ]);
+        await buy(contract, alice, token, ETH1, ETH0, ETH2, 365);
 
         await expect(
-          this.alice.contract.withdrawDeposit(token, ETH2)
+          alice.contract.withdrawDeposit(token, ETH2)
         ).to.be.revertedWith(ErrorMessages.CANNOT_WITHDRAW_MORE_THAN_DEPOSITED);
       });
     });
@@ -1703,29 +1277,19 @@ async function tests(config: TestConfiguration): Promise<void> {
         const token = TOKENS.ONE;
         const price = ETH1;
 
-        await buy.apply(this, [
-          this.monthlyContract,
-          this.monthlyAlice,
-          token,
-          price,
-          ETH0,
-          ETH3,
-          30,
-        ]);
+        await buy(monthlyContract, monthlyAlice, token, price, ETH0, ETH3, 30);
 
         // Necessary to determine tax due on exit
-        const lastCollectionTime =
-          await this.monthlyContract.lastCollectionTimes(token);
-
-        const trx = await this.monthlyAlice.contract.withdrawDeposit(
-          token,
-          ETH1
+        const lastCollectionTime = await monthlyContract.lastCollectionTimes(
+          token
         );
-        const { timestamp } = await this.provider.getBlock(trx.blockNumber);
+
+        const trx = await monthlyAlice.contract.withdrawDeposit(token, ETH1);
+        const { timestamp } = await provider.getBlock(trx.blockNumber);
 
         // Emits
         expect(trx)
-          .to.emit(this.monthlyContract, Events.DEPOSIT_WITHDRAWAL)
+          .to.emit(monthlyContract, Events.DEPOSIT_WITHDRAWAL)
           .withArgs(token, ETH1);
 
         // current deposit - tax on exit
@@ -1738,12 +1302,12 @@ async function tests(config: TestConfiguration): Promise<void> {
         );
 
         // Deposit should be 1 ETH - taxed amount.
-        expect(await this.monthlyContract.depositOf(token)).to.equal(
+        expect(await monthlyContract.depositOf(token)).to.equal(
           ETH1.sub(taxedAmt)
         );
 
         // Alice's balance should reflect returned deposit [1 ETH] minus fees
-        const { delta, fees } = await this.monthlyAlice.balanceDelta();
+        const { delta, fees } = await monthlyAlice.balanceDelta();
 
         const expectedRemittanceMinusGas = ETH1.sub(fees);
 
@@ -1754,27 +1318,17 @@ async function tests(config: TestConfiguration): Promise<void> {
         const token = TOKENS.ONE;
         const price = ETH1;
 
-        await buy.apply(this, [
-          this.contract,
-          this.alice,
-          token,
-          price,
-          ETH0,
-          ETH3,
-          30,
-        ]);
+        await buy(contract, alice, token, price, ETH0, ETH3, 30);
 
         // Necessary to determine tax due on exit
-        const lastCollectionTime = await this.contract.lastCollectionTimes(
-          token
-        );
+        const lastCollectionTime = await contract.lastCollectionTimes(token);
 
-        const trx = await this.alice.contract.withdrawDeposit(token, ETH1);
-        const { timestamp } = await this.provider.getBlock(trx.blockNumber);
+        const trx = await alice.contract.withdrawDeposit(token, ETH1);
+        const { timestamp } = await provider.getBlock(trx.blockNumber);
 
         // Emits
         expect(trx)
-          .to.emit(this.contract, Events.DEPOSIT_WITHDRAWAL)
+          .to.emit(contract, Events.DEPOSIT_WITHDRAWAL)
           .withArgs(token, ETH1);
 
         // current deposit - tax on exit
@@ -1787,12 +1341,10 @@ async function tests(config: TestConfiguration): Promise<void> {
         );
 
         // Deposit should be 1 ETH - taxed amount.
-        expect(await this.contract.depositOf(token)).to.equal(
-          ETH1.sub(taxedAmt)
-        );
+        expect(await contract.depositOf(token)).to.equal(ETH1.sub(taxedAmt));
 
         // Alice's balance should reflect returned deposit [1 ETH] minus fees
-        const { delta, fees } = await this.alice.balanceDelta();
+        const { delta, fees } = await alice.balanceDelta();
 
         const expectedRemittanceMinusGas = ETH1.sub(fees);
 
@@ -1805,7 +1357,7 @@ async function tests(config: TestConfiguration): Promise<void> {
     context("fails", async function () {
       it("Non-owner", async function () {
         await expect(
-          this.alice.contract.withdrawDeposit(TOKENS.ONE, 10)
+          alice.contract.withdrawDeposit(TOKENS.ONE, 10)
         ).to.be.revertedWith(ErrorMessages.ONLY_OWNER);
       });
     });
@@ -1814,22 +1366,15 @@ async function tests(config: TestConfiguration): Promise<void> {
       it("30d: Withdraws entire deposit", async function () {
         const token = TOKENS.ONE;
 
-        await buy.apply(this, [
-          this.monthlyContract,
-          this.monthlyAlice,
-          token,
-          ETH1,
-          ETH0,
-          ETH2,
-          30,
-        ]);
+        await buy(monthlyContract, monthlyAlice, token, ETH1, ETH0, ETH2, 30);
 
         // Determine tax due on exit
-        const lastCollectionTime =
-          await this.monthlyContract.lastCollectionTimes(token);
+        const lastCollectionTime = await monthlyContract.lastCollectionTimes(
+          token
+        );
 
-        const trx = await this.monthlyAlice.contract.exit(token);
-        const { timestamp } = await this.provider.getBlock(trx.blockNumber);
+        const trx = await monthlyAlice.contract.exit(token);
+        const { timestamp } = await provider.getBlock(trx.blockNumber);
 
         // current deposit - tax on exit
         const taxedAmt = getTaxDue(
@@ -1844,43 +1389,33 @@ async function tests(config: TestConfiguration): Promise<void> {
 
         // Emits
         expect(trx)
-          .to.emit(this.monthlyContract, Events.DEPOSIT_WITHDRAWAL)
+          .to.emit(monthlyContract, Events.DEPOSIT_WITHDRAWAL)
           .withArgs(token, expectedRemittance);
 
         // Alice's balance should reflect returned deposit minus fees
-        const { delta, fees } = await this.monthlyAlice.balanceDelta();
+        const { delta, fees } = await monthlyAlice.balanceDelta();
 
         const expectedRemittanceMinusGas = expectedRemittance.sub(fees);
 
         expect(delta).to.equal(expectedRemittanceMinusGas);
 
         // Deposit should be zero
-        expect(await this.monthlyContract.depositOf(token)).to.equal(0);
+        expect(await monthlyContract.depositOf(token)).to.equal(0);
 
         // Token should foreclose
-        expect(await this.monthlyContract.priceOf(token)).to.equal(0);
+        expect(await monthlyContract.priceOf(token)).to.equal(0);
       });
 
       it("annual: Withdraws entire deposit", async function () {
         const token = TOKENS.ONE;
 
-        await buy.apply(this, [
-          this.contract,
-          this.alice,
-          token,
-          ETH1,
-          ETH0,
-          ETH2,
-          365,
-        ]);
+        await buy(contract, alice, token, ETH1, ETH0, ETH2, 365);
 
         // Determine tax due on exit
-        const lastCollectionTime = await this.contract.lastCollectionTimes(
-          token
-        );
+        const lastCollectionTime = await contract.lastCollectionTimes(token);
 
-        const trx = await this.alice.contract.exit(token);
-        const { timestamp } = await this.provider.getBlock(trx.blockNumber);
+        const trx = await alice.contract.exit(token);
+        const { timestamp } = await provider.getBlock(trx.blockNumber);
 
         // current deposit - tax on exit
         const taxedAmt = getTaxDue(
@@ -1895,21 +1430,21 @@ async function tests(config: TestConfiguration): Promise<void> {
 
         // Emits
         expect(trx)
-          .to.emit(this.contract, Events.DEPOSIT_WITHDRAWAL)
+          .to.emit(contract, Events.DEPOSIT_WITHDRAWAL)
           .withArgs(token, expectedRemittance);
 
         // Alice's balance should reflect returned deposit minus fees
-        const { delta, fees } = await this.alice.balanceDelta();
+        const { delta, fees } = await alice.balanceDelta();
 
         const expectedRemittanceMinusGas = expectedRemittance.sub(fees);
 
         expect(delta).to.equal(expectedRemittanceMinusGas);
 
         // Deposit should be zero
-        expect(await this.contract.depositOf(token)).to.equal(0);
+        expect(await contract.depositOf(token)).to.equal(0);
 
         // Token should foreclose
-        expect(await this.contract.priceOf(token)).to.equal(0);
+        expect(await contract.priceOf(token)).to.equal(0);
       });
     });
   });
@@ -1918,11 +1453,11 @@ async function tests(config: TestConfiguration): Promise<void> {
     context("fails", async function () {
       it("when no outstanding remittance", async function () {
         await expect(
-          this.alice.contract.withdrawOutstandingRemittance()
+          alice.contract.withdrawOutstandingRemittance()
         ).to.be.revertedWith(ErrorMessages.NO_OUTSTANDING_REMITTANCE);
       });
     });
-    // TODO: Add force buy remittance to fail with a blocker this.contract.
+    // TODO: Add force buy remittance to fail with a blocker contract.
     context("succeeds", async function () {});
   });
 
@@ -1930,11 +1465,11 @@ async function tests(config: TestConfiguration): Promise<void> {
     context("fails", async function () {
       it("it's an internal method", async function () {
         try {
-          await this.contract.transferToken();
+          await contract.transferToken();
         } catch (error) {
           expect(error).instanceOf(TypeError);
           expect(error.message).to.equal(
-            "this.contract.transferToken is not a function"
+            "contract.transferToken is not a function"
           );
         }
       });
