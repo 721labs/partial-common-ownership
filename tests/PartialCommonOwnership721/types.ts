@@ -22,6 +22,8 @@ enum TOKENS {
 }
 
 enum Events {
+  APPROVAL = "Approval",
+  TRANSFER = "Transfer",
   BUY = "LogBuy",
   OUTSTANDING_REMITTANCE = "LogOutstandingRemittance",
   PRICE_CHANGE = "LogPriceChange",

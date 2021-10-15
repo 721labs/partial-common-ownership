@@ -122,6 +122,10 @@ describe("PartialCommonOwnership721", async function () {
 
     // Buy Event emitted
 
+    expect(trx).to.emit(contract, Events.APPROVAL);
+
+    expect(trx).to.emit(contract, Events.TRANSFER);
+
     expect(trx)
       .to.emit(contract, Events.BUY)
       .withArgs(tokenId, wallet.address, purchasePrice);
