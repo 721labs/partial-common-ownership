@@ -1,8 +1,8 @@
-// contracts/Test721Token.sol
+// contracts/test/Test721Token.sol
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.7;
 
-import "./PartialCommonOwnership721.sol";
+import "../token/PartialCommonOwnership721.sol";
 
 /// @title Test721Token – Example implementation of PCO for 721 for use in testing.
 /// @dev Requires 100% patronage per 365 days

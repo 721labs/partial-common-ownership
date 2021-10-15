@@ -1,9 +1,8 @@
-// contracts/PartialCommonOwnership721.sol
+// contracts/token/PartialCommonOwnership721.sol
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.7;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 struct TitleTransferEvent {
   /// @notice From address.
@@ -24,8 +23,6 @@ struct TitleTransferEvent {
 /// @dev This code was originally forked from ThisArtworkIsAlwaysOnSale's `v2_contracts/ArtSteward.sol`
 /// contract by Simon de la Rouviere.
 contract PartialCommonOwnership721 is ERC721 {
-  using SafeMath for uint256;
-
   /// @notice Alert of purchase.
   /// @param tokenId ID of token.
   /// @param owner Address of new token owner.
@@ -119,7 +116,6 @@ contract PartialCommonOwnership721 is ERC721 {
   /// e.g. 100% => 1000000000000
   /// e.g. 5% => 50000000000
   uint256 private immutable taxNumerator;
-  uint256 private constant taxDenominator = 1000000000000;
 
   /// @notice Over what period, in days, should taxation be applied?
   uint256 public taxationPeriod;
@@ -170,10 +166,10 @@ contract PartialCommonOwnership721 is ERC721 {
     _;
   }
 
-  /// @notice Tax Rate getter
-  /// @return Percentage taxation rate
+  /// @notice Gets tax rate
+  /// @return Tax Rate
   function taxRate() public view returns (uint256) {
-    return taxNumerator;
+    return taxNumerator / 1000000000000;
   }
 
   function titleChainOf(uint256 _tokenId)
@@ -190,7 +186,8 @@ contract PartialCommonOwnership721 is ERC721 {
    * Used internally by external methods.
    */
 
-  /// @notice Gets current price for a given token ID.
+  /// @notice Gets current price for a given token ID. Requires that
+  /// the token has been minted.
   /// @param _tokenId ID of token requesting price for.
   /// @return Price in Wei.
   function priceOf(uint256 _tokenId)
@@ -226,12 +223,8 @@ contract PartialCommonOwnership721 is ERC721 {
   /// @return Tax Due in wei
   function _taxOwed(uint256 _tokenId) private view returns (uint256) {
     uint256 price = _price(_tokenId);
-    return
-      price
-        .mul(block.timestamp.sub(lastCollectionTimes[_tokenId]))
-        .mul(taxNumerator)
-        .div(taxDenominator)
-        .div(taxationPeriod);
+    uint256 timeElapsed = block.timestamp - lastCollectionTimes[_tokenId];
+    return taxOwedSince(_tokenId, timeElapsed);
   }
 
   /// @notice Determines the taxable amount accumulated between now and
@@ -245,12 +238,8 @@ contract PartialCommonOwnership721 is ERC721 {
     tokenMinted(_tokenId)
     returns (uint256 taxDue)
   {
-    require(_time < block.timestamp, "Time must be in the past");
     uint256 price = _price(_tokenId);
-    return
-      price.mul(_time).mul(taxNumerator).div(taxDenominator).div(
-        taxationPeriod
-      );
+    return ((price * _time) / taxationPeriod) * taxRate();
   }
 
   /// @notice Public method for the tax owed. Returns with the current time.
@@ -287,39 +276,43 @@ contract PartialCommonOwnership721 is ERC721 {
   /// @param _tokenId ID of token requesting withdrawable deposit for.
   /// @return amount in Wei.
   function withdrawableDeposit(uint256 _tokenId) public view returns (uint256) {
-    uint256 owed = _taxOwed(_tokenId);
-    uint256 deposit = deposits[_tokenId];
-    if (owed >= deposit) {
+    if (foreclosed(_tokenId)) {
       return 0;
     } else {
-      return deposit.sub(owed);
+      return deposits[_tokenId] - _taxOwed(_tokenId);
     }
+  }
+
+  /// @notice Returns the time when tax owed initially exceeded deposits.
+  /// @dev last collected time + ((time_elapsed * deposit) / owed)
+  /// @dev Returns within +/- 1s of previous values due to Solidity rounding
+  /// down integer division without regard for significant digits, which produces
+  /// variable results e.g. `599.9999999999851` becomes `599`.
+  /// @param _tokenId ID of token requesting
+  /// @return Unix timestamp
+  function _backdatedForeclosureTime(uint256 _tokenId)
+    private
+    view
+    returns (uint256)
+  {
+    uint256 last = lastCollectionTimes[_tokenId];
+    uint256 timeElapsed = block.timestamp - last;
+    return last + (timeElapsed * deposits[_tokenId] / _taxOwed(_tokenId));
   }
 
   /// @notice Determines how long a token owner has until forclosure.
   /// @param _tokenId ID of token requesting foreclosure time for.
   /// @return Unix timestamp
   function foreclosureTime(uint256 _tokenId) public view returns (uint256) {
-    uint256 price = _price(_tokenId);
-    uint256 taxPerSecond = price.mul(taxNumerator).div(taxDenominator).div(
-      taxationPeriod
-    );
+    uint256 taxPerSecond = taxOwedSince(_tokenId, 1);
     uint256 withdrawable = withdrawableDeposit(_tokenId);
     if (withdrawable > 0) {
       // Time until deposited surplus no longer surpasses amount owed.
-      return block.timestamp + withdrawableDeposit(_tokenId).div(taxPerSecond);
+      return block.timestamp + withdrawable / taxPerSecond;
     } else if (taxPerSecond > 0) {
-      // Token is active but in foreclosure state;
-      // time <= block.timestamp.
-      uint256 owed = _taxOwed(_tokenId);
-      return
-        lastCollectionTimes[_tokenId].add(
-          (
-            (block.timestamp.sub(lastCollectionTimes[_tokenId]))
-              .mul(deposits[_tokenId])
-              .div(owed)
-          )
-        );
+      // Token is active but in foreclosed state.
+      // Returns when foreclosure should have occured i.e. when tax owed > deposits.
+      return _backdatedForeclosureTime(_tokenId);
     } else {
       // Actively foreclosed (price is 0)
       return lastCollectionTimes[_tokenId];
@@ -334,26 +327,20 @@ contract PartialCommonOwnership721 is ERC721 {
     if (price != 0) {
       // If price > 0, contract has not foreclosed.
       uint256 owed = _taxOwed(_tokenId);
-      uint256 deposit = deposits[_tokenId];
 
       // If foreclosure should have occured in the past, last collection time will be
       // backdated to when the tax was last paid for.
-      if (owed >= deposit) {
-        // Backdate:
-        // TLC + (time_elapsed)*deposit/owed
-        uint256 lastCollectionTime = lastCollectionTimes[_tokenId];
-        lastCollectionTimes[_tokenId] = lastCollectionTime.add(
-          (block.timestamp.sub(lastCollectionTime)).mul(deposit).div(owed)
-        );
-        // Take remaining deposit.
-        owed = deposit;
+      if (foreclosed(_tokenId)) {
+        lastCollectionTimes[_tokenId] = _backdatedForeclosureTime(_tokenId);
+        // Set remaining deposit to be collected.
+        owed = deposits[_tokenId];
       } else {
         lastCollectionTimes[_tokenId] = block.timestamp;
       }
 
       // Normal collection
-      deposits[_tokenId] = deposit.sub(owed);
-      taxationCollected[_tokenId] = taxationCollected[_tokenId].add(owed);
+      deposits[_tokenId] -= owed;
+      taxationCollected[_tokenId] += owed;
       taxCollectedSinceLastTransfer[_tokenId] += owed;
 
       emit LogCollection(_tokenId, owed);
@@ -417,7 +404,7 @@ contract PartialCommonOwnership721 is ERC721 {
     locked[_tokenId] = true;
 
     // Remit the purchase price and any available deposit.
-    uint256 remittance = _purchasePrice.add(deposits[_tokenId]);
+    uint256 remittance = _purchasePrice + deposits[_tokenId];
 
     if (remittance > 0) {
       // If token is owned by the contract, remit to the beneficiary.
@@ -434,8 +421,7 @@ contract PartialCommonOwnership721 is ERC721 {
 
       // If the remittance fails, hold funds for the seller to retrieve.
       if (!success) {
-        outstandingRemittances[recipient] = outstandingRemittances[recipient]
-          .add(remittance);
+        outstandingRemittances[recipient] += remittance;
         emit LogOutstandingRemittance(recipient);
       } else {
         emit LogRemittance(_tokenId, recipient, remittance);
@@ -451,7 +437,7 @@ contract PartialCommonOwnership721 is ERC721 {
     }
 
     // Update deposit with surplus value.
-    deposits[_tokenId] = msg.value.sub(_purchasePrice);
+    deposits[_tokenId] = msg.value - _purchasePrice;
 
     transferToken(_tokenId, currentOwner, msg.sender, _purchasePrice);
     emit LogBuy(_tokenId, msg.sender, _purchasePrice);
@@ -471,7 +457,7 @@ contract PartialCommonOwnership721 is ERC721 {
     onlyOwner(_tokenId)
     collectTax(_tokenId)
   {
-    deposits[_tokenId] = deposits[_tokenId].add(msg.value);
+    deposits[_tokenId] += msg.value;
   }
 
   /// @notice Enables owner to change price in accordance with
@@ -535,7 +521,7 @@ contract PartialCommonOwnership721 is ERC721 {
     uint256 deposit = deposits[_tokenId];
     require(_wei <= deposit, "Cannot withdraw more than deposited");
 
-    deposits[_tokenId] = deposit.sub(_wei);
+    deposits[_tokenId] -= _wei;
     payable(msg.sender).transfer(_wei);
 
     emit LogDepositWithdrawal(_tokenId, _wei);

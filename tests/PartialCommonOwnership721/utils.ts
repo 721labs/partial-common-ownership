@@ -27,7 +27,7 @@ function getTaxDue(
 ): BigNumber {
   const secondsSinceLastCollection = now.sub(lastCollectionTime);
   const taxPeriodAsSeconds = taxationPeriodToSeconds(taxationPeriod);
-  const taxRate = TAX_DENOMINATOR.div(TAX_DENOMINATOR);
+  const taxRate = TAX_NUMERATOR.div(TAX_DENOMINATOR);
   return price
     .mul(secondsSinceLastCollection)
     .div(taxPeriodAsSeconds)

@@ -8,7 +8,6 @@ enum ErrorMessages {
   NONEXISTENT_TOKEN = "ERC721: owner query for nonexistent token",
   NEW_PRICE_ZERO = "New price cannot be zero",
   NEW_PRICE_SAME = "New price cannot be same",
-  REQUIRES_PAST = "Time must be in the past",
   // Not testing reentrancy lock, currently.
   //LOCKED = "Token is locked",
   CANNOT_WITHDRAW_MORE_THAN_DEPOSITED = "Cannot withdraw more than deposited",
@@ -23,6 +22,8 @@ enum TOKENS {
 }
 
 enum Events {
+  APPROVAL = "Approval",
+  TRANSFER = "Transfer",
   BUY = "LogBuy",
   OUTSTANDING_REMITTANCE = "LogOutstandingRemittance",
   PRICE_CHANGE = "LogPriceChange",

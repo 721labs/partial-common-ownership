@@ -18,12 +18,13 @@ import {
   ETH4,
   AnnualTenMinDue,
   MonthlyTenMinDue,
-  TAX_RATE,
   TAX_NUMERATOR,
   TAX_DENOMINATOR,
 } from "./constants";
 import { now } from "../helpers/Time";
 import { taxationPeriodToSeconds, getTaxDue } from "./utils";
+
+const taxRate = TAX_NUMERATOR.div(TAX_DENOMINATOR);
 
 //$ Tests
 
@@ -82,17 +83,34 @@ describe("PartialCommonOwnership721", async function () {
     //$ Setup
 
     // Determine whether remittance recipient is the previous owner
-    // or the beneficiary (if the token is owned by the contract)
+    // or the beneficiary (if the token is owned by the contract). Note:
+    // owner may be previous even though foreclosure is pending.
     const currentOwner = await contract.ownerOf(tokenId);
+    const foreclosed = await contract.foreclosed(tokenId);
     const remittanceRecipientWallet =
-      currentOwner === contract.address
+      foreclosed || currentOwner === contract.address
         ? this.beneficiary
         : this.walletsByAddress[currentOwner];
 
-    // Determine the expected remittance
-    // (Deposit - due + sale price)
     const depositBefore = await contract.depositOf(tokenId);
-    const { amount, timestamp } = await contract.taxOwed(tokenId);
+
+    let depositUponPurchase;
+
+    // Check if foreclosed
+    if (foreclosed) {
+      // Entire deposit will be taken in the foreclosure
+      depositUponPurchase = ETH0;
+    } else {
+      // Get the balance and then determine how much will be deducted by taxation
+      const taxDue = getTaxDue(
+        currentPriceForVerification,
+        (await now()).add(1), // block timestamp
+        await contract.lastCollectionTimes(tokenId),
+        taxationPeriod
+      );
+
+      depositUponPurchase = (await contract.depositOf(tokenId)).sub(taxDue);
+    }
 
     //$ Buy
 
@@ -105,23 +123,14 @@ describe("PartialCommonOwnership721", async function () {
 
     const block = await this.provider.getBlock(trx.blockNumber);
 
-    // Determine how much tax obligation was accrued between `#taxOwed()`
-    // call and trx occurring.
-    const interimAmount = getTaxDue(
-      currentPriceForVerification,
-      ethers.BigNumber.from(block.timestamp),
-      timestamp,
-      taxationPeriod
-    );
-
-    const expectedRemittance = depositBefore
-      .sub(amount)
-      .sub(interimAmount)
-      .add(purchasePrice);
-
     //$ Test Cases
 
     // Buy Event emitted
+
+    expect(trx).to.emit(contract, Events.APPROVAL);
+
+    expect(trx).to.emit(contract, Events.TRANSFER);
+
     expect(trx)
       .to.emit(contract, Events.BUY)
       .withArgs(tokenId, wallet.address, purchasePrice);
@@ -141,16 +150,25 @@ describe("PartialCommonOwnership721", async function () {
     // Owned updated
     expect(await contract.ownerOf(tokenId)).to.equal(wallet.address);
 
-    // Remittance Event emitted
-    // TODO: These may fail because of division rounding down; fix in pull/12
-    // expect(trx)
-    //   .to.emit(contract, Events.REMITTANCE)
-    //   .withArgs(tokenId, remittanceRecipientWallet.address, expectedRemittance);
+    const expectedRemittance = depositUponPurchase.add(purchasePrice);
+    if (expectedRemittance.gt(0)) {
+      // Remittance Event emitted
+      expect(trx)
+        .to.emit(contract, Events.REMITTANCE)
+        .withArgs(
+          tokenId,
+          remittanceRecipientWallet.address,
+          expectedRemittance
+        );
 
-    // // Eth remitted to beneficiary
-    // expect((await remittanceRecipientWallet.balanceDelta()).delta).to.equal(
-    //   expectedRemittance
-    // );
+      // Eth remitted to beneficiary
+      const { delta } = await remittanceRecipientWallet.balanceDelta();
+      expect(delta).to.equal(
+        foreclosed
+          ? depositBefore.add(expectedRemittance) // Beneficiary will receive the deposit from tax collection in addition
+          : expectedRemittance
+      );
+    }
 
     //$ Cleanup
 
@@ -259,6 +277,25 @@ describe("PartialCommonOwnership721", async function () {
     //$ Cleanup
 
     await this.beneficiary.balance();
+  }
+
+  /**
+   * Verifies that a given token forecloses at the expected time.
+   * Note: Allows for +/- 1s variation from shouldForecloseAt due to
+   * integer division-based slippages between subsequently returned times.
+   * @param contract Contract that owns the token
+   * @param tokenId id of the token
+   * @param shouldForecloseAt timestamp as BigNumber
+   */
+  async function verifyExpectedForeclosureTime(
+    contract: any,
+    tokenId: TOKENS,
+    shouldForecloseAt: BigNumber
+  ): Promise<void> {
+    expect(await contract.foreclosureTime(tokenId)).to.be.closeTo(
+      shouldForecloseAt,
+      1
+    );
   }
 
   //$ Setup
@@ -393,7 +430,7 @@ describe("PartialCommonOwnership721", async function () {
       });
 
       it("Setting tax rate", async function () {
-        expect(await this.contract.taxRate()).to.equal(TAX_RATE);
+        expect(await this.contract.taxRate()).to.equal(taxRate);
       });
     });
   });
@@ -552,7 +589,7 @@ describe("PartialCommonOwnership721", async function () {
   describe("#taxRate()", async function () {
     context("succeeds", async function () {
       it("returning expected tax rate [100%]", async function () {
-        expect(await this.alice.contract.taxRate()).to.equal(TAX_RATE);
+        expect(await this.alice.contract.taxRate()).to.equal(taxRate);
       });
     });
   });
@@ -674,13 +711,7 @@ describe("PartialCommonOwnership721", async function () {
   });
 
   describe("#taxOwedSince()", async function () {
-    context("fails", async function () {
-      it("Time must be in the past", async function () {
-        await expect(
-          this.contract.taxOwedSince(TOKENS.ONE, await now())
-        ).to.revertedWith(ErrorMessages.REQUIRES_PAST);
-      });
-    });
+    context("fails", async function () {});
     context("succeeds", async function () {
       it("Returns zero if no purchase", async function () {
         expect(
@@ -1055,6 +1086,58 @@ describe("PartialCommonOwnership721", async function () {
   describe("#foreclosureTime()", async function () {
     context("fails", async function () {});
     context("succeeds", async function () {
+      it("consistently returns within +/- 1s", async function () {
+        const token = TOKENS.ONE;
+
+        await buy.apply(this, [
+          this.contract,
+          this.alice,
+          token,
+          ETH1,
+          ETH0,
+          ETH1.add(AnnualTenMinDue),
+          365,
+        ]);
+
+        // Future:
+
+        const tenMinutes = time.duration.minutes(10);
+
+        const shouldForecloseAt = (await now()).add(
+          ethers.BigNumber.from(tenMinutes.toString())
+        );
+
+        await verifyExpectedForeclosureTime.apply(this, [
+          this.contract,
+          token,
+          shouldForecloseAt,
+        ]);
+
+        // Present:
+
+        await time.increase(tenMinutes);
+
+        // Foreclosure should be backdated to when token was in foreclosed state.
+        await verifyExpectedForeclosureTime.apply(this, [
+          this.contract,
+          token,
+          shouldForecloseAt,
+        ]);
+
+        // Trigger foreclosure
+        await this.contract._collectTax(token);
+
+        // Past:
+
+        await time.increase(tenMinutes);
+
+        await verifyExpectedForeclosureTime.apply(this, [
+          this.contract,
+          token,
+          shouldForecloseAt,
+        ]);
+      });
+
       it("30d: time is 10m into the future", async function () {
         const token = TOKENS.ONE;
 
@@ -1072,9 +1155,11 @@ describe("PartialCommonOwnership721", async function () {
           ethers.BigNumber.from(time.duration.minutes(10).toString())
         );
 
-        expect(await this.monthlyContract.foreclosureTime(token)).to.equal(
-          tenMinutesFromNow
-        );
+        await verifyExpectedForeclosureTime.apply(this, [
+          this.monthlyContract,
+          token,
+          tenMinutesFromNow,
+        ]);
       });
 
       it("annual: time is 10m into the future", async function () {
@@ -1093,9 +1178,12 @@ describe("PartialCommonOwnership721", async function () {
         const tenMinutesFromNow = (await now()).add(
           ethers.BigNumber.from(time.duration.minutes(10).toString())
         );
-        expect(await this.contract.foreclosureTime(token)).to.equal(
-          tenMinutesFromNow
-        );
+
+        await verifyExpectedForeclosureTime.apply(this, [
+          this.contract,
+          token,
+          tenMinutesFromNow,
+        ]);
       });
 
       it("30d: returns backdated time if foreclosed", async function () {
@@ -1115,8 +1203,11 @@ describe("PartialCommonOwnership721", async function () {
         const shouldForecloseAt = await now();
 
         // Foreclosure should be backdated to when token was in foreclosed state.
-        const forecloseAt = await this.monthlyContract.foreclosureTime(token);
-        expect(forecloseAt).to.equal(shouldForecloseAt);
+        await verifyExpectedForeclosureTime.apply(this, [
+          this.monthlyContract,
+          token,
+          shouldForecloseAt,
+        ]);
 
         // Trigger foreclosure
         await this.monthlyContract._collectTax(token);
@@ -1125,15 +1216,12 @@ describe("PartialCommonOwnership721", async function () {
           this.monthlyContractAddress
         );
 
-        // Value should remain unchained after foreclosure has taken place
-        const oneSecond = ethers.BigNumber.from(
-          (await time.duration.seconds(1)).toString()
-        );
-        expect(await this.monthlyContract.foreclosureTime(token)).to.equal(
-          //! This is necessary; not sure why.  Seems related to 1 Wei issue within
-          //! "collects after 10m and subsequently after 10m"
-          forecloseAt.sub(oneSecond)
-        );
+        // Value should remain within +/- 1s after foreclosure has taken place
+        await verifyExpectedForeclosureTime.apply(this, [
+          this.monthlyContract,
+          token,
+          shouldForecloseAt,
+        ]);
       });
 
       it("annual: returns backdated time if foreclosed", async function () {
@@ -1153,8 +1241,11 @@ describe("PartialCommonOwnership721", async function () {
         const shouldForecloseAt = await now();
 
         // Foreclosure should be backdated to when token was in foreclosed state.
-        const forecloseAt = await this.contract.foreclosureTime(token);
-        expect(forecloseAt).to.equal(shouldForecloseAt);
+        await verifyExpectedForeclosureTime.apply(this, [
+          this.contract,
+          token,
+          shouldForecloseAt,
+        ]);
 
         // Trigger foreclosure
         await this.contract._collectTax(token);
@@ -1163,15 +1254,12 @@ describe("PartialCommonOwnership721", async function () {
           this.contractAddress
         );
 
-        // Value should remain unchained after foreclosure has taken place
-        const oneSecond = ethers.BigNumber.from(
-          (await time.duration.seconds(1)).toString()
-        );
-        expect(await this.contract.foreclosureTime(token)).to.equal(
-          //! This is necessary; not sure why.  Seems related to 1 Wei issue within
-          //! "collects after 10m and subsequently after 10m"
-          forecloseAt.sub(oneSecond)
-        );
+        // Value should remain within +/- 1s after foreclosure has taken place
+        await verifyExpectedForeclosureTime.apply(this, [
+          this.contract,
+          token,
+          shouldForecloseAt,
+        ]);
       });
     });
   });
