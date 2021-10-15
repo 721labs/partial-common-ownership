@@ -55,7 +55,10 @@ async function tests(config: TestConfiguration): Promise<void> {
    */
   async function deploy(): Promise<any> {
     const contract = await factory.deploy(
+      TEST_NAME,
+      TEST_SYMBOL,
       signers[1].address,
+      config.taxRate,
       config.collectionFrequency,
       GLOBAL_TRX_CONFIG
     );
