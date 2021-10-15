@@ -33,8 +33,8 @@ async function tests(config: TestConfiguration): Promise<void> {
     gasLimit: 9500000, // if gas limit is set, estimateGas isn't run superfluously, slowing tests down.
   };
 
-  //$ Constructed Constants
-  let TAX_RATE;
+  //$ Constants declared during setup
+  let taxRate;
   let provider;
   let signers;
   let factory;
@@ -129,7 +129,7 @@ async function tests(config: TestConfiguration): Promise<void> {
         (await now()).add(1), // block timestamp
         await contract.lastCollectionTimes(tokenId),
         taxationPeriod,
-        TAX_RATE
+        taxRate
       );
 
       depositUponPurchase = (await contract.depositOf(tokenId)).sub(taxDue);
@@ -229,7 +229,7 @@ async function tests(config: TestConfiguration): Promise<void> {
       owed.timestamp,
       lastCollectionTime,
       taxationPeriod,
-      TAX_RATE
+      taxRate
     );
 
     expect(owed.amount).to.equal(due);
@@ -275,7 +275,7 @@ async function tests(config: TestConfiguration): Promise<void> {
       timeAfter,
       before,
       taxationPeriod,
-      TAX_RATE
+      taxRate
     );
 
     //$ Expectations
@@ -332,7 +332,7 @@ async function tests(config: TestConfiguration): Promise<void> {
 
   before(async function () {
     //$ Set up constructed constants
-    TAX_RATE = ethers.BigNumber.from(config.taxRate).div(TAX_DENOMINATOR);
+    taxRate = ethers.BigNumber.from(config.taxRate).div(TAX_DENOMINATOR);
 
     provider = new ethers.providers.Web3Provider(web3.currentProvider);
     signers = await ethers.getSigners();
@@ -444,7 +444,7 @@ async function tests(config: TestConfiguration): Promise<void> {
       });
 
       it("Setting tax rate", async function () {
-        expect(await contract.taxRate()).to.equal(TAX_RATE);
+        expect(await contract.taxRate()).to.equal(taxRate);
       });
     });
   });
@@ -553,7 +553,7 @@ async function tests(config: TestConfiguration): Promise<void> {
   describe("#taxRate()", async function () {
     context("succeeds", async function () {
       it("returning expected tax rate [100%]", async function () {
-        expect(await alice.contract.taxRate()).to.equal(TAX_RATE);
+        expect(await alice.contract.taxRate()).to.equal(taxRate);
       });
     });
   });
@@ -1298,7 +1298,7 @@ async function tests(config: TestConfiguration): Promise<void> {
           ethers.BigNumber.from(timestamp),
           lastCollectionTime,
           30,
-          TAX_RATE
+          taxRate
         );
 
         // Deposit should be 1 ETH - taxed amount.
@@ -1337,7 +1337,7 @@ async function tests(config: TestConfiguration): Promise<void> {
           ethers.BigNumber.from(timestamp),
           lastCollectionTime,
           365,
-          TAX_RATE
+          taxRate
         );
 
         // Deposit should be 1 ETH - taxed amount.
@@ -1382,7 +1382,7 @@ async function tests(config: TestConfiguration): Promise<void> {
           ethers.BigNumber.from(timestamp),
           lastCollectionTime,
           30,
-          TAX_RATE
+          taxRate
         );
 
         const expectedRemittance = ETH1.sub(taxedAmt);
@@ -1423,7 +1423,7 @@ async function tests(config: TestConfiguration): Promise<void> {
           ethers.BigNumber.from(timestamp),
           lastCollectionTime,
           365,
-          TAX_RATE
+          taxRate
         );
 
         const expectedRemittance = ETH1.sub(taxedAmt);
