@@ -35,20 +35,15 @@ async function tests(config: TestConfiguration): Promise<void> {
   let provider;
   let signers;
   let factory;
-  let monthlyContract;
   let contract;
-  let monthlyContractAddress;
   let contractAddress;
   let beneficiary;
   let alice;
   let bob;
-  let monthlyAlice;
-  let monthlyBob;
   let wallets;
   let walletsByAddress;
   let snapshot;
-  let AnnualTenMinDue;
-  let MonthlyTenMinDue;
+  let tenMinDue;
 
   //$ Helpers
 
@@ -58,10 +53,10 @@ async function tests(config: TestConfiguration): Promise<void> {
    * @param beneficiaryAddress Address to remit taxes to
    * @returns contract interface
    */
-  async function deploy(taxationPeriod: number): Promise<any> {
+  async function deploy(): Promise<any> {
     const contract = await factory.deploy(
       signers[1].address,
-      taxationPeriod,
+      config.collectionFrequency,
       GLOBAL_TRX_CONFIG
     );
 
@@ -80,23 +75,19 @@ async function tests(config: TestConfiguration): Promise<void> {
 
   /**
    * Executes purchase and verifies expectations.
-   * @param contract Contract that owns the token
    * @param wallet Wallet making the purchase
    * @param tokenId Token being purchased
    * @param purchasePrice Price purchasing for
    * @param currentPriceForVerification Current price
    * @param value Trx value
-   * @param taxationPeriod {30|365}
    * @returns Transaction Receipt
    */
   async function buy(
-    contract: any,
     wallet: Wallet,
     tokenId: TOKENS,
     purchasePrice: BigNumber,
     currentPriceForVerification: BigNumber,
-    value: BigNumber,
-    taxationPeriod: number
+    value: BigNumber
   ): Promise<{
     trx: any;
     block: any;
@@ -127,7 +118,7 @@ async function tests(config: TestConfiguration): Promise<void> {
         currentPriceForVerification,
         (await now()).add(1), // block timestamp
         await contract.lastCollectionTimes(tokenId),
-        taxationPeriod,
+        config.collectionFrequency,
         taxRate
       );
 
@@ -203,17 +194,13 @@ async function tests(config: TestConfiguration): Promise<void> {
 
   /**
    * Verifies that, after a given amount of time, taxation due is correct.
-   * @param contract Contract that owns the token
    * @param tokenId Token being purchased
    * @param after Number of days from now to verify after
-   * @param taxationPeriod {30|365}
    * @returns Nothing.
    */
   async function verifyCorrectTaxOwed(
-    contract: any,
     tokenId: TOKENS,
-    after: number,
-    taxationPeriod: number
+    after: number
   ): Promise<void> {
     const lastCollectionTime = await contract.lastCollectionTimes(tokenId);
 
@@ -227,7 +214,7 @@ async function tests(config: TestConfiguration): Promise<void> {
       price,
       owed.timestamp,
       lastCollectionTime,
-      taxationPeriod,
+      config.collectionFrequency,
       taxRate
     );
 
@@ -241,15 +228,12 @@ async function tests(config: TestConfiguration): Promise<void> {
    * @param tokenId Token being purchased
    * @param after Number of minutes from now to collect after
    * @param currentPrice Current token price
-   * @param taxationPeriod {30|365}
    * @returns Nothing.
    */
   async function collectTax(
-    contract: any,
     tokenId: TOKENS,
     after: number,
-    currentPrice: BigNumber,
-    taxationPeriod: number
+    currentPrice: BigNumber
   ): Promise<void> {
     //$ Setup
 
@@ -273,7 +257,7 @@ async function tests(config: TestConfiguration): Promise<void> {
       currentPrice,
       timeAfter,
       before,
-      taxationPeriod,
+      config.collectionFrequency,
       taxRate
     );
 
@@ -317,7 +301,6 @@ async function tests(config: TestConfiguration): Promise<void> {
    * @param shouldForecloseAt timestamp as BigNumber
    */
   async function verifyExpectedForeclosureTime(
-    contract: any,
     tokenId: TOKENS,
     shouldForecloseAt: BigNumber
   ): Promise<void> {
@@ -335,8 +318,13 @@ async function tests(config: TestConfiguration): Promise<void> {
     // Compute tax rate for 1ETH over 10 minutes
     const tenMin = await now();
     const prior = tenMin.sub(600);
-    AnnualTenMinDue = getTaxDue(ETH1, tenMin, prior, 365, taxRate);
-    MonthlyTenMinDue = getTaxDue(ETH1, tenMin, prior, 30, taxRate);
+    tenMinDue = getTaxDue(
+      ETH1,
+      tenMin,
+      prior,
+      config.collectionFrequency,
+      taxRate
+    );
 
     provider = new ethers.providers.Web3Provider(web3.currentProvider);
     signers = await ethers.getSigners();
@@ -344,10 +332,7 @@ async function tests(config: TestConfiguration): Promise<void> {
 
     //$ Set up contracts
 
-    monthlyContract = await deploy(30);
-    contract = await deploy(365);
-
-    monthlyContractAddress = monthlyContract.address;
+    contract = await deploy();
     contractAddress = contract.address;
 
     //$ Set up wallets
@@ -355,10 +340,8 @@ async function tests(config: TestConfiguration): Promise<void> {
     beneficiary = new Wallet(contract, signers[1]);
     alice = new Wallet(contract, signers[2]);
     bob = new Wallet(contract, signers[3]);
-    monthlyAlice = new Wallet(monthlyContract, signers[4]);
-    monthlyBob = new Wallet(monthlyContract, signers[5]);
 
-    wallets = [beneficiary, monthlyAlice, monthlyBob, alice, bob];
+    wallets = [beneficiary, alice, bob];
 
     walletsByAddress = wallets.reduce(
       (memo, wallet) => ({ ...memo, [wallet.address]: wallet }),
@@ -486,43 +469,23 @@ async function tests(config: TestConfiguration): Promise<void> {
   describe("#_collectTax()", async function () {
     context("fails", async function () {});
     context("succeeds", async function () {
-      it("30d: collects after 10m", async function () {
+      it("collects after 10m", async function () {
         const price = ETH1;
         const token = TOKENS.ONE;
 
-        await buy(monthlyContract, monthlyAlice, token, price, ETH0, ETH2, 30);
+        await buy(alice, token, price, ETH0, ETH2);
 
-        await collectTax(monthlyContract, token, 10, price, 30);
+        await collectTax(token, 10, price);
       });
 
-      it("annual: collects after 10m", async function () {
+      it("collects after 10m and subsequently after 10m", async function () {
         const price = ETH1;
         const token = TOKENS.ONE;
 
-        await buy(contract, alice, token, price, ETH0, ETH2, 365);
+        await buy(alice, token, price, ETH0, ETH2);
 
-        await collectTax(contract, token, 10, price, 365);
-      });
-
-      it("30d: collects after 10m and subsequently after 10m", async function () {
-        const price = ETH1;
-        const token = TOKENS.ONE;
-
-        await buy(monthlyContract, monthlyAlice, token, price, ETH0, ETH2, 30);
-
-        await collectTax(monthlyContract, token, 10, price, 30);
-
-        await collectTax(monthlyContract, token, 10, price, 30);
-      });
-
-      it("annual: collects after 10m and subsequently after 10m", async function () {
-        const price = ETH1;
-        const token = TOKENS.ONE;
-
-        await buy(contract, alice, token, price, ETH0, ETH2, 365);
-
-        await collectTax(contract, token, 10, price, 365);
-        await collectTax(contract, token, 10, price, 365);
+        await collectTax(token, 10, price);
+        await collectTax(token, 10, price);
       });
     });
   });
@@ -581,45 +544,23 @@ async function tests(config: TestConfiguration): Promise<void> {
   describe("#taxOwed()", async function () {
     context("fails", async function () {});
     context("succeeds", async function () {
-      it("30d: Returns correct taxation after 1 second", async function () {
+      it("Returns correct taxation after 1 day", async function () {
         const token = TOKENS.ONE;
-
-        await buy(monthlyContract, monthlyAlice, token, ETH1, ETH0, ETH2, 30);
-
-        await verifyCorrectTaxOwed(monthlyContract, token, 1, 30);
-      });
-
-      it("annual: Returns correct taxation after 1 second", async function () {
-        const token = TOKENS.ONE;
-
-        await buy(contract, alice, token, ETH1, ETH0, ETH2, 365);
-
-        await verifyCorrectTaxOwed(contract, token, 1, 365);
+        await buy(alice, token, ETH1, ETH0, ETH2);
+        await verifyCorrectTaxOwed(token, 1);
       });
     });
 
-    it("30d: Returns correct taxation after 30 days", async function () {
+    it("Returns correct taxation after 1 year", async function () {
       const token = TOKENS.ONE;
-
-      await buy(monthlyContract, monthlyAlice, token, ETH1, ETH0, ETH2, 30);
-
-      await verifyCorrectTaxOwed(monthlyContract, token, 30, 30);
+      await buy(alice, token, ETH1, ETH0, ETH2);
+      await verifyCorrectTaxOwed(token, 365);
     });
 
-    it("30d: Returns correct taxation after 60 days", async function () {
+    it("Returns correct taxation after 2 years", async function () {
       const token = TOKENS.ONE;
-
-      await buy(monthlyContract, monthlyAlice, token, ETH1, ETH0, ETH2, 30);
-
-      await verifyCorrectTaxOwed(monthlyContract, token, 60, 30);
-    });
-
-    it("annual: Returns correct taxation after 1 year", async function () {
-      const token = TOKENS.ONE;
-
-      await buy(contract, alice, token, ETH1, ETH0, ETH2, 365);
-
-      await verifyCorrectTaxOwed(contract, token, 365, 365);
+      await buy(alice, token, ETH1, ETH0, ETH2);
+      await verifyCorrectTaxOwed(token, 730);
     });
   });
 
@@ -632,35 +573,17 @@ async function tests(config: TestConfiguration): Promise<void> {
         ).to.equal(0);
       });
 
-      it("30d: Returns correct amount", async function () {
+      it("Returns correct amount", async function () {
         const token = TOKENS.ONE;
         const price = ETH1;
 
-        await buy(monthlyContract, monthlyAlice, token, price, ETH0, ETH2, 30);
+        await buy(alice, token, price, ETH0, ETH2);
 
         const time = (await now()).sub(1);
 
         const expected = price
           .mul(time)
-          .div(taxationPeriodToSeconds(30))
-          .mul(taxRate);
-
-        expect(await monthlyContract.taxOwedSince(token, time)).to.equal(
-          expected
-        );
-      });
-
-      it("annual: Returns correct amount", async function () {
-        const token = TOKENS.ONE;
-        const price = ETH1;
-
-        await buy(contract, alice, token, price, ETH0, ETH2, 365);
-
-        const time = (await now()).sub(1);
-
-        const expected = price
-          .mul(time)
-          .div(taxationPeriodToSeconds(365))
+          .div(taxationPeriodToSeconds(config.collectionFrequency))
           .mul(taxRate);
 
         expect(await contract.taxOwedSince(token, time)).to.equal(expected);
@@ -678,82 +601,34 @@ async function tests(config: TestConfiguration): Promise<void> {
           ).to.equal(0);
         });
 
-        it("30d: after initial purchase", async function () {
+        it("after initial purchase", async function () {
           const token = TOKENS.ONE;
           const price = ETH1;
 
-          await buy(
-            monthlyContract,
-            monthlyAlice,
-            token,
-            price,
-            ETH0,
-            ETH2,
-            30
-          );
+          await buy(alice, token, price, ETH0, ETH2);
 
-          await collectTax(monthlyContract, token, 1, price, 30);
+          await collectTax(token, 1, price);
         });
 
-        it("annual: after initial purchase", async function () {
+        it("after 1 secondary-purchase", async function () {
           const token = TOKENS.ONE;
           const price = ETH1;
 
-          await buy(contract, alice, token, price, ETH0, ETH2, 365);
+          await buy(alice, token, price, ETH0, ETH2);
 
-          await collectTax(contract, token, 1, price, 365);
-        });
-
-        it("30d: after 1 secondary-purchase", async function () {
-          const token = TOKENS.ONE;
-          const price = ETH1;
-
-          await buy(
-            monthlyContract,
-            monthlyAlice,
-            token,
-            price,
-            ETH0,
-            ETH2,
-            30
-          );
-
-          await collectTax(monthlyContract, token, 1, price, 30);
+          await collectTax(token, 1, price);
 
           const secondaryPrice = ETH2;
 
-          await buy(
-            monthlyContract,
-            monthlyBob,
-            token,
-            secondaryPrice,
-            ETH1,
-            ETH3,
-            30
-          );
+          await buy(bob, token, secondaryPrice, ETH1, ETH3);
 
-          await collectTax(monthlyContract, token, 1, secondaryPrice, 30);
-        });
-
-        it("annual: after 1 secondary-purchase", async function () {
-          const token = TOKENS.ONE;
-          const price = ETH1;
-
-          await buy(contract, alice, token, price, ETH0, ETH2, 365);
-
-          await collectTax(contract, token, 1, price, 365);
-
-          const secondaryPrice = ETH2;
-
-          await buy(contract, bob, token, secondaryPrice, ETH1, ETH3, 365);
-
-          await collectTax(contract, token, 1, secondaryPrice, 365);
+          await collectTax(token, 1, secondaryPrice);
         });
 
         it("when foreclosed", async function () {
           const token = TOKENS.ONE;
 
-          await buy(contract, alice, token, ETH1, ETH0, ETH2, 365);
+          await buy(alice, token, ETH1, ETH0, ETH2);
 
           await time.increase(time.duration.days(366));
           expect(await contract.foreclosed(token)).to.equal(true);
@@ -763,27 +638,10 @@ async function tests(config: TestConfiguration): Promise<void> {
           );
         });
 
-        it("30d: after purchase from foreclosure", async function () {
+        it("after purchase from foreclosure", async function () {
           const token = TOKENS.ONE;
 
-          await buy(monthlyContract, monthlyAlice, token, ETH1, ETH0, ETH2, 30);
-
-          await time.increase(time.duration.days(31));
-          expect(await monthlyContract.foreclosed(token)).to.equal(true);
-
-          await time.increase(time.duration.days(1));
-
-          // Purchase out of foreclosure
-          const price = ETH1;
-          await buy(monthlyContract, monthlyBob, token, price, ETH0, ETH2, 30);
-
-          await collectTax(monthlyContract, token, 1, price, 30);
-        });
-
-        it("annual: after purchase from foreclosure", async function () {
-          const token = TOKENS.ONE;
-
-          await buy(contract, alice, token, ETH1, ETH0, ETH2, 365);
+          await buy(alice, token, ETH1, ETH0, ETH2);
 
           await time.increase(time.duration.days(366));
           expect(await contract.foreclosed(token)).to.equal(true);
@@ -792,9 +650,9 @@ async function tests(config: TestConfiguration): Promise<void> {
 
           // Purchase out of foreclosure
           const price = ETH1;
-          await buy(contract, bob, token, price, ETH0, ETH2, 365);
+          await buy(bob, token, price, ETH0, ETH2);
 
-          await collectTax(contract, token, 1, price, 365);
+          await collectTax(token, 1, price);
         });
       });
     });
@@ -806,7 +664,7 @@ async function tests(config: TestConfiguration): Promise<void> {
       it("true positive", async function () {
         const token = TOKENS.ONE;
 
-        await buy(contract, alice, token, ETH1, ETH0, ETH2, 365);
+        await buy(alice, token, ETH1, ETH0, ETH2);
 
         await time.increase(time.duration.days(366)); // Entire deposit will be exceeded after 1yr
         expect(await contract.foreclosed(token)).to.equal(true);
@@ -814,7 +672,7 @@ async function tests(config: TestConfiguration): Promise<void> {
       it("true negative", async function () {
         const token = TOKENS.ONE;
 
-        await buy(contract, alice, token, ETH1, ETH0, ETH2, 365);
+        await buy(alice, token, ETH1, ETH0, ETH2);
 
         await time.increase(time.duration.minutes(1));
         expect(await contract.foreclosed(token)).to.equal(false);
@@ -828,7 +686,7 @@ async function tests(config: TestConfiguration): Promise<void> {
       it("Returns zero when owed >= deposit", async function () {
         const token = TOKENS.ONE;
 
-        await buy(contract, alice, token, ETH1, ETH0, ETH2, 365);
+        await buy(alice, token, ETH1, ETH0, ETH2);
 
         // Exhaust deposit
         await time.increase(time.duration.days(366));
@@ -838,7 +696,7 @@ async function tests(config: TestConfiguration): Promise<void> {
       it("Returns (deposit - owed) when owed < deposit", async function () {
         const token = TOKENS.ONE;
 
-        await buy(contract, alice, token, ETH1, ETH0, ETH2, 365);
+        await buy(alice, token, ETH1, ETH0, ETH2);
 
         await time.increase(time.duration.days(1));
         const owed = await contract.taxOwed(token);
@@ -856,15 +714,7 @@ async function tests(config: TestConfiguration): Promise<void> {
       it("consistently returns within +/- 1s", async function () {
         const token = TOKENS.ONE;
 
-        await buy(
-          contract,
-          alice,
-          token,
-          ETH1,
-          ETH0,
-          ETH1.add(AnnualTenMinDue),
-          365
-        );
+        await buy(alice, token, ETH1, ETH0, ETH1.add(tenMinDue));
 
         // Future:
 
@@ -874,14 +724,14 @@ async function tests(config: TestConfiguration): Promise<void> {
           ethers.BigNumber.from(tenMinutes.toString())
         );
 
-        await verifyExpectedForeclosureTime(contract, token, shouldForecloseAt);
+        await verifyExpectedForeclosureTime(token, shouldForecloseAt);
 
         // Present:
 
         await time.increase(tenMinutes);
 
         // Foreclosure should be backdated to when token was in foreclosed state.
-        await verifyExpectedForeclosureTime(contract, token, shouldForecloseAt);
+        await verifyExpectedForeclosureTime(token, shouldForecloseAt);
 
         // Trigger foreclosure
         await contract._collectTax(token);
@@ -890,109 +740,43 @@ async function tests(config: TestConfiguration): Promise<void> {
 
         await time.increase(tenMinutes);
 
-        await verifyExpectedForeclosureTime(contract, token, shouldForecloseAt);
+        await verifyExpectedForeclosureTime(token, shouldForecloseAt);
       });
 
-      it("30d: time is 10m into the future", async function () {
+      it("time is 10m into the future", async function () {
         const token = TOKENS.ONE;
 
         await buy(
-          monthlyContract,
-          monthlyAlice,
+          alice,
           token,
           ETH1,
           ETH0,
-          ETH1.add(MonthlyTenMinDue), // Deposit a surplus 10 min of patronage
-          30
+          ETH1.add(tenMinDue) // Deposit a surplus 10 min of patronage
         );
 
         const tenMinutesFromNow = (await now()).add(
           ethers.BigNumber.from(time.duration.minutes(10).toString())
         );
 
-        await verifyExpectedForeclosureTime(
-          monthlyContract,
-          token,
-          tenMinutesFromNow
-        );
+        await verifyExpectedForeclosureTime(token, tenMinutesFromNow);
       });
 
-      it("annual: time is 10m into the future", async function () {
+      it("returns backdated time if foreclosed", async function () {
         const token = TOKENS.ONE;
 
         await buy(
-          contract,
           alice,
           token,
           ETH1,
           ETH0,
-          ETH1.add(AnnualTenMinDue), // Deposit a surplus 10 min of patronage
-          365
-        );
-
-        const tenMinutesFromNow = (await now()).add(
-          ethers.BigNumber.from(time.duration.minutes(10).toString())
-        );
-
-        await verifyExpectedForeclosureTime(contract, token, tenMinutesFromNow);
-      });
-
-      it("30d: returns backdated time if foreclosed", async function () {
-        const token = TOKENS.ONE;
-
-        await buy(
-          monthlyContract,
-          monthlyAlice,
-          token,
-          ETH1,
-          ETH0,
-          ETH1.add(MonthlyTenMinDue), // Deposit a surplus 10 min of patronage
-          30
+          ETH1.add(tenMinDue) // Deposit a surplus 10 min of patronage
         );
 
         await time.increase(time.duration.minutes(10));
         const shouldForecloseAt = await now();
 
         // Foreclosure should be backdated to when token was in foreclosed state.
-        await verifyExpectedForeclosureTime(
-          monthlyContract,
-          token,
-          shouldForecloseAt
-        );
-
-        // Trigger foreclosure
-        await monthlyContract._collectTax(token);
-
-        expect(await monthlyContract.ownerOf(token)).to.equal(
-          monthlyContractAddress
-        );
-
-        // Value should remain within +/- 1s after foreclosure has taken place
-        await verifyExpectedForeclosureTime(
-          monthlyContract,
-          token,
-          shouldForecloseAt
-        );
-      });
-
-      it("annual: returns backdated time if foreclosed", async function () {
-        const token = TOKENS.ONE;
-
-        await buy(
-          contract,
-          alice,
-          token,
-          ETH1,
-          ETH0,
-          ETH1.add(AnnualTenMinDue), // Deposit a surplus 10 min of patronage
-          365
-        );
-
-        await time.increase(time.duration.minutes(10));
-        const shouldForecloseAt = await now();
-
-        // Foreclosure should be backdated to when token was in foreclosed state.
-        await verifyExpectedForeclosureTime(contract, token, shouldForecloseAt);
+        await verifyExpectedForeclosureTime(token, shouldForecloseAt);
 
         // Trigger foreclosure
         await contract._collectTax(token);
@@ -1000,7 +784,7 @@ async function tests(config: TestConfiguration): Promise<void> {
         expect(await contract.ownerOf(token)).to.equal(contractAddress);
 
         // Value should remain within +/- 1s after foreclosure has taken place
-        await verifyExpectedForeclosureTime(contract, token, shouldForecloseAt);
+        await verifyExpectedForeclosureTime(token, shouldForecloseAt);
       });
     });
   });
@@ -1044,7 +828,7 @@ async function tests(config: TestConfiguration): Promise<void> {
       });
       it("Attempting to buy with price less than current price", async function () {
         // Purchase as Bob for 2 ETH
-        await buy(contract, bob, TOKENS.TWO, ETH2, ETH0, ETH3, 365);
+        await buy(bob, TOKENS.TWO, ETH2, ETH0, ETH3);
 
         await expect(
           alice.contract.buy(
@@ -1062,7 +846,7 @@ async function tests(config: TestConfiguration): Promise<void> {
       });
       it("Attempting to purchase a token it already owns", async function () {
         // Purchase
-        await buy(contract, bob, TOKENS.TWO, ETH2, ETH0, ETH3, 365);
+        await buy(bob, TOKENS.TWO, ETH2, ETH0, ETH3);
         // Re-purchase
         await expect(
           bob.contract.buy(TOKENS.TWO, ETH3, ETH2, { value: ETH4 })
@@ -1071,33 +855,23 @@ async function tests(config: TestConfiguration): Promise<void> {
     });
     context("succeeds", async function () {
       it("Purchasing token for the first-time (from contract)", async function () {
-        await buy(contract, alice, TOKENS.ONE, ETH1, ETH0, ETH2, 365);
+        await buy(alice, TOKENS.ONE, ETH1, ETH0, ETH2);
       });
 
-      it("30d: Purchasing token from current owner", async function () {
+      it("Purchasing token from current owner", async function () {
         const token = TOKENS.ONE;
 
-        await buy(monthlyContract, monthlyAlice, token, ETH1, ETH0, ETH2, 30);
+        await buy(alice, token, ETH1, ETH0, ETH2);
 
         await time.increase(time.duration.minutes(10));
 
-        await buy(monthlyContract, monthlyBob, token, ETH2, ETH1, ETH3, 30);
-      });
-
-      it("annual: Purchasing token from current owner", async function () {
-        const token = TOKENS.ONE;
-
-        await buy(contract, alice, token, ETH1, ETH0, ETH2, 365);
-
-        await time.increase(time.duration.minutes(10));
-
-        await buy(contract, bob, token, ETH2, ETH1, ETH3, 365);
+        await buy(bob, token, ETH2, ETH1, ETH3);
       });
 
       it("Purchasing token from foreclosure", async function () {
         const token = TOKENS.ONE;
 
-        await buy(contract, alice, token, ETH1, ETH0, ETH2, 365);
+        await buy(alice, token, ETH1, ETH0, ETH2);
 
         // Exhaust deposit
         await time.increase(time.duration.days(366));
@@ -1117,51 +891,35 @@ async function tests(config: TestConfiguration): Promise<void> {
       it("Purchasing token from current owner who purchased from foreclosure", async function () {
         const token = TOKENS.ONE;
 
-        await buy(contract, alice, token, ETH1, ETH0, ETH2, 365);
+        await buy(alice, token, ETH1, ETH0, ETH2);
 
         // Exhaust deposit
         await time.increase(time.duration.days(366));
 
         // Buy out of foreclosure
-        await buy(contract, bob, token, ETH1, ETH0, ETH2, 365);
+        await buy(bob, token, ETH1, ETH0, ETH2);
 
-        await buy(contract, alice, token, ETH2, ETH1, ETH3, 365);
+        await buy(alice, token, ETH2, ETH1, ETH3);
       });
 
       it("Owner prior to foreclosure re-purchases", async function () {
         const token = TOKENS.ONE;
 
-        await buy(contract, alice, token, ETH1, ETH0, ETH2, 365);
+        await buy(alice, token, ETH1, ETH0, ETH2);
 
         // Exhaust deposit
         await time.increase(time.duration.days(366));
 
         // Buy out of foreclosure
-        await buy(contract, alice, token, ETH1, ETH0, ETH2, 365);
+        await buy(alice, token, ETH1, ETH0, ETH2);
       });
 
       it("Updating chain of title", async function () {
         const token = TOKENS.ONE;
 
-        const { block: block1 } = await buy(
-          contract,
-          bob,
-          token,
-          ETH1,
-          ETH0,
-          ETH2,
-          365
-        );
+        const { block: block1 } = await buy(bob, token, ETH1, ETH0, ETH2);
 
-        const { block: block2 } = await buy(
-          contract,
-          alice,
-          token,
-          ETH2,
-          ETH1,
-          ETH3,
-          365
-        );
+        const { block: block2 } = await buy(alice, token, ETH2, ETH1, ETH3);
 
         const chainOfTitle = await contract.titleChainOf(token);
 
@@ -1195,7 +953,7 @@ async function tests(config: TestConfiguration): Promise<void> {
       it("owner can deposit", async function () {
         const token = TOKENS.ONE;
 
-        await buy(contract, alice, token, ETH1, ETH0, ETH2, 365);
+        await buy(alice, token, ETH1, ETH0, ETH2);
 
         await expect(
           alice.contract.depositWei(token, { value: ETH1 })
@@ -1214,7 +972,7 @@ async function tests(config: TestConfiguration): Promise<void> {
       it("cannot have a new price of zero", async function () {
         const token = TOKENS.ONE;
 
-        await buy(contract, alice, token, ETH1, ETH0, ETH2, 365);
+        await buy(alice, token, ETH1, ETH0, ETH2);
         await expect(
           alice.contract.changePrice(token, ETH0)
         ).to.be.revertedWith(ErrorMessages.NEW_PRICE_ZERO);
@@ -1222,7 +980,7 @@ async function tests(config: TestConfiguration): Promise<void> {
       it("cannot have price set to same amount", async function () {
         const token = TOKENS.ONE;
 
-        await buy(contract, alice, token, ETH1, ETH0, ETH2, 365);
+        await buy(alice, token, ETH1, ETH0, ETH2);
         await expect(
           alice.contract.changePrice(token, ETH1)
         ).to.be.revertedWith(ErrorMessages.NEW_PRICE_SAME);
@@ -1232,7 +990,7 @@ async function tests(config: TestConfiguration): Promise<void> {
       it("owner can increase price", async function () {
         const token = TOKENS.ONE;
 
-        await buy(contract, alice, token, ETH1, ETH0, ETH2, 365);
+        await buy(alice, token, ETH1, ETH0, ETH2);
 
         expect(await alice.contract.changePrice(token, ETH2))
           .to.emit(contract, Events.PRICE_CHANGE)
@@ -1244,7 +1002,7 @@ async function tests(config: TestConfiguration): Promise<void> {
       it("owner can decrease price", async function () {
         const token = TOKENS.ONE;
 
-        await buy(contract, alice, token, ETH2, ETH0, ETH3, 365);
+        await buy(alice, token, ETH2, ETH0, ETH3);
 
         expect(await alice.contract.changePrice(token, ETH1))
           .to.emit(contract, Events.PRICE_CHANGE)
@@ -1266,7 +1024,7 @@ async function tests(config: TestConfiguration): Promise<void> {
       it("Cannot withdraw more than deposited", async function () {
         const token = TOKENS.ONE;
 
-        await buy(contract, alice, token, ETH1, ETH0, ETH2, 365);
+        await buy(alice, token, ETH1, ETH0, ETH2);
 
         await expect(
           alice.contract.withdrawDeposit(token, ETH2)
@@ -1275,52 +1033,11 @@ async function tests(config: TestConfiguration): Promise<void> {
     });
 
     context("succeeds", async function () {
-      it("30d: Withdraws expected amount", async function () {
+      it("Withdraws expected amount", async function () {
         const token = TOKENS.ONE;
         const price = ETH1;
 
-        await buy(monthlyContract, monthlyAlice, token, price, ETH0, ETH3, 30);
-
-        // Necessary to determine tax due on exit
-        const lastCollectionTime = await monthlyContract.lastCollectionTimes(
-          token
-        );
-
-        const trx = await monthlyAlice.contract.withdrawDeposit(token, ETH1);
-        const { timestamp } = await provider.getBlock(trx.blockNumber);
-
-        // Emits
-        expect(trx)
-          .to.emit(monthlyContract, Events.DEPOSIT_WITHDRAWAL)
-          .withArgs(token, ETH1);
-
-        // current deposit - tax on exit
-        const taxedAmt = getTaxDue(
-          price,
-          ethers.BigNumber.from(timestamp),
-          lastCollectionTime,
-          30,
-          taxRate
-        );
-
-        // Deposit should be 1 ETH - taxed amount.
-        expect(await monthlyContract.depositOf(token)).to.equal(
-          ETH1.sub(taxedAmt)
-        );
-
-        // Alice's balance should reflect returned deposit [1 ETH] minus fees
-        const { delta, fees } = await monthlyAlice.balanceDelta();
-
-        const expectedRemittanceMinusGas = ETH1.sub(fees);
-
-        expect(delta).to.equal(expectedRemittanceMinusGas);
-      });
-
-      it("annual: Withdraws expected amount", async function () {
-        const token = TOKENS.ONE;
-        const price = ETH1;
-
-        await buy(contract, alice, token, price, ETH0, ETH3, 30);
+        await buy(alice, token, price, ETH0, ETH3, 30);
 
         // Necessary to determine tax due on exit
         const lastCollectionTime = await contract.lastCollectionTimes(token);
@@ -1338,7 +1055,7 @@ async function tests(config: TestConfiguration): Promise<void> {
           price,
           ethers.BigNumber.from(timestamp),
           lastCollectionTime,
-          365,
+          config.collectionFrequency,
           taxRate
         );
 
@@ -1365,53 +1082,10 @@ async function tests(config: TestConfiguration): Promise<void> {
     });
 
     context("succeeds", async function () {
-      it("30d: Withdraws entire deposit", async function () {
+      it("Withdraws entire deposit", async function () {
         const token = TOKENS.ONE;
 
-        await buy(monthlyContract, monthlyAlice, token, ETH1, ETH0, ETH2, 30);
-
-        // Determine tax due on exit
-        const lastCollectionTime = await monthlyContract.lastCollectionTimes(
-          token
-        );
-
-        const trx = await monthlyAlice.contract.exit(token);
-        const { timestamp } = await provider.getBlock(trx.blockNumber);
-
-        // current deposit - tax on exit
-        const taxedAmt = getTaxDue(
-          ETH1,
-          ethers.BigNumber.from(timestamp),
-          lastCollectionTime,
-          30,
-          taxRate
-        );
-
-        const expectedRemittance = ETH1.sub(taxedAmt);
-
-        // Emits
-        expect(trx)
-          .to.emit(monthlyContract, Events.DEPOSIT_WITHDRAWAL)
-          .withArgs(token, expectedRemittance);
-
-        // Alice's balance should reflect returned deposit minus fees
-        const { delta, fees } = await monthlyAlice.balanceDelta();
-
-        const expectedRemittanceMinusGas = expectedRemittance.sub(fees);
-
-        expect(delta).to.equal(expectedRemittanceMinusGas);
-
-        // Deposit should be zero
-        expect(await monthlyContract.depositOf(token)).to.equal(0);
-
-        // Token should foreclose
-        expect(await monthlyContract.priceOf(token)).to.equal(0);
-      });
-
-      it("annual: Withdraws entire deposit", async function () {
-        const token = TOKENS.ONE;
-
-        await buy(contract, alice, token, ETH1, ETH0, ETH2, 365);
+        await buy(alice, token, ETH1, ETH0, ETH2);
 
         // Determine tax due on exit
         const lastCollectionTime = await contract.lastCollectionTimes(token);
@@ -1424,7 +1098,7 @@ async function tests(config: TestConfiguration): Promise<void> {
           ETH1,
           ethers.BigNumber.from(timestamp),
           lastCollectionTime,
-          365,
+          config.collectionFrequency,
           taxRate
         );
 
