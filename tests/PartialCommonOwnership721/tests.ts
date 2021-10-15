@@ -32,6 +32,11 @@ async function tests(config: TestConfiguration): Promise<void> {
 
   const TAX_NUMERATOR = ethers.BigNumber.from(config.taxRate);
 
+  // If wallet does not redeposit funds after purchasing,
+  // how many days until the entire deposit is exhausted?
+  const DAYS_TILL_FORECLOSURE_WITHOUT_REDEPOSIT =
+    config.collectionFrequency / (config.taxRate / 10 ** 12) + 1;
+
   //$ Constants declared during setup
   let provider;
   let signers;
@@ -640,8 +645,11 @@ async function tests(config: TestConfiguration): Promise<void> {
 
           await buy(alice, token, ETH1, ETH0, ETH2);
 
-          await time.increase(time.duration.days(366));
+          await time.increase(
+            time.duration.days(DAYS_TILL_FORECLOSURE_WITHOUT_REDEPOSIT)
+          );
           expect(await contract.foreclosed(token)).to.equal(true);
+
           await time.increase(time.duration.days(1));
           expect(await contract.taxCollectedSinceLastTransfer(token)).to.equal(
             0
@@ -653,7 +661,9 @@ async function tests(config: TestConfiguration): Promise<void> {
 
           await buy(alice, token, ETH1, ETH0, ETH2);
 
-          await time.increase(time.duration.days(366));
+          await time.increase(
+            time.duration.days(DAYS_TILL_FORECLOSURE_WITHOUT_REDEPOSIT)
+          );
           expect(await contract.foreclosed(token)).to.equal(true);
 
           await time.increase(time.duration.days(1));
@@ -676,7 +686,9 @@ async function tests(config: TestConfiguration): Promise<void> {
 
         const { block, trx } = await buy(alice, token, ETH1, ETH0, ETH2);
 
-        await time.increase(time.duration.days(366)); // Entire deposit will be exceeded after 1yr
+        await time.increase(
+          time.duration.days(DAYS_TILL_FORECLOSURE_WITHOUT_REDEPOSIT)
+        ); // Entire deposit will be exceeded after 1yr
         expect(await contract.foreclosed(token)).to.equal(true);
 
         expect(trx).to.emit(contract, Events.TRANSFER);
@@ -706,7 +718,9 @@ async function tests(config: TestConfiguration): Promise<void> {
         await buy(alice, token, ETH1, ETH0, ETH2);
 
         // Exhaust deposit
-        await time.increase(time.duration.days(366));
+        await time.increase(
+          time.duration.days(DAYS_TILL_FORECLOSURE_WITHOUT_REDEPOSIT)
+        );
 
         expect(await contract.withdrawableDeposit(token)).to.equal(0);
       });
@@ -891,7 +905,9 @@ async function tests(config: TestConfiguration): Promise<void> {
         await buy(alice, token, ETH1, ETH0, ETH2);
 
         // Exhaust deposit
-        await time.increase(time.duration.days(366));
+        await time.increase(
+          time.duration.days(DAYS_TILL_FORECLOSURE_WITHOUT_REDEPOSIT)
+        );
 
         // Trigger foreclosure & buy it out of foreclosure
         expect(
@@ -911,7 +927,9 @@ async function tests(config: TestConfiguration): Promise<void> {
         await buy(alice, token, ETH1, ETH0, ETH2);
 
         // Exhaust deposit
-        await time.increase(time.duration.days(366));
+        await time.increase(
+          time.duration.days(DAYS_TILL_FORECLOSURE_WITHOUT_REDEPOSIT)
+        );
 
         // Buy out of foreclosure
         await buy(bob, token, ETH1, ETH0, ETH2);
@@ -925,7 +943,9 @@ async function tests(config: TestConfiguration): Promise<void> {
         await buy(alice, token, ETH1, ETH0, ETH2);
 
         // Exhaust deposit
-        await time.increase(time.duration.days(366));
+        await time.increase(
+          time.duration.days(DAYS_TILL_FORECLOSURE_WITHOUT_REDEPOSIT)
+        );
 
         // Buy out of foreclosure
         await buy(alice, token, ETH1, ETH0, ETH2);
