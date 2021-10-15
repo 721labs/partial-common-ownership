@@ -16,8 +16,10 @@ const configurations = configFileNames.map((filename) => {
 
 //$ Run
 
-describe("PartialCommonOwnership721", async function () {
+describe("PartialCommonOwnership721", async () => {
   for await (const config of configurations) {
-    await tests(config);
+    describe(config.name, async () => {
+      await tests(config);
+    });
   }
 });
