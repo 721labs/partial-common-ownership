@@ -239,7 +239,7 @@ contract PartialCommonOwnership721 is ERC721 {
     returns (uint256 taxDue)
   {
     uint256 price = _price(_tokenId);
-    return ((price * _time) / taxationPeriod) * (taxRate());
+    return ((price * _time) / taxationPeriod) * taxRate();
   }
 
   /// @notice Public method for the tax owed. Returns with the current time.
@@ -285,6 +285,9 @@ contract PartialCommonOwnership721 is ERC721 {
 
   /// @notice Returns the time when tax owed initially exceeded deposits.
   /// @dev last collected time + ((time_elapsed * deposit) / owed)
+  /// @dev Returns within +/- 1s of previous values due to Solidity rounding
+  /// down integer division without regard for significant digits, which produces
+  /// variable results e.g. `599.9999999999851` becomes `599`.
   /// @param _tokenId ID of token requesting
   /// @return Unix timestamp
   function _backdatedForeclosureTime(uint256 _tokenId)
@@ -294,7 +297,7 @@ contract PartialCommonOwnership721 is ERC721 {
   {
     uint256 last = lastCollectionTimes[_tokenId];
     uint256 timeElapsed = block.timestamp - last;
-    return last + ((timeElapsed * deposits[_tokenId]) / _taxOwed(_tokenId));
+    return last + (timeElapsed * deposits[_tokenId] / _taxOwed(_tokenId));
   }
 
   /// @notice Determines how long a token owner has until forclosure.
@@ -329,7 +332,7 @@ contract PartialCommonOwnership721 is ERC721 {
       // backdated to when the tax was last paid for.
       if (foreclosed(_tokenId)) {
         lastCollectionTimes[_tokenId] = _backdatedForeclosureTime(_tokenId);
-        // Take remaining deposit.
+        // Set remaining deposit to be collected.
         owed = deposits[_tokenId];
       } else {
         lastCollectionTimes[_tokenId] = block.timestamp;

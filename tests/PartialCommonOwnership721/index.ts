@@ -278,6 +278,25 @@ describe("PartialCommonOwnership721", async function () {
     await this.beneficiary.balance();
   }
 
+  /**
+   * Verifies that a given token forecloses at the expected time.
+   * Note: Allows for +/- 1s variation from shouldForecloseAt due to
+   * integer division-based slippages between subsequently returned times.
+   * @param contract Contract that owns the token
+   * @param tokenId id of the token
+   * @param shouldForecloseAt timestamp as BigNumber
+   */
+  async function verifyExpectedForeclosureTime(
+    contract: any,
+    tokenId: TOKENS,
+    shouldForecloseAt: BigNumber
+  ): Promise<void> {
+    expect(await contract.foreclosureTime(tokenId)).to.be.closeTo(
+      shouldForecloseAt,
+      1
+    );
+  }
+
   //$ Setup
 
   before(async function () {
@@ -1066,6 +1085,58 @@ describe("PartialCommonOwnership721", async function () {
   describe("#foreclosureTime()", async function () {
     context("fails", async function () {});
     context("succeeds", async function () {
+      it("consistently returns within +/- 1s", async function () {
+        const token = TOKENS.ONE;
+
+        await buy.apply(this, [
+          this.contract,
+          this.alice,
+          token,
+          ETH1,
+          ETH0,
+          ETH1.add(AnnualTenMinDue),
+          365,
+        ]);
+
+        // Future:
+
+        const tenMinutes = time.duration.minutes(10);
+
+        const shouldForecloseAt = (await now()).add(
+          ethers.BigNumber.from(tenMinutes.toString())
+        );
+
+        await verifyExpectedForeclosureTime.apply(this, [
+          this.contract,
+          token,
+          shouldForecloseAt,
+        ]);
+
+        // Present:
+
+        await time.increase(tenMinutes);
+
+        // Foreclosure should be backdated to when token was in foreclosed state.
+        await verifyExpectedForeclosureTime.apply(this, [
+          this.contract,
+          token,
+          shouldForecloseAt,
+        ]);
+
+        // Trigger foreclosure
+        await this.contract._collectTax(token);
+
+        // Past:
+
+        await time.increase(tenMinutes);
+
+        await verifyExpectedForeclosureTime.apply(this, [
+          this.contract,
+          token,
+          shouldForecloseAt,
+        ]);
+      });
+
       it("30d: time is 10m into the future", async function () {
         const token = TOKENS.ONE;
 
@@ -1083,9 +1154,11 @@ describe("PartialCommonOwnership721", async function () {
           ethers.BigNumber.from(time.duration.minutes(10).toString())
         );
 
-        expect(await this.monthlyContract.foreclosureTime(token)).to.equal(
-          tenMinutesFromNow
-        );
+        await verifyExpectedForeclosureTime.apply(this, [
+          this.monthlyContract,
+          token,
+          tenMinutesFromNow,
+        ]);
       });
 
       it("annual: time is 10m into the future", async function () {
@@ -1104,9 +1177,12 @@ describe("PartialCommonOwnership721", async function () {
         const tenMinutesFromNow = (await now()).add(
           ethers.BigNumber.from(time.duration.minutes(10).toString())
         );
-        expect(await this.contract.foreclosureTime(token)).to.equal(
-          tenMinutesFromNow
-        );
+
+        await verifyExpectedForeclosureTime.apply(this, [
+          this.contract,
+          token,
+          tenMinutesFromNow,
+        ]);
       });
 
       it("30d: returns backdated time if foreclosed", async function () {
@@ -1126,8 +1202,11 @@ describe("PartialCommonOwnership721", async function () {
         const shouldForecloseAt = await now();
 
         // Foreclosure should be backdated to when token was in foreclosed state.
-        const forecloseAt = await this.monthlyContract.foreclosureTime(token);
-        expect(forecloseAt).to.equal(shouldForecloseAt);
+        await verifyExpectedForeclosureTime.apply(this, [
+          this.monthlyContract,
+          token,
+          shouldForecloseAt,
+        ]);
 
         // Trigger foreclosure
         await this.monthlyContract._collectTax(token);
@@ -1136,14 +1215,12 @@ describe("PartialCommonOwnership721", async function () {
           this.monthlyContractAddress
         );
 
-        // Value should remain unchained after foreclosure has taken place
-        const oneSecond = ethers.BigNumber.from(
-          (await time.duration.seconds(1)).toString()
-        );
-        expect(await this.monthlyContract.foreclosureTime(token)).to.equal(
-          //! Patch: integer division rounding down
-          forecloseAt.sub(oneSecond)
-        );
+        // Value should remain within +/- 1s after foreclosure has taken place
+        await verifyExpectedForeclosureTime.apply(this, [
+          this.monthlyContract,
+          token,
+          shouldForecloseAt,
+        ]);
       });
 
       it("annual: returns backdated time if foreclosed", async function () {
@@ -1163,8 +1240,11 @@ describe("PartialCommonOwnership721", async function () {
         const shouldForecloseAt = await now();
 
         // Foreclosure should be backdated to when token was in foreclosed state.
-        const forecloseAt = await this.contract.foreclosureTime(token);
-        expect(forecloseAt).to.equal(shouldForecloseAt);
+        await verifyExpectedForeclosureTime.apply(this, [
+          this.contract,
+          token,
+          shouldForecloseAt,
+        ]);
 
         // Trigger foreclosure
         await this.contract._collectTax(token);
@@ -1173,14 +1253,12 @@ describe("PartialCommonOwnership721", async function () {
           this.contractAddress
         );
 
-        // Value should remain unchained after foreclosure has taken place
-        const oneSecond = ethers.BigNumber.from(
-          (await time.duration.seconds(1)).toString()
-        );
-        expect(await this.contract.foreclosureTime(token)).to.equal(
-          //! Patch: integer division rounding down
-          forecloseAt.sub(oneSecond)
-        );
+        // Value should remain within +/- 1s after foreclosure has taken place
+        await verifyExpectedForeclosureTime.apply(this, [
+          this.contract,
+          token,
+          shouldForecloseAt,
+        ]);
       });
     });
   });
