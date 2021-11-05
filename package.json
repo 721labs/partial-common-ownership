@@ -1,6 +1,6 @@
 {
   "name": "@721labs/partial-common-ownership",
-  "version": "0.0.2",
+  "version": "0.0.1",
   "description": "This project aims to establish a standard, open source implementation of Partial Common Ownership for non-fungible tokens.",
   "keywords": [
     "harberger tax",
@@ -25,9 +25,6 @@
   "files": [
     "contracts/token/*.sol"
   ],
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
-  },
   "repository": "git@github.com:721labs/partial-common-ownership.git",
   "scripts": {
     "console": "yarn hardhat console",
