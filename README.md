@@ -18,10 +18,18 @@ To learn more, see:
 - [RadicalxChange](https://www.radicalxchange.org/)
 - [This Artwork Is Always On Sale](https://thisartworkisalwaysonsale.com/)
 
-## Installation
+## Installing
 
-```console
-$ ./scripts/install.sh
+Using npm:
+
+```shell
+$ npm i @721labs/partial-common-ownership
+```
+
+Using yarn:
+
+```shell
+$ yarn add @721labs/partial-common-ownership
 ```
 
 ## Usage
@@ -56,6 +64,14 @@ Documentation coming soon.
 **Please note that `PartialCommonOwnership721.sol` is in early-development has not been independently audited for security**.  While the maintainers strive to ensure best practices, we are not responsible for loss-of-funds resulting from usage of Partial Common Ownership.  
 
 Please report any security issues you find in [Issues](https://github.com/721labs/partial-common-ownership/issues).
+
+## Development
+
+### Installation
+
+```console
+$ ./scripts/install.sh
+```
 
 ## Authors
 
