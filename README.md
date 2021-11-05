@@ -4,7 +4,7 @@
 
 ## Overview
 
-This project aims to establish a standard, open source implementation of Partial Common Ownership for ERC721, ERC1155 and future non-fungible tokens.  It builds upon work done by RadicalxChange, Simon de la Rouviere, and others.
+This project aims to establish a standard, open source implementation of Partial Common Ownership for non-fungible tokens.  It builds upon work done by RadicalxChange, Simon de la Rouviere, and others.
 
 ### Partial Common Ownership
 
