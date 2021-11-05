@@ -1,12 +1,34 @@
 {
-  "name": "partial-common-ownership",
+  "name": "@721labs/partial-common-ownership",
   "version": "0.0.1",
-  "description": "Partial Common Ownership Smart Contract",
-  "main": "index.js",
-  "repository": "git@github.com:721labs/partial-common-ownership.git",
-  "author": "Will Holley <will@willholley.com>",
+  "description": "This project aims to establish a standard, open source implementation of Partial Common Ownership for non-fungible tokens.",
+  "keywords": [
+    "harberger tax",
+    "partial common ownership",
+    "salsa",
+    "cost",
+    "nft",
+    "nfts"
+  ],
+  "homepage": "https://github.com/721labs/partial-common-ownership",
+  "bugs": {
+    "url": "https://github.com/721labs/partial-common-ownership/issues"
+  },
   "license": "MIT",
-  "private": true,
+  "contributors": [
+    {
+      "name": "Will Holley",
+      "email": "will@willholley.com",
+      "url": "https://721.dev"
+    }
+  ],
+  "files": [
+    "contracts/token/*.sol"
+  ],
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "repository": "git@github.com:721labs/partial-common-ownership.git",
   "scripts": {
     "console": "yarn hardhat console",
     "compile": "yarn hardhat compile",
@@ -34,5 +56,6 @@
     "typescript": "^4.4.2",
     "web3": "^1.5.2"
   },
-  "dependencies": {}
+  "dependencies": {},
+  "private": false
 }
