@@ -22,6 +22,9 @@
       "url": "https://721.dev"
     }
   ],
+  "files": [
+    "contracts/token/*.sol"
+  ],
   "repository": "git@github.com:721labs/partial-common-ownership.git",
   "scripts": {
     "console": "yarn hardhat console",
