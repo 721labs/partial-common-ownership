@@ -25,6 +25,9 @@
   "files": [
     "contracts/token/*.sol"
   ],
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
   "repository": "git@github.com:721labs/partial-common-ownership.git",
   "scripts": {
     "console": "yarn hardhat console",
