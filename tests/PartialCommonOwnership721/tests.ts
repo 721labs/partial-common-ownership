@@ -21,6 +21,7 @@ import {
 import { now } from "../helpers/Time";
 import { taxationPeriodToSeconds } from "./utils";
 import type { TestConfiguration } from "./types";
+import { snapshotEVM, revertEVM } from "../helpers/EVM";
 
 //$ Tests
 
@@ -97,13 +98,6 @@ async function tests(config: TestConfiguration): Promise<void> {
     expect(contract.address).to.not.be.null;
 
     return contract;
-  }
-
-  /**
-   * Scopes a snapshot of the EVM.
-   */
-  async function snapshotEVM(): Promise<void> {
-    snapshot = await provider.send("evm_snapshot", []);
   }
 
   /**
@@ -368,7 +362,7 @@ async function tests(config: TestConfiguration): Promise<void> {
       })
     );
 
-    await snapshotEVM();
+    snapshot = await snapshotEVM(provider);
   });
 
   /**
@@ -376,8 +370,8 @@ async function tests(config: TestConfiguration): Promise<void> {
    */
   beforeEach(async function () {
     // Reset contract state
-    await provider.send("evm_revert", [snapshot]);
-    await snapshotEVM();
+    await revertEVM(provider, snapshot);
+    snapshot = await snapshotEVM(provider);
 
     // Reset balance trackers
     await Promise.all(
