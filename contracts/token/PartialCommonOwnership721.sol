@@ -576,7 +576,7 @@ contract PartialCommonOwnership721 is ERC721 {
 
   /**
    * Override ERC721 public transfer methods to ensure that purchasing and
-   * foreclosure are the only way tokens can transfer possession.
+   * foreclosure are the only way tokens can be transferred.
    */
 
   /* solhint-disable no-unused-vars */

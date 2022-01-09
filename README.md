@@ -80,6 +80,10 @@ The Partial Common Ownership business logic is fairly complex and, in alignment 
 
 When tests are run, it calculates the average gas usage of frequently used methods and prints these figures to stdout. Viewing gas costs as USD requires setting the `COINMARKETCAP_API_KEY` environment variable in `.env`.
 
+### "Unused function parameter" Warnings
+
+The Solidity compiler will raise "unused function parameter" warnings because we are overriding the ERC721 public transfer methods to ensure that purchasing and foreclosure are the only way tokens can be transferred. _These warnings are to be expected and ignored_.
+
 ## Authors
 
 - [Will Holley](https://twitter.com/waholleyiv)
