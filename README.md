@@ -4,7 +4,7 @@
 
 ## Overview
 
-This project aims to establish a standard, open source implementation of Partial Common Ownership for non-fungible tokens.  It builds upon work done by RadicalxChange, Simon de la Rouviere, and others.
+This project aims to establish a standard, open source implementation of Partial Common Ownership for non-fungible tokens. It builds upon work done by RadicalxChange, Simon de la Rouviere, and others.
 
 ### Partial Common Ownership
 
@@ -53,6 +53,7 @@ contract YourToken is PartialCommonOwnership721 {
     )
   {}
 }
+
 ```
 
 ## Learn More
@@ -61,7 +62,7 @@ Documentation coming soon.
 
 ## Security
 
-**Please note that `PartialCommonOwnership721.sol` is in early-development has not been independently audited for security**.  While the maintainers strive to ensure best practices, we are not responsible for loss-of-funds resulting from usage of Partial Common Ownership.  
+**Please note that `PartialCommonOwnership721.sol` is in early-development has not been independently audited for security**. While the maintainers strive to ensure best practices, we are not responsible for loss-of-funds resulting from usage of Partial Common Ownership.
 
 Please report any security issues you find in [Issues](https://github.com/721labs/partial-common-ownership/issues).
 
@@ -72,6 +73,12 @@ Please report any security issues you find in [Issues](https://github.com/721lab
 ```console
 $ ./scripts/install.sh
 ```
+
+### Gas
+
+The Partial Common Ownership business logic is fairly complex and, in alignment with best practices, you should consider gas usage during development. To make this easier, `hardhat-gas-reporter` is included.
+
+When tests are run, it calculates the average gas usage of frequently used methods and prints these figures to stdout. Viewing gas costs as USD requires setting the `COINMARKETCAP_API_KEY` environment variable in `.env`.
 
 ## Authors
 
