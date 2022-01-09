@@ -407,6 +407,7 @@ contract PartialCommonOwnership721 is ERC721 {
     // Remit the purchase price and any available deposit.
     uint256 remittance = _purchasePrice + deposits[_tokenId];
 
+    /* solhint-disable reentrancy */
     if (remittance > 0) {
       // If token is owned by the contract, remit to the beneficiary.
       address recipient;
@@ -418,10 +419,9 @@ contract PartialCommonOwnership721 is ERC721 {
 
       // Remit.
       address payable payableRecipient = payable(recipient);
-      bool success = payableRecipient.send(remittance);
 
       // If the remittance fails, hold funds for the seller to retrieve.
-      if (!success) {
+      if (!payableRecipient.send(remittance)) {
         outstandingRemittances[recipient] += remittance;
         emit LogOutstandingRemittance(recipient);
       } else {
@@ -445,6 +445,7 @@ contract PartialCommonOwnership721 is ERC721 {
 
     // Unlock token
     locked[_tokenId] = false;
+    /* solhint-enable reentrancy */
   }
 
   /**
