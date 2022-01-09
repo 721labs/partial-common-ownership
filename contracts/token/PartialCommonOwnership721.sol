@@ -116,7 +116,7 @@ contract PartialCommonOwnership721 is ERC721 {
   /// e.g. 100% => 1000000000000
   /// e.g. 5% => 50000000000
   uint256 private immutable taxNumerator;
-  uint256 private constant taxDenominator = 1000000000000;
+  uint256 private constant TAX_DENOMINATOR = 1000000000000;
 
   /// @notice Over what period, in days, should taxation be applied?
   uint256 public taxationPeriod;
@@ -240,7 +240,8 @@ contract PartialCommonOwnership721 is ERC721 {
     returns (uint256 taxDue)
   {
     uint256 price = _price(_tokenId);
-    return (((price * _time) / taxationPeriod) * taxNumerator) / taxDenominator;
+    return
+      (((price * _time) / taxationPeriod) * taxNumerator) / TAX_DENOMINATOR;
   }
 
   /// @notice Public method for the tax owed. Returns with the current time.
