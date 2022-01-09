@@ -579,6 +579,8 @@ contract PartialCommonOwnership721 is ERC721 {
    * foreclosure are the only way tokens can transfer possession.
    */
 
+  /* solhint-disable no-unused-vars */
+
   /// @dev Override to make effectively-private.
   function transferFrom(
     address from,
@@ -606,4 +608,6 @@ contract PartialCommonOwnership721 is ERC721 {
   ) public pure override {
     revert("Transfers may only occur via purchase/foreclosure");
   }
+
+  /* solhint-enable no-unused-vars */
 }
