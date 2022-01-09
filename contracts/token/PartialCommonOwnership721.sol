@@ -116,7 +116,7 @@ contract PartialCommonOwnership721 is ERC721 {
   /// e.g. 100% => 1000000000000
   /// e.g. 5% => 50000000000
   uint256 private immutable taxNumerator;
-  uint256 private constant taxDenominator = 1000000000000;
+  uint256 private constant TAX_DENOMINATOR = 1000000000000;
 
   /// @notice Over what period, in days, should taxation be applied?
   uint256 public taxationPeriod;
@@ -223,7 +223,6 @@ contract PartialCommonOwnership721 is ERC721 {
   /// @param _tokenId ID of token requesting amount for.
   /// @return Tax Due in wei
   function _taxOwed(uint256 _tokenId) private view returns (uint256) {
-    uint256 price = _price(_tokenId);
     uint256 timeElapsed = block.timestamp - lastCollectionTimes[_tokenId];
     return taxOwedSince(_tokenId, timeElapsed);
   }
@@ -240,7 +239,8 @@ contract PartialCommonOwnership721 is ERC721 {
     returns (uint256 taxDue)
   {
     uint256 price = _price(_tokenId);
-    return (((price * _time) / taxationPeriod) * taxNumerator) / taxDenominator;
+    return
+      (((price * _time) / taxationPeriod) * taxNumerator) / TAX_DENOMINATOR;
   }
 
   /// @notice Public method for the tax owed. Returns with the current time.
@@ -407,6 +407,7 @@ contract PartialCommonOwnership721 is ERC721 {
     // Remit the purchase price and any available deposit.
     uint256 remittance = _purchasePrice + deposits[_tokenId];
 
+    /* solhint-disable reentrancy */
     if (remittance > 0) {
       // If token is owned by the contract, remit to the beneficiary.
       address recipient;
@@ -418,10 +419,9 @@ contract PartialCommonOwnership721 is ERC721 {
 
       // Remit.
       address payable payableRecipient = payable(recipient);
-      bool success = payableRecipient.send(remittance);
 
       // If the remittance fails, hold funds for the seller to retrieve.
-      if (!success) {
+      if (!payableRecipient.send(remittance)) {
         outstandingRemittances[recipient] += remittance;
         emit LogOutstandingRemittance(recipient);
       } else {
@@ -445,6 +445,7 @@ contract PartialCommonOwnership721 is ERC721 {
 
     // Unlock token
     locked[_tokenId] = false;
+    /* solhint-enable reentrancy */
   }
 
   /**
@@ -578,6 +579,8 @@ contract PartialCommonOwnership721 is ERC721 {
    * foreclosure are the only way tokens can transfer possession.
    */
 
+  /* solhint-disable no-unused-vars */
+
   /// @dev Override to make effectively-private.
   function transferFrom(
     address from,
@@ -605,4 +608,6 @@ contract PartialCommonOwnership721 is ERC721 {
   ) public pure override {
     revert("Transfers may only occur via purchase/foreclosure");
   }
+
+  /* solhint-enable no-unused-vars */
 }
