@@ -223,7 +223,6 @@ contract PartialCommonOwnership721 is ERC721 {
   /// @param _tokenId ID of token requesting amount for.
   /// @return Tax Due in wei
   function _taxOwed(uint256 _tokenId) private view returns (uint256) {
-    uint256 price = _price(_tokenId);
     uint256 timeElapsed = block.timestamp - lastCollectionTimes[_tokenId];
     return taxOwedSince(_tokenId, timeElapsed);
   }
