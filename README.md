@@ -23,13 +23,13 @@ To learn more, see:
 Using npm:
 
 ```shell
-$ npm i @721labs/partial-common-ownership
+$ npm i @721labs/partial-common-ownership --save-dev
 ```
 
 Using yarn:
 
 ```shell
-$ yarn add @721labs/partial-common-ownership
+$ yarn add @721labs/partial-common-ownership --dev
 ```
 
 ## Usage
