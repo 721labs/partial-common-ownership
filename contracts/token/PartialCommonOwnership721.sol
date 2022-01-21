@@ -279,34 +279,17 @@ contract PartialCommonOwnership721 is ERC721 {
     // After all security checks have occured, lock the token.
     locked[_tokenId] = true;
 
+    // If token is owned by the contract, remit to the beneficiary.
+    address recipient;
+    if (currentOwner == address(this)) {
+      recipient = beneficiary;
+    } else {
+      recipient = currentOwner;
+    }
+
     // Remit the purchase price and any available deposit.
     uint256 remittance = _purchasePrice + deposits[_tokenId];
-
-    /* solhint-disable reentrancy */
-    if (remittance > 0) {
-      // If token is owned by the contract, remit to the beneficiary.
-      address recipient;
-      if (currentOwner == address(this)) {
-        recipient = beneficiary;
-      } else {
-        recipient = currentOwner;
-      }
-
-      // Remit.
-      address payable payableRecipient = payable(recipient);
-
-      // If the remittance fails, hold funds for the seller to retrieve.
-      if (!payableRecipient.send(remittance)) {
-        outstandingRemittances[recipient] += remittance;
-        emit LogOutstandingRemittance(recipient);
-      } else {
-        emit LogRemittance(
-          RemittanceTriggers.LeaseTakeover,
-          recipient,
-          remittance
-        );
-      }
-    }
+    _remit(recipient, remittance, RemittanceTriggers.LeaseTakeover);
 
     // If the token is being purchased for the first time or is being purchased
     // from foreclosure,last collection time is set to now so that the contract
@@ -324,7 +307,6 @@ contract PartialCommonOwnership721 is ERC721 {
 
     // Unlock token
     locked[_tokenId] = false;
-    /* solhint-enable reentrancy */
   }
 
   //////////////////////////////
