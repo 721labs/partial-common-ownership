@@ -460,11 +460,11 @@ contract PartialCommonOwnership721 is ERC721 {
     return (_taxOwed(_tokenId), block.timestamp);
   }
 
-  /// @notice Is the token in a foreclosed state?  If so, price should be zero and anyone can
-  /// purchase this asset for the cost of the gas fee.
-  /// Token enters forclosure if deposit cannot cover the taxation due.
+  /// @notice Do the taxes owed exceed the deposit?  If so, the token should be
+  /// "foreclosed" by the contract.  The price should be zero and anyone can
+  /// purchase the token for the cost of the gas fee.
   /// @dev This is a useful helper function when price should be zero, but contract doesn't
-  /// reflect it yet.
+  /// reflect it yet because `#_forecloseIfNecessary` has not yet been called..
   /// @param _tokenId ID of token requesting foreclosure status for.
   /// @return Returns boolean indicating whether or not the contract is foreclosed.
   function foreclosed(uint256 _tokenId) public view returns (bool) {
