@@ -217,7 +217,6 @@ contract PartialCommonOwnership721 is ERC721 {
       emit LogCollection(_tokenId, owed);
 
       /// Remit taxation to beneficiary.
-      /// Note: This increases gas costs for all callers of `#_collectTax()`.
       _remit(beneficiary, owed, RemittanceTriggers.TaxCollection);
 
       _forecloseIfNecessary(_tokenId);
@@ -499,6 +498,9 @@ contract PartialCommonOwnership721 is ERC721 {
   //////////////////////////////
 
   /// @notice Send a remittance payment.
+  /// @dev We're using a push rather than pull strategy as this removes the need for beneficiaries
+  /// to check how much they are owed, more closely replicating a "streaming" payment. This comes
+  /// at the cost of forcing all callers of `#_remit` to pay the additional gas for sending.
   /// @param recipient_ Address to send remittance to.
   /// @param remittance_ Remittance amount
   /// @param trigger_ What triggered this remittance?
@@ -508,14 +510,10 @@ contract PartialCommonOwnership721 is ERC721 {
     RemittanceTriggers trigger_
   ) internal {
     address payable payableRecipient = payable(recipient_);
-    // solhint-disable-next-line check-send-result
-    bool success = payableRecipient.send(remittance_);
-
     // If the remittance fails, hold funds for the seller to retrieve.
-    // TODO: Why would remittance fail? Is this something the (contract or human)
-    // caller can cause to happen?  If so, can they block the lease from takeovers?
-    // If not, change this to `require(success, "Could not remit")`.
-    if (success) {
+    // For example, if `payableReceipient` is a contract that reverts on receipt or
+    // if the call runs out of gas.
+    if (payableRecipient.send(remittance_)) {
       emit LogRemittance(trigger_, recipient_, remittance_);
     } else {
       /* solhint-disable reentrancy */
