@@ -15,6 +15,14 @@ struct TitleTransferEvent {
   uint256 price;
 }
 
+/// @notice Reasons for sending a remittance
+enum RemittanceTriggers {
+  Lease,
+  WithdrawnDeposit,
+  OutstandingRemittance,
+  TaxCollection
+}
+
 /// @title PartialCommonOwnership721
 /// @author Simon de la Rouviere, Will Holley
 /// @notice Extends the ERC721 standard by requiring tax payments from a token's current owner
@@ -374,14 +382,13 @@ contract PartialCommonOwnership721 is ERC721 {
   /// @notice Enables previous owners to withdraw remittances that failed to send.
   /// @dev To reduce complexity, pull funds are entirely separate from current deposit.
   function withdrawOutstandingRemittance() public {
-    require(
-      outstandingRemittances[msg.sender] > 0,
-      "No outstanding remittance"
-    );
+    uint256 outstanding = outstandingRemittances[msg.sender];
 
-    uint256 remittance = outstandingRemittances[msg.sender];
+    require(outstanding > 0, "No outstanding remittance");
+
     outstandingRemittances[msg.sender] = 0;
-    payable(msg.sender).transfer(remittance);
+
+    _remit(msg.sender, outstanding, RemittanceTriggers.OutstandingRemittance);
   }
 
   //////////////////////////////
@@ -510,6 +517,33 @@ contract PartialCommonOwnership721 is ERC721 {
   //////////////////////////////
   /// Internal Methods
   //////////////////////////////
+
+  /// @notice Send a remittance payment.
+  /// @param recipient_ Address to send remittance to.
+  /// @param remittance_ Remittance amount
+  /// @param trigger_ What triggered this remittance?
+  function _remit(
+    address recipient_,
+    uint256 remittance_,
+    RemittanceTriggers trigger_
+  ) internal {
+    address payable payableRecipient = payable(recipient_);
+    // solhint-disable-next-line check-send-result
+    bool success = payableRecipient.send(remittance_);
+
+    // If the remittance fails, hold funds for the seller to retrieve.
+    // TODO: Why would remittance fail? Is this something the (contract or human)
+    // caller can cause to happen?  If so, can they block the lease from takeovers?
+    // If not, change this to `require(success, "Could not remit")`.
+    if (success) {
+      emit LogRemittance(trigger_, recipient_, remittance_);
+    } else {
+      /* solhint-disable reentrancy */
+      outstandingRemittances[recipient_] += remittance_;
+      emit LogOutstandingRemittance(recipient_);
+      /* solhint-enable reentrancy */
+    }
+  }
 
   /// @notice Withdraws deposit back to its owner.
   /// @dev Parent callers must enforce `ownerOnly(_tokenId)`.
