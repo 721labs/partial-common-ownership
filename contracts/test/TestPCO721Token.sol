@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.7;
 
-import "../token/PartialCommonOwnership721.sol";
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 
-/// @title TestPCO721Token – Example implementation of PCO for 721 for use in testing.
-contract TestPCO721Token is PartialCommonOwnership721 {
+/// @title Test721PCOToken – Example implementation of PCO for 721 for use in testing.
+contract Test721PCOToken is PartialCommonOwnership721 {
   /// @notice Constructs token and mints 1 - 3.
   constructor(
     string memory _name,
@@ -28,5 +28,15 @@ contract TestPCO721Token is PartialCommonOwnership721 {
     _setBeneficiary(3, _beneficiary);
     _setTaxRate(3, _taxRate);
     _setTaxPeriod(3, _taxationPeriod);
+  //   string memory _symbol
+  // )
+  //   ERC721(
+  //     _name,
+  //     _symbol
+  //   )
+  // {
+  //   _safeMint(msg.sender, 1);
+  //   _safeMint(msg.sender, 2);
+  //   _safeMint(msg.sender, 3);
   }
 }

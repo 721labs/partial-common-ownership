@@ -220,7 +220,7 @@ contract PartialCommonOwnership721 is ERC721 {
     uint256 tokenId_,
     uint256 purchasePrice_,
     uint256 currentPriceForVerification_
-  ) public payable _tokenMinted(tokenId_) _collectTax(tokenId_) {
+  ) virtual public payable _tokenMinted(tokenId_) _collectTax(tokenId_) {
     // Prevent re-entrancy attack
     require(!locked[tokenId_], "Token is locked");
 
@@ -320,6 +320,7 @@ contract PartialCommonOwnership721 is ERC721 {
   /// @param tokenId_ ID of token to change price of.
   /// @param newPrice_ New price in Wei.
   function changePrice(uint256 tokenId_, uint256 newPrice_)
+    virtual
     public
     _onlyOwner(tokenId_)
     _collectTax(tokenId_)

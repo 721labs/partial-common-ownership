@@ -6,7 +6,7 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 
 import Wallet from "../helpers/Wallet";
-import { ErrorMessages, TOKENS, Events, RemittanceTriggers } from "./types";
+import { ErrorMessages, TOKENS, Events, RemittanceTriggers } from "../helpers/types";
 import {
   TEST_NAME,
   TEST_SYMBOL,
@@ -17,10 +17,10 @@ import {
   ETH3,
   ETH4,
   TAX_DENOMINATOR,
-} from "./constants";
+} from "../helpers/constants";
 import { now } from "../helpers/Time";
-import { taxationPeriodToSeconds } from "./utils";
-import type { TestConfiguration } from "./types";
+import { taxationPeriodToSeconds } from "../helpers/utils";
+import type { TestConfiguration } from "../helpers/types";
 import { snapshotEVM, revertEVM } from "../helpers/EVM";
 
 //$ Tests
@@ -52,6 +52,7 @@ async function tests(config: TestConfiguration): Promise<void> {
   let beneficiary;
   let alice;
   let bob;
+  let deployer;
   let wallets;
   let walletsByAddress;
   let snapshot;
@@ -339,7 +340,7 @@ async function tests(config: TestConfiguration): Promise<void> {
 
     provider = new ethers.providers.Web3Provider(web3.currentProvider);
     signers = await ethers.getSigners();
-    factory = await ethers.getContractFactory("TestPCO721Token");
+    factory = await ethers.getContractFactory("Test721PCOToken");
 
     //$ Set up contracts
 
@@ -355,6 +356,7 @@ async function tests(config: TestConfiguration): Promise<void> {
     beneficiary = new Wallet(contract, signers[1]);
     alice = new Wallet(contract, signers[2]);
     bob = new Wallet(contract, signers[3]);
+    deployer = new Wallet(contract, signers[9]);
 
     wallets = [beneficiary, alice, bob];
 
@@ -427,6 +429,11 @@ async function tests(config: TestConfiguration): Promise<void> {
           TAX_PERIOD_AS_SECONDS
         );
       });
+  // describe("Test721PCOToken", async function () {
+  //   it("mints three tokens during construction", async function () {
+  //     expect(await contract.ownerOf(TOKENS.ONE)).to.equal(contractAddress);
+  //     expect(await contract.ownerOf(TOKENS.TWO)).to.equal(contractAddress);
+  //     expect(await contract.ownerOf(TOKENS.THREE)).to.equal(contractAddress);
     });
   });
 

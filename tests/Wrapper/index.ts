@@ -1,30 +1,18 @@
-//@ts-nocheck
+import tests from "./tests";
 
-import { expect } from "chai";
+// Test under different taxation parameters.
+const configs = [
+  { name: "5% Quarterly", collectionFrequency: 90, taxRate: 50000000000 },
+  { name: "100% Monthly", collectionFrequency: 30, taxRate: 1000000000000 },
+  { name: "100% Annually", collectionFrequency: 365, taxRate: 1000000000000 },
+];
 
-describe("Wrapper.sol", async () => {
-  let provider;
-  let signers;
-  let factory;
-  let contract;
+//$ Run
 
-  before(async () => {
-    provider = new ethers.providers.Web3Provider(web3.currentProvider);
-    signers = await ethers.getSigners();
-    factory = await ethers.getContractFactory("Wrapper");
-
-    contract = await factory.deploy(signers[1].address, 50000000000, 365);
-
-    await contract.deployed();
-  });
-
-  describe("Wrapper", async () => {
-    it("deploys", async () => {
-      expect(contract.address).to.not.be.null;
-      expect(await contract.name()).to.equal(
-        "Partial Common Ownership Token Wrapper"
-      );
-      expect(await contract.symbol()).to.equal("wPCO");
+describe("Wrapper", async () => {
+  for await (const config of configs) {
+    describe(config.name, async () => {
+      await tests(config);
     });
-  });
+  }
 });
