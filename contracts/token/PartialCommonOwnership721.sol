@@ -136,11 +136,6 @@ contract PartialCommonOwnership721 is ERC721 {
     uint256 indexed amount
   );
 
-  /// @notice Alert deposit withdrawn.
-  /// @param tokenId ID of token deposit.
-  /// @param amount Amount withdrawn in Wei.
-  event LogDepositWithdrawal(uint256 indexed tokenId, uint256 indexed amount);
-
   //////////////////////////////
   /// Modifiers
   //////////////////////////////
@@ -541,9 +536,8 @@ contract PartialCommonOwnership721 is ERC721 {
     require(_wei <= deposit, "Cannot withdraw more than deposited");
 
     deposits[_tokenId] -= _wei;
-    payable(msg.sender).transfer(_wei);
 
-    emit LogDepositWithdrawal(_tokenId, _wei);
+    _remit(msg.sender, _wei, RemittanceTriggers.WithdrawnDeposit);
 
     _forecloseIfNecessary(_tokenId);
   }

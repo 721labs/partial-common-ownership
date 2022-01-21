@@ -31,7 +31,6 @@ enum Events {
   COLLECTION = "LogCollection",
   BENEFICIARY_REMITTANCE = "LogBeneficiaryRemittance",
   REMITTANCE = "LogRemittance",
-  DEPOSIT_WITHDRAWAL = "LogDepositWithdrawal",
 }
 
 enum RemittanceTriggers {

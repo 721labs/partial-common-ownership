@@ -1084,8 +1084,8 @@ async function tests(config: TestConfiguration): Promise<void> {
 
         // Emits
         expect(trx)
-          .to.emit(contract, Events.DEPOSIT_WITHDRAWAL)
-          .withArgs(token, ETH1);
+          .to.emit(contract, Events.REMITTANCE)
+          .withArgs(RemittanceTriggers.WithdrawnDeposit, alice.address, ETH1);
 
         // current deposit - tax on exit
         const taxedAmt = getTaxDue(
@@ -1139,8 +1139,12 @@ async function tests(config: TestConfiguration): Promise<void> {
 
         // Emits
         expect(trx)
-          .to.emit(contract, Events.DEPOSIT_WITHDRAWAL)
-          .withArgs(token, expectedRemittance);
+          .to.emit(contract, Events.REMITTANCE)
+          .withArgs(
+            RemittanceTriggers.WithdrawnDeposit,
+            alice.address,
+            expectedRemittance
+          );
 
         // Alice's balance should reflect returned deposit minus fees
         const { delta, fees } = await alice.balanceDelta();
