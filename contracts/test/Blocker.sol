@@ -14,7 +14,7 @@ contract Blocker {
     _testContract = Test721Token(contractAddress_);
   }
 
-  fallback() external payable {
+  receive() external payable {
     if (_shouldBlock) revert("");
   }
 
