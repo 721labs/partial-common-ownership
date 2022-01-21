@@ -48,7 +48,7 @@ contract PartialCommonOwnership721 is ERC721 {
   mapping(uint256 => uint256) public taxCollectedSinceLastTransfer;
 
   /// @notice Mapping from token ID to funds for paying tax ("Deposit") in Wei.
-  mapping(uint256 => uint256) private deposits;
+  mapping(uint256 => uint256) private _deposits;
 
   /// @notice Mapping of address to Wei.
   /// @dev If for whatever reason a remittance payment fails during a purchase, the amount
@@ -60,7 +60,7 @@ contract PartialCommonOwnership721 is ERC721 {
   /// @dev This is used to determine how much time has passed since last collection and the present
   /// and resultingly how much tax is due in the present.
   /// @dev In the event that a foreclosure happens AFTER it should have, this
-  /// variable is backdated to when it should've occurred. Thus: `chainOfTitle` is
+  /// variable is backdated to when it should've occurred. Thus: `_chainOfTitle` is
   /// accurate to the actual possession period.
   mapping(uint256 => uint256) public lastCollectionTimes;
 
@@ -69,13 +69,13 @@ contract PartialCommonOwnership721 is ERC721 {
 
   /// @notice Mapping from token ID to array of transfer events.
   /// @dev This includes foreclosures.
-  mapping(uint256 => TitleTransferEvent[]) private chainOfTitle;
+  mapping(uint256 => TitleTransferEvent[]) private _chainOfTitle;
 
   /// @notice  Percentage taxation rate. e.g. 5% or 100%
   /// @dev Granular to an additionial 10 zeroes.
   /// e.g. 100% => 1000000000000
   /// e.g. 5% => 50000000000
-  uint256 private immutable taxNumerator;
+  uint256 private immutable _taxNumerator;
   uint256 private constant TAX_DENOMINATOR = 1000000000000;
 
   /// @notice Over what period, in days, should taxation be applied?
@@ -182,7 +182,7 @@ contract PartialCommonOwnership721 is ERC721 {
     uint256 taxationPeriod_
   ) ERC721(name_, symbol_) {
     beneficiary = beneficiary_;
-    taxNumerator = taxNumerator_;
+    _taxNumerator = taxNumerator_;
     taxationPeriod = taxationPeriod_ * 1 days;
   }
 
@@ -204,13 +204,13 @@ contract PartialCommonOwnership721 is ERC721 {
       if (foreclosed(_tokenId)) {
         lastCollectionTimes[_tokenId] = _backdatedForeclosureTime(_tokenId);
         // Set remaining deposit to be collected.
-        owed = deposits[_tokenId];
+        owed = _deposits[_tokenId];
       } else {
         lastCollectionTimes[_tokenId] = block.timestamp;
       }
 
       // Normal collection
-      deposits[_tokenId] -= owed;
+      _deposits[_tokenId] -= owed;
       taxationCollected[_tokenId] += owed;
       taxCollectedSinceLastTransfer[_tokenId] += owed;
 
@@ -277,7 +277,7 @@ contract PartialCommonOwnership721 is ERC721 {
     }
 
     // Remit the purchase price and any available deposit.
-    uint256 remittance = _purchasePrice + deposits[_tokenId];
+    uint256 remittance = _purchasePrice + _deposits[_tokenId];
     _remit(recipient, remittance, RemittanceTriggers.LeaseTakeover);
 
     // If the token is being purchased for the first time or is being purchased
@@ -289,7 +289,7 @@ contract PartialCommonOwnership721 is ERC721 {
     }
 
     // Update deposit with surplus value.
-    deposits[_tokenId] = msg.value - _purchasePrice;
+    _deposits[_tokenId] = msg.value - _purchasePrice;
 
     transferToken(_tokenId, currentOwner, msg.sender, _purchasePrice);
     emit LogBuy(_tokenId, msg.sender, _purchasePrice);
@@ -310,7 +310,7 @@ contract PartialCommonOwnership721 is ERC721 {
     _onlyOwner(_tokenId)
     _collectTax(_tokenId)
   {
-    deposits[_tokenId] += msg.value;
+    _deposits[_tokenId] += msg.value;
   }
 
   /// @notice Enables owner to change price in accordance with
@@ -347,7 +347,7 @@ contract PartialCommonOwnership721 is ERC721 {
     _onlyOwner(_tokenId)
     _collectTax(_tokenId)
   {
-    _withdrawDeposit(_tokenId, deposits[_tokenId]);
+    _withdrawDeposit(_tokenId, _deposits[_tokenId]);
   }
 
   //////////////////////////////
@@ -373,7 +373,7 @@ contract PartialCommonOwnership721 is ERC721 {
   /// @notice Returns tax numerator
   /// @return Tax Rate
   function taxRate() public view returns (uint256) {
-    return taxNumerator;
+    return _taxNumerator;
   }
 
   /// @notice Returns an array of metadata about transfers for a given token.
@@ -385,7 +385,7 @@ contract PartialCommonOwnership721 is ERC721 {
     _tokenMinted(_tokenId)
     returns (TitleTransferEvent[] memory)
   {
-    return chainOfTitle[_tokenId];
+    return _chainOfTitle[_tokenId];
   }
 
   /// @notice Gets current price for a given token ID. Requires that
@@ -410,7 +410,7 @@ contract PartialCommonOwnership721 is ERC721 {
     _tokenMinted(_tokenId)
     returns (uint256)
   {
-    return deposits[_tokenId];
+    return _deposits[_tokenId];
   }
 
   /// @notice Determines the taxable amount accumulated between now and
@@ -426,7 +426,7 @@ contract PartialCommonOwnership721 is ERC721 {
   {
     uint256 price = _price(_tokenId);
     return
-      (((price * _time) / taxationPeriod) * taxNumerator) / TAX_DENOMINATOR;
+      (((price * _time) / taxationPeriod) * _taxNumerator) / TAX_DENOMINATOR;
   }
 
   /// @notice Public method for the tax owed. Returns with the current time.
@@ -451,7 +451,7 @@ contract PartialCommonOwnership721 is ERC721 {
   /// @return Returns boolean indicating whether or not the contract is foreclosed.
   function foreclosed(uint256 _tokenId) public view returns (bool) {
     uint256 owed = _taxOwed(_tokenId);
-    if (owed >= deposits[_tokenId]) {
+    if (owed >= _deposits[_tokenId]) {
       return true;
     } else {
       return false;
@@ -466,7 +466,7 @@ contract PartialCommonOwnership721 is ERC721 {
     if (foreclosed(_tokenId)) {
       return 0;
     } else {
-      return deposits[_tokenId] - _taxOwed(_tokenId);
+      return _deposits[_tokenId] - _taxOwed(_tokenId);
     }
   }
 
@@ -525,10 +525,10 @@ contract PartialCommonOwnership721 is ERC721 {
   /// @param _wei Amount of Wei to withdraw.
   function _withdrawDeposit(uint256 _tokenId, uint256 _wei) internal {
     // Note: Can withdraw whole deposit, which immediately triggers foreclosure.
-    uint256 deposit = deposits[_tokenId];
+    uint256 deposit = _deposits[_tokenId];
     require(_wei <= deposit, "Cannot withdraw more than deposited");
 
-    deposits[_tokenId] -= _wei;
+    _deposits[_tokenId] -= _wei;
 
     _remit(msg.sender, _wei, RemittanceTriggers.WithdrawnDeposit);
 
@@ -540,7 +540,7 @@ contract PartialCommonOwnership721 is ERC721 {
   function _forecloseIfNecessary(uint256 _tokenId) internal {
     // If there are not enough funds to cover the entire amount owed, `__collectTax`
     // will take whatever's left of the deposit, resulting in a zero balance.
-    if (deposits[_tokenId] == 0) {
+    if (_deposits[_tokenId] == 0) {
       // Become steward of asset (aka foreclose)
       address currentOwner = ownerOf(_tokenId);
       transferToken(_tokenId, currentOwner, address(this), 0);
@@ -571,7 +571,7 @@ contract PartialCommonOwnership721 is ERC721 {
       block.timestamp,
       _newPrice
     );
-    chainOfTitle[_tokenId].push(transferEvent);
+    _chainOfTitle[_tokenId].push(transferEvent);
 
     lastTransferTimes[_tokenId] = block.timestamp;
 
@@ -611,7 +611,7 @@ contract PartialCommonOwnership721 is ERC721 {
   {
     uint256 last = lastCollectionTimes[_tokenId];
     uint256 timeElapsed = block.timestamp - last;
-    return last + ((timeElapsed * deposits[_tokenId]) / _taxOwed(_tokenId));
+    return last + ((timeElapsed * _deposits[_tokenId]) / _taxOwed(_tokenId));
   }
 
   //////////////////////////////
