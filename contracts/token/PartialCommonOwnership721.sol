@@ -24,6 +24,60 @@ struct TitleTransferEvent {
 /// contract by Simon de la Rouviere.
 contract PartialCommonOwnership721 is ERC721 {
   //////////////////////////////
+  /// State
+  //////////////////////////////
+
+  /// @notice Single (for now) beneficiary of tax payments.
+  address payable public beneficiary;
+
+  /// @notice Mapping from token ID to token price in Wei.
+  mapping(uint256 => uint256) public prices;
+
+  /// @notice Mapping from token ID to taxation collected over lifetime in Wei.
+  mapping(uint256 => uint256) public taxationCollected;
+
+  /// @notice Mapping from token ID to taxation collected since last transfer in Wei.
+  mapping(uint256 => uint256) public taxCollectedSinceLastTransfer;
+
+  /// @notice Mapping from token ID to funds for paying tax ("Deposit") in Wei.
+  mapping(uint256 => uint256) private deposits;
+
+  /// @notice Mapping of address to Wei.
+  /// @dev If for whatever reason a remittance payment fails during a purchase, the amount
+  /// (purchase price + deposit) is added to `outstandingRemittances` so the previous
+  /// owner can withdraw it.
+  mapping(address => uint256) public outstandingRemittances;
+
+  /// @notice Mapping from token ID to Unix timestamp when last tax collection occured.
+  /// @dev This is used to determine how much time has passed since last collection and the present
+  /// and resultingly how much tax is due in the present.
+  /// @dev In the event that a foreclosure happens AFTER it should have, this
+  /// variable is backdated to when it should've occurred. Thus: `chainOfTitle` is
+  /// accurate to the actual possession period.
+  mapping(uint256 => uint256) public lastCollectionTimes;
+
+  /// @notice Mapping from token ID to Unix timestamp of when it was last transferred.
+  mapping(uint256 => uint256) public lastTransferTimes;
+
+  /// @notice Mapping from token ID to array of transfer events.
+  /// @dev This includes foreclosures.
+  mapping(uint256 => TitleTransferEvent[]) private chainOfTitle;
+
+  /// @notice  Percentage taxation rate. e.g. 5% or 100%
+  /// @dev Granular to an additionial 10 zeroes.
+  /// e.g. 100% => 1000000000000
+  /// e.g. 5% => 50000000000
+  uint256 private immutable taxNumerator;
+  uint256 private constant TAX_DENOMINATOR = 1000000000000;
+
+  /// @notice Over what period, in days, should taxation be applied?
+  uint256 public taxationPeriod;
+
+  /// @notice Mapping from token ID to purchase lock status
+  /// @dev Used to prevent reentrancy attacks
+  mapping(uint256 => bool) private locked;
+
+  //////////////////////////////
   /// Events
   //////////////////////////////
 
@@ -80,82 +134,6 @@ contract PartialCommonOwnership721 is ERC721 {
   event LogDepositWithdrawal(uint256 indexed tokenId, uint256 indexed amount);
 
   //////////////////////////////
-  /// State
-  //////////////////////////////
-
-  /// @notice Single (for now) beneficiary of tax payments.
-  address payable public beneficiary;
-
-  /// @notice Mapping from token ID to token price in Wei.
-  mapping(uint256 => uint256) public prices;
-
-  /// @notice Mapping from token ID to taxation collected over lifetime in Wei.
-  mapping(uint256 => uint256) public taxationCollected;
-
-  /// @notice Mapping from token ID to taxation collected since last transfer in Wei.
-  mapping(uint256 => uint256) public taxCollectedSinceLastTransfer;
-
-  /// @notice Mapping from token ID to funds for paying tax ("Deposit") in Wei.
-  mapping(uint256 => uint256) private deposits;
-
-  /// @notice Mapping of address to Wei.
-  /// @dev If for whatever reason a remittance payment fails during a purchase, the amount
-  /// (purchase price + deposit) is added to `outstandingRemittances` so the previous
-  /// owner can withdraw it.
-  mapping(address => uint256) public outstandingRemittances;
-
-  /// @notice Mapping from token ID to Unix timestamp when last tax collection occured.
-  /// @dev This is used to determine how much time has passed since last collection and the present
-  /// and resultingly how much tax is due in the present.
-  /// @dev In the event that a foreclosure happens AFTER it should have, this
-  /// variable is backdated to when it should've occurred. Thus: `chainOfTitle` is
-  /// accurate to the actual possession period.
-  mapping(uint256 => uint256) public lastCollectionTimes;
-
-  /// @notice Mapping from token ID to Unix timestamp of when it was last transferred.
-  mapping(uint256 => uint256) public lastTransferTimes;
-
-  /// @notice Mapping from token ID to array of transfer events.
-  /// @dev This includes foreclosures.
-  mapping(uint256 => TitleTransferEvent[]) private chainOfTitle;
-
-  /// @notice  Percentage taxation rate. e.g. 5% or 100%
-  /// @dev Granular to an additionial 10 zeroes.
-  /// e.g. 100% => 1000000000000
-  /// e.g. 5% => 50000000000
-  uint256 private immutable taxNumerator;
-  uint256 private constant TAX_DENOMINATOR = 1000000000000;
-
-  /// @notice Over what period, in days, should taxation be applied?
-  uint256 public taxationPeriod;
-
-  /// @notice Mapping from token ID to purchase lock status
-  /// @dev Used to prevent reentrancy attacks
-  mapping(uint256 => bool) private locked;
-
-  //////////////////////////////
-  /// Constructor
-  //////////////////////////////
-
-  /// @notice Creates the token and sets beneficiary & taxation amount.
-  /// @param name_ ERC721 Token Name
-  /// @param symbol_ ERC721 Token Symbol
-  /// @param beneficiary_ Recipient of tax payments
-  /// @param taxNumerator_ The taxation rate up to 10 decimal places.
-  /// @param taxationPeriod_ The number of days that constitute one taxation period.
-  constructor(
-    string memory name_,
-    string memory symbol_,
-    address payable beneficiary_,
-    uint256 taxNumerator_,
-    uint256 taxationPeriod_
-  ) ERC721(name_, symbol_) {
-    beneficiary = beneficiary_;
-    taxNumerator = taxNumerator_;
-    taxationPeriod = taxationPeriod_ * 1 days;
-  }
-
-  //////////////////////////////
   /// Modifiers
   //////////////////////////////
 
@@ -184,158 +162,25 @@ contract PartialCommonOwnership721 is ERC721 {
   }
 
   //////////////////////////////
-  /// Getters
+  /// Constructor
   //////////////////////////////
 
-  /// @notice Returns tax numerator
-  /// @return Tax Rate
-  function taxRate() public view returns (uint256) {
-    return taxNumerator;
-  }
-
-  /// @notice Returns an array of metadata about transfers for a given token.
-  /// @param _tokenId ID of the token requesting for.
-  /// @return Array of TitleTransferEvents.
-  function titleChainOf(uint256 _tokenId)
-    public
-    view
-    tokenMinted(_tokenId)
-    returns (TitleTransferEvent[] memory)
-  {
-    return chainOfTitle[_tokenId];
-  }
-
-  /// @notice Gets current price for a given token ID. Requires that
-  /// the token has been minted.
-  /// @param _tokenId ID of token requesting price for.
-  /// @return Price in Wei.
-  function priceOf(uint256 _tokenId)
-    public
-    view
-    tokenMinted(_tokenId)
-    returns (uint256)
-  {
-    return _price(_tokenId);
-  }
-
-  /// @notice Gets current deposit for a given token ID.
-  /// @param _tokenId ID of token requesting deposit for.
-  /// @return Deposit in Wei.
-  function depositOf(uint256 _tokenId)
-    public
-    view
-    tokenMinted(_tokenId)
-    returns (uint256)
-  {
-    return deposits[_tokenId];
-  }
-
-  /// @notice Gets current price for a given token ID.
-  /// @param _tokenId ID of token requesting price for.
-  /// @return Price in Wei.
-  function _price(uint256 _tokenId) private view returns (uint256) {
-    return prices[_tokenId];
-  }
-
-  /// @notice How much is owed from the last collection until now?
-  /// @param _tokenId ID of token requesting amount for.
-  /// @return Tax Due in wei
-  function _taxOwed(uint256 _tokenId) private view returns (uint256) {
-    uint256 timeElapsed = block.timestamp - lastCollectionTimes[_tokenId];
-    return taxOwedSince(_tokenId, timeElapsed);
-  }
-
-  /// @notice Determines the taxable amount accumulated between now and
-  /// a given time in the past.
-  /// @param _tokenId ID of token requesting amount for.
-  /// @param _time Unix timestamp.
-  /// @return taxDue Tax Due in Wei.
-  function taxOwedSince(uint256 _tokenId, uint256 _time)
-    public
-    view
-    tokenMinted(_tokenId)
-    returns (uint256 taxDue)
-  {
-    uint256 price = _price(_tokenId);
-    return
-      (((price * _time) / taxationPeriod) * taxNumerator) / TAX_DENOMINATOR;
-  }
-
-  /// @notice Public method for the tax owed. Returns with the current time.
-  /// for use calculating expected tax obligations.
-  /// @param _tokenId ID of token requesting amount for.
-  /// @return amount Tax Due in Wei.
-  /// @return timestamp Now as Unix timestamp.
-  function taxOwed(uint256 _tokenId)
-    public
-    view
-    returns (uint256 amount, uint256 timestamp)
-  {
-    return (_taxOwed(_tokenId), block.timestamp);
-  }
-
-  /// @notice Is the token in a foreclosed state?  If so, price should be zero and anyone can
-  /// purchase this asset for the cost of the gas fee.
-  /// Token enters forclosure if deposit cannot cover the taxation due.
-  /// @dev This is a useful helper function when price should be zero, but contract doesn't
-  /// reflect it yet.
-  /// @param _tokenId ID of token requesting foreclosure status for.
-  /// @return Returns boolean indicating whether or not the contract is foreclosed.
-  function foreclosed(uint256 _tokenId) public view returns (bool) {
-    uint256 owed = _taxOwed(_tokenId);
-    if (owed >= deposits[_tokenId]) {
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  /// @notice The amount of deposit that is withdrawable i.e. any deposited amount greater
-  /// than the taxable amount owed.
-  /// @param _tokenId ID of token requesting withdrawable deposit for.
-  /// @return amount in Wei.
-  function withdrawableDeposit(uint256 _tokenId) public view returns (uint256) {
-    if (foreclosed(_tokenId)) {
-      return 0;
-    } else {
-      return deposits[_tokenId] - _taxOwed(_tokenId);
-    }
-  }
-
-  /// @notice Returns the time when tax owed initially exceeded deposits.
-  /// @dev last collected time + ((time_elapsed * deposit) / owed)
-  /// @dev Returns within +/- 2s of previous values due to Solidity rounding
-  /// down integer division without regard for significant digits, which produces
-  /// variable results e.g. `599.9999999999851` becomes `599`.
-  /// @param _tokenId ID of token requesting
-  /// @return Unix timestamp
-  function _backdatedForeclosureTime(uint256 _tokenId)
-    private
-    view
-    returns (uint256)
-  {
-    uint256 last = lastCollectionTimes[_tokenId];
-    uint256 timeElapsed = block.timestamp - last;
-    return last + ((timeElapsed * deposits[_tokenId]) / _taxOwed(_tokenId));
-  }
-
-  /// @notice Determines how long a token owner has until forclosure.
-  /// @param _tokenId ID of token requesting foreclosure time for.
-  /// @return Unix timestamp
-  function foreclosureTime(uint256 _tokenId) public view returns (uint256) {
-    uint256 taxPerSecond = taxOwedSince(_tokenId, 1);
-    uint256 withdrawable = withdrawableDeposit(_tokenId);
-    if (withdrawable > 0) {
-      // Time until deposited surplus no longer surpasses amount owed.
-      return block.timestamp + withdrawable / taxPerSecond;
-    } else if (taxPerSecond > 0) {
-      // Token is active but in foreclosed state.
-      // Returns when foreclosure should have occured i.e. when tax owed > deposits.
-      return _backdatedForeclosureTime(_tokenId);
-    } else {
-      // Actively foreclosed (price is 0)
-      return lastCollectionTimes[_tokenId];
-    }
+  /// @notice Creates the token and sets beneficiary & taxation amount.
+  /// @param name_ ERC721 Token Name
+  /// @param symbol_ ERC721 Token Symbol
+  /// @param beneficiary_ Recipient of tax payments
+  /// @param taxNumerator_ The taxation rate up to 10 decimal places.
+  /// @param taxationPeriod_ The number of days that constitute one taxation period.
+  constructor(
+    string memory name_,
+    string memory symbol_,
+    address payable beneficiary_,
+    uint256 taxNumerator_,
+    uint256 taxationPeriod_
+  ) ERC721(name_, symbol_) {
+    beneficiary = beneficiary_;
+    taxNumerator = taxNumerator_;
+    taxationPeriod = taxationPeriod_ * 1 days;
   }
 
   //////////////////////////////
@@ -540,6 +385,129 @@ contract PartialCommonOwnership721 is ERC721 {
   }
 
   //////////////////////////////
+  /// Public Getters
+  //////////////////////////////
+
+  /// @notice Returns tax numerator
+  /// @return Tax Rate
+  function taxRate() public view returns (uint256) {
+    return taxNumerator;
+  }
+
+  /// @notice Returns an array of metadata about transfers for a given token.
+  /// @param _tokenId ID of the token requesting for.
+  /// @return Array of TitleTransferEvents.
+  function titleChainOf(uint256 _tokenId)
+    public
+    view
+    tokenMinted(_tokenId)
+    returns (TitleTransferEvent[] memory)
+  {
+    return chainOfTitle[_tokenId];
+  }
+
+  /// @notice Gets current price for a given token ID. Requires that
+  /// the token has been minted.
+  /// @param _tokenId ID of token requesting price for.
+  /// @return Price in Wei.
+  function priceOf(uint256 _tokenId)
+    public
+    view
+    tokenMinted(_tokenId)
+    returns (uint256)
+  {
+    return _price(_tokenId);
+  }
+
+  /// @notice Gets current deposit for a given token ID.
+  /// @param _tokenId ID of token requesting deposit for.
+  /// @return Deposit in Wei.
+  function depositOf(uint256 _tokenId)
+    public
+    view
+    tokenMinted(_tokenId)
+    returns (uint256)
+  {
+    return deposits[_tokenId];
+  }
+
+  /// @notice Determines the taxable amount accumulated between now and
+  /// a given time in the past.
+  /// @param _tokenId ID of token requesting amount for.
+  /// @param _time Unix timestamp.
+  /// @return taxDue Tax Due in Wei.
+  function taxOwedSince(uint256 _tokenId, uint256 _time)
+    public
+    view
+    tokenMinted(_tokenId)
+    returns (uint256 taxDue)
+  {
+    uint256 price = _price(_tokenId);
+    return
+      (((price * _time) / taxationPeriod) * taxNumerator) / TAX_DENOMINATOR;
+  }
+
+  /// @notice Public method for the tax owed. Returns with the current time.
+  /// for use calculating expected tax obligations.
+  /// @param _tokenId ID of token requesting amount for.
+  /// @return amount Tax Due in Wei.
+  /// @return timestamp Now as Unix timestamp.
+  function taxOwed(uint256 _tokenId)
+    public
+    view
+    returns (uint256 amount, uint256 timestamp)
+  {
+    return (_taxOwed(_tokenId), block.timestamp);
+  }
+
+  /// @notice Is the token in a foreclosed state?  If so, price should be zero and anyone can
+  /// purchase this asset for the cost of the gas fee.
+  /// Token enters forclosure if deposit cannot cover the taxation due.
+  /// @dev This is a useful helper function when price should be zero, but contract doesn't
+  /// reflect it yet.
+  /// @param _tokenId ID of token requesting foreclosure status for.
+  /// @return Returns boolean indicating whether or not the contract is foreclosed.
+  function foreclosed(uint256 _tokenId) public view returns (bool) {
+    uint256 owed = _taxOwed(_tokenId);
+    if (owed >= deposits[_tokenId]) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  /// @notice The amount of deposit that is withdrawable i.e. any deposited amount greater
+  /// than the taxable amount owed.
+  /// @param _tokenId ID of token requesting withdrawable deposit for.
+  /// @return amount in Wei.
+  function withdrawableDeposit(uint256 _tokenId) public view returns (uint256) {
+    if (foreclosed(_tokenId)) {
+      return 0;
+    } else {
+      return deposits[_tokenId] - _taxOwed(_tokenId);
+    }
+  }
+
+  /// @notice Determines how long a token owner has until forclosure.
+  /// @param _tokenId ID of token requesting foreclosure time for.
+  /// @return Unix timestamp
+  function foreclosureTime(uint256 _tokenId) public view returns (uint256) {
+    uint256 taxPerSecond = taxOwedSince(_tokenId, 1);
+    uint256 withdrawable = withdrawableDeposit(_tokenId);
+    if (withdrawable > 0) {
+      // Time until deposited surplus no longer surpasses amount owed.
+      return block.timestamp + withdrawable / taxPerSecond;
+    } else if (taxPerSecond > 0) {
+      // Token is active but in foreclosed state.
+      // Returns when foreclosure should have occured i.e. when tax owed > deposits.
+      return _backdatedForeclosureTime(_tokenId);
+    } else {
+      // Actively foreclosed (price is 0)
+      return lastCollectionTimes[_tokenId];
+    }
+  }
+
+  //////////////////////////////
   /// Internal Methods
   //////////////////////////////
 
@@ -604,6 +572,42 @@ contract PartialCommonOwnership721 is ERC721 {
   }
 
   //////////////////////////////
+  /// Prviate Getters
+  //////////////////////////////
+
+  /// @notice Gets current price for a given token ID.
+  /// @param _tokenId ID of token requesting price for.
+  /// @return Price in Wei.
+  function _price(uint256 _tokenId) private view returns (uint256) {
+    return prices[_tokenId];
+  }
+
+  /// @notice How much is owed from the last collection until now?
+  /// @param _tokenId ID of token requesting amount for.
+  /// @return Tax Due in wei
+  function _taxOwed(uint256 _tokenId) private view returns (uint256) {
+    uint256 timeElapsed = block.timestamp - lastCollectionTimes[_tokenId];
+    return taxOwedSince(_tokenId, timeElapsed);
+  }
+
+  /// @notice Returns the time when tax owed initially exceeded deposits.
+  /// @dev last collected time + ((time_elapsed * deposit) / owed)
+  /// @dev Returns within +/- 2s of previous values due to Solidity rounding
+  /// down integer division without regard for significant digits, which produces
+  /// variable results e.g. `599.9999999999851` becomes `599`.
+  /// @param _tokenId ID of token requesting
+  /// @return Unix timestamp
+  function _backdatedForeclosureTime(uint256 _tokenId)
+    private
+    view
+    returns (uint256)
+  {
+    uint256 last = lastCollectionTimes[_tokenId];
+    uint256 timeElapsed = block.timestamp - last;
+    return last + ((timeElapsed * deposits[_tokenId]) / _taxOwed(_tokenId));
+  }
+
+  //////////////////////////////
   /// ERC721 Overrides
   //////////////////////////////
 
@@ -613,6 +617,7 @@ contract PartialCommonOwnership721 is ERC721 {
    */
 
   /* solhint-disable no-unused-vars */
+  /* solhint-disable ordering */
 
   /// @dev Override to make effectively-private.
   function transferFrom(
@@ -643,4 +648,5 @@ contract PartialCommonOwnership721 is ERC721 {
   }
 
   /* solhint-enable no-unused-vars */
+  /* solhint-enable ordering */
 }
