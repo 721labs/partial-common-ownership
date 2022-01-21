@@ -3,6 +3,7 @@
 pragma solidity 0.8.7;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 struct TitleTransferEvent {
   /// @notice From address.
@@ -30,7 +31,7 @@ enum RemittanceTriggers {
 /// and can be repurchased at any price > 0.
 /// @dev This code was originally forked from ThisArtworkIsAlwaysOnSale's `v2_contracts/ArtSteward.sol`
 /// contract by Simon de la Rouviere.
-contract PartialCommonOwnership721 is ERC721 {
+contract PartialCommonOwnership721 is ERC721, ReentrancyGuard {
   //////////////////////////////
   /// State
   //////////////////////////////
@@ -80,10 +81,6 @@ contract PartialCommonOwnership721 is ERC721 {
 
   /// @notice Over what period, in days, should taxation be applied?
   uint256 public taxationPeriod;
-
-  /// @notice Mapping from token ID to purchase lock status
-  /// @dev Used to prevent reentrancy attacks
-  mapping(uint256 => bool) private locked;
 
   //////////////////////////////
   /// Events
@@ -238,10 +235,7 @@ contract PartialCommonOwnership721 is ERC721 {
     uint256 _tokenId,
     uint256 _purchasePrice,
     uint256 _currentPriceForVerification
-  ) public payable tokenMinted(_tokenId) collectTax(_tokenId) {
-    // Prevent re-entrancy attack
-    require(!locked[_tokenId], "Token is locked");
-
+  ) public payable nonReentrant tokenMinted(_tokenId) collectTax(_tokenId) {
     uint256 currentPrice = _price(_tokenId);
     // Prevent front-run.
     require(
@@ -269,9 +263,6 @@ contract PartialCommonOwnership721 is ERC721 {
     // Prevent an accidental re-purchase.
     require(msg.sender != currentOwner, "Buyer is already owner");
 
-    // After all security checks have occured, lock the token.
-    locked[_tokenId] = true;
-
     // If token is owned by the contract, remit to the beneficiary.
     address recipient;
     if (currentOwner == address(this)) {
@@ -297,9 +288,6 @@ contract PartialCommonOwnership721 is ERC721 {
 
     transferToken(_tokenId, currentOwner, msg.sender, _purchasePrice);
     emit LogBuy(_tokenId, msg.sender, _purchasePrice);
-
-    // Unlock token
-    locked[_tokenId] = false;
   }
 
   //////////////////////////////
