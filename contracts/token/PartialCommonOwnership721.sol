@@ -17,7 +17,7 @@ struct TitleTransferEvent {
 
 /// @notice Reasons for sending a remittance
 enum RemittanceTriggers {
-  Lease,
+  LeaseTakeover,
   WithdrawnDeposit,
   OutstandingRemittance,
   TaxCollection
@@ -127,11 +127,11 @@ contract PartialCommonOwnership721 is ERC721 {
   );
 
   /// @notice Alert the remittance recipient that funds have been remitted to her.
-  /// @param tokenId ID of token.
+  /// @param trigger Reason for the remittance.
   /// @param recipient Recipient address.
   /// @param amount Amount in Wei.
   event LogRemittance(
-    uint256 indexed tokenId,
+    RemittanceTriggers indexed trigger,
     address indexed recipient,
     uint256 indexed amount
   );
@@ -300,7 +300,11 @@ contract PartialCommonOwnership721 is ERC721 {
         outstandingRemittances[recipient] += remittance;
         emit LogOutstandingRemittance(recipient);
       } else {
-        emit LogRemittance(_tokenId, recipient, remittance);
+        emit LogRemittance(
+          RemittanceTriggers.LeaseTakeover,
+          recipient,
+          remittance
+        );
       }
     }
 

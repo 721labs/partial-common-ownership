@@ -34,4 +34,11 @@ enum Events {
   DEPOSIT_WITHDRAWAL = "LogDepositWithdrawal",
 }
 
-export { ErrorMessages, TOKENS, Events };
+enum RemittanceTriggers {
+  LeaseTakeover,
+  WithdrawnDeposit,
+  OutstandingRemittance,
+  TaxCollection,
+}
+
+export { ErrorMessages, TOKENS, Events, RemittanceTriggers };

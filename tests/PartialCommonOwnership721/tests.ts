@@ -6,7 +6,7 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 
 import Wallet from "../helpers/Wallet";
-import { ErrorMessages, TOKENS, Events } from "./types";
+import { ErrorMessages, TOKENS, Events, RemittanceTriggers } from "./types";
 import {
   TEST_NAME,
   TEST_SYMBOL,
@@ -203,7 +203,7 @@ async function tests(config: TestConfiguration): Promise<void> {
       expect(trx)
         .to.emit(contract, Events.REMITTANCE)
         .withArgs(
-          tokenId,
+          RemittanceTriggers.LeaseTakeover,
           remittanceRecipientWallet.address,
           expectedRemittance
         );
