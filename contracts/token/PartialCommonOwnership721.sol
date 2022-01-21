@@ -23,6 +23,10 @@ struct TitleTransferEvent {
 /// @dev This code was originally forked from ThisArtworkIsAlwaysOnSale's `v2_contracts/ArtSteward.sol`
 /// contract by Simon de la Rouviere.
 contract PartialCommonOwnership721 is ERC721 {
+  //////////////////////////////
+  /// Events
+  //////////////////////////////
+
   /// @notice Alert of purchase.
   /// @param tokenId ID of token.
   /// @param owner Address of new token owner.
@@ -75,6 +79,10 @@ contract PartialCommonOwnership721 is ERC721 {
   /// @param amount Amount withdrawn in Wei.
   event LogDepositWithdrawal(uint256 indexed tokenId, uint256 indexed amount);
 
+  //////////////////////////////
+  /// State
+  //////////////////////////////
+
   /// @notice Single (for now) beneficiary of tax payments.
   address payable public beneficiary;
 
@@ -125,6 +133,10 @@ contract PartialCommonOwnership721 is ERC721 {
   /// @dev Used to prevent reentrancy attacks
   mapping(uint256 => bool) private locked;
 
+  //////////////////////////////
+  /// Constructor
+  //////////////////////////////
+
   /// @notice Creates the token and sets beneficiary & taxation amount.
   /// @param name_ ERC721 Token Name
   /// @param symbol_ ERC721 Token Symbol
@@ -142,6 +154,10 @@ contract PartialCommonOwnership721 is ERC721 {
     taxNumerator = taxNumerator_;
     taxationPeriod = taxationPeriod_ * 1 days;
   }
+
+  //////////////////////////////
+  /// Modifiers
+  //////////////////////////////
 
   /// @notice Checks whether message sender owns a given token id
   /// @param _tokenId ID of token to check ownership again.
@@ -167,12 +183,19 @@ contract PartialCommonOwnership721 is ERC721 {
     _;
   }
 
+  //////////////////////////////
+  /// Getters
+  //////////////////////////////
+
   /// @notice Returns tax numerator
   /// @return Tax Rate
   function taxRate() public view returns (uint256) {
     return taxNumerator;
   }
 
+  /// @notice Returns an array of metadata about transfers for a given token.
+  /// @param _tokenId ID of the token requesting for.
+  /// @return Array of TitleTransferEvents.
   function titleChainOf(uint256 _tokenId)
     public
     view
@@ -181,11 +204,6 @@ contract PartialCommonOwnership721 is ERC721 {
   {
     return chainOfTitle[_tokenId];
   }
-
-  /**
-   * Public View Functions
-   * Used internally by external methods.
-   */
 
   /// @notice Gets current price for a given token ID. Requires that
   /// the token has been minted.
@@ -320,6 +338,10 @@ contract PartialCommonOwnership721 is ERC721 {
     }
   }
 
+  //////////////////////////////
+  /// Setters
+  //////////////////////////////
+
   /// @notice Collects tax.
   /// @param _tokenId ID of token to collect tax for.
   /// @dev Strictly envoked by modifier but can be called publically.
@@ -355,9 +377,9 @@ contract PartialCommonOwnership721 is ERC721 {
     }
   }
 
-  /**
-   * Public Methods
-   */
+  //////////////////////////////
+  /// Public Methods
+  //////////////////////////////
 
   /// @notice Buy the token.
   /// @param _tokenId ID of token the buyer wants to purchase.
@@ -448,9 +470,10 @@ contract PartialCommonOwnership721 is ERC721 {
     /* solhint-enable reentrancy */
   }
 
-  /**
-   * Owner only actions.
-   */
+  //////////////////////////////
+  /// Owner-Only Methods
+  //////////////////////////////
+
   /// @notice Enables depositing of Wei for a given token.
   /// @param _tokenId ID of token depositing Wei for.
   function depositWei(uint256 _tokenId)
@@ -499,7 +522,9 @@ contract PartialCommonOwnership721 is ERC721 {
     _withdrawDeposit(_tokenId, deposits[_tokenId]);
   }
 
-  /* Actions that don't affect state of tokens */
+  //////////////////////////////
+  /// Remittance Methods
+  //////////////////////////////
 
   /// @notice Enables previous owners to withdraw remittances that failed to send.
   /// @dev To reduce complexity, pull funds are entirely separate from current deposit.
@@ -513,6 +538,10 @@ contract PartialCommonOwnership721 is ERC721 {
     outstandingRemittances[msg.sender] = 0;
     payable(msg.sender).transfer(remittance);
   }
+
+  //////////////////////////////
+  /// Internal Methods
+  //////////////////////////////
 
   /// @notice Withdraws deposit back to its owner.
   /// @dev Parent callers must enforce `ownerOnly(_tokenId)`.
@@ -573,6 +602,10 @@ contract PartialCommonOwnership721 is ERC721 {
 
     taxCollectedSinceLastTransfer[_tokenId] = 0;
   }
+
+  //////////////////////////////
+  /// ERC721 Overrides
+  //////////////////////////////
 
   /**
    * Override ERC721 public transfer methods to ensure that purchasing and
