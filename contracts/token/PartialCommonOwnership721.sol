@@ -218,8 +218,7 @@ contract PartialCommonOwnership721 is ERC721 {
 
       /// Remit taxation to beneficiary.
       /// Note: This increases gas costs for all callers of `#_collectTax()`.
-      beneficiary.transfer(owed);
-      emit LogBeneficiaryRemittance(_tokenId, owed);
+      _remit(beneficiary, owed, RemittanceTriggers.TaxCollection);
 
       _forecloseIfNecessary(_tokenId);
     }

@@ -288,9 +288,10 @@ async function tests(config: TestConfiguration): Promise<void> {
     // Events emitted
     expect(trx).to.emit(contract, Events.COLLECTION).withArgs(tokenId, due);
 
+    // Remittance emitted
     expect(trx)
-      .to.emit(contract, Events.BENEFICIARY_REMITTANCE)
-      .withArgs(tokenId, due);
+      .to.emit(contract, Events.REMITTANCE)
+      .withArgs(RemittanceTriggers.TaxCollection, beneficiary.address, due);
 
     // Deposit updates
     expect(await contract.depositOf(tokenId)).to.equal(depositBefore.sub(due));

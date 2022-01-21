@@ -29,7 +29,6 @@ enum Events {
   PRICE_CHANGE = "LogPriceChange",
   FORECLOSURE = "LogForeclosure",
   COLLECTION = "LogCollection",
-  BENEFICIARY_REMITTANCE = "LogBeneficiaryRemittance",
   REMITTANCE = "LogRemittance",
 }
 
