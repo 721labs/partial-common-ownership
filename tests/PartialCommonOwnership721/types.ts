@@ -29,9 +29,14 @@ enum Events {
   PRICE_CHANGE = "LogPriceChange",
   FORECLOSURE = "LogForeclosure",
   COLLECTION = "LogCollection",
-  BENEFICIARY_REMITTANCE = "LogBeneficiaryRemittance",
   REMITTANCE = "LogRemittance",
-  DEPOSIT_WITHDRAWAL = "LogDepositWithdrawal",
 }
 
-export { ErrorMessages, TOKENS, Events };
+enum RemittanceTriggers {
+  LeaseTakeover,
+  WithdrawnDeposit,
+  OutstandingRemittance,
+  TaxCollection,
+}
+
+export { ErrorMessages, TOKENS, Events, RemittanceTriggers };

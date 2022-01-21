@@ -15,6 +15,14 @@ struct TitleTransferEvent {
   uint256 price;
 }
 
+/// @notice Reasons for sending a remittance
+enum RemittanceTriggers {
+  LeaseTakeover,
+  WithdrawnDeposit,
+  OutstandingRemittance,
+  TaxCollection
+}
+
 /// @title PartialCommonOwnership721
 /// @author Simon de la Rouviere, Will Holley
 /// @notice Extends the ERC721 standard by requiring tax payments from a token's current owner
@@ -119,19 +127,14 @@ contract PartialCommonOwnership721 is ERC721 {
   );
 
   /// @notice Alert the remittance recipient that funds have been remitted to her.
-  /// @param tokenId ID of token.
+  /// @param trigger Reason for the remittance.
   /// @param recipient Recipient address.
   /// @param amount Amount in Wei.
   event LogRemittance(
-    uint256 indexed tokenId,
+    RemittanceTriggers indexed trigger,
     address indexed recipient,
     uint256 indexed amount
   );
-
-  /// @notice Alert deposit withdrawn.
-  /// @param tokenId ID of token deposit.
-  /// @param amount Amount withdrawn in Wei.
-  event LogDepositWithdrawal(uint256 indexed tokenId, uint256 indexed amount);
 
   //////////////////////////////
   /// Modifiers
@@ -214,9 +217,7 @@ contract PartialCommonOwnership721 is ERC721 {
       emit LogCollection(_tokenId, owed);
 
       /// Remit taxation to beneficiary.
-      /// Note: This increases gas costs for all callers of `#_collectTax()`.
-      beneficiary.transfer(owed);
-      emit LogBeneficiaryRemittance(_tokenId, owed);
+      _remit(beneficiary, owed, RemittanceTriggers.TaxCollection);
 
       _forecloseIfNecessary(_tokenId);
     }
@@ -271,30 +272,17 @@ contract PartialCommonOwnership721 is ERC721 {
     // After all security checks have occured, lock the token.
     locked[_tokenId] = true;
 
+    // If token is owned by the contract, remit to the beneficiary.
+    address recipient;
+    if (currentOwner == address(this)) {
+      recipient = beneficiary;
+    } else {
+      recipient = currentOwner;
+    }
+
     // Remit the purchase price and any available deposit.
     uint256 remittance = _purchasePrice + deposits[_tokenId];
-
-    /* solhint-disable reentrancy */
-    if (remittance > 0) {
-      // If token is owned by the contract, remit to the beneficiary.
-      address recipient;
-      if (currentOwner == address(this)) {
-        recipient = beneficiary;
-      } else {
-        recipient = currentOwner;
-      }
-
-      // Remit.
-      address payable payableRecipient = payable(recipient);
-
-      // If the remittance fails, hold funds for the seller to retrieve.
-      if (!payableRecipient.send(remittance)) {
-        outstandingRemittances[recipient] += remittance;
-        emit LogOutstandingRemittance(recipient);
-      } else {
-        emit LogRemittance(_tokenId, recipient, remittance);
-      }
-    }
+    _remit(recipient, remittance, RemittanceTriggers.LeaseTakeover);
 
     // If the token is being purchased for the first time or is being purchased
     // from foreclosure,last collection time is set to now so that the contract
@@ -312,7 +300,6 @@ contract PartialCommonOwnership721 is ERC721 {
 
     // Unlock token
     locked[_tokenId] = false;
-    /* solhint-enable reentrancy */
   }
 
   //////////////////////////////
@@ -374,14 +361,13 @@ contract PartialCommonOwnership721 is ERC721 {
   /// @notice Enables previous owners to withdraw remittances that failed to send.
   /// @dev To reduce complexity, pull funds are entirely separate from current deposit.
   function withdrawOutstandingRemittance() public {
-    require(
-      outstandingRemittances[msg.sender] > 0,
-      "No outstanding remittance"
-    );
+    uint256 outstanding = outstandingRemittances[msg.sender];
 
-    uint256 remittance = outstandingRemittances[msg.sender];
+    require(outstanding > 0, "No outstanding remittance");
+
     outstandingRemittances[msg.sender] = 0;
-    payable(msg.sender).transfer(remittance);
+
+    _remit(msg.sender, outstanding, RemittanceTriggers.OutstandingRemittance);
   }
 
   //////////////////////////////
@@ -511,6 +497,32 @@ contract PartialCommonOwnership721 is ERC721 {
   /// Internal Methods
   //////////////////////////////
 
+  /// @notice Send a remittance payment.
+  /// @dev We're using a push rather than pull strategy as this removes the need for beneficiaries
+  /// to check how much they are owed, more closely replicating a "streaming" payment. This comes
+  /// at the cost of forcing all callers of `#_remit` to pay the additional gas for sending.
+  /// @param recipient_ Address to send remittance to.
+  /// @param remittance_ Remittance amount
+  /// @param trigger_ What triggered this remittance?
+  function _remit(
+    address recipient_,
+    uint256 remittance_,
+    RemittanceTriggers trigger_
+  ) internal {
+    address payable payableRecipient = payable(recipient_);
+    // If the remittance fails, hold funds for the seller to retrieve.
+    // For example, if `payableReceipient` is a contract that reverts on receipt or
+    // if the call runs out of gas.
+    if (payableRecipient.send(remittance_)) {
+      emit LogRemittance(trigger_, recipient_, remittance_);
+    } else {
+      /* solhint-disable reentrancy */
+      outstandingRemittances[recipient_] += remittance_;
+      emit LogOutstandingRemittance(recipient_);
+      /* solhint-enable reentrancy */
+    }
+  }
+
   /// @notice Withdraws deposit back to its owner.
   /// @dev Parent callers must enforce `ownerOnly(_tokenId)`.
   /// @param _tokenId ID of token to withdraw deposit for.
@@ -521,9 +533,8 @@ contract PartialCommonOwnership721 is ERC721 {
     require(_wei <= deposit, "Cannot withdraw more than deposited");
 
     deposits[_tokenId] -= _wei;
-    payable(msg.sender).transfer(_wei);
 
-    emit LogDepositWithdrawal(_tokenId, _wei);
+    _remit(msg.sender, _wei, RemittanceTriggers.WithdrawnDeposit);
 
     _forecloseIfNecessary(_tokenId);
   }
