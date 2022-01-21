@@ -279,7 +279,7 @@ async function tests(config: TestConfiguration): Promise<void> {
 
     await time.increase(time.duration.minutes(after));
 
-    const trx = await contract._collectTax(tokenId);
+    const trx = await contract.collectTax(tokenId);
 
     const timeAfter = await now();
     const due = getTaxDue(currentPrice, timeAfter, before);
@@ -486,7 +486,7 @@ async function tests(config: TestConfiguration): Promise<void> {
     });
   });
 
-  describe("#_collectTax()", async function () {
+  describe("#collectTax()", async function () {
     context("fails", async function () {});
     context("succeeds", async function () {
       it("collects after 10m", async function () {
@@ -771,7 +771,7 @@ async function tests(config: TestConfiguration): Promise<void> {
         await verifyExpectedForeclosureTime(token, shouldForecloseAt);
 
         // Trigger foreclosure
-        await contract._collectTax(token);
+        await contract.collectTax(token);
 
         // Past:
 
@@ -816,7 +816,7 @@ async function tests(config: TestConfiguration): Promise<void> {
         await verifyExpectedForeclosureTime(token, shouldForecloseAt);
 
         // Trigger foreclosure
-        await contract._collectTax(token);
+        await contract.collectTax(token);
 
         expect(await contract.ownerOf(token)).to.equal(contractAddress);
 
