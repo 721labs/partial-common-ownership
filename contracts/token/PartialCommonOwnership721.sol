@@ -141,9 +141,9 @@ contract PartialCommonOwnership721 is ERC721 {
   //////////////////////////////
 
   /// @notice Checks whether message sender owns a given token id
-  /// @param _tokenId ID of token to check ownership again.
-  modifier _onlyOwner(uint256 _tokenId) {
-    address owner = ownerOf(_tokenId);
+  /// @param tokenId_ ID of token to check ownership again.
+  modifier _onlyOwner(uint256 tokenId_) {
+    address owner = ownerOf(tokenId_);
     require(msg.sender == owner, "Sender does not own this token");
     _;
   }
@@ -151,16 +151,16 @@ contract PartialCommonOwnership721 is ERC721 {
   /// @notice Envokes tax collection.
   /// @dev Tax collection is triggered by an external envocation of a method wrapped by
   /// this modifier.
-  /// @param _tokenId ID of token to collect tax for.
-  modifier _collectTax(uint256 _tokenId) {
-    collectTax(_tokenId);
+  /// @param tokenId_ ID of token to collect tax for.
+  modifier _collectTax(uint256 tokenId_) {
+    collectTax(tokenId_);
     _;
   }
 
   /// @notice Requires that token have been minted.
-  /// @param _tokenId ID of token to verify.
-  modifier _tokenMinted(uint256 _tokenId) {
-    ownerOf(_tokenId);
+  /// @param tokenId_ ID of token to verify.
+  modifier _tokenMinted(uint256 tokenId_) {
+    ownerOf(tokenId_);
     _;
   }
 
@@ -191,82 +191,82 @@ contract PartialCommonOwnership721 is ERC721 {
   //////////////////////////////
 
   /// @notice Collects tax.
-  /// @param _tokenId ID of token to collect tax for.
+  /// @param tokenId_ ID of token to collect tax for.
   /// @dev Strictly envoked by modifier but can be called publically.
-  function collectTax(uint256 _tokenId) public {
-    uint256 price = _price(_tokenId);
+  function collectTax(uint256 tokenId_) public {
+    uint256 price = _price(tokenId_);
     if (price != 0) {
       // If price > 0, contract has not foreclosed.
-      uint256 owed = _taxOwed(_tokenId);
+      uint256 owed = _taxOwed(tokenId_);
 
       // If foreclosure should have occured in the past, last collection time will be
       // backdated to when the tax was last paid for.
-      if (foreclosed(_tokenId)) {
-        lastCollectionTimes[_tokenId] = _backdatedForeclosureTime(_tokenId);
+      if (foreclosed(tokenId_)) {
+        lastCollectionTimes[tokenId_] = _backdatedForeclosureTime(tokenId_);
         // Set remaining deposit to be collected.
-        owed = _deposits[_tokenId];
+        owed = _deposits[tokenId_];
       } else {
-        lastCollectionTimes[_tokenId] = block.timestamp;
+        lastCollectionTimes[tokenId_] = block.timestamp;
       }
 
       // Normal collection
-      _deposits[_tokenId] -= owed;
-      taxationCollected[_tokenId] += owed;
-      taxCollectedSinceLastTransfer[_tokenId] += owed;
+      _deposits[tokenId_] -= owed;
+      taxationCollected[tokenId_] += owed;
+      taxCollectedSinceLastTransfer[tokenId_] += owed;
 
-      emit LogCollection(_tokenId, owed);
+      emit LogCollection(tokenId_, owed);
 
       /// Remit taxation to beneficiary.
       _remit(beneficiary, owed, RemittanceTriggers.TaxCollection);
 
-      _forecloseIfNecessary(_tokenId);
+      _forecloseIfNecessary(tokenId_);
     }
   }
 
   /// @notice Buy the token.
-  /// @param _tokenId ID of token the buyer wants to purchase.
-  /// @param _purchasePrice Purchasing price. Must be greater or equal to current price.
-  /// @param _currentPriceForVerification Current price must be given to protect against a front-run attack.
+  /// @param tokenId_ ID of token the buyer wants to purchase.
+  /// @param purchasePrice_ Purchasing price. Must be greater or equal to current price.
+  /// @param currentPriceForVerification_ Current price must be given to protect against a front-run attack.
   /// The buyer will only complete the purchase at the agreed upon price. This prevents a malicious,
   /// second buyer from purchasing the token before the first trx is complete, changing the price,
   /// and eating into the first buyer's deposit.
   function buy(
-    uint256 _tokenId,
-    uint256 _purchasePrice,
-    uint256 _currentPriceForVerification
-  ) public payable _tokenMinted(_tokenId) _collectTax(_tokenId) {
+    uint256 tokenId_,
+    uint256 purchasePrice_,
+    uint256 currentPriceForVerification_
+  ) public payable _tokenMinted(tokenId_) _collectTax(tokenId_) {
     // Prevent re-entrancy attack
-    require(!locked[_tokenId], "Token is locked");
+    require(!locked[tokenId_], "Token is locked");
 
-    uint256 currentPrice = _price(_tokenId);
+    uint256 currentPrice = _price(tokenId_);
     // Prevent front-run.
     require(
-      currentPrice == _currentPriceForVerification,
+      currentPrice == currentPriceForVerification_,
       "Current Price is incorrect"
     );
     // Purchase price must be greater than zero, even if current price is zero, to ensure that
     // funds are available for deposit.
-    require(_purchasePrice > 0, "New Price cannot be zero");
+    require(purchasePrice_ > 0, "New Price cannot be zero");
     // Buyer can offer more than the current price; this renders unnecessary a second gas payment
     // if Buyer wants to immediately self-assess the token at a higher valuation.
     require(
-      _purchasePrice >= currentPrice,
+      purchasePrice_ >= currentPrice,
       "New Price must be >= current price"
     );
     // Value sent must be greater than purchase price; surplus is necessary for deposit.
     require(
-      msg.value > _purchasePrice,
+      msg.value > purchasePrice_,
       "Message does not contain surplus value for deposit"
     );
 
     // Seller or this contract if foreclosed.
-    address currentOwner = ownerOf(_tokenId);
+    address currentOwner = ownerOf(tokenId_);
 
     // Prevent an accidental re-purchase.
     require(msg.sender != currentOwner, "Buyer is already owner");
 
     // After all security checks have occured, lock the token.
-    locked[_tokenId] = true;
+    locked[tokenId_] = true;
 
     // If token is owned by the contract, remit to the beneficiary.
     address recipient;
@@ -277,7 +277,7 @@ contract PartialCommonOwnership721 is ERC721 {
     }
 
     // Remit the purchase price and any available deposit.
-    uint256 remittance = _purchasePrice + _deposits[_tokenId];
+    uint256 remittance = purchasePrice_ + _deposits[tokenId_];
     _remit(recipient, remittance, RemittanceTriggers.LeaseTakeover);
 
     // If the token is being purchased for the first time or is being purchased
@@ -285,17 +285,17 @@ contract PartialCommonOwnership721 is ERC721 {
     // does not incorrectly consider the taxable period to have begun prior to
     // foreclosure and overtax the owner.
     if (currentPrice == 0) {
-      lastCollectionTimes[_tokenId] = block.timestamp;
+      lastCollectionTimes[tokenId_] = block.timestamp;
     }
 
     // Update deposit with surplus value.
-    _deposits[_tokenId] = msg.value - _purchasePrice;
+    _deposits[tokenId_] = msg.value - purchasePrice_;
 
-    transferToken(_tokenId, currentOwner, msg.sender, _purchasePrice);
-    emit LogBuy(_tokenId, msg.sender, _purchasePrice);
+    transferToken(tokenId_, currentOwner, msg.sender, purchasePrice_);
+    emit LogBuy(tokenId_, msg.sender, purchasePrice_);
 
     // Unlock token
-    locked[_tokenId] = false;
+    locked[tokenId_] = false;
   }
 
   //////////////////////////////
@@ -303,51 +303,51 @@ contract PartialCommonOwnership721 is ERC721 {
   //////////////////////////////
 
   /// @notice Enables depositing of Wei for a given token.
-  /// @param _tokenId ID of token depositing Wei for.
-  function depositWei(uint256 _tokenId)
+  /// @param tokenId_ ID of token depositing Wei for.
+  function depositWei(uint256 tokenId_)
     public
     payable
-    _onlyOwner(_tokenId)
-    _collectTax(_tokenId)
+    _onlyOwner(tokenId_)
+    _collectTax(tokenId_)
   {
-    _deposits[_tokenId] += msg.value;
+    _deposits[tokenId_] += msg.value;
   }
 
   /// @notice Enables owner to change price in accordance with
   /// self-assessed value.
-  /// @param _tokenId ID of token to change price of.
-  /// @param _newPrice New price in Wei.
-  function changePrice(uint256 _tokenId, uint256 _newPrice)
+  /// @param tokenId_ ID of token to change price of.
+  /// @param newPrice_ New price in Wei.
+  function changePrice(uint256 tokenId_, uint256 newPrice_)
     public
-    _onlyOwner(_tokenId)
-    _collectTax(_tokenId)
+    _onlyOwner(tokenId_)
+    _collectTax(tokenId_)
   {
-    uint256 price = prices[_tokenId];
-    require(_newPrice > 0, "New price cannot be zero");
-    require(_newPrice != price, "New price cannot be same");
-    prices[_tokenId] = _newPrice;
-    emit LogPriceChange(_tokenId, _newPrice);
+    uint256 price = prices[tokenId_];
+    require(newPrice_ > 0, "New price cannot be zero");
+    require(newPrice_ != price, "New price cannot be same");
+    prices[tokenId_] = newPrice_;
+    emit LogPriceChange(tokenId_, newPrice_);
   }
 
   /// @notice Enables owner to withdraw some amount of their deposit.
-  /// @param _tokenId ID of token to withdraw against.
-  /// @param _wei Amount of Wei to withdraw.
-  function withdrawDeposit(uint256 _tokenId, uint256 _wei)
+  /// @param tokenId_ ID of token to withdraw against.
+  /// @param wei_ Amount of Wei to withdraw.
+  function withdrawDeposit(uint256 tokenId_, uint256 wei_)
     public
-    _onlyOwner(_tokenId)
-    _collectTax(_tokenId)
+    _onlyOwner(tokenId_)
+    _collectTax(tokenId_)
   {
-    _withdrawDeposit(_tokenId, _wei);
+    _withdrawDeposit(tokenId_, wei_);
   }
 
   /// @notice Enables owner to withdraw their entire deposit.
-  /// @param _tokenId ID of token to withdraw against.
-  function exit(uint256 _tokenId)
+  /// @param tokenId_ ID of token to withdraw against.
+  function exit(uint256 tokenId_)
     public
-    _onlyOwner(_tokenId)
-    _collectTax(_tokenId)
+    _onlyOwner(tokenId_)
+    _collectTax(tokenId_)
   {
-    _withdrawDeposit(_tokenId, _deposits[_tokenId]);
+    _withdrawDeposit(tokenId_, _deposits[tokenId_]);
   }
 
   //////////////////////////////
@@ -377,69 +377,69 @@ contract PartialCommonOwnership721 is ERC721 {
   }
 
   /// @notice Returns an array of metadata about transfers for a given token.
-  /// @param _tokenId ID of the token requesting for.
+  /// @param tokenId_ ID of the token requesting for.
   /// @return Array of TitleTransferEvents.
-  function titleChainOf(uint256 _tokenId)
+  function titleChainOf(uint256 tokenId_)
     public
     view
-    _tokenMinted(_tokenId)
+    _tokenMinted(tokenId_)
     returns (TitleTransferEvent[] memory)
   {
-    return _chainOfTitle[_tokenId];
+    return _chainOfTitle[tokenId_];
   }
 
   /// @notice Gets current price for a given token ID. Requires that
   /// the token has been minted.
-  /// @param _tokenId ID of token requesting price for.
+  /// @param tokenId_ ID of token requesting price for.
   /// @return Price in Wei.
-  function priceOf(uint256 _tokenId)
+  function priceOf(uint256 tokenId_)
     public
     view
-    _tokenMinted(_tokenId)
+    _tokenMinted(tokenId_)
     returns (uint256)
   {
-    return _price(_tokenId);
+    return _price(tokenId_);
   }
 
   /// @notice Gets current deposit for a given token ID.
-  /// @param _tokenId ID of token requesting deposit for.
+  /// @param tokenId_ ID of token requesting deposit for.
   /// @return Deposit in Wei.
-  function depositOf(uint256 _tokenId)
+  function depositOf(uint256 tokenId_)
     public
     view
-    _tokenMinted(_tokenId)
+    _tokenMinted(tokenId_)
     returns (uint256)
   {
-    return _deposits[_tokenId];
+    return _deposits[tokenId_];
   }
 
   /// @notice Determines the taxable amount accumulated between now and
   /// a given time in the past.
-  /// @param _tokenId ID of token requesting amount for.
-  /// @param _time Unix timestamp.
+  /// @param tokenId_ ID of token requesting amount for.
+  /// @param time_ Unix timestamp.
   /// @return taxDue Tax Due in Wei.
-  function taxOwedSince(uint256 _tokenId, uint256 _time)
+  function taxOwedSince(uint256 tokenId_, uint256 time_)
     public
     view
-    _tokenMinted(_tokenId)
+    _tokenMinted(tokenId_)
     returns (uint256 taxDue)
   {
-    uint256 price = _price(_tokenId);
+    uint256 price = _price(tokenId_);
     return
-      (((price * _time) / taxationPeriod) * _taxNumerator) / TAX_DENOMINATOR;
+      (((price * time_) / taxationPeriod) * _taxNumerator) / TAX_DENOMINATOR;
   }
 
   /// @notice Public method for the tax owed. Returns with the current time.
   /// for use calculating expected tax obligations.
-  /// @param _tokenId ID of token requesting amount for.
+  /// @param tokenId_ ID of token requesting amount for.
   /// @return amount Tax Due in Wei.
   /// @return timestamp Now as Unix timestamp.
-  function taxOwed(uint256 _tokenId)
+  function taxOwed(uint256 tokenId_)
     public
     view
     returns (uint256 amount, uint256 timestamp)
   {
-    return (_taxOwed(_tokenId), block.timestamp);
+    return (_taxOwed(tokenId_), block.timestamp);
   }
 
   /// @notice Do the taxes owed exceed the deposit?  If so, the token should be
@@ -447,11 +447,11 @@ contract PartialCommonOwnership721 is ERC721 {
   /// purchase the token for the cost of the gas fee.
   /// @dev This is a useful helper function when price should be zero, but contract doesn't
   /// reflect it yet because `#_forecloseIfNecessary` has not yet been called..
-  /// @param _tokenId ID of token requesting foreclosure status for.
+  /// @param tokenId_ ID of token requesting foreclosure status for.
   /// @return Returns boolean indicating whether or not the contract is foreclosed.
-  function foreclosed(uint256 _tokenId) public view returns (bool) {
-    uint256 owed = _taxOwed(_tokenId);
-    if (owed >= _deposits[_tokenId]) {
+  function foreclosed(uint256 tokenId_) public view returns (bool) {
+    uint256 owed = _taxOwed(tokenId_);
+    if (owed >= _deposits[tokenId_]) {
       return true;
     } else {
       return false;
@@ -460,32 +460,32 @@ contract PartialCommonOwnership721 is ERC721 {
 
   /// @notice The amount of deposit that is withdrawable i.e. any deposited amount greater
   /// than the taxable amount owed.
-  /// @param _tokenId ID of token requesting withdrawable deposit for.
+  /// @param tokenId_ ID of token requesting withdrawable deposit for.
   /// @return amount in Wei.
-  function withdrawableDeposit(uint256 _tokenId) public view returns (uint256) {
-    if (foreclosed(_tokenId)) {
+  function withdrawableDeposit(uint256 tokenId_) public view returns (uint256) {
+    if (foreclosed(tokenId_)) {
       return 0;
     } else {
-      return _deposits[_tokenId] - _taxOwed(_tokenId);
+      return _deposits[tokenId_] - _taxOwed(tokenId_);
     }
   }
 
   /// @notice Determines how long a token owner has until forclosure.
-  /// @param _tokenId ID of token requesting foreclosure time for.
+  /// @param tokenId_ ID of token requesting foreclosure time for.
   /// @return Unix timestamp
-  function foreclosureTime(uint256 _tokenId) public view returns (uint256) {
-    uint256 taxPerSecond = taxOwedSince(_tokenId, 1);
-    uint256 withdrawable = withdrawableDeposit(_tokenId);
+  function foreclosureTime(uint256 tokenId_) public view returns (uint256) {
+    uint256 taxPerSecond = taxOwedSince(tokenId_, 1);
+    uint256 withdrawable = withdrawableDeposit(tokenId_);
     if (withdrawable > 0) {
       // Time until deposited surplus no longer surpasses amount owed.
       return block.timestamp + withdrawable / taxPerSecond;
     } else if (taxPerSecond > 0) {
       // Token is active but in foreclosed state.
       // Returns when foreclosure should have occured i.e. when tax owed > deposits.
-      return _backdatedForeclosureTime(_tokenId);
+      return _backdatedForeclosureTime(tokenId_);
     } else {
       // Actively foreclosed (price is 0)
-      return lastCollectionTimes[_tokenId];
+      return lastCollectionTimes[tokenId_];
     }
   }
 
@@ -520,62 +520,62 @@ contract PartialCommonOwnership721 is ERC721 {
   }
 
   /// @notice Withdraws deposit back to its owner.
-  /// @dev Parent callers must enforce `ownerOnly(_tokenId)`.
-  /// @param _tokenId ID of token to withdraw deposit for.
-  /// @param _wei Amount of Wei to withdraw.
-  function _withdrawDeposit(uint256 _tokenId, uint256 _wei) internal {
+  /// @dev Parent callers must enforce `ownerOnly(tokenId_)`.
+  /// @param tokenId_ ID of token to withdraw deposit for.
+  /// @param wei_ Amount of Wei to withdraw.
+  function _withdrawDeposit(uint256 tokenId_, uint256 wei_) internal {
     // Note: Can withdraw whole deposit, which immediately triggers foreclosure.
-    uint256 deposit = _deposits[_tokenId];
-    require(_wei <= deposit, "Cannot withdraw more than deposited");
+    uint256 deposit = _deposits[tokenId_];
+    require(wei_ <= deposit, "Cannot withdraw more than deposited");
 
-    _deposits[_tokenId] -= _wei;
+    _deposits[tokenId_] -= wei_;
 
-    _remit(msg.sender, _wei, RemittanceTriggers.WithdrawnDeposit);
+    _remit(msg.sender, wei_, RemittanceTriggers.WithdrawnDeposit);
 
-    _forecloseIfNecessary(_tokenId);
+    _forecloseIfNecessary(tokenId_);
   }
 
   /// @notice Forecloses if no deposit for a given token.
-  /// @param _tokenId ID of token to potentially foreclose.
-  function _forecloseIfNecessary(uint256 _tokenId) internal {
+  /// @param tokenId_ ID of token to potentially foreclose.
+  function _forecloseIfNecessary(uint256 tokenId_) internal {
     // If there are not enough funds to cover the entire amount owed, `__collectTax`
     // will take whatever's left of the deposit, resulting in a zero balance.
-    if (_deposits[_tokenId] == 0) {
+    if (_deposits[tokenId_] == 0) {
       // Become steward of asset (aka foreclose)
-      address currentOwner = ownerOf(_tokenId);
-      transferToken(_tokenId, currentOwner, address(this), 0);
-      emit LogForeclosure(_tokenId, currentOwner);
+      address currentOwner = ownerOf(tokenId_);
+      transferToken(tokenId_, currentOwner, address(this), 0);
+      emit LogForeclosure(tokenId_, currentOwner);
     }
   }
 
   /// @notice Transfers possession of a token.
-  /// @param _tokenId ID of token to transfer possession of.
-  /// @param _currentOwner Address of current owner.
-  /// @param _newOwner Address of new owner.
-  /// @param _newPrice New price in Wei.
+  /// @param tokenId_ ID of token to transfer possession of.
+  /// @param currentOwner_ Address of current owner.
+  /// @param newOwner_ Address of new owner.
+  /// @param newPrice_ New price in Wei.
   function transferToken(
-    uint256 _tokenId,
-    address _currentOwner,
-    address _newOwner,
-    uint256 _newPrice
+    uint256 tokenId_,
+    address currentOwner_,
+    address newOwner_,
+    uint256 newPrice_
   ) internal {
-    // Call `_transfer` directly rather than `_transferFrom()` because `_newOwner`
+    // Call `_transfer` directly rather than `_transferFrom()` because `newOwner_`
     // does not require previous approval (as required by `_transferFrom()`) to purchase.
-    _transfer(_currentOwner, _newOwner, _tokenId);
+    _transfer(currentOwner_, newOwner_, tokenId_);
 
-    prices[_tokenId] = _newPrice;
+    prices[tokenId_] = newPrice_;
 
     TitleTransferEvent memory transferEvent = TitleTransferEvent(
-      _currentOwner,
-      _newOwner,
+      currentOwner_,
+      newOwner_,
       block.timestamp,
-      _newPrice
+      newPrice_
     );
-    _chainOfTitle[_tokenId].push(transferEvent);
+    _chainOfTitle[tokenId_].push(transferEvent);
 
-    lastTransferTimes[_tokenId] = block.timestamp;
+    lastTransferTimes[tokenId_] = block.timestamp;
 
-    taxCollectedSinceLastTransfer[_tokenId] = 0;
+    taxCollectedSinceLastTransfer[tokenId_] = 0;
   }
 
   //////////////////////////////
@@ -583,18 +583,18 @@ contract PartialCommonOwnership721 is ERC721 {
   //////////////////////////////
 
   /// @notice Gets current price for a given token ID.
-  /// @param _tokenId ID of token requesting price for.
+  /// @param tokenId_ ID of token requesting price for.
   /// @return Price in Wei.
-  function _price(uint256 _tokenId) private view returns (uint256) {
-    return prices[_tokenId];
+  function _price(uint256 tokenId_) private view returns (uint256) {
+    return prices[tokenId_];
   }
 
   /// @notice How much is owed from the last collection until now?
-  /// @param _tokenId ID of token requesting amount for.
+  /// @param tokenId_ ID of token requesting amount for.
   /// @return Tax Due in wei
-  function _taxOwed(uint256 _tokenId) private view returns (uint256) {
-    uint256 timeElapsed = block.timestamp - lastCollectionTimes[_tokenId];
-    return taxOwedSince(_tokenId, timeElapsed);
+  function _taxOwed(uint256 tokenId_) private view returns (uint256) {
+    uint256 timeElapsed = block.timestamp - lastCollectionTimes[tokenId_];
+    return taxOwedSince(tokenId_, timeElapsed);
   }
 
   /// @notice Returns the time when tax owed initially exceeded deposits.
@@ -602,16 +602,16 @@ contract PartialCommonOwnership721 is ERC721 {
   /// @dev Returns within +/- 2s of previous values due to Solidity rounding
   /// down integer division without regard for significant digits, which produces
   /// variable results e.g. `599.9999999999851` becomes `599`.
-  /// @param _tokenId ID of token requesting
+  /// @param tokenId_ ID of token requesting
   /// @return Unix timestamp
-  function _backdatedForeclosureTime(uint256 _tokenId)
+  function _backdatedForeclosureTime(uint256 tokenId_)
     private
     view
     returns (uint256)
   {
-    uint256 last = lastCollectionTimes[_tokenId];
+    uint256 last = lastCollectionTimes[tokenId_];
     uint256 timeElapsed = block.timestamp - last;
-    return last + ((timeElapsed * _deposits[_tokenId]) / _taxOwed(_tokenId));
+    return last + ((timeElapsed * _deposits[tokenId_]) / _taxOwed(tokenId_));
   }
 
   //////////////////////////////
