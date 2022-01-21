@@ -142,7 +142,7 @@ contract PartialCommonOwnership721 is ERC721 {
 
   /// @notice Checks whether message sender owns a given token id
   /// @param _tokenId ID of token to check ownership again.
-  modifier onlyOwner(uint256 _tokenId) {
+  modifier _onlyOwner(uint256 _tokenId) {
     address owner = ownerOf(_tokenId);
     require(msg.sender == owner, "Sender does not own this token");
     _;
@@ -152,14 +152,14 @@ contract PartialCommonOwnership721 is ERC721 {
   /// @dev Tax collection is triggered by an external envocation of a method wrapped by
   /// this modifier.
   /// @param _tokenId ID of token to collect tax for.
-  modifier collectTax(uint256 _tokenId) {
-    _collectTax(_tokenId);
+  modifier _collectTax(uint256 _tokenId) {
+    collectTax(_tokenId);
     _;
   }
 
   /// @notice Requires that token have been minted.
   /// @param _tokenId ID of token to verify.
-  modifier tokenMinted(uint256 _tokenId) {
+  modifier _tokenMinted(uint256 _tokenId) {
     ownerOf(_tokenId);
     _;
   }
@@ -187,13 +187,13 @@ contract PartialCommonOwnership721 is ERC721 {
   }
 
   //////////////////////////////
-  /// Setters
+  /// Public Methods
   //////////////////////////////
 
   /// @notice Collects tax.
   /// @param _tokenId ID of token to collect tax for.
   /// @dev Strictly envoked by modifier but can be called publically.
-  function _collectTax(uint256 _tokenId) public {
+  function collectTax(uint256 _tokenId) public {
     uint256 price = _price(_tokenId);
     if (price != 0) {
       // If price > 0, contract has not foreclosed.
@@ -223,10 +223,6 @@ contract PartialCommonOwnership721 is ERC721 {
     }
   }
 
-  //////////////////////////////
-  /// Public Methods
-  //////////////////////////////
-
   /// @notice Buy the token.
   /// @param _tokenId ID of token the buyer wants to purchase.
   /// @param _purchasePrice Purchasing price. Must be greater or equal to current price.
@@ -238,7 +234,7 @@ contract PartialCommonOwnership721 is ERC721 {
     uint256 _tokenId,
     uint256 _purchasePrice,
     uint256 _currentPriceForVerification
-  ) public payable tokenMinted(_tokenId) collectTax(_tokenId) {
+  ) public payable _tokenMinted(_tokenId) _collectTax(_tokenId) {
     // Prevent re-entrancy attack
     require(!locked[_tokenId], "Token is locked");
 
@@ -311,8 +307,8 @@ contract PartialCommonOwnership721 is ERC721 {
   function depositWei(uint256 _tokenId)
     public
     payable
-    onlyOwner(_tokenId)
-    collectTax(_tokenId)
+    _onlyOwner(_tokenId)
+    _collectTax(_tokenId)
   {
     deposits[_tokenId] += msg.value;
   }
@@ -323,8 +319,8 @@ contract PartialCommonOwnership721 is ERC721 {
   /// @param _newPrice New price in Wei.
   function changePrice(uint256 _tokenId, uint256 _newPrice)
     public
-    onlyOwner(_tokenId)
-    collectTax(_tokenId)
+    _onlyOwner(_tokenId)
+    _collectTax(_tokenId)
   {
     uint256 price = prices[_tokenId];
     require(_newPrice > 0, "New price cannot be zero");
@@ -338,8 +334,8 @@ contract PartialCommonOwnership721 is ERC721 {
   /// @param _wei Amount of Wei to withdraw.
   function withdrawDeposit(uint256 _tokenId, uint256 _wei)
     public
-    onlyOwner(_tokenId)
-    collectTax(_tokenId)
+    _onlyOwner(_tokenId)
+    _collectTax(_tokenId)
   {
     _withdrawDeposit(_tokenId, _wei);
   }
@@ -348,8 +344,8 @@ contract PartialCommonOwnership721 is ERC721 {
   /// @param _tokenId ID of token to withdraw against.
   function exit(uint256 _tokenId)
     public
-    onlyOwner(_tokenId)
-    collectTax(_tokenId)
+    _onlyOwner(_tokenId)
+    _collectTax(_tokenId)
   {
     _withdrawDeposit(_tokenId, deposits[_tokenId]);
   }
@@ -386,7 +382,7 @@ contract PartialCommonOwnership721 is ERC721 {
   function titleChainOf(uint256 _tokenId)
     public
     view
-    tokenMinted(_tokenId)
+    _tokenMinted(_tokenId)
     returns (TitleTransferEvent[] memory)
   {
     return chainOfTitle[_tokenId];
@@ -399,7 +395,7 @@ contract PartialCommonOwnership721 is ERC721 {
   function priceOf(uint256 _tokenId)
     public
     view
-    tokenMinted(_tokenId)
+    _tokenMinted(_tokenId)
     returns (uint256)
   {
     return _price(_tokenId);
@@ -411,7 +407,7 @@ contract PartialCommonOwnership721 is ERC721 {
   function depositOf(uint256 _tokenId)
     public
     view
-    tokenMinted(_tokenId)
+    _tokenMinted(_tokenId)
     returns (uint256)
   {
     return deposits[_tokenId];
@@ -425,7 +421,7 @@ contract PartialCommonOwnership721 is ERC721 {
   function taxOwedSince(uint256 _tokenId, uint256 _time)
     public
     view
-    tokenMinted(_tokenId)
+    _tokenMinted(_tokenId)
     returns (uint256 taxDue)
   {
     uint256 price = _price(_tokenId);
@@ -542,7 +538,7 @@ contract PartialCommonOwnership721 is ERC721 {
   /// @notice Forecloses if no deposit for a given token.
   /// @param _tokenId ID of token to potentially foreclose.
   function _forecloseIfNecessary(uint256 _tokenId) internal {
-    // If there are not enough funds to cover the entire amount owed, `_collectTax`
+    // If there are not enough funds to cover the entire amount owed, `__collectTax`
     // will take whatever's left of the deposit, resulting in a zero balance.
     if (deposits[_tokenId] == 0) {
       // Become steward of asset (aka foreclose)
