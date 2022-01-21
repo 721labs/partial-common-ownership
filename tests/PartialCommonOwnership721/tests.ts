@@ -447,7 +447,9 @@ async function tests(config: TestConfiguration): Promise<void> {
        * of the contract owner / deployer.
        */
       it("Setting beneficiary", async function () {
-        expect(await contract.beneficiary()).to.equal(beneficiary.address);
+        expect(await contract.beneficiaryOf(TOKENS.ONE)).to.equal(
+          beneficiary.address
+        );
       });
 
       it(`Setting tax rate`, async function () {

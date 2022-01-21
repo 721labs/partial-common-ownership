@@ -36,7 +36,7 @@ contract PartialCommonOwnership721 is ERC721 {
   //////////////////////////////
 
   /// @notice Single (for now) beneficiary of tax payments.
-  address payable public beneficiary;
+  address payable private _beneficiary;
 
   /// @notice Mapping from token ID to token price in Wei.
   mapping(uint256 => uint256) public prices;
@@ -181,7 +181,7 @@ contract PartialCommonOwnership721 is ERC721 {
     uint256 taxNumerator_,
     uint256 taxationPeriod_
   ) ERC721(name_, symbol_) {
-    beneficiary = beneficiary_;
+    _beneficiary = beneficiary_;
     _taxNumerator = taxNumerator_;
     taxationPeriod = taxationPeriod_ * 1 days;
   }
@@ -217,7 +217,7 @@ contract PartialCommonOwnership721 is ERC721 {
       emit LogCollection(tokenId_, owed);
 
       /// Remit taxation to beneficiary.
-      _remit(beneficiary, owed, RemittanceTriggers.TaxCollection);
+      _remit(beneficiaryOf(tokenId_), owed, RemittanceTriggers.TaxCollection);
 
       _forecloseIfNecessary(tokenId_);
     }
@@ -271,7 +271,7 @@ contract PartialCommonOwnership721 is ERC721 {
     // If token is owned by the contract, remit to the beneficiary.
     address recipient;
     if (currentOwner == address(this)) {
-      recipient = beneficiary;
+      recipient = beneficiaryOf(tokenId_);
     } else {
       recipient = currentOwner;
     }
@@ -369,6 +369,17 @@ contract PartialCommonOwnership721 is ERC721 {
   //////////////////////////////
   /// Public Getters
   //////////////////////////////
+
+  /// @notice Gets the beneficiary of a given token
+  /// @dev This method establishes future compatability for token-specific beneficiaries.
+  function beneficiaryOf(uint256 tokenId_)
+    public
+    view
+    _tokenMinted(tokenId_)
+    returns (address)
+  {
+    return _beneficiary;
+  }
 
   /// @notice Returns tax numerator
   /// @return Tax Rate
