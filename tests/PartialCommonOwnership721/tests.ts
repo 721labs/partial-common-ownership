@@ -42,6 +42,7 @@ async function tests(config: TestConfiguration): Promise<void> {
   let signers;
   let factory;
   let blocker;
+  let attacker;
   let contract;
   let contractAddress;
   let beneficiary;
@@ -354,6 +355,10 @@ async function tests(config: TestConfiguration): Promise<void> {
     //$ Set up blocker
     const blockerFactory = await ethers.getContractFactory("Blocker");
     blocker = await blockerFactory.deploy(contractAddress);
+
+    //$ Set up attacker
+    const attackerFactory = await ethers.getContractFactory("Attacker");
+    attacker = await attackerFactory.deploy(contractAddress);
 
     //$ Set up wallets
 
@@ -891,6 +896,55 @@ async function tests(config: TestConfiguration): Promise<void> {
       });
     });
     context("succeeds", async function () {
+      it("Preventing re-entrancy attacks", async function () {
+        const attackerAlice = new Wallet(attacker, signers[2]);
+
+        const token = TOKENS.ONE;
+
+        // 1. Attacker Alice first purchases the token and deposits funds to maintain ownership
+        await attackerAlice.contract.buy(token, ETH1, ETH0, {
+          value: ETH2,
+          ...GLOBAL_TRX_CONFIG,
+        });
+
+        await attackerAlice.contract.depositFunds({
+          value: ETH4,
+          ...GLOBAL_TRX_CONFIG,
+        });
+
+        // 2. Bob then purchases the token; Alice will automatically attempt
+        // to repurchase when receiving the remittance
+        const trx = await bob.contract.buy(token, ETH2, ETH1, {
+          value: ETH3,
+          ...GLOBAL_TRX_CONFIG,
+        });
+        const receipt = await trx.wait();
+
+        // Get the balance and then determine how much will be deducted by taxation
+        const taxDue = getTaxDue(
+          ETH1,
+          (await now()).add(1), // block timestamp
+          await contract.lastCollectionTimes(token)
+        );
+
+        const depositUponPurchase = (await contract.depositOf(token)).sub(
+          taxDue
+        );
+
+        debugger;
+
+        expect(trx)
+          .to.emit(contract, Events.REMITTANCE)
+          .withArgs(
+            RemittanceTriggers.OutstandingRemittance,
+            attackerAlice.address,
+            depositUponPurchase
+          );
+
+        // Attacker Alice was blocked from re-purchasing automatically
+        expect(await contract.ownerOf(token)).to.equal(bob.address);
+      });
+
       it("Purchasing token for the first-time (from contract)", async function () {
         await buy(alice, TOKENS.ONE, ETH1, ETH0, ETH2);
       });
