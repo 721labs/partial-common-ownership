@@ -41,6 +41,7 @@ async function tests(config: TestConfiguration): Promise<void> {
   let provider;
   let signers;
   let factory;
+  let blocker;
   let contract;
   let contractAddress;
   let beneficiary;
@@ -349,6 +350,10 @@ async function tests(config: TestConfiguration): Promise<void> {
 
     contract = await deploy();
     contractAddress = contract.address;
+
+    //$ Set up blocker
+    const blockerFactory = await ethers.getContractFactory("Blocker");
+    blocker = await blockerFactory.deploy(contractAddress);
 
     //$ Set up wallets
 
@@ -1171,8 +1176,47 @@ async function tests(config: TestConfiguration): Promise<void> {
         ).to.be.revertedWith(ErrorMessages.NO_OUTSTANDING_REMITTANCE);
       });
     });
-    // TODO: Add force buy remittance to fail with a blocker contract.
-    context("succeeds", async function () {});
+
+    it("Allows withdrawal", async function () {
+      const blockerAlice = new Wallet(blocker, signers[2]);
+      await blockerAlice.setup();
+
+      // 1. Buy as Blocker Alice
+      const token = TOKENS.ONE;
+      await blockerAlice.contract.buy(token, ETH1, ETH0, {
+        value: ETH2,
+        ...GLOBAL_TRX_CONFIG,
+      });
+
+      expect(await contract.ownerOf(token)).to.equal(blocker.address);
+
+      // 2. Buy from Blocker Alice as Bob
+      const trx = await bob.contract.buy(token, ETH2, ETH1, {
+        value: ETH3,
+        ...GLOBAL_TRX_CONFIG,
+      });
+
+      const expectedRemittance = await contract.outstandingRemittances(
+        blocker.address
+      );
+      expect(expectedRemittance).to.be.gt(0);
+
+      await expect(trx)
+        .to.emit(contract, Events.OUTSTANDING_REMITTANCE)
+        .withArgs(blocker.address);
+
+      // 3. Collect as blocker
+      const collectionTrx = await blockerAlice.contract.collect();
+
+      // Emits
+      await expect(collectionTrx)
+        .to.emit(contract, Events.REMITTANCE)
+        .withArgs(
+          RemittanceTriggers.OutstandingRemittance,
+          blocker.address,
+          expectedRemittance
+        );
+    });
   });
 
   describe("#transferToken()", async function () {
