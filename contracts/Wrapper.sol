@@ -20,9 +20,6 @@ contract Wrapper is PartialCommonOwnership721 {
   /// @notice Mapping tokenIds to WrappedToken's
   mapping(uint256 => WrappedToken) private tokenMap;
 
-  // @notice Mapping tokenIds to deposits
-  mapping(uint256 => uint256) private _deposits;
-
   // @notice Event when acquire() is called
   event Acquire(uint256 tokenId);
 
