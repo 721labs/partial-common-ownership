@@ -5,6 +5,22 @@ on:
     branches:
       - "*" # All branches
 jobs:
+  solhint:
+    name: "solhint"
+    runs-on: ubuntu-latest
+    needs: []
+    steps:
+      - name: "Checkout Repo"
+        uses: actions/checkout@master
+      - name: "Install Node"
+        uses: actions/setup-node@v2
+        with:
+          node-version: "16"
+          cache: "yarn"
+      - name: "Install JS Dependencies"
+        run: "yarn install --frozen-lockfile --dev"
+      - name: "Run solhint"
+        run: "yarn solhint"
   tests:
     name: "tests"
     runs-on: ubuntu-latest

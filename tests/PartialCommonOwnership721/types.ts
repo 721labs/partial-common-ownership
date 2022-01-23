@@ -1,9 +1,3 @@
-interface TestConfiguration {
-  name: string;
-  collectionFrequency: number;
-  taxRate: number;
-}
-
 enum ErrorMessages {
   ONLY_OWNER = "Sender does not own this token",
   BUY_ZERO_PRICE = "New Price cannot be zero",
@@ -35,10 +29,14 @@ enum Events {
   PRICE_CHANGE = "LogPriceChange",
   FORECLOSURE = "LogForeclosure",
   COLLECTION = "LogCollection",
-  BENEFICIARY_REMITTANCE = "LogBeneficiaryRemittance",
   REMITTANCE = "LogRemittance",
-  DEPOSIT_WITHDRAWAL = "LogDepositWithdrawal",
 }
 
-export { ErrorMessages, TOKENS, Events };
-export type { TestConfiguration };
+enum RemittanceTriggers {
+  LeaseTakeover,
+  WithdrawnDeposit,
+  OutstandingRemittance,
+  TaxCollection,
+}
+
+export { ErrorMessages, TOKENS, Events, RemittanceTriggers };

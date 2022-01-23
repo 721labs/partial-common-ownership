@@ -6,7 +6,7 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 
 import Wallet from "../helpers/Wallet";
-import { ErrorMessages, TOKENS, Events } from "./types";
+import { ErrorMessages, TOKENS, Events, RemittanceTriggers } from "./types";
 import {
   TEST_NAME,
   TEST_SYMBOL,
@@ -42,6 +42,7 @@ async function tests(config: TestConfiguration): Promise<void> {
   let provider;
   let signers;
   let factory;
+  let blocker;
   let contract;
   let contractAddress;
   let beneficiary;
@@ -197,7 +198,7 @@ async function tests(config: TestConfiguration): Promise<void> {
       expect(trx)
         .to.emit(contract, Events.REMITTANCE)
         .withArgs(
-          tokenId,
+          RemittanceTriggers.LeaseTakeover,
           remittanceRecipientWallet.address,
           expectedRemittance
         );
@@ -272,7 +273,7 @@ async function tests(config: TestConfiguration): Promise<void> {
 
     await time.increase(time.duration.minutes(after));
 
-    const trx = await contract._collectTax(tokenId);
+    const trx = await contract.collectTax(tokenId);
 
     const timeAfter = await now();
     const due = getTaxDue(currentPrice, timeAfter, before);
@@ -282,9 +283,10 @@ async function tests(config: TestConfiguration): Promise<void> {
     // Events emitted
     expect(trx).to.emit(contract, Events.COLLECTION).withArgs(tokenId, due);
 
+    // Remittance emitted
     expect(trx)
-      .to.emit(contract, Events.BENEFICIARY_REMITTANCE)
-      .withArgs(tokenId, due);
+      .to.emit(contract, Events.REMITTANCE)
+      .withArgs(RemittanceTriggers.TaxCollection, beneficiary.address, due);
 
     // Deposit updates
     expect(await contract.depositOf(tokenId)).to.equal(depositBefore.sub(due));
@@ -342,6 +344,10 @@ async function tests(config: TestConfiguration): Promise<void> {
 
     contract = await deploy();
     contractAddress = contract.address;
+
+    //$ Set up blocker
+    const blockerFactory = await ethers.getContractFactory("Blocker");
+    blocker = await blockerFactory.deploy(contractAddress);
 
     //$ Set up wallets
 
@@ -474,7 +480,7 @@ async function tests(config: TestConfiguration): Promise<void> {
     });
   });
 
-  describe("#_collectTax()", async function () {
+  describe("#collectTax()", async function () {
     context("fails", async function () {});
     context("succeeds", async function () {
       it("collects after 10m", async function () {
@@ -759,7 +765,7 @@ async function tests(config: TestConfiguration): Promise<void> {
         await verifyExpectedForeclosureTime(token, shouldForecloseAt);
 
         // Trigger foreclosure
-        await contract._collectTax(token);
+        await contract.collectTax(token);
 
         // Past:
 
@@ -804,7 +810,7 @@ async function tests(config: TestConfiguration): Promise<void> {
         await verifyExpectedForeclosureTime(token, shouldForecloseAt);
 
         // Trigger foreclosure
-        await contract._collectTax(token);
+        await contract.collectTax(token);
 
         expect(await contract.ownerOf(token)).to.equal(contractAddress);
 
@@ -1078,8 +1084,8 @@ async function tests(config: TestConfiguration): Promise<void> {
 
         // Emits
         expect(trx)
-          .to.emit(contract, Events.DEPOSIT_WITHDRAWAL)
-          .withArgs(token, ETH1);
+          .to.emit(contract, Events.REMITTANCE)
+          .withArgs(RemittanceTriggers.WithdrawnDeposit, alice.address, ETH1);
 
         // current deposit - tax on exit
         const taxedAmt = getTaxDue(
@@ -1133,8 +1139,12 @@ async function tests(config: TestConfiguration): Promise<void> {
 
         // Emits
         expect(trx)
-          .to.emit(contract, Events.DEPOSIT_WITHDRAWAL)
-          .withArgs(token, expectedRemittance);
+          .to.emit(contract, Events.REMITTANCE)
+          .withArgs(
+            RemittanceTriggers.WithdrawnDeposit,
+            alice.address,
+            expectedRemittance
+          );
 
         // Alice's balance should reflect returned deposit minus fees
         const { delta, fees } = await alice.balanceDelta();
@@ -1160,8 +1170,47 @@ async function tests(config: TestConfiguration): Promise<void> {
         ).to.be.revertedWith(ErrorMessages.NO_OUTSTANDING_REMITTANCE);
       });
     });
-    // TODO: Add force buy remittance to fail with a blocker contract.
-    context("succeeds", async function () {});
+
+    it("Allows withdrawal", async function () {
+      const blockerAlice = new Wallet(blocker, signers[2]);
+      await blockerAlice.setup();
+
+      // 1. Buy as Blocker Alice
+      const token = TOKENS.ONE;
+      await blockerAlice.contract.buy(token, ETH1, ETH0, {
+        value: ETH2,
+        ...GLOBAL_TRX_CONFIG,
+      });
+
+      expect(await contract.ownerOf(token)).to.equal(blocker.address);
+
+      // 2. Buy from Blocker Alice as Bob
+      const trx = await bob.contract.buy(token, ETH2, ETH1, {
+        value: ETH3,
+        ...GLOBAL_TRX_CONFIG,
+      });
+
+      const expectedRemittance = await contract.outstandingRemittances(
+        blocker.address
+      );
+      expect(expectedRemittance).to.be.gt(0);
+
+      await expect(trx)
+        .to.emit(contract, Events.OUTSTANDING_REMITTANCE)
+        .withArgs(blocker.address);
+
+      // 3. Collect as blocker
+      const collectionTrx = await blockerAlice.contract.collect();
+
+      // Emits
+      await expect(collectionTrx)
+        .to.emit(contract, Events.REMITTANCE)
+        .withArgs(
+          RemittanceTriggers.OutstandingRemittance,
+          blocker.address,
+          expectedRemittance
+        );
+    });
   });
 
   describe("#transferToken()", async function () {

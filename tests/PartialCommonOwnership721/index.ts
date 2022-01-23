@@ -1,23 +1,14 @@
-import yaml from "js-yaml";
-import fs from "fs";
 import tests from "./tests";
-import type { TestConfiguration } from "./types";
 
-//$ Load Test Configurations
-
-const CONFIGS_DIR = "tests/PartialCommonOwnership721/configs";
-
-const configFileNames = fs.readdirSync(CONFIGS_DIR);
-const configurations = configFileNames.map((filename) => {
-  return yaml.load(
-    fs.readFileSync(`${CONFIGS_DIR}/${filename}`, "utf8")
-  ) as TestConfiguration;
-});
-
-//$ Run
+// Test under different taxation parameters.
+const configs = [
+  { name: "5% Quarterly", collectionFrequency: 90, taxRate: 50000000000 },
+  { name: "100% Monthly", collectionFrequency: 30, taxRate: 1000000000000 },
+  { name: "100% Annually", collectionFrequency: 365, taxRate: 1000000000000 },
+];
 
 describe("PartialCommonOwnership721", async () => {
-  for await (const config of configurations) {
+  for await (const config of configs) {
     describe(config.name, async () => {
       await tests(config);
     });
