@@ -32,6 +32,10 @@ async function tests(config: TestConfiguration): Promise<void> {
 
   const TAX_NUMERATOR = ethers.BigNumber.from(config.taxRate);
 
+  const TAX_PERIOD_AS_SECONDS = taxationPeriodToSeconds(
+    config.collectionFrequency
+  );
+
   // If wallet does not redeposit funds after purchasing,
   // how many days until the entire deposit is exhausted?
   const DAYS_TILL_FORECLOSURE_WITHOUT_REDEPOSIT =
@@ -68,12 +72,9 @@ async function tests(config: TestConfiguration): Promise<void> {
     lastCollectionTime: BigNumber
   ): BigNumber {
     const secondsSinceLastCollection = now.sub(lastCollectionTime);
-    const taxPeriodAsSeconds = taxationPeriodToSeconds(
-      config.collectionFrequency
-    );
     return price
       .mul(secondsSinceLastCollection)
-      .div(taxPeriodAsSeconds)
+      .div(TAX_PERIOD_AS_SECONDS)
       .mul(TAX_NUMERATOR)
       .div(TAX_DENOMINATOR);
   }
@@ -412,6 +413,24 @@ async function tests(config: TestConfiguration): Promise<void> {
         );
         expect(await contract.beneficiaryOf(TOKENS.THREE)).to.equal(
           beneficiary.address
+        );
+      });
+
+      it("sets tax rate", async function () {
+        expect(await contract.taxRateOf(TOKENS.ONE)).to.equal(TAX_NUMERATOR);
+        expect(await contract.taxRateOf(TOKENS.TWO)).to.equal(TAX_NUMERATOR);
+        expect(await contract.taxRateOf(TOKENS.THREE)).to.equal(TAX_NUMERATOR);
+      });
+
+      it("sets tax period", async function () {
+        expect(await contract.taxPeriodOf(TOKENS.ONE)).to.equal(
+          TAX_PERIOD_AS_SECONDS
+        );
+        expect(await contract.taxPeriodOf(TOKENS.TWO)).to.equal(
+          TAX_PERIOD_AS_SECONDS
+        );
+        expect(await contract.taxPeriodOf(TOKENS.THREE)).to.equal(
+          TAX_PERIOD_AS_SECONDS
         );
       });
     });
