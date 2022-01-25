@@ -338,7 +338,7 @@ async function tests(config: TestConfiguration): Promise<void> {
 
     provider = new ethers.providers.Web3Provider(web3.currentProvider);
     signers = await ethers.getSigners();
-    factory = await ethers.getContractFactory("Test721Token");
+    factory = await ethers.getContractFactory("TestPCO721Token");
 
     //$ Set up contracts
 
@@ -389,7 +389,7 @@ async function tests(config: TestConfiguration): Promise<void> {
 
   //$ Tests
 
-  describe("Test721Token", async function () {
+  describe("TestPCO721Token", async function () {
     it("mints three tokens during construction", async function () {
       expect(await contract.ownerOf(TOKENS.ONE)).to.equal(contractAddress);
       expect(await contract.ownerOf(TOKENS.TWO)).to.equal(contractAddress);
