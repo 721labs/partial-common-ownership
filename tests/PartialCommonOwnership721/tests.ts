@@ -32,6 +32,10 @@ async function tests(config: TestConfiguration): Promise<void> {
 
   const TAX_NUMERATOR = ethers.BigNumber.from(config.taxRate);
 
+  const TAX_PERIOD_AS_SECONDS = taxationPeriodToSeconds(
+    config.collectionFrequency
+  );
+
   // If wallet does not redeposit funds after purchasing,
   // how many days until the entire deposit is exhausted?
   const DAYS_TILL_FORECLOSURE_WITHOUT_REDEPOSIT =
@@ -68,12 +72,9 @@ async function tests(config: TestConfiguration): Promise<void> {
     lastCollectionTime: BigNumber
   ): BigNumber {
     const secondsSinceLastCollection = now.sub(lastCollectionTime);
-    const taxPeriodAsSeconds = taxationPeriodToSeconds(
-      config.collectionFrequency
-    );
     return price
       .mul(secondsSinceLastCollection)
-      .div(taxPeriodAsSeconds)
+      .div(TAX_PERIOD_AS_SECONDS)
       .mul(TAX_NUMERATOR)
       .div(TAX_DENOMINATOR);
   }
@@ -414,6 +415,24 @@ async function tests(config: TestConfiguration): Promise<void> {
           beneficiary.address
         );
       });
+
+      it("sets tax rate", async function () {
+        expect(await contract.taxRateOf(TOKENS.ONE)).to.equal(TAX_NUMERATOR);
+        expect(await contract.taxRateOf(TOKENS.TWO)).to.equal(TAX_NUMERATOR);
+        expect(await contract.taxRateOf(TOKENS.THREE)).to.equal(TAX_NUMERATOR);
+      });
+
+      it("sets tax period", async function () {
+        expect(await contract.taxPeriodOf(TOKENS.ONE)).to.equal(
+          TAX_PERIOD_AS_SECONDS
+        );
+        expect(await contract.taxPeriodOf(TOKENS.TWO)).to.equal(
+          TAX_PERIOD_AS_SECONDS
+        );
+        expect(await contract.taxPeriodOf(TOKENS.THREE)).to.equal(
+          TAX_PERIOD_AS_SECONDS
+        );
+      });
     });
   });
 
@@ -457,7 +476,7 @@ async function tests(config: TestConfiguration): Promise<void> {
       });
 
       it(`Setting tax rate`, async function () {
-        expect(await contract.taxRate()).to.equal(TAX_NUMERATOR);
+        expect(await contract.taxRateOf(1)).to.equal(TAX_NUMERATOR);
       });
     });
   });
@@ -583,10 +602,10 @@ async function tests(config: TestConfiguration): Promise<void> {
     });
   });
 
-  describe("#taxRate()", async function () {
+  describe("#taxRateOf()", async function () {
     context("succeeds", async function () {
       it(`returning expected tax rate`, async function () {
-        expect(await alice.contract.taxRate()).to.equal(TAX_NUMERATOR);
+        expect(await alice.contract.taxRateOf(1)).to.equal(TAX_NUMERATOR);
       });
     });
   });

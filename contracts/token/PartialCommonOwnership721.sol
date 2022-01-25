@@ -75,11 +75,11 @@ contract PartialCommonOwnership721 is ERC721 {
   /// @dev Granular to an additionial 10 zeroes.
   /// e.g. 100% => 1000000000000
   /// e.g. 5% => 50000000000
-  uint256 private immutable _taxNumerator;
+  mapping(uint256 => uint256) private _taxNumerators;
   uint256 private constant TAX_DENOMINATOR = 1000000000000;
 
   /// @notice Over what period, in days, should taxation be applied?
-  uint256 public taxationPeriod;
+  mapping(uint256 => uint256) private _taxPeriods;
 
   /// @notice Mapping from token ID to purchase lock status
   /// @dev Used to prevent reentrancy attacks
@@ -163,17 +163,12 @@ contract PartialCommonOwnership721 is ERC721 {
   /// @notice Creates the token and sets beneficiary & taxation amount.
   /// @param name_ ERC721 Token Name
   /// @param symbol_ ERC721 Token Symbol
-  /// @param taxNumerator_ The taxation rate up to 10 decimal places.
-  /// @param taxationPeriod_ The number of days that constitute one taxation period.
-  constructor(
-    string memory name_,
-    string memory symbol_,
-    uint256 taxNumerator_,
-    uint256 taxationPeriod_
-  ) ERC721(name_, symbol_) {
-    _taxNumerator = taxNumerator_;
-    taxationPeriod = taxationPeriod_ * 1 days;
-  }
+  /* solhint-disable no-empty-blocks */
+  constructor(string memory name_, string memory symbol_)
+    ERC721(name_, symbol_)
+  {}
+
+  /* solhint-enable no-empty-blocks */
 
   //////////////////////////////
   /// Public Methods
@@ -375,8 +370,33 @@ contract PartialCommonOwnership721 is ERC721 {
   /// Public Getters
   //////////////////////////////
 
+  /// @notice Gets the tax rate of a given token
+  /// @param tokenId_ Id of token to query for
+  /// @return Tax rate as int
+  function taxRateOf(uint256 tokenId_)
+    public
+    view
+    _tokenMinted(tokenId_)
+    returns (uint256)
+  {
+    return _taxNumerators[tokenId_];
+  }
+
+  /// @notice Gets the tax period of a given token
+  /// @param tokenId_ Id of token to query for
+  /// @return Tax period as days
+  function taxPeriodOf(uint256 tokenId_)
+    public
+    view
+    _tokenMinted(tokenId_)
+    returns (uint256)
+  {
+    return _taxPeriods[tokenId_];
+  }
+
   /// @notice Gets the beneficiary of a given token
-  /// @dev This method establishes future compatability for token-specific beneficiaries.
+  /// @param tokenId_ Id of token to query for
+  /// @return Beneficiary address
   function beneficiaryOf(uint256 tokenId_)
     public
     view
@@ -384,12 +404,6 @@ contract PartialCommonOwnership721 is ERC721 {
     returns (address)
   {
     return _beneficiaries[tokenId_];
-  }
-
-  /// @notice Returns tax numerator
-  /// @return Tax Rate
-  function taxRate() public view returns (uint256) {
-    return _taxNumerator;
   }
 
   /// @notice Returns an array of metadata about transfers for a given token.
@@ -442,7 +456,8 @@ contract PartialCommonOwnership721 is ERC721 {
   {
     uint256 price = _price(tokenId_);
     return
-      (((price * time_) / taxationPeriod) * _taxNumerator) / TAX_DENOMINATOR;
+      (((price * time_) / taxPeriodOf(tokenId_)) * taxRateOf(tokenId_)) /
+      TAX_DENOMINATOR;
   }
 
   /// @notice Public method for the tax owed. Returns with the current time.
@@ -595,7 +610,7 @@ contract PartialCommonOwnership721 is ERC721 {
   }
 
   /// @notice Internal beneficiary setter.
-  /// @dev Should be called immediately after a token is created.
+  /// @dev Should be invoked immediately after calling `#_safeMint`
   /// @param tokenId_ Token to set beneficiary of.
   /// @param beneficiary_ Address of beneficiary.
   function _setBeneficiary(uint256 tokenId_, address payable beneficiary_)
@@ -603,6 +618,28 @@ contract PartialCommonOwnership721 is ERC721 {
     _tokenMinted(tokenId_)
   {
     _beneficiaries[tokenId_] = beneficiary_;
+  }
+
+  /// @notice Internal tax rate setter.
+  /// @dev Should be invoked immediately after calling `#_safeMint`
+  /// @param tokenId_ Token to set
+  /// @param rate_ The taxation rate up to 10 decimal places. See `_taxNumerators` declaration.
+  function _setTaxRate(uint256 tokenId_, uint256 rate_)
+    internal
+    _tokenMinted(tokenId_)
+  {
+    _taxNumerators[tokenId_] = rate_;
+  }
+
+  /// @notice Internal period setter.
+  /// @dev Should be invoked immediately after calling `#_safeMint`
+  /// @param tokenId_ Token to set
+  /// @param days_ The number of days that constitute one taxation period.
+  function _setTaxPeriod(uint256 tokenId_, uint256 days_)
+    internal
+    _tokenMinted(tokenId_)
+  {
+    _taxPeriods[tokenId_] = days_ * 1 days;
   }
 
   //////////////////////////////
