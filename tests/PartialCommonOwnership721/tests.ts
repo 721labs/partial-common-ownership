@@ -457,7 +457,7 @@ async function tests(config: TestConfiguration): Promise<void> {
       });
 
       it(`Setting tax rate`, async function () {
-        expect(await contract.taxRate()).to.equal(TAX_NUMERATOR);
+        expect(await contract.taxRateOf(1)).to.equal(TAX_NUMERATOR);
       });
     });
   });
@@ -583,10 +583,10 @@ async function tests(config: TestConfiguration): Promise<void> {
     });
   });
 
-  describe("#taxRate()", async function () {
+  describe("#taxRateOf()", async function () {
     context("succeeds", async function () {
       it(`returning expected tax rate`, async function () {
-        expect(await alice.contract.taxRate()).to.equal(TAX_NUMERATOR);
+        expect(await alice.contract.taxRateOf(1)).to.equal(TAX_NUMERATOR);
       });
     });
   });

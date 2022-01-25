@@ -375,6 +375,30 @@ contract PartialCommonOwnership721 is ERC721 {
   /// Public Getters
   //////////////////////////////
 
+  /// @notice Gets the tax rate of a given token
+  /// @param tokenId_ If of token to query for
+  /// @return Tax rate as int
+  function taxRateOf(uint256 tokenId_)
+    public
+    view
+    _tokenMinted(tokenId_)
+    returns (uint256)
+  {
+    return _taxNumerator;
+  }
+
+  /// @notice Gets the tax period of a given token
+  /// @param tokenId_ If of token to query for
+  /// @return Tax period as days
+  function taxPeriodOf(uint256 tokenId_)
+    public
+    view
+    _tokenMinted(tokenId_)
+    returns (uint256)
+  {
+    return taxationPeriod;
+  }
+
   /// @notice Gets the beneficiary of a given token
   /// @dev This method establishes future compatability for token-specific beneficiaries.
   function beneficiaryOf(uint256 tokenId_)
@@ -384,12 +408,6 @@ contract PartialCommonOwnership721 is ERC721 {
     returns (address)
   {
     return _beneficiaries[tokenId_];
-  }
-
-  /// @notice Returns tax numerator
-  /// @return Tax Rate
-  function taxRate() public view returns (uint256) {
-    return _taxNumerator;
   }
 
   /// @notice Returns an array of metadata about transfers for a given token.
@@ -442,7 +460,8 @@ contract PartialCommonOwnership721 is ERC721 {
   {
     uint256 price = _price(tokenId_);
     return
-      (((price * time_) / taxationPeriod) * _taxNumerator) / TAX_DENOMINATOR;
+      (((price * time_) / taxPeriodOf(tokenId_)) * taxRateOf(tokenId_)) /
+      TAX_DENOMINATOR;
   }
 
   /// @notice Public method for the tax owed. Returns with the current time.
