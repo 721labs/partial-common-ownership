@@ -396,10 +396,24 @@ async function tests(config: TestConfiguration): Promise<void> {
   //$ Tests
 
   describe("TestPCO721Token", async function () {
-    it("mints three tokens during construction", async function () {
-      expect(await contract.ownerOf(TOKENS.ONE)).to.equal(contractAddress);
-      expect(await contract.ownerOf(TOKENS.TWO)).to.equal(contractAddress);
-      expect(await contract.ownerOf(TOKENS.THREE)).to.equal(contractAddress);
+    context("construction", async function () {
+      it("mints three tokens", async function () {
+        expect(await contract.ownerOf(TOKENS.ONE)).to.equal(contractAddress);
+        expect(await contract.ownerOf(TOKENS.TWO)).to.equal(contractAddress);
+        expect(await contract.ownerOf(TOKENS.THREE)).to.equal(contractAddress);
+      });
+
+      it("sets beneficiaries", async function () {
+        expect(await contract.beneficiaryOf(TOKENS.ONE)).to.equal(
+          beneficiary.address
+        );
+        expect(await contract.beneficiaryOf(TOKENS.TWO)).to.equal(
+          beneficiary.address
+        );
+        expect(await contract.beneficiaryOf(TOKENS.THREE)).to.equal(
+          beneficiary.address
+        );
+      });
     });
   });
 
@@ -442,16 +456,48 @@ async function tests(config: TestConfiguration): Promise<void> {
         expect(await contract.symbol()).to.equal(TEST_SYMBOL);
       });
 
-      /**
-       * For the purposes of testing, the beneficiary address is the address
-       * of the contract owner / deployer.
-       */
-      it("Setting beneficiary", async function () {
-        expect(await contract.beneficiary()).to.equal(beneficiary.address);
-      });
-
       it(`Setting tax rate`, async function () {
         expect(await contract.taxRate()).to.equal(TAX_NUMERATOR);
+      });
+    });
+  });
+
+  describe("#setBeneficiary", async function () {
+    context("succeeds", async function () {
+      it("current beneficiary can set new beneficiary", async function () {
+        await beneficiary.contract.setBeneficiary(TOKENS.ONE, alice.address);
+        expect(await contract.beneficiaryOf(TOKENS.ONE)).to.equal(
+          alice.address
+        );
+      });
+    });
+    context("fails", async function () {
+      it("when token is not minted", async function () {
+        await expect(
+          contract.setBeneficiary(4, alice.address)
+        ).to.be.revertedWith(ErrorMessages.NONEXISTENT_TOKEN);
+      });
+
+      it("When non-beneficiary attempts to update", async function () {
+        await expect(
+          alice.contract.setBeneficiary(1, alice.address)
+        ).to.be.revertedWith(ErrorMessages.BENEFICIARY_ONLY);
+      });
+    });
+  });
+
+  describe("#beneficiaryOf", async function () {
+    context("fails", async function () {
+      it("when no beneficiary is set", async function () {
+        await expect(contract.beneficiaryOf(4)).to.be.revertedWith(
+          ErrorMessages.NONEXISTENT_TOKEN
+        );
+      });
+    });
+    context("succeeds", async function () {
+      it("displays correct beneficiary after set", async function () {
+        await beneficiary.contract.setBeneficiary(TOKENS.ONE, bob.address);
+        expect(await contract.beneficiaryOf(TOKENS.ONE)).to.equal(bob.address);
       });
     });
   });

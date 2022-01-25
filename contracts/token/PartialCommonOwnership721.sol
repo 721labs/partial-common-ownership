@@ -35,8 +35,8 @@ contract PartialCommonOwnership721 is ERC721 {
   /// State
   //////////////////////////////
 
-  /// @notice Single (for now) beneficiary of tax payments.
-  address payable public beneficiary;
+  /// @notice Map of tokens to their beneficiaries.
+  mapping(uint256 => address) private _beneficiaries;
 
   /// @notice Mapping from token ID to token price in Wei.
   mapping(uint256 => uint256) public prices;
@@ -163,17 +163,14 @@ contract PartialCommonOwnership721 is ERC721 {
   /// @notice Creates the token and sets beneficiary & taxation amount.
   /// @param name_ ERC721 Token Name
   /// @param symbol_ ERC721 Token Symbol
-  /// @param beneficiary_ Recipient of tax payments
   /// @param taxNumerator_ The taxation rate up to 10 decimal places.
   /// @param taxationPeriod_ The number of days that constitute one taxation period.
   constructor(
     string memory name_,
     string memory symbol_,
-    address payable beneficiary_,
     uint256 taxNumerator_,
     uint256 taxationPeriod_
   ) ERC721(name_, symbol_) {
-    beneficiary = beneficiary_;
     _taxNumerator = taxNumerator_;
     taxationPeriod = taxationPeriod_ * 1 days;
   }
@@ -209,7 +206,7 @@ contract PartialCommonOwnership721 is ERC721 {
       emit LogCollection(tokenId_, owed);
 
       /// Remit taxation to beneficiary.
-      _remit(beneficiary, owed, RemittanceTriggers.TaxCollection);
+      _remit(beneficiaryOf(tokenId_), owed, RemittanceTriggers.TaxCollection);
 
       _forecloseIfNecessary(tokenId_);
     }
@@ -263,7 +260,7 @@ contract PartialCommonOwnership721 is ERC721 {
     // If token is owned by the contract, remit to the beneficiary.
     address recipient;
     if (currentOwner == address(this)) {
-      recipient = beneficiary;
+      recipient = beneficiaryOf(tokenId_);
     } else {
       recipient = currentOwner;
     }
@@ -288,6 +285,22 @@ contract PartialCommonOwnership721 is ERC721 {
 
     // Unlock token
     locked[tokenId_] = false;
+  }
+
+  //////////////////////////////
+  /// Beneficiary Methods
+  //////////////////////////////
+
+  /// @notice Sets the beneficiary for a given token.
+  /// @dev Should only be called by beneficiary.
+  /// @param tokenId_ Token to set beneficiary of.
+  /// @param beneficiary_ Address of beneficiary.
+  function setBeneficiary(uint256 tokenId_, address payable beneficiary_)
+    public
+    _tokenMinted(tokenId_)
+  {
+    require(msg.sender == _beneficiaries[tokenId_], "Current beneficiary only");
+    _setBeneficiary(tokenId_, beneficiary_);
   }
 
   //////////////////////////////
@@ -361,6 +374,17 @@ contract PartialCommonOwnership721 is ERC721 {
   //////////////////////////////
   /// Public Getters
   //////////////////////////////
+
+  /// @notice Gets the beneficiary of a given token
+  /// @dev This method establishes future compatability for token-specific beneficiaries.
+  function beneficiaryOf(uint256 tokenId_)
+    public
+    view
+    _tokenMinted(tokenId_)
+    returns (address)
+  {
+    return _beneficiaries[tokenId_];
+  }
 
   /// @notice Returns tax numerator
   /// @return Tax Rate
@@ -568,6 +592,17 @@ contract PartialCommonOwnership721 is ERC721 {
     lastTransferTimes[tokenId_] = block.timestamp;
 
     taxCollectedSinceLastTransfer[tokenId_] = 0;
+  }
+
+  /// @notice Internal beneficiary setter.
+  /// @dev Should be called immediately after a token is created.
+  /// @param tokenId_ Token to set beneficiary of.
+  /// @param beneficiary_ Address of beneficiary.
+  function _setBeneficiary(uint256 tokenId_, address payable beneficiary_)
+    internal
+    _tokenMinted(tokenId_)
+  {
+    _beneficiaries[tokenId_] = beneficiary_;
   }
 
   //////////////////////////////
