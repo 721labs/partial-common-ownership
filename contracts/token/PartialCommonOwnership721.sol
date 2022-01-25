@@ -376,7 +376,7 @@ contract PartialCommonOwnership721 is ERC721 {
   //////////////////////////////
 
   /// @notice Gets the tax rate of a given token
-  /// @param tokenId_ If of token to query for
+  /// @param tokenId_ Id of token to query for
   /// @return Tax rate as int
   function taxRateOf(uint256 tokenId_)
     public
@@ -388,7 +388,7 @@ contract PartialCommonOwnership721 is ERC721 {
   }
 
   /// @notice Gets the tax period of a given token
-  /// @param tokenId_ If of token to query for
+  /// @param tokenId_ Id of token to query for
   /// @return Tax period as days
   function taxPeriodOf(uint256 tokenId_)
     public
@@ -400,7 +400,8 @@ contract PartialCommonOwnership721 is ERC721 {
   }
 
   /// @notice Gets the beneficiary of a given token
-  /// @dev This method establishes future compatability for token-specific beneficiaries.
+  /// @param tokenId_ Id of token to query for
+  /// @return Beneficiary address
   function beneficiaryOf(uint256 tokenId_)
     public
     view
