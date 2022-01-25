@@ -118,14 +118,6 @@ contract PartialCommonOwnership721 is ERC721 {
   /// @param collected Amount in wei.
   event LogCollection(uint256 indexed tokenId, uint256 indexed collected);
 
-  /// @notice Alert the beneficiary that funds have been remitted to her.
-  /// @param tokenId ID of token.
-  /// @param collected Amount in wei.
-  event LogBeneficiaryRemittance(
-    uint256 indexed tokenId,
-    uint256 indexed collected
-  );
-
   /// @notice Alert the remittance recipient that funds have been remitted to her.
   /// @param trigger Reason for the remittance.
   /// @param recipient Recipient address.
