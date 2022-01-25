@@ -35,8 +35,8 @@ contract PartialCommonOwnership721 is ERC721 {
   /// State
   //////////////////////////////
 
-  /// @notice Single (for now) beneficiary of tax payments.
-  address payable private _beneficiary;
+  /// @notice Map of tokens to their beneficiaries.
+  mapping(uint256 => address) private _beneficiaries;
 
   /// @notice Mapping from token ID to token price in Wei.
   mapping(uint256 => uint256) public prices;
@@ -181,7 +181,7 @@ contract PartialCommonOwnership721 is ERC721 {
     uint256 taxNumerator_,
     uint256 taxationPeriod_
   ) ERC721(name_, symbol_) {
-    _beneficiary = beneficiary_;
+    _beneficiaries[0] = beneficiary_;
     _taxNumerator = taxNumerator_;
     taxationPeriod = taxationPeriod_ * 1 days;
   }
@@ -378,7 +378,7 @@ contract PartialCommonOwnership721 is ERC721 {
     _tokenMinted(tokenId_)
     returns (address)
   {
-    return _beneficiary;
+    return _beneficiaries[0];
   }
 
   /// @notice Returns tax numerator
