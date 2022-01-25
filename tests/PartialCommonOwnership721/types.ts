@@ -13,6 +13,7 @@ enum ErrorMessages {
   CANNOT_WITHDRAW_MORE_THAN_DEPOSITED = "Cannot withdraw more than deposited",
   NO_OUTSTANDING_REMITTANCE = "No outstanding remittance",
   PROHIBITED_TRANSFER_METHOD = "Transfers may only occur via purchase/foreclosure",
+  BENEFICIARY_ONLY = "Current beneficiary only",
 }
 
 enum TOKENS {
