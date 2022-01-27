@@ -179,32 +179,34 @@ contract PartialCommonOwnership721 is ERC721 {
   /// @dev Strictly envoked by modifier but can be called publically.
   function collectTax(uint256 tokenId_) public {
     uint256 price = _price(tokenId_);
-    if (price != 0) {
-      // If price > 0, contract has not foreclosed.
-      uint256 owed = _taxOwed(tokenId_);
 
-      // If foreclosure should have occured in the past, last collection time will be
-      // backdated to when the tax was last paid for.
-      if (foreclosed(tokenId_)) {
-        lastCollectionTimes[tokenId_] = _backdatedForeclosureTime(tokenId_);
-        // Set remaining deposit to be collected.
-        owed = _deposits[tokenId_];
-      } else {
-        lastCollectionTimes[tokenId_] = block.timestamp;
-      }
+    // There's no tax to be collected on an unvalued token.
+    if (price == 0) return;
 
-      // Normal collection
-      _deposits[tokenId_] -= owed;
-      taxationCollected[tokenId_] += owed;
-      taxCollectedSinceLastTransfer[tokenId_] += owed;
+    // If price > 0, contract has not foreclosed.
+    uint256 owed = _taxOwed(tokenId_);
 
-      emit LogCollection(tokenId_, owed);
-
-      /// Remit taxation to beneficiary.
-      _remit(beneficiaryOf(tokenId_), owed, RemittanceTriggers.TaxCollection);
-
-      _forecloseIfNecessary(tokenId_);
+    // If foreclosure should have occured in the past, last collection time will be
+    // backdated to when the tax was last paid for.
+    if (foreclosed(tokenId_)) {
+      lastCollectionTimes[tokenId_] = _backdatedForeclosureTime(tokenId_);
+      // Set remaining deposit to be collected.
+      owed = _deposits[tokenId_];
+    } else {
+      lastCollectionTimes[tokenId_] = block.timestamp;
     }
+
+    // Normal collection
+    _deposits[tokenId_] -= owed;
+    taxationCollected[tokenId_] += owed;
+    taxCollectedSinceLastTransfer[tokenId_] += owed;
+
+    emit LogCollection(tokenId_, owed);
+
+    /// Remit taxation to beneficiary.
+    _remit(beneficiaryOf(tokenId_), owed, RemittanceTriggers.TaxCollection);
+
+    _forecloseIfNecessary(tokenId_);
   }
 
   /// @notice Buy the token.
