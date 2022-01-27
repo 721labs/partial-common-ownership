@@ -524,9 +524,9 @@ async function tests(config: TestConfiguration): Promise<void> {
   describe("#onlyOwner()", async function () {
     context("fails", async function () {
       context("when required but signer is not owner", async function () {
-        it("#depositWei()", async function () {
+        it("#deposit()", async function () {
           await expect(
-            alice.contract.depositWei(TOKENS.ONE, { value: ETH1 })
+            alice.contract.deposit(TOKENS.ONE, { value: ETH1 })
           ).to.be.revertedWith(ErrorMessages.ONLY_OWNER);
         });
 
@@ -1047,11 +1047,11 @@ async function tests(config: TestConfiguration): Promise<void> {
     });
   });
 
-  describe("#depositWei()", async function () {
+  describe("#deposit()", async function () {
     context("fails", async function () {
       it("is not deposited by owner", async function () {
         await expect(
-          alice.contract.depositWei(TOKENS.ONE, {
+          alice.contract.deposit(TOKENS.ONE, {
             value: ethers.utils.parseEther("1"),
           })
         ).to.be.revertedWith(ErrorMessages.ONLY_OWNER);
@@ -1064,7 +1064,7 @@ async function tests(config: TestConfiguration): Promise<void> {
         await buy(alice, token, ETH1, ETH0, ETH2);
 
         await expect(
-          alice.contract.depositWei(token, { value: ETH1 })
+          alice.contract.deposit(token, { value: ETH1 })
         ).to.not.reverted;
       });
     });

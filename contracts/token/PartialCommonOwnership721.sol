@@ -302,9 +302,9 @@ contract PartialCommonOwnership721 is ERC721 {
   /// Owner-Only Methods
   //////////////////////////////
 
-  /// @notice Enables depositing of Wei for a given token.
-  /// @param tokenId_ ID of token depositing Wei for.
-  function depositWei(uint256 tokenId_)
+  /// @notice Increases owner's deposit by `msg.value` Wei.
+  /// @param tokenId_ ID of token.
+  function deposit(uint256 tokenId_)
     public
     payable
     _onlyOwner(tokenId_)
