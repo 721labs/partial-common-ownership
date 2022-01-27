@@ -277,7 +277,7 @@ contract PartialCommonOwnership721 is ERC721 {
     // Update deposit with surplus value.
     _deposits[tokenId_] = msg.value - purchasePrice_;
 
-    transferToken(tokenId_, currentOwner, msg.sender, purchasePrice_);
+    _transferToken(tokenId_, currentOwner, msg.sender, purchasePrice_);
     emit LogBuy(tokenId_, msg.sender, purchasePrice_);
 
     // Unlock token
@@ -576,7 +576,7 @@ contract PartialCommonOwnership721 is ERC721 {
     if (_deposits[tokenId_] == 0) {
       // Become steward of asset (aka foreclose)
       address currentOwner = ownerOf(tokenId_);
-      transferToken(tokenId_, currentOwner, address(this), 0);
+      _transferToken(tokenId_, currentOwner, address(this), 0);
       emit LogForeclosure(tokenId_, currentOwner);
     }
   }
@@ -586,7 +586,7 @@ contract PartialCommonOwnership721 is ERC721 {
   /// @param currentOwner_ Address of current owner.
   /// @param newOwner_ Address of new owner.
   /// @param newPrice_ New price in Wei.
-  function transferToken(
+  function _transferToken(
     uint256 tokenId_,
     address currentOwner_,
     address newOwner_,
