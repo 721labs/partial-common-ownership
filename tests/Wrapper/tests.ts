@@ -29,7 +29,6 @@ async function tests(config: TestConfiguration): Promise<void> {
   const GLOBAL_TRX_CONFIG = {
     gasLimit: 9500000, // if gas limit is set, estimateGas isn't run superfluously, slowing tests down.
   };
-  let DEPLOYER = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
 
   // If wallet does not redeposit funds after purchasing,
   // how many days until the entire deposit is exhausted?
@@ -50,6 +49,7 @@ async function tests(config: TestConfiguration): Promise<void> {
   let walletsByAddress;
   let snapshot;
   let tenMinDue;
+  let deployer;
   let wrappedTokenIds = {};
 
   const TAX_NUMERATOR = ethers.BigNumber.from(config.taxRate);
@@ -370,6 +370,7 @@ async function tests(config: TestConfiguration): Promise<void> {
 
     //$ Set up wallets
 
+    deployer = signers[0].address;
     beneficiary = new Wallet(contractWrapper, signers[1]);
     alice = new Wallet(contractWrapper, signers[2]);
     bob = new Wallet(contractWrapper, signers[3]);

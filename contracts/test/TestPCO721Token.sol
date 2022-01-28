@@ -27,4 +27,3 @@ contract TestPCO721Token is PartialCommonOwnership721 {
     _safeMint(address(this), 3);
   }
 }
-
