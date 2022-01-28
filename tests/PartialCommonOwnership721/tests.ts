@@ -52,7 +52,6 @@ async function tests(config: TestConfiguration): Promise<void> {
   let beneficiary;
   let alice;
   let bob;
-  let deployer;
   let wallets;
   let walletsByAddress;
   let snapshot;
@@ -340,7 +339,7 @@ async function tests(config: TestConfiguration): Promise<void> {
 
     provider = new ethers.providers.Web3Provider(web3.currentProvider);
     signers = await ethers.getSigners();
-    factory = await ethers.getContractFactory("Test721PCOToken");
+    factory = await ethers.getContractFactory("TestPCO721Token");
 
     //$ Set up contracts
 
@@ -356,7 +355,6 @@ async function tests(config: TestConfiguration): Promise<void> {
     beneficiary = new Wallet(contract, signers[1]);
     alice = new Wallet(contract, signers[2]);
     bob = new Wallet(contract, signers[3]);
-    deployer = new Wallet(contract, signers[9]);
 
     wallets = [beneficiary, alice, bob];
 
@@ -434,6 +432,10 @@ async function tests(config: TestConfiguration): Promise<void> {
   //     expect(await contract.ownerOf(TOKENS.ONE)).to.equal(contractAddress);
   //     expect(await contract.ownerOf(TOKENS.TWO)).to.equal(contractAddress);
   //     expect(await contract.ownerOf(TOKENS.THREE)).to.equal(contractAddress);
+    // it("mints three tokens during construction", async function () {
+    //   expect(await contract.ownerOf(TOKENS.ONE)).to.equal(contractAddress);
+    //   expect(await contract.ownerOf(TOKENS.TWO)).to.equal(contractAddress);
+    //   expect(await contract.ownerOf(TOKENS.THREE)).to.equal(contractAddress);
     });
   });
 

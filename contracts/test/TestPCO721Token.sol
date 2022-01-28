@@ -1,11 +1,11 @@
-// contracts/test/Test721PCOToken.sol
+// contracts/test/TestPCO721Token.sol
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.7;
 
 import "../token/PartialCommonOwnership721.sol";
 
-/// @title Test721PCOToken – Example implementation of PCO for 721 for use in testing.
-contract Test721PCOToken is PartialCommonOwnership721 {
+/// @title TestPCO721Token – Example implementation of PCO for 721 for use in testing.
+contract TestPCO721Token is PartialCommonOwnership721 {
   /// @notice Constructs token and mints 1 - 3.
   constructor(
     string memory _name,

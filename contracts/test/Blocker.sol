@@ -2,16 +2,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.7;
 
-import "./Test721PCOToken.sol";
+import "./TestPCO721Token.sol";
 
 contract Blocker {
-  Test721PCOToken private _testContract;
+  TestPCO721Token private _testContract;
 
   /// @dev Block by default
   bool private _shouldBlock = true;
 
   constructor(address contractAddress_) {
-    _testContract = Test721PCOToken(contractAddress_);
+    _testContract = TestPCO721Token(contractAddress_);
   }
 
   receive() external payable {

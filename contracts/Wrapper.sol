@@ -44,7 +44,7 @@ contract Wrapper is PartialCommonOwnership721 {
   function createWrappedTokenId(
     address assetContract, 
     uint256 tokenId
-  ) public returns (uint256) {
+  ) private returns (uint256) {
     return uint256(uint32(bytes4(keccak256(abi.encode(assetContract, tokenId)))));
   }
 
