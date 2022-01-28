@@ -23,17 +23,10 @@ contract Wrapper is PartialCommonOwnership721 {
   // @notice Event when acquire() is called
   event Acquire(uint256 tokenId);
 
-  constructor(
-    address payable _beneficiary,
-    uint256 _taxRate,
-    uint256 _taxationPeriod
-  )
+  constructor() 
     PartialCommonOwnership721(
       "Partial Common Ownership Token Wrapper",
-      "wPCO",
-      _beneficiary,
-      _taxRate,
-      _taxationPeriod
+      "wPCO"
     )
   {}
 
@@ -45,7 +38,7 @@ contract Wrapper is PartialCommonOwnership721 {
     address assetContract, 
     uint256 tokenId
   ) private returns (uint256) {
-    return uint256(uint32(bytes4(keccak256(abi.encode(assetContract, tokenId)))));
+    return uint256(uint32(bytes4(keccak256(abi.encode(assetContract, tokenId))))); // TODO: is this collision resistant? The search space is only 4 bytes while we're saving 32 bytes anyway.
   }
 
   /// @notice
@@ -69,9 +62,12 @@ contract Wrapper is PartialCommonOwnership721 {
   /// @param _tokenId Token Id to be wrapped
   /// @param _newPrice New price for the token
   function acquire(
-    address      _tokenContractAddress,
-    uint256      _tokenId,
-    uint256      _newPrice
+    address         _tokenContractAddress,
+    address payable _beneficiary,
+    uint256         _tokenId,
+    uint256         _newPrice,
+    uint256         _taxRate,
+    uint256         _taxationPeriod
   ) public {
     IERC721 tokenContract = IERC721(_tokenContractAddress);
     tokenContract.safeTransferFrom(msg.sender, address(this), _tokenId);
@@ -84,6 +80,9 @@ contract Wrapper is PartialCommonOwnership721 {
     });
 
     PartialCommonOwnership721.changePrice(wrappedTokenId, _newPrice);
+    PartialCommonOwnership721._setBeneficiary(wrappedTokenId, _beneficiary);
+    PartialCommonOwnership721._setTaxRate(wrappedTokenId, _taxRate);
+    PartialCommonOwnership721._setTaxPeriod(wrappedTokenId, _taxationPeriod);
 
     emit Acquire(wrappedTokenId);
   }

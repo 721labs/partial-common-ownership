@@ -49,10 +49,14 @@ async function tests(config: TestConfiguration): Promise<void> {
   let walletsByAddress;
   let snapshot;
   let tenMinDue;
-  let deployer;
+  let deployerAddress;
   let wrappedTokenIds = {};
 
   const TAX_NUMERATOR = ethers.BigNumber.from(config.taxRate);
+
+  const TAX_PERIOD_AS_SECONDS = taxationPeriodToSeconds(
+    config.collectionFrequency
+  );
 
   //$ Helpers
 
@@ -70,12 +74,9 @@ async function tests(config: TestConfiguration): Promise<void> {
     lastCollectionTime: BigNumber
   ): BigNumber {
     const secondsSinceLastCollection = now.sub(lastCollectionTime);
-    const taxPeriodAsSeconds = taxationPeriodToSeconds(
-      config.collectionFrequency
-    );
     return price
       .mul(secondsSinceLastCollection)
-      .div(taxPeriodAsSeconds)
+      .div(TAX_PERIOD_AS_SECONDS)
       .mul(TAX_NUMERATOR)
       .div(TAX_DENOMINATOR);
   }
@@ -99,15 +100,12 @@ async function tests(config: TestConfiguration): Promise<void> {
   }
 
   /**
-   * Deploys the PCO contract
+   * Deploys the Wrapper contract
    * @param factory contract to deploy
    * @returns contract interface
    */
-  async function deployPCO(factory): Promise<any> {
+  async function deployWrapper(factory): Promise<any> {
     const contract = await factory.deploy(
-      signers[1].address,
-      config.taxRate,
-      config.collectionFrequency,
       GLOBAL_TRX_CONFIG
     );
 
@@ -366,11 +364,11 @@ async function tests(config: TestConfiguration): Promise<void> {
     //$ Set up contracts
 
     contract721 = await deployERC721(factory721);
-    contractWrapper = await deployPCO(factoryWrapper);
+    contractWrapper = await deployWrapper(factoryWrapper);
 
     //$ Set up wallets
 
-    deployer = signers[0].address;
+    deployerAddress = signers[0].address;
     beneficiary = new Wallet(contractWrapper, signers[1]);
     alice = new Wallet(contractWrapper, signers[2]);
     bob = new Wallet(contractWrapper, signers[3]);
@@ -417,33 +415,31 @@ async function tests(config: TestConfiguration): Promise<void> {
 
   describe("Test721Token", async function () {
     it("mints three tokens during construction", async function () {
-      expect(await contract721.ownerOf(TOKENS.ONE)).to.equal(DEPLOYER);
-      expect(await contract721.ownerOf(TOKENS.TWO)).to.equal(DEPLOYER);
-      expect(await contract721.ownerOf(TOKENS.THREE)).to.equal(DEPLOYER);
+      expect(await contract721.ownerOf(TOKENS.ONE)).to.equal(deployerAddress);
+      expect(await contract721.ownerOf(TOKENS.TWO)).to.equal(deployerAddress);
+      expect(await contract721.ownerOf(TOKENS.THREE)).to.equal(deployerAddress);
     });
   });
 
   describe("#constructor()", async function () {
     context("succeeds", async function () {
-      it("Setting beneficiary", async function () {
-        expect(await contractWrapper.beneficiary()).to.equal(beneficiary.address);
-      });
-
-      it(`Setting tax rate`, async function () {
-        expect(await contractWrapper.taxRate()).to.equal(TAX_NUMERATOR);
-      });
+      // TODO: verify two hardcoded paramaters: https://docs.openzeppelin.com/contracts/2.x/api/token/erc721#ERC721Metadata
     });
   });
 
   describe("#acquire()", async function () {
     context("succeeds", async function () {
+      // TODO: see the original tests, it should be possible that these are set in separate it statements
       it(`Acquiring the token`, async function () {
         await contract721.approve(contractWrapper.address, TOKENS.ONE);
-        expect(await contractWrapper.acquire(contract721.address, TOKENS.ONE, 100))
+        expect(await contractWrapper.acquire(contract721.address, beneficiary.address, TOKENS.ONE, 100, TAX_NUMERATOR, config.collectionFrequency))
           .to.emit(contractWrapper, 'Acquire')
           .withArgs(wrappedTokenIds[TOKENS.ONE]);
-        expect(await contractWrapper.ownerOf(wrappedTokenIds[TOKENS.ONE])).to.equal(DEPLOYER);
+        expect(await contractWrapper.ownerOf(wrappedTokenIds[TOKENS.ONE])).to.equal(deployerAddress);
         expect(await contractWrapper.priceOf(wrappedTokenIds[TOKENS.ONE])).to.equal(100);
+        expect(await contractWrapper.beneficiaryOf(wrappedTokenIds[TOKENS.ONE])).to.equal(beneficiary.address);
+        expect(await contractWrapper.taxRateOf(wrappedTokenIds[TOKENS.ONE])).to.equal(TAX_NUMERATOR);
+        expect(await contractWrapper.taxPeriodOf(wrappedTokenIds[TOKENS.ONE])).to.equal(TAX_PERIOD_AS_SECONDS);
       });
     });
   });
