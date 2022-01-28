@@ -4,8 +4,8 @@ pragma solidity 0.8.7;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 
-/// @title Test721PCOToken – Example implementation of PCO for 721 for use in testing.
-contract Test721PCOToken is PartialCommonOwnership721 {
+/// @title Test721Token – Example implementation of 721 for use in testing.
+contract Test721Token is ERC721 {
   /// @notice Constructs token and mints 1 - 3.
   constructor(
     string memory _name,
