@@ -97,7 +97,7 @@ contract Wrapper is PartialCommonOwnership721 {
       "ERC721Metadata: URI query for nonexistent token"
     );
 
-    WrappedToken memory wrappedToken = tokenMap[tokenId]; // TODO: or storage or calldata
+    WrappedToken memory wrappedToken = tokenMap[tokenId];
     IERC721Metadata metadata = IERC721Metadata(wrappedToken.originAddress);
     return metadata.tokenURI(wrappedToken.originId);
   }
