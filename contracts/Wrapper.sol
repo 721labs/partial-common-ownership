@@ -38,7 +38,7 @@ contract Wrapper is PartialCommonOwnership721 {
     address assetContract, 
     uint256 tokenId
   ) private returns (uint256) {
-    return uint256(uint32(bytes4(keccak256(abi.encode(assetContract, tokenId))))); // TODO: is this collision resistant? The search space is only 4 bytes while we're saving 32 bytes anyway.
+    return uint256(bytes32(keccak256(abi.encode(assetContract, tokenId))));
   }
 
   /// @notice

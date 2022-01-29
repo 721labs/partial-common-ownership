@@ -389,9 +389,9 @@ async function tests(config: TestConfiguration): Promise<void> {
     );
 
     // $ Create wrapped token ids: take the first 4 bytes of hash(contract, tokenId)
-    wrappedTokenIds[TOKENS.ONE] = parseInt(ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(["address","uint"],[contract721.address, TOKENS.ONE])).slice(2,10), 16);
-    wrappedTokenIds[TOKENS.TWO] = parseInt(ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(["address","uint"],[contract721.address, TOKENS.TWO])).slice(2,10), 16);
-    wrappedTokenIds[TOKENS.THREE] = parseInt(ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(["address","uint"],[contract721.address, TOKENS.THREE])).slice(2,10), 16);
+    wrappedTokenIds[TOKENS.ONE] = ethers.BigNumber.from(ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(["address","uint"],[contract721.address, TOKENS.ONE])));
+    wrappedTokenIds[TOKENS.TWO] = ethers.BigNumber.from(ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(["address","uint"],[contract721.address, TOKENS.TWO])));
+    wrappedTokenIds[TOKENS.THREE] = ethers.BigNumber.from(ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(["address","uint"],[contract721.address, TOKENS.THREE])));
 
     await snapshotEVM();
   });
