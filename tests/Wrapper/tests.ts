@@ -29,6 +29,8 @@ async function tests(config: TestConfiguration): Promise<void> {
   const GLOBAL_TRX_CONFIG = {
     gasLimit: 9500000, // if gas limit is set, estimateGas isn't run superfluously, slowing tests down.
   };
+  let wrapperName = "Partial Common Ownership Token Wrapper";
+  let wrapperSymbol = "wPCO";
 
   // If wallet does not redeposit funds after purchasing,
   // how many days until the entire deposit is exhausted?
@@ -423,15 +425,18 @@ async function tests(config: TestConfiguration): Promise<void> {
 
   describe("#constructor()", async function () {
     context("succeeds", async function () {
-      // TODO: verify two hardcoded paramaters: https://docs.openzeppelin.com/contracts/2.x/api/token/erc721#ERC721Metadata
+      it(`Constructs the wrapper succesfully`, async function () {
+        expect(await contractWrapper.name()).to.equal(wrapperName);
+        expect(await contractWrapper.symbol()).to.equal(wrapperSymbol);
+      });
     });
   });
 
   describe("#acquire()", async function () {
     context("succeeds", async function () {
-      // TODO: see the original tests, it should be possible that these are set in separate it statements
-      it(`Acquiring the token`, async function () {
+      it(`Acquires the token succesfully`, async function () {
         await contract721.approve(contractWrapper.address, TOKENS.ONE);
+
         expect(await contractWrapper.acquire(contract721.address, beneficiary.address, TOKENS.ONE, 100, TAX_NUMERATOR, config.collectionFrequency))
           .to.emit(contractWrapper, 'Acquire')
           .withArgs(wrappedTokenIds[TOKENS.ONE]);
