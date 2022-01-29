@@ -2,12 +2,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.7;
 
-import "../token/PartialCommonOwnership721.sol";
-import "../Wrapper.sol"; // TODO: should have more consistent naming
+import "../wrapper/PCOWrapper.sol";
 
-/// @title Test721Token – Example implementation of Wrapper PCO for 721 for use in testing.
+/// @title Test721Wrapper – Example implementation of Wrapper PCO for 721 for use in testing.
 contract Test721Wrapper is Wrapper {
-  /// @notice Constructs token.
+  /// @notice Constructs Wrapper.
   constructor()
     Wrapper()
   {
