@@ -11,12 +11,7 @@ contract Test721Token is ERC721URIStorage {
     string memory _name,
     string memory _symbol,
     string memory _uri
-  )
-    ERC721(
-      _name,
-      _symbol
-    )
-  {
+  ) ERC721(_name, _symbol) {
     _safeMint(msg.sender, 1);
     _setTokenURI(1, _uri);
     _safeMint(msg.sender, 2);

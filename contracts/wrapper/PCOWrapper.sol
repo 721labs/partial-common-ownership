@@ -23,21 +23,18 @@ contract Wrapper is PartialCommonOwnership721 {
   // @notice Event when acquire() is called
   event Acquire(uint256 tokenId);
 
-  constructor() 
-    PartialCommonOwnership721(
-      "Partial Common Ownership Token Wrapper",
-      "wPCO"
-    )
+  constructor()
+    PartialCommonOwnership721("Partial Common Ownership Token Wrapper", "wPCO")
   {}
 
   /// @notice helper function to get wrapperTokenId: hash the original NFT
   ///         contract address and its respective local tokenId
   /// @param assetContract Address the contract defining the token
   /// @param tokenId Token Id to be wrapped
-  function createWrappedTokenId(
-    address assetContract, 
-    uint256 tokenId
-  ) private returns (uint256) {
+  function createWrappedTokenId(address assetContract, uint256 tokenId)
+    private
+    returns (uint256)
+  {
     return uint256(bytes32(keccak256(abi.encode(assetContract, tokenId))));
   }
 
@@ -47,9 +44,9 @@ contract Wrapper is PartialCommonOwnership721 {
   /// @param tokenId Token Id to be wrapped
   /// @param _data extra data - unused
   function onERC721Received(
-    address operator, 
-    address from, 
-    uint256 tokenId, 
+    address operator,
+    address from,
+    uint256 tokenId,
     bytes memory _data
   ) public returns (bytes4) {
     uint256 wrapperTokenId = createWrappedTokenId(msg.sender, tokenId);
@@ -62,17 +59,20 @@ contract Wrapper is PartialCommonOwnership721 {
   /// @param _tokenId Token Id to be wrapped
   /// @param _newPrice New price for the token
   function acquire(
-    address         _tokenContractAddress,
+    address _tokenContractAddress,
     address payable _beneficiary,
-    uint256         _tokenId,
-    uint256         _newPrice,
-    uint256         _taxRate,
-    uint256         _taxationPeriod
+    uint256 _tokenId,
+    uint256 _newPrice,
+    uint256 _taxRate,
+    uint256 _taxationPeriod
   ) public {
     IERC721 tokenContract = IERC721(_tokenContractAddress);
     tokenContract.safeTransferFrom(msg.sender, address(this), _tokenId);
-    
-    uint256 wrappedTokenId = createWrappedTokenId(_tokenContractAddress, _tokenId);
+
+    uint256 wrappedTokenId = createWrappedTokenId(
+      _tokenContractAddress,
+      _tokenId
+    );
     tokenMap[wrappedTokenId] = WrappedToken({
       originAddress: _tokenContractAddress,
       originId: _tokenId,
@@ -89,9 +89,12 @@ contract Wrapper is PartialCommonOwnership721 {
 
   /// @notice Queries original tokenURI
   /// @param tokenId See IERC721
-  function tokenURI(
-    uint256 tokenId
-  ) public view override returns (string memory) {
+  function tokenURI(uint256 tokenId)
+    public
+    view
+    override
+    returns (string memory)
+  {
     require(
       _exists(tokenId),
       "ERC721Metadata: URI query for nonexistent token"

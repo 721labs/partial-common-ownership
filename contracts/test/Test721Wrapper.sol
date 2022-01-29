@@ -7,9 +7,5 @@ import "../wrapper/PCOWrapper.sol";
 /// @title Test721Wrapper – Example implementation of Wrapper PCO for 721 for use in testing.
 contract Test721Wrapper is Wrapper {
   /// @notice Constructs Wrapper.
-  constructor()
-    Wrapper()
-  {
-  }
+  constructor() Wrapper() {}
 }
-
