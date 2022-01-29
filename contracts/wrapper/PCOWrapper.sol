@@ -33,6 +33,7 @@ contract Wrapper is PartialCommonOwnership721 {
   /// @param tokenId Token Id to be wrapped
   function createWrappedTokenId(address assetContract, uint256 tokenId)
     private
+    pure
     returns (uint256)
   {
     return uint256(bytes32(keccak256(abi.encode(assetContract, tokenId))));
