@@ -54,7 +54,7 @@ contract Wrapper is PartialCommonOwnership721 {
   ) public returns (bytes4) {
     uint256 wrapperTokenId = createWrappedTokenId(msg.sender, tokenId);
     _safeMint(from, wrapperTokenId);
-    return bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"));
+    return this.onERC721Received.selector; // See Openzeppelin's ERC721Holder.sol
   }
 
   /// @notice
