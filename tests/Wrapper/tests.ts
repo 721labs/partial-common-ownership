@@ -29,6 +29,7 @@ async function tests(config: TestConfiguration): Promise<void> {
   const GLOBAL_TRX_CONFIG = {
     gasLimit: 9500000, // if gas limit is set, estimateGas isn't run superfluously, slowing tests down.
   };
+  let testTokenURI = "i.am.a.domain.name";
   let wrapperName = "Partial Common Ownership Token Wrapper";
   let wrapperSymbol = "wPCO";
 
@@ -92,6 +93,7 @@ async function tests(config: TestConfiguration): Promise<void> {
     const contract = await factory.deploy(
       TEST_NAME,
       TEST_SYMBOL,
+      testTokenURI,
       GLOBAL_TRX_CONFIG
     );
 
@@ -416,10 +418,12 @@ async function tests(config: TestConfiguration): Promise<void> {
   //$ Tests
 
   describe("Test721Token", async function () {
-    it("mints three tokens during construction", async function () {
-      expect(await contract721.ownerOf(TOKENS.ONE)).to.equal(deployerAddress);
-      expect(await contract721.ownerOf(TOKENS.TWO)).to.equal(deployerAddress);
-      expect(await contract721.ownerOf(TOKENS.THREE)).to.equal(deployerAddress);
+    context("succeeds", async function () {
+      it("mints three tokens during construction", async function () {
+        expect(await contract721.ownerOf(TOKENS.ONE)).to.equal(deployerAddress);
+        expect(await contract721.ownerOf(TOKENS.TWO)).to.equal(deployerAddress);
+        expect(await contract721.ownerOf(TOKENS.THREE)).to.equal(deployerAddress);
+      });
     });
   });
 
@@ -445,6 +449,30 @@ async function tests(config: TestConfiguration): Promise<void> {
         expect(await contractWrapper.beneficiaryOf(wrappedTokenIds[TOKENS.ONE])).to.equal(beneficiary.address);
         expect(await contractWrapper.taxRateOf(wrappedTokenIds[TOKENS.ONE])).to.equal(TAX_NUMERATOR);
         expect(await contractWrapper.taxPeriodOf(wrappedTokenIds[TOKENS.ONE])).to.equal(TAX_PERIOD_AS_SECONDS);
+      });
+    });
+
+    context("fails", async function () {
+      it(`Cannot acquire the token if not approved`, async function () {
+        try {
+          await contractWrapper.acquire(contract721.address, beneficiary.address, TOKENS.ONE, 100, TAX_NUMERATOR, config.collectionFrequency);
+        } catch (error) {
+          expect(error.message).to.equal(
+            "VM Exception while processing transaction: reverted with reason string \'ERC721: transfer caller is not owner nor approved\'"
+          );
+        }
+      });
+    });
+  });
+
+  describe("#tokenURI()", async function () {
+    context("succeeds", async function () {
+      it(`Can get the tokenURI via the wrapper succesfully`, async function () {
+        await contract721.approve(contractWrapper.address, TOKENS.ONE);
+
+        await contractWrapper.acquire(contract721.address, beneficiary.address, TOKENS.ONE, 100, TAX_NUMERATOR, config.collectionFrequency);
+        
+        expect(await contractWrapper.tokenURI(wrappedTokenIds[TOKENS.ONE])).to.equal(testTokenURI);
       });
     });
   });
