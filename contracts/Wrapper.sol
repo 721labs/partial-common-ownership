@@ -42,7 +42,7 @@ contract Wrapper is PartialCommonOwnership721 {
   }
 
   /// @notice
-  /// @param operator Address of contract TODO
+  /// @param operator Address responsible for transferring the token
   /// @param from Address the owner of the token
   /// @param tokenId Token Id to be wrapped
   /// @param _data extra data - unused
