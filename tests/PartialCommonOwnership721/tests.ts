@@ -6,7 +6,7 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 
 import Wallet from "../helpers/Wallet";
-import { ErrorMessages, TOKENS, Events, RemittanceTriggers } from "./types";
+import { ErrorMessages, TOKENS, Events, RemittanceTriggers } from "../helpers/types";
 import {
   TEST_NAME,
   TEST_SYMBOL,
@@ -17,10 +17,10 @@ import {
   ETH3,
   ETH4,
   TAX_DENOMINATOR,
-} from "./constants";
+} from "../helpers/constants";
 import { now } from "../helpers/Time";
-import { taxationPeriodToSeconds } from "./utils";
-import type { TestConfiguration } from "./types";
+import { taxationPeriodToSeconds } from "../helpers/utils";
+import type { TestConfiguration } from "../helpers/types";
 import { snapshotEVM, revertEVM } from "../helpers/EVM";
 
 //$ Tests
@@ -32,6 +32,10 @@ async function tests(config: TestConfiguration): Promise<void> {
   };
 
   const TAX_NUMERATOR = ethers.BigNumber.from(config.taxRate);
+
+  const TAX_PERIOD_AS_SECONDS = taxationPeriodToSeconds(
+    config.collectionFrequency
+  );
 
   // If wallet does not redeposit funds after purchasing,
   // how many days until the entire deposit is exhausted?
@@ -69,12 +73,9 @@ async function tests(config: TestConfiguration): Promise<void> {
     lastCollectionTime: BigNumber
   ): BigNumber {
     const secondsSinceLastCollection = now.sub(lastCollectionTime);
-    const taxPeriodAsSeconds = taxationPeriodToSeconds(
-      config.collectionFrequency
-    );
     return price
       .mul(secondsSinceLastCollection)
-      .div(taxPeriodAsSeconds)
+      .div(TAX_PERIOD_AS_SECONDS)
       .mul(TAX_NUMERATOR)
       .div(TAX_DENOMINATOR);
   }
@@ -390,10 +391,51 @@ async function tests(config: TestConfiguration): Promise<void> {
   //$ Tests
 
   describe("TestPCO721Token", async function () {
-    it("mints three tokens during construction", async function () {
-      expect(await contract.ownerOf(TOKENS.ONE)).to.equal(contractAddress);
-      expect(await contract.ownerOf(TOKENS.TWO)).to.equal(contractAddress);
-      expect(await contract.ownerOf(TOKENS.THREE)).to.equal(contractAddress);
+    context("construction", async function () {
+      it("mints three tokens", async function () {
+        expect(await contract.ownerOf(TOKENS.ONE)).to.equal(contractAddress);
+        expect(await contract.ownerOf(TOKENS.TWO)).to.equal(contractAddress);
+        expect(await contract.ownerOf(TOKENS.THREE)).to.equal(contractAddress);
+      });
+
+      it("sets beneficiaries", async function () {
+        expect(await contract.beneficiaryOf(TOKENS.ONE)).to.equal(
+          beneficiary.address
+        );
+        expect(await contract.beneficiaryOf(TOKENS.TWO)).to.equal(
+          beneficiary.address
+        );
+        expect(await contract.beneficiaryOf(TOKENS.THREE)).to.equal(
+          beneficiary.address
+        );
+      });
+
+      it("sets tax rate", async function () {
+        expect(await contract.taxRateOf(TOKENS.ONE)).to.equal(TAX_NUMERATOR);
+        expect(await contract.taxRateOf(TOKENS.TWO)).to.equal(TAX_NUMERATOR);
+        expect(await contract.taxRateOf(TOKENS.THREE)).to.equal(TAX_NUMERATOR);
+      });
+
+      it("sets tax period", async function () {
+        expect(await contract.taxPeriodOf(TOKENS.ONE)).to.equal(
+          TAX_PERIOD_AS_SECONDS
+        );
+        expect(await contract.taxPeriodOf(TOKENS.TWO)).to.equal(
+          TAX_PERIOD_AS_SECONDS
+        );
+        expect(await contract.taxPeriodOf(TOKENS.THREE)).to.equal(
+          TAX_PERIOD_AS_SECONDS
+        );
+      });
+  // describe("Test721PCOToken", async function () {
+  //   it("mints three tokens during construction", async function () {
+  //     expect(await contract.ownerOf(TOKENS.ONE)).to.equal(contractAddress);
+  //     expect(await contract.ownerOf(TOKENS.TWO)).to.equal(contractAddress);
+  //     expect(await contract.ownerOf(TOKENS.THREE)).to.equal(contractAddress);
+    // it("mints three tokens during construction", async function () {
+    //   expect(await contract.ownerOf(TOKENS.ONE)).to.equal(contractAddress);
+    //   expect(await contract.ownerOf(TOKENS.TWO)).to.equal(contractAddress);
+    //   expect(await contract.ownerOf(TOKENS.THREE)).to.equal(contractAddress);
     });
   });
 
@@ -436,16 +478,48 @@ async function tests(config: TestConfiguration): Promise<void> {
         expect(await contract.symbol()).to.equal(TEST_SYMBOL);
       });
 
-      /**
-       * For the purposes of testing, the beneficiary address is the address
-       * of the contract owner / deployer.
-       */
-      it("Setting beneficiary", async function () {
-        expect(await contract.beneficiary()).to.equal(beneficiary.address);
+      it(`Setting tax rate`, async function () {
+        expect(await contract.taxRateOf(1)).to.equal(TAX_NUMERATOR);
+      });
+    });
+  });
+
+  describe("#setBeneficiary", async function () {
+    context("succeeds", async function () {
+      it("current beneficiary can set new beneficiary", async function () {
+        await beneficiary.contract.setBeneficiary(TOKENS.ONE, alice.address);
+        expect(await contract.beneficiaryOf(TOKENS.ONE)).to.equal(
+          alice.address
+        );
+      });
+    });
+    context("fails", async function () {
+      it("when token is not minted", async function () {
+        await expect(
+          contract.setBeneficiary(4, alice.address)
+        ).to.be.revertedWith(ErrorMessages.NONEXISTENT_TOKEN);
       });
 
-      it(`Setting tax rate`, async function () {
-        expect(await contract.taxRate()).to.equal(TAX_NUMERATOR);
+      it("When non-beneficiary attempts to update", async function () {
+        await expect(
+          alice.contract.setBeneficiary(1, alice.address)
+        ).to.be.revertedWith(ErrorMessages.BENEFICIARY_ONLY);
+      });
+    });
+  });
+
+  describe("#beneficiaryOf", async function () {
+    context("fails", async function () {
+      it("when no beneficiary is set", async function () {
+        await expect(contract.beneficiaryOf(4)).to.be.revertedWith(
+          ErrorMessages.NONEXISTENT_TOKEN
+        );
+      });
+    });
+    context("succeeds", async function () {
+      it("displays correct beneficiary after set", async function () {
+        await beneficiary.contract.setBeneficiary(TOKENS.ONE, bob.address);
+        expect(await contract.beneficiaryOf(TOKENS.ONE)).to.equal(bob.address);
       });
     });
   });
@@ -453,9 +527,9 @@ async function tests(config: TestConfiguration): Promise<void> {
   describe("#onlyOwner()", async function () {
     context("fails", async function () {
       context("when required but signer is not owner", async function () {
-        it("#depositWei()", async function () {
+        it("#deposit()", async function () {
           await expect(
-            alice.contract.depositWei(TOKENS.ONE, { value: ETH1 })
+            alice.contract.deposit(TOKENS.ONE, { value: ETH1 })
           ).to.be.revertedWith(ErrorMessages.ONLY_OWNER);
         });
 
@@ -531,10 +605,10 @@ async function tests(config: TestConfiguration): Promise<void> {
     });
   });
 
-  describe("#taxRate()", async function () {
+  describe("#taxRateOf()", async function () {
     context("succeeds", async function () {
       it(`returning expected tax rate`, async function () {
-        expect(await alice.contract.taxRate()).to.equal(TAX_NUMERATOR);
+        expect(await alice.contract.taxRateOf(1)).to.equal(TAX_NUMERATOR);
       });
     });
   });
@@ -976,11 +1050,11 @@ async function tests(config: TestConfiguration): Promise<void> {
     });
   });
 
-  describe("#depositWei()", async function () {
+  describe("#deposit()", async function () {
     context("fails", async function () {
       it("is not deposited by owner", async function () {
         await expect(
-          alice.contract.depositWei(TOKENS.ONE, {
+          alice.contract.deposit(TOKENS.ONE, {
             value: ethers.utils.parseEther("1"),
           })
         ).to.be.revertedWith(ErrorMessages.ONLY_OWNER);
@@ -993,7 +1067,7 @@ async function tests(config: TestConfiguration): Promise<void> {
         await buy(alice, token, ETH1, ETH0, ETH2);
 
         await expect(
-          alice.contract.depositWei(token, { value: ETH1 })
+          alice.contract.deposit(token, { value: ETH1 })
         ).to.not.reverted;
       });
     });
