@@ -160,7 +160,7 @@ contract PartialCommonOwnership721 is ERC721 {
   /// Constructor
   //////////////////////////////
 
-  /// @notice Creates the token and sets beneficiary & taxation amount.
+  /// @notice Creates the token.
   /// @param name_ ERC721 Token Name
   /// @param symbol_ ERC721 Token Symbol
   /* solhint-disable no-empty-blocks */
