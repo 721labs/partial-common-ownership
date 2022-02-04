@@ -427,15 +427,6 @@ async function tests(config: TestConfiguration): Promise<void> {
           TAX_PERIOD_AS_SECONDS
         );
       });
-  // describe("Test721PCOToken", async function () {
-  //   it("mints three tokens during construction", async function () {
-  //     expect(await contract.ownerOf(TOKENS.ONE)).to.equal(contractAddress);
-  //     expect(await contract.ownerOf(TOKENS.TWO)).to.equal(contractAddress);
-  //     expect(await contract.ownerOf(TOKENS.THREE)).to.equal(contractAddress);
-    // it("mints three tokens during construction", async function () {
-    //   expect(await contract.ownerOf(TOKENS.ONE)).to.equal(contractAddress);
-    //   expect(await contract.ownerOf(TOKENS.TWO)).to.equal(contractAddress);
-    //   expect(await contract.ownerOf(TOKENS.THREE)).to.equal(contractAddress);
     });
   });
 
