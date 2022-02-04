@@ -558,8 +558,7 @@ contract PartialCommonOwnership721 is ERC721 {
   /// @param wei_ Amount of Wei to withdraw.
   function _withdrawDeposit(uint256 tokenId_, uint256 wei_) internal {
     // Note: Can withdraw whole deposit, which immediately triggers foreclosure.
-    uint256 deposit = _deposits[tokenId_];
-    require(wei_ <= deposit, "Cannot withdraw more than deposited");
+    require(wei_ <= _deposits[tokenId_], "Cannot withdraw more than deposited");
 
     _deposits[tokenId_] -= wei_;
 
