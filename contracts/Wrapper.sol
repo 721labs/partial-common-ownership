@@ -25,8 +25,6 @@ contract Wrapper is PCO {
   /// State
   //////////////////////////////
 
-  // TODO: Add map of who initiated wrapping so that tokens can be unwrapped?
-
   /// @notice Mapping from Wrapped Token IDs to metadata on the underlying token.
   mapping(uint256 => WrappedToken) private _wrappedTokenMap;
 
