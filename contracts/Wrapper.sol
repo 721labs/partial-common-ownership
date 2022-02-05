@@ -57,33 +57,6 @@ contract Wrapper is PCO {
   /// Public Methods
   //////////////////////////////
 
-  /// @notice Mints the wrapped token.
-  /// @dev Envoked by `#wrap`.
-  /// @param operator_ Address that initiated the token transfer.
-  /// @param from_ Address of the contract that issued this token.
-  /// @param tokenId_ Id of token received.
-  /// @param data_ Unused call data.
-  /// @return Must return its Solidity selector to confirm the token transfer.
-  /// Returning any other value or interface will revert the transfer.
-  /* solhint-disable no-unused-vars */
-  function onERC721Received(
-    address operator_,
-    address from_,
-    uint256 tokenId_,
-    bytes memory data_
-  ) public returns (bytes4) {
-    // Ensure that the token was not errantly sent. This ensures that the self-assesssed valuation
-    // and taxation information are set.
-    require(
-      operator_ == address(this),
-      "Tokens can only be received via #wrap"
-    );
-
-    return this.onERC721Received.selector;
-  }
-
-  /* solhint-enable no-unused-vars */
-
   /// @notice Takes possession of a given token, creating a "wrapped" version that complies with
   /// Partial Common Ownership. The new token is returned to the owner.
   /// @dev Note that `#safeTransferFrom` first requires that contract address is
@@ -139,6 +112,33 @@ contract Wrapper is PCO {
     IERC721Metadata metadata = IERC721Metadata(wrappedToken.contractAddress);
     return metadata.tokenURI(wrappedToken.tokenId);
   }
+
+  /// @notice Mints the wrapped token.
+  /// @dev Envoked by `#wrap`.
+  /// @param operator_ Address that initiated the token transfer.
+  /// @param from_ Address of the contract that issued this token.
+  /// @param tokenId_ Id of token received.
+  /// @param data_ Unused call data.
+  /// @return Must return its Solidity selector to confirm the token transfer.
+  /// Returning any other value or interface will revert the transfer.
+  /* solhint-disable no-unused-vars */
+  function onERC721Received(
+    address operator_,
+    address from_,
+    uint256 tokenId_,
+    bytes memory data_
+  ) public view returns (bytes4) {
+    // Ensure that the token was not errantly sent. This ensures that the self-assesssed valuation
+    // and taxation information are set.
+    require(
+      operator_ == address(this),
+      "Tokens can only be received via #wrap"
+    );
+
+    return this.onERC721Received.selector;
+  }
+
+  /* solhint-enable no-unused-vars */
 
   /// @notice Deterministically generates wrapped token IDs given the token's
   /// contract address and ID.
