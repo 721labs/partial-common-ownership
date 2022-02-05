@@ -494,12 +494,6 @@ describe("PartialCommonOwnership721", async function () {
       it("Setting symbol", async function () {
         expect(await contract.symbol()).to.equal(TEST_SYMBOL);
       });
-
-      it(`Setting tax rate`, async function () {
-        expect(await contract.taxRateOf(TOKENS.ONE)).to.equal(
-          taxNumerator(TOKENS.ONE)
-        );
-      });
     });
   });
 
