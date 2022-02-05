@@ -83,7 +83,7 @@ contract PartialCommonOwnership721 is ERC721 {
 
   /// @notice Mapping from token ID to purchase lock status
   /// @dev Used to prevent reentrancy attacks
-  mapping(uint256 => bool) private locked;
+  mapping(uint256 => bool) private _locked;
 
   //////////////////////////////
   /// Events
@@ -222,7 +222,7 @@ contract PartialCommonOwnership721 is ERC721 {
     uint256 currentPriceForVerification_
   ) public payable _tokenMinted(tokenId_) _collectTax(tokenId_) {
     // Prevent re-entrancy attack
-    require(!locked[tokenId_], "Token is locked");
+    require(!_locked[tokenId_], "Token is locked");
 
     uint256 currentPrice = _price(tokenId_);
     // Prevent front-run.
@@ -252,7 +252,7 @@ contract PartialCommonOwnership721 is ERC721 {
     require(msg.sender != currentOwner, "Buyer is already owner");
 
     // After all security checks have occured, lock the token.
-    locked[tokenId_] = true;
+    _locked[tokenId_] = true;
 
     // If token is owned by the contract, remit to the beneficiary.
     address recipient;
@@ -281,7 +281,7 @@ contract PartialCommonOwnership721 is ERC721 {
     emit LogBuy(tokenId_, msg.sender, purchasePrice_);
 
     // Unlock token
-    locked[tokenId_] = false;
+    _locked[tokenId_] = false;
   }
 
   //////////////////////////////
