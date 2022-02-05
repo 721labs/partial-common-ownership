@@ -22,12 +22,11 @@ $ yarn add @721labs/partial-common-ownership --dev
 
 ## Documentation
 
-Usage documentation can be found [here](docs/documentation.md).
-
-| Table of Contents                                           | Description                               |
-| ----------------------------------------------------------- | ----------------------------------------- |
-| [Partial Common Ownership Resources](docs/pco-resources.md) | Learn more about Partial Common Ownership |
-| [Development](docs/development.md)                          | Developer Documentation                   |
+| Table of Contents                                           | Description                                  |
+| ----------------------------------------------------------- | -------------------------------------------- |
+| [Partial Common Ownership Resources](docs/pco-resources.md) | Learn more about Partial Common Ownership    |
+| [Development](docs/development.md)                          | Developer Documentation                      |
+| [Usage](docs/documentation.md)                              | General Usage / Implementation Documentation |
 
 ## Security
 
