@@ -17,9 +17,12 @@ import {
   ETH3,
   ETH4,
   TAX_DENOMINATOR,
+  GLOBAL_TRX_CONFIG,
 } from "./constants";
 import { now } from "../helpers/Time";
 import { taxationPeriodToSeconds } from "./utils";
+
+//$ Test-Specific Constants
 
 const tokenTaxConfigs = {
   // 5% Quarterly
@@ -33,12 +36,8 @@ const tokenTaxConfigs = {
 //$ Tests
 
 describe("PartialCommonOwnership721", async function () {
-  //$ Constants
-  const GLOBAL_TRX_CONFIG = {
-    gasLimit: 9500000, // if gas limit is set, estimateGas isn't run superfluously, slowing tests down.
-  };
+  //$ State
 
-  //$ Constants declared during setup
   let provider;
   let signers;
   let factory;
