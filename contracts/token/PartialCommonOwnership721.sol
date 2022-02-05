@@ -36,7 +36,7 @@ contract PartialCommonOwnership721 is ERC721 {
   //////////////////////////////
 
   /// @notice Map of tokens to their beneficiaries.
-  mapping(uint256 => address) private _beneficiaries;
+  mapping(uint256 => address) internal _beneficiaries;
 
   /// @notice Mapping from token ID to token price in Wei.
   mapping(uint256 => uint256) public prices;
@@ -48,7 +48,7 @@ contract PartialCommonOwnership721 is ERC721 {
   mapping(uint256 => uint256) public taxCollectedSinceLastTransfer;
 
   /// @notice Mapping from token ID to funds for paying tax ("Deposit") in Wei.
-  mapping(uint256 => uint256) private _deposits;
+  mapping(uint256 => uint256) internal _deposits;
 
   /// @notice Mapping of address to Wei.
   /// @dev If for whatever reason a remittance payment fails during a purchase, the amount
@@ -69,21 +69,21 @@ contract PartialCommonOwnership721 is ERC721 {
 
   /// @notice Mapping from token ID to array of transfer events.
   /// @dev This includes foreclosures.
-  mapping(uint256 => TitleTransferEvent[]) private _chainOfTitle;
+  mapping(uint256 => TitleTransferEvent[]) internal _chainOfTitle;
 
   /// @notice  Percentage taxation rate. e.g. 5% or 100%
   /// @dev Granular to an additionial 10 zeroes.
   /// e.g. 100% => 1000000000000
   /// e.g. 5% => 50000000000
-  mapping(uint256 => uint256) private _taxNumerators;
-  uint256 private constant TAX_DENOMINATOR = 1000000000000;
+  mapping(uint256 => uint256) internal _taxNumerators;
+  uint256 internal constant TAX_DENOMINATOR = 1000000000000;
 
   /// @notice Over what period, in days, should taxation be applied?
-  mapping(uint256 => uint256) private _taxPeriods;
+  mapping(uint256 => uint256) internal _taxPeriods;
 
   /// @notice Mapping from token ID to purchase lock status
   /// @dev Used to prevent reentrancy attacks
-  mapping(uint256 => bool) private _locked;
+  mapping(uint256 => bool) internal _locked;
 
   //////////////////////////////
   /// Events
