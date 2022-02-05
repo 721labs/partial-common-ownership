@@ -89,6 +89,8 @@ contract Wrapper is PCO {
 
   /// @notice Takes possession of a given token, creating a "wrapped" version that complies with
   /// Partial Common Ownership. The new token is returned to the owner.
+  /// @dev Note that `#safeTransferFrom` first requires that contract address is
+  /// approved by `msg.sender`.
   /// @param tokenContractAddress_ Issuing contract address for token to be wrapped.
   /// @param tokenId_ ID of token to be wrapped
   /// @param newPrice_ Self assessed valuation of the token.
