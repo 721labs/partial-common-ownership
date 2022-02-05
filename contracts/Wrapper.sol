@@ -2,107 +2,155 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.7;
 
-import "../token/PartialCommonOwnership721.sol";
+import {PartialCommonOwnership721 as PCO} from "./token/PartialCommonOwnership721.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 
 struct WrappedToken {
-  address originAddress;
-  uint256 originId;
-  uint256 price;
+  /// @notice Issuing contract address.
+  address contractAddress;
+  /// @notice Underlying token ID (issued when minted).
+  uint256 tokenId;
 }
 
 /// @title Wrapper
 /// @author Will Holley, Victor Sint Nicolaas
 /// @notice This contract can wrap or hold other tokens adhering to the ERC721
-//          standard, and is partially common owned (see PartialCommonOwnership721).
-contract Wrapper is PartialCommonOwnership721 {
-  /// @notice Mapping tokenIds to WrappedToken's
-  mapping(uint256 => WrappedToken) private tokenMap;
+/// standard, and is partially common owned (see PCO).
+contract Wrapper is PCO {
+  //////////////////////////////
+  /// State
+  //////////////////////////////
 
-  // @notice Event when acquire() is called
-  event Acquire(uint256 tokenId);
+  // TODO: Add map of who initiated wrapping so that tokens can be unwrapped?
 
-  constructor()
-    PartialCommonOwnership721("Partial Common Ownership Token Wrapper", "wPCO")
-  {}
+  /// @notice Mapping from Wrapped Token IDs to metadata on the underlying token.
+  mapping(uint256 => WrappedToken) private _tokenMap;
 
-  /// @notice helper function to get wrapperTokenId: hash the original NFT
-  ///         contract address and its respective local tokenId
-  /// @param assetContract Address the contract defining the token
-  /// @param tokenId Token Id to be wrapped
-  function createWrappedTokenId(address assetContract, uint256 tokenId)
-    private
-    pure
-    returns (uint256)
-  {
-    return uint256(bytes32(keccak256(abi.encode(assetContract, tokenId))));
-  }
+  //////////////////////////////
+  /// Events
+  //////////////////////////////
 
-  /// @notice
-  /// @param operator Address responsible for transferring the token
-  /// @param from Address the owner of the token
-  /// @param tokenId Token Id to be wrapped
-  /// @param _data extra data - unused
-  function onERC721Received(
-    address operator,
-    address from,
+  /// @notice Alert that a token has been wrapped
+  /// @param contractAddress See WrappedToken.contractAddress
+  /// @param tokenId See WrappedToken.tokenId
+  /// @param wrappedTokenId The Wrapped Token ID.
+  event LogTokenWrapped(
+    address contractAddress,
     uint256 tokenId,
-    bytes memory _data
+    uint256 wrappedTokenId
+  );
+
+  //////////////////////////////
+  /// Constructor
+  //////////////////////////////
+
+  /// @notice Creates the Wrapper.
+  /// @param name_ PCO Contract Name.
+  /// @param symbol_ PCO Contract Symbol.
+  /* solhint-disable no-empty-blocks */
+  constructor(string memory name_, string memory symbol_) PCO(name_, symbol_) {}
+
+  /* solhint-enable no-empty-blocks */
+
+  //////////////////////////////
+  /// Public Methods
+  //////////////////////////////
+
+  /// @notice Mints the wrapped token.
+  /// @dev Envoked by `#wrap`.
+  /// @param operator_ Address that initiated the token transfer.
+  /// @param from_ Address of the contract that issued this token.
+  /// @param tokenId_ Id of token received.
+  /// @param data_ Unused call data.
+  /// @return Must return its Solidity selector to confirm the token transfer.
+  /// Returning any other value or interface will revert the transfer.
+  /* solhint-disable no-unused-vars */
+  function onERC721Received(
+    address operator_,
+    address from_,
+    uint256 tokenId_,
+    bytes memory data_
   ) public returns (bytes4) {
-    uint256 wrapperTokenId = createWrappedTokenId(msg.sender, tokenId);
-    _safeMint(from, wrapperTokenId);
-    return this.onERC721Received.selector; // See Openzeppelin's ERC721Holder.sol
+    // Ensure that the token was not errantly sent. This ensures that the self-assesssed valuation
+    // and taxation information are set.
+    require(
+      operator_ == address(this),
+      "Tokens can only be recieved via #wrap"
+    );
+
+    uint256 _wrappedTokenId = wrappedTokenId(msg.sender, tokenId_);
+    _safeMint(from_, _wrappedTokenId);
+
+    return this.onERC721Received.selector;
   }
 
-  /// @notice
-  /// @param _tokenContractAddress Address of contract that issued token
-  /// @param _tokenId Token Id to be wrapped
-  /// @param _newPrice New price for the token
-  function acquire(
-    address _tokenContractAddress,
-    address payable _beneficiary,
-    uint256 _tokenId,
-    uint256 _newPrice,
-    uint256 _taxRate,
-    uint256 _taxationPeriod
-  ) public {
-    IERC721 tokenContract = IERC721(_tokenContractAddress);
-    tokenContract.safeTransferFrom(msg.sender, address(this), _tokenId);
+  /* solhint-enable no-unused-vars */
 
-    uint256 wrappedTokenId = createWrappedTokenId(
-      _tokenContractAddress,
-      _tokenId
-    );
-    tokenMap[wrappedTokenId] = WrappedToken({
-      originAddress: _tokenContractAddress,
-      originId: _tokenId,
-      price: _newPrice
+  /// @notice Takes possession of a given token, creating a "wrapped" version that complies with
+  /// Partial Common Ownership. The new token is returned to the owner.
+  /// @dev Note that `#safeTransferFrom` first requires that `msg.sender` be approved.
+  /// @param tokenContractAddress_ Issuing contract address for token to be wrapped.
+  /// @param tokenId_ ID of token to be wrapped
+  /// @param newPrice_ Self assessed valuation of the token.
+  /// @param beneficiary_ See `PCO._beneficiaries`.
+  /// @param taxRate_ See `PCO._taxNumerators`.
+  /// @param taxationPeriod_ See `PCO._taxPeriods`.
+  function wrap(
+    address tokenContractAddress_,
+    uint256 tokenId_,
+    uint256 newPrice_,
+    address payable beneficiary_,
+    uint256 taxRate_,
+    uint256 taxationPeriod_
+  ) public {
+    // Transfer ownership of the token to this contract.
+    IERC721 tokenContract = IERC721(tokenContractAddress_);
+    tokenContract.safeTransferFrom(msg.sender, address(this), tokenId_);
+
+    uint256 _wrappedTokenId = wrappedTokenId(tokenContractAddress_, tokenId_);
+    _tokenMap[_wrappedTokenId] = WrappedToken({
+      contractAddress: tokenContractAddress_,
+      tokenId: tokenId_
     });
 
-    PartialCommonOwnership721.changePrice(wrappedTokenId, _newPrice);
-    PartialCommonOwnership721._setBeneficiary(wrappedTokenId, _beneficiary);
-    PartialCommonOwnership721._setTaxRate(wrappedTokenId, _taxRate);
-    PartialCommonOwnership721._setTaxPeriod(wrappedTokenId, _taxationPeriod);
+    PCO.changePrice(_wrappedTokenId, newPrice_);
+    PCO._setBeneficiary(_wrappedTokenId, beneficiary_);
+    PCO._setTaxRate(_wrappedTokenId, taxRate_);
+    PCO._setTaxPeriod(_wrappedTokenId, taxationPeriod_);
 
-    emit Acquire(wrappedTokenId);
+    emit LogTokenWrapped(tokenContractAddress_, tokenId_, _wrappedTokenId);
   }
 
-  /// @notice Queries original tokenURI
-  /// @param tokenId See IERC721
-  function tokenURI(uint256 tokenId)
+  /// @notice Queries the wrapped token's URI.
+  /// @param tokenId_ See IERC721
+  /// @return Token URI string.
+  function tokenURI(uint256 tokenId_)
     public
     view
     override
     returns (string memory)
   {
     require(
-      _exists(tokenId),
+      _exists(tokenId_),
       "ERC721Metadata: URI query for nonexistent token"
     );
 
-    WrappedToken memory wrappedToken = tokenMap[tokenId];
-    IERC721Metadata metadata = IERC721Metadata(wrappedToken.originAddress);
-    return metadata.tokenURI(wrappedToken.originId);
+    WrappedToken memory wrappedToken = _tokenMap[tokenId_];
+    IERC721Metadata metadata = IERC721Metadata(wrappedToken.contractAddress);
+    return metadata.tokenURI(wrappedToken.tokenId);
+  }
+
+  /// @notice Deterministically generates wrapped token IDs given the token's
+  /// contract address and ID.
+  /// @param contractAddress_ Issuing contract address
+  /// @param tokenId_ Token ID
+  /// @return Wrapped Token ID
+  function wrappedTokenId(address contractAddress_, uint256 tokenId_)
+    public
+    pure
+    returns (uint256)
+  {
+    return uint256(bytes32(keccak256(abi.encode(contractAddress_, tokenId_))));
   }
 }
