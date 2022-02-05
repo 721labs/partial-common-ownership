@@ -33,7 +33,7 @@ const tokenTaxConfigs = {
 
 //$ Tests
 
-async function tests(): Promise<void> {
+describe("PartialCommonOwnership721", async function () {
   //$ Constants
   const GLOBAL_TRX_CONFIG = {
     gasLimit: 9500000, // if gas limit is set, estimateGas isn't run superfluously, slowing tests down.
@@ -1328,6 +1328,4 @@ async function tests(): Promise<void> {
       });
     });
   });
-}
-
-export default tests;
+});
