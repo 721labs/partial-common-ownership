@@ -6,7 +6,12 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 
 import Wallet from "../helpers/Wallet";
-import { ErrorMessages, TOKENS, Events, RemittanceTriggers } from "./types";
+import {
+  ErrorMessages,
+  TOKENS,
+  Events,
+  RemittanceTriggers,
+} from "../helpers/types";
 import {
   TEST_NAME,
   TEST_SYMBOL,
@@ -18,9 +23,10 @@ import {
   ETH4,
   TAX_DENOMINATOR,
   GLOBAL_TRX_CONFIG,
-} from "./constants";
+} from "../helpers/constants";
 import { now } from "../helpers/Time";
-import { taxationPeriodToSeconds } from "./utils";
+import { taxationPeriodToSeconds } from "../helpers/utils";
+import { snapshotEVM, revertEVM } from "../helpers/EVM";
 
 //$ Test-Specific Constants
 
@@ -121,13 +127,6 @@ function getTaxDue(
     .div(collectionFrequencyInSeconds(tokenId))
     .mul(taxNumerator(tokenId))
     .div(TAX_DENOMINATOR);
-}
-
-/**
- * Scopes a snapshot of the EVM.
- */
-async function snapshotEVM(): Promise<void> {
-  snapshot = await provider.send("evm_snapshot", []);
 }
 
 /**
@@ -358,7 +357,7 @@ async function verifyExpectedForeclosureTime(
 
 //$ Tests
 
-describe("PartialCommonOwnership721", async function () {
+describe("PartialCommonOwnership721.sol", async function () {
   before(async function () {
     // Used for computing 10 min prior
     tenMin = await now();
@@ -403,7 +402,7 @@ describe("PartialCommonOwnership721", async function () {
       })
     );
 
-    await snapshotEVM();
+    snapshot = await snapshotEVM(provider);
   });
 
   /**
@@ -411,8 +410,8 @@ describe("PartialCommonOwnership721", async function () {
    */
   beforeEach(async function () {
     // Reset contract state
-    await provider.send("evm_revert", [snapshot]);
-    await snapshotEVM();
+    await revertEVM(provider, snapshot);
+    snapshot = await snapshotEVM(provider);
 
     // Reset balance trackers
     await Promise.all(
