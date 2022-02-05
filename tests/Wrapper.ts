@@ -1,11 +1,13 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
 
+// Utils
 import Wallet from "./helpers/Wallet";
-
-import { GLOBAL_TRX_CONFIG } from "./helpers/constants";
 import { taxationPeriodToSeconds } from "./helpers/utils";
 import { snapshotEVM, revertEVM } from "./helpers/EVM";
+
+// Constants
+import { ETH1, GLOBAL_TRX_CONFIG } from "./helpers/constants";
 
 // Types
 import { TOKENS } from "./helpers/types";
@@ -14,32 +16,32 @@ import type { Web3Provider } from "@ethersproject/providers";
 import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import type { BigNumber } from "ethers";
 
+//$ Local Types
+
+enum ErrorMessages {
+  NOT_APPROVED = "ERC721: transfer caller is not owner nor approved",
+}
+
+enum Events {
+  TOKEN_WRAPPED = "LogTokenWrapped",
+}
+
 //$ Constants
 
 const mintedTestNFTs = [TOKENS.ONE, TOKENS.TWO, TOKENS.THREE];
 
-const testTokenURI = "i.am.a.domain.name";
-const wrapperName = "Partial Common Ownership Token Wrapper";
-const wrapperSymbol = "wPCO";
-
 const taxConfig = { collectionFrequency: 90, taxRate: 50000000000 };
-
-const TAX_NUMERATOR = ethers.BigNumber.from(taxConfig.taxRate);
-
-const TAX_PERIOD_AS_SECONDS = taxationPeriodToSeconds(
-  taxConfig.collectionFrequency
-);
 
 //$ State
 let provider: Web3Provider;
 let signers: Array<SignerWithAddress>;
 let testNFTContract: Contract;
 let wrapperContract: Contract;
+let deployer: Wallet;
+let deployerNFT: Wallet;
 let beneficiary: Wallet;
 let alice: Wallet;
-let bob: Wallet;
 let snapshot: any;
-let deployerAddress: string;
 
 //$ Helpers
 
@@ -80,11 +82,10 @@ describe("Wrapper.sol", async function () {
     await wrapperContract.deployed();
 
     // Set up wallets
-
-    deployerAddress = signers[0].address;
+    deployer = new Wallet(wrapperContract, signers[0]);
+    deployerNFT = new Wallet(testNFTContract, signers[0]);
     beneficiary = new Wallet(wrapperContract, signers[1]);
     alice = new Wallet(wrapperContract, signers[2]);
-    bob = new Wallet(wrapperContract, signers[3]);
 
     snapshot = await snapshotEVM(provider);
   });
@@ -101,7 +102,7 @@ describe("Wrapper.sol", async function () {
     it("Sets up properly", async function () {
       for await (const tokenId of mintedTestNFTs) {
         expect(await testNFTContract.ownerOf(tokenId)).to.equal(
-          deployerAddress
+          deployer.address
         );
       }
     });
@@ -139,79 +140,87 @@ describe("Wrapper.sol", async function () {
     });
   });
 
-  // describe("#acquire()", async function () {
-  //   context("succeeds", async function () {
-  //     it(`Acquires the token succesfully`, async function () {
-  //       await testNFTContract.approve(wrapperContract.address, TOKENS.ONE);
+  describe("#onERC721Received", async function () {
+    context("fails", async function () {
+      it("cannot be called directly", async function () {
+        await expect(
+          deployerNFT.contract["safeTransferFrom(address,address,uint256)"](
+            deployer.address,
+            wrapperContract.address,
+            TOKENS.ONE
+          )
+        ).to.be.revertedWith("Tokens can only be received via #wrap");
+      });
+    });
+  });
 
-  //       expect(
-  //         await wrapperContract.acquire(
-  //           testNFTContract.address,
-  //           beneficiary.address,
-  //           TOKENS.ONE,
-  //           100,
-  //           TAX_NUMERATOR,
-  //           taxConfig.collectionFrequency
-  //         )
-  //       )
-  //         .to.emit(wrapperContract, "Acquire")
-  //         .withArgs(wrappedTokenIds[TOKENS.ONE]);
-  //       expect(
-  //         await wrapperContract.ownerOf(wrappedTokenIds[TOKENS.ONE])
-  //       ).to.equal(deployerAddress);
-  //       expect(
-  //         await wrapperContract.priceOf(wrappedTokenIds[TOKENS.ONE])
-  //       ).to.equal(100);
-  //       expect(
-  //         await wrapperContract.beneficiaryOf(wrappedTokenIds[TOKENS.ONE])
-  //       ).to.equal(beneficiary.address);
-  //       expect(
-  //         await wrapperContract.taxRateOf(wrappedTokenIds[TOKENS.ONE])
-  //       ).to.equal(TAX_NUMERATOR);
-  //       expect(
-  //         await wrapperContract.taxPeriodOf(wrappedTokenIds[TOKENS.ONE])
-  //       ).to.equal(TAX_PERIOD_AS_SECONDS);
-  //     });
-  //   });
+  describe("#wrap", async function () {
+    context("fails", async function () {
+      it("when non-owner tries to wrap", async function () {
+        await expect(
+          alice.contract.wrap(
+            testNFTContract.address,
+            TOKENS.ONE,
+            ETH1,
+            deployer.address,
+            taxConfig.taxRate,
+            taxConfig.collectionFrequency
+          )
+        ).to.be.revertedWith(ErrorMessages.NOT_APPROVED);
+      });
 
-  //   context("fails", async function () {
-  //     it(`Cannot acquire the token if not approved`, async function () {
-  //       try {
-  //         await wrapperContract.acquire(
-  //           testNFTContract.address,
-  //           beneficiary.address,
-  //           TOKENS.ONE,
-  //           100,
-  //           TAX_NUMERATOR,
-  //           taxConfig.collectionFrequency
-  //         );
-  //       } catch (error) {
-  //         expect(error.message).to.equal(
-  //           "VM Exception while processing transaction: reverted with reason string 'ERC721: transfer caller is not owner nor approved'"
-  //         );
-  //       }
-  //     });
-  //   });
-  // });
+      it("if owner has not approved wrapper", async function () {
+        await expect(
+          deployer.contract.wrap(
+            testNFTContract.address,
+            TOKENS.ONE,
+            ETH1,
+            deployer.address,
+            taxConfig.taxRate,
+            taxConfig.collectionFrequency
+          )
+        ).to.be.revertedWith(ErrorMessages.NOT_APPROVED);
+      });
+    });
+    context("succeeds", async function () {
+      it("can be wrapped by token owner", async function () {
+        await deployerNFT.contract.approve(wrapperContract.address, TOKENS.ONE);
 
-  // describe("#tokenURI()", async function () {
-  //   context("succeeds", async function () {
-  //     it(`Can get the tokenURI via the wrapper succesfully`, async function () {
-  //       await testNFTContract.approve(wrapperContract.address, TOKENS.ONE);
+        const trx = await deployer.contract.wrap(
+          testNFTContract.address,
+          TOKENS.ONE,
+          ETH1,
+          beneficiary.address,
+          taxConfig.taxRate,
+          taxConfig.collectionFrequency
+        );
 
-  //       await wrapperContract.acquire(
-  //         testNFTContract.address,
-  //         beneficiary.address,
-  //         TOKENS.ONE,
-  //         100,
-  //         TAX_NUMERATOR,
-  //         taxConfig.collectionFrequency
-  //       );
+        const id = wrappedTokenId(testNFTContract.address, TOKENS.ONE);
 
-  //       expect(
-  //         await wrapperContract.tokenURI(wrappedTokenIds[TOKENS.ONE])
-  //       ).to.equal(testTokenURI);
-  //     });
-  //   });
-  // });
+        // Token is minted
+        expect(await wrapperContract.ownerOf(id)).to.equal(deployer.address);
+
+        // Price is set
+        expect(await wrapperContract.priceOf(id)).to.equal(ETH1);
+
+        // Beneficiary is set
+        expect(await wrapperContract.beneficiaryOf(id)).to.equal(
+          beneficiary.address
+        );
+
+        // Tax rate is set
+        expect(await wrapperContract.taxRateOf(id)).to.equal(taxConfig.taxRate);
+
+        // Collection frequency is set
+        expect(await wrapperContract.taxPeriodOf(id)).to.equal(
+          taxationPeriodToSeconds(taxConfig.collectionFrequency)
+        );
+
+        // Event is emitted
+        expect(trx)
+          .to.emit(wrapperContract, Events.TOKEN_WRAPPED)
+          .withArgs(testNFTContract.address, TOKENS.ONE, id);
+      });
+    });
+  });
 });
