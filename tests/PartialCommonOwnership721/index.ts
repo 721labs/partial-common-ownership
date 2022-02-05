@@ -57,6 +57,23 @@ describe("PartialCommonOwnership721", async function () {
   //$ Helpers
 
   /**
+   * Returns a random token. This implement auto-rotation of tokens during tests,
+   * as each token has a different tax rate and collection frequency, thus ensuring the tests
+   * are valid for a range of configurations.
+   */
+  function randomToken(): TOKENS {
+    const index = Math.floor(Math.random() * 3);
+    switch (index) {
+      case 0:
+        return TOKENS.ONE;
+      case 1:
+        return TOKENS.TWO;
+      case 2:
+        return TOKENS.THREE;
+    }
+  }
+
+  /**
    * If wallet does not redeposit funds after purchasing, how many days until the entire deposit is exhausted?
    * @param tokenId id of token
    * @returns days as number
@@ -573,7 +590,7 @@ describe("PartialCommonOwnership721", async function () {
     context("succeeds", async function () {
       it("collects after 10m", async function () {
         const price = ETH1;
-        const token = TOKENS.ONE;
+        const token = randomToken();
 
         await buy(alice, token, price, ETH0, ETH2);
 
@@ -582,7 +599,7 @@ describe("PartialCommonOwnership721", async function () {
 
       it("collects after 10m and subsequently after 10m", async function () {
         const price = ETH1;
-        const token = TOKENS.ONE;
+        const token = randomToken();
 
         await buy(alice, token, price, ETH0, ETH2);
 
@@ -649,20 +666,20 @@ describe("PartialCommonOwnership721", async function () {
     context("fails", async function () {});
     context("succeeds", async function () {
       it("Returns correct taxation after 1 day", async function () {
-        const token = TOKENS.ONE;
+        const token = randomToken();
         await buy(alice, token, ETH1, ETH0, ETH2);
         await verifyCorrectTaxOwed(token, 1);
       });
     });
 
     it("Returns correct taxation after 1 year", async function () {
-      const token = TOKENS.ONE;
+      const token = randomToken();
       await buy(alice, token, ETH1, ETH0, ETH2);
       await verifyCorrectTaxOwed(token, 365);
     });
 
     it("Returns correct taxation after 2 years", async function () {
-      const token = TOKENS.ONE;
+      const token = randomToken();
       await buy(alice, token, ETH1, ETH0, ETH2);
       await verifyCorrectTaxOwed(token, 730);
     });
@@ -678,7 +695,7 @@ describe("PartialCommonOwnership721", async function () {
       });
 
       it("Returns correct amount", async function () {
-        const token = TOKENS.ONE;
+        const token = randomToken();
         const price = ETH1;
 
         await buy(alice, token, price, ETH0, ETH2);
@@ -709,7 +726,7 @@ describe("PartialCommonOwnership721", async function () {
         });
 
         it("after initial purchase", async function () {
-          const token = TOKENS.ONE;
+          const token = randomToken();
           const price = ETH1;
 
           await buy(alice, token, price, ETH0, ETH2);
@@ -718,7 +735,7 @@ describe("PartialCommonOwnership721", async function () {
         });
 
         it("after 1 secondary-purchase", async function () {
-          const token = TOKENS.ONE;
+          const token = randomToken();
           const price = ETH1;
 
           await buy(alice, token, price, ETH0, ETH2);
@@ -733,7 +750,7 @@ describe("PartialCommonOwnership721", async function () {
         });
 
         it("when foreclosed", async function () {
-          const token = TOKENS.ONE;
+          const token = randomToken();
 
           await buy(alice, token, ETH1, ETH0, ETH2);
 
@@ -749,7 +766,7 @@ describe("PartialCommonOwnership721", async function () {
         });
 
         it("after purchase from foreclosure", async function () {
-          const token = TOKENS.ONE;
+          const token = randomToken();
 
           await buy(alice, token, ETH1, ETH0, ETH2);
 
@@ -774,7 +791,7 @@ describe("PartialCommonOwnership721", async function () {
     context("fails", async function () {});
     context("succeeds", async function () {
       it("true positive", async function () {
-        const token = TOKENS.ONE;
+        const token = randomToken();
 
         const { block, trx } = await buy(alice, token, ETH1, ETH0, ETH2);
 
@@ -791,7 +808,7 @@ describe("PartialCommonOwnership721", async function () {
         );
       });
       it("true negative", async function () {
-        const token = TOKENS.ONE;
+        const token = randomToken();
 
         await buy(alice, token, ETH1, ETH0, ETH2);
 
@@ -805,7 +822,7 @@ describe("PartialCommonOwnership721", async function () {
     context("fails", async function () {});
     context("succeeds", async function () {
       it("Returns zero when owed >= deposit", async function () {
-        const token = TOKENS.ONE;
+        const token = randomToken();
 
         await buy(alice, token, ETH1, ETH0, ETH2);
 
@@ -817,7 +834,7 @@ describe("PartialCommonOwnership721", async function () {
         expect(await contract.withdrawableDeposit(token)).to.equal(0);
       });
       it("Returns (deposit - owed) when owed < deposit", async function () {
-        const token = TOKENS.ONE;
+        const token = randomToken();
 
         await buy(alice, token, ETH1, ETH0, ETH2);
 
@@ -835,7 +852,7 @@ describe("PartialCommonOwnership721", async function () {
     context("fails", async function () {});
     context("succeeds", async function () {
       it("consistently returns within +/- 1s", async function () {
-        const token = TOKENS.ONE;
+        const token = randomToken();
         const price = ETH1;
         const tenMinDue = getTaxDue(token, price, tenMin, prior);
         await buy(alice, token, price, ETH0, ETH1.add(tenMinDue));
@@ -868,7 +885,7 @@ describe("PartialCommonOwnership721", async function () {
       });
 
       it("time is 10m into the future", async function () {
-        const token = TOKENS.TWO;
+        const token = randomToken();
         const price = ETH1;
         const tenMinDue = getTaxDue(token, price, tenMin, prior);
 
@@ -888,7 +905,7 @@ describe("PartialCommonOwnership721", async function () {
       });
 
       it("returns backdated time if foreclosed", async function () {
-        const token = TOKENS.THREE;
+        const token = randomToken();
         const price = ETH1;
         const tenMinDue = getTaxDue(token, price, tenMin, prior);
 
@@ -987,7 +1004,7 @@ describe("PartialCommonOwnership721", async function () {
       });
 
       it("Purchasing token from current owner", async function () {
-        const token = TOKENS.ONE;
+        const token = randomToken();
 
         await buy(alice, token, ETH1, ETH0, ETH2);
 
@@ -997,7 +1014,7 @@ describe("PartialCommonOwnership721", async function () {
       });
 
       it("Purchasing token from foreclosure", async function () {
-        const token = TOKENS.ONE;
+        const token = randomToken();
 
         await buy(alice, token, ETH1, ETH0, ETH2);
 
@@ -1019,7 +1036,7 @@ describe("PartialCommonOwnership721", async function () {
       });
 
       it("Purchasing token from current owner who purchased from foreclosure", async function () {
-        const token = TOKENS.ONE;
+        const token = randomToken();
 
         await buy(alice, token, ETH1, ETH0, ETH2);
 
@@ -1035,7 +1052,7 @@ describe("PartialCommonOwnership721", async function () {
       });
 
       it("Owner prior to foreclosure re-purchases", async function () {
-        const token = TOKENS.ONE;
+        const token = randomToken();
 
         await buy(alice, token, ETH1, ETH0, ETH2);
 
@@ -1049,7 +1066,7 @@ describe("PartialCommonOwnership721", async function () {
       });
 
       it("Updating chain of title", async function () {
-        const token = TOKENS.ONE;
+        const token = randomToken();
 
         const { block: block1 } = await buy(bob, token, ETH1, ETH0, ETH2);
 
@@ -1085,7 +1102,7 @@ describe("PartialCommonOwnership721", async function () {
     });
     context("succeeds", async function () {
       it("owner can deposit", async function () {
-        const token = TOKENS.ONE;
+        const token = randomToken();
 
         await buy(alice, token, ETH1, ETH0, ETH2);
 
@@ -1104,7 +1121,7 @@ describe("PartialCommonOwnership721", async function () {
         ).to.be.revertedWith(ErrorMessages.ONLY_OWNER);
       });
       it("cannot have a new price of zero", async function () {
-        const token = TOKENS.ONE;
+        const token = randomToken();
 
         await buy(alice, token, ETH1, ETH0, ETH2);
         await expect(
@@ -1112,7 +1129,7 @@ describe("PartialCommonOwnership721", async function () {
         ).to.be.revertedWith(ErrorMessages.NEW_PRICE_ZERO);
       });
       it("cannot have price set to same amount", async function () {
-        const token = TOKENS.ONE;
+        const token = randomToken();
 
         await buy(alice, token, ETH1, ETH0, ETH2);
         await expect(
@@ -1122,25 +1139,25 @@ describe("PartialCommonOwnership721", async function () {
     });
     context("succeeds", async function () {
       it("owner can increase price", async function () {
-        const token = TOKENS.ONE;
+        const token = randomToken();
 
         await buy(alice, token, ETH1, ETH0, ETH2);
 
         expect(await alice.contract.changePrice(token, ETH2))
           .to.emit(contract, Events.PRICE_CHANGE)
-          .withArgs(TOKENS.ONE, ETH2);
+          .withArgs(token, ETH2);
 
         expect(await contract.priceOf(token)).to.equal(ETH2);
       });
 
       it("owner can decrease price", async function () {
-        const token = TOKENS.ONE;
+        const token = randomToken();
 
         await buy(alice, token, ETH2, ETH0, ETH3);
 
         expect(await alice.contract.changePrice(token, ETH1))
           .to.emit(contract, Events.PRICE_CHANGE)
-          .withArgs(TOKENS.ONE, ETH1);
+          .withArgs(token, ETH1);
 
         expect(await contract.priceOf(token)).to.equal(ETH1);
       });
@@ -1156,7 +1173,7 @@ describe("PartialCommonOwnership721", async function () {
       });
 
       it("Cannot withdraw more than deposited", async function () {
-        const token = TOKENS.ONE;
+        const token = randomToken();
 
         await buy(alice, token, ETH1, ETH0, ETH2);
 
@@ -1168,7 +1185,7 @@ describe("PartialCommonOwnership721", async function () {
 
     context("succeeds", async function () {
       it("Withdraws expected amount", async function () {
-        const token = TOKENS.ONE;
+        const token = randomToken();
         const price = ETH1;
 
         await buy(alice, token, price, ETH0, ETH3, 30);
@@ -1216,7 +1233,7 @@ describe("PartialCommonOwnership721", async function () {
 
     context("succeeds", async function () {
       it("Withdraws entire deposit", async function () {
-        const token = TOKENS.ONE;
+        const token = randomToken();
 
         await buy(alice, token, ETH1, ETH0, ETH2);
 
@@ -1275,7 +1292,7 @@ describe("PartialCommonOwnership721", async function () {
       await blockerAlice.setup();
 
       // 1. Buy as Blocker Alice
-      const token = TOKENS.ONE;
+      const token = randomToken();
       await blockerAlice.contract.buy(token, ETH1, ETH0, {
         value: ETH2,
         ...GLOBAL_TRX_CONFIG,
