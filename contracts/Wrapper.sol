@@ -14,7 +14,8 @@ struct WrappedToken {
 }
 
 /// @title Wrapper
-/// @author Will Holley, Victor Sint Nicolaas
+/// @author Will Holley (@will-holley)
+/// @author Victor Sint Nicolaas (@vicsn)
 /// @notice This contract can wrap or hold other tokens adhering to the ERC721
 /// standard, and is partially common owned (see PCO).
 contract Wrapper is PCO {
