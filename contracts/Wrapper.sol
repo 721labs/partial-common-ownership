@@ -79,9 +79,6 @@ contract Wrapper is PCO {
       "Tokens can only be received via #wrap"
     );
 
-    uint256 _wrappedTokenId = wrappedTokenId(msg.sender, tokenId_);
-    _safeMint(from_, _wrappedTokenId);
-
     return this.onERC721Received.selector;
   }
 
@@ -114,6 +111,7 @@ contract Wrapper is PCO {
       contractAddress: tokenContractAddress_,
       tokenId: tokenId_
     });
+    _safeMint(msg.sender, _wrappedTokenId);
 
     PCO.changePrice(_wrappedTokenId, newPrice_);
     PCO._setBeneficiary(_wrappedTokenId, beneficiary_);
