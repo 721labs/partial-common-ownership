@@ -186,6 +186,9 @@ contract PartialCommonOwnership721 is ERC721 {
     // If price > 0, contract has not foreclosed.
     uint256 owed = _taxOwed(tokenId_);
 
+    // No tax will be owed if the token is owned by its beneficiary.
+    if (owed == 0) return;
+
     // If foreclosure should have occured in the past, last collection time will be
     // backdated to when the tax was last paid for.
     if (foreclosed(tokenId_)) {
@@ -658,6 +661,10 @@ contract PartialCommonOwnership721 is ERC721 {
   /// @param tokenId_ ID of token requesting amount for.
   /// @return Tax Due in wei
   function _taxOwed(uint256 tokenId_) private view returns (uint256) {
+    // If the token is owned by its beneficiary, nothing is owed.
+    // (e.g. beneficiary wrapped a token).
+    if (ownerOf(tokenId_) == beneficiaryOf(tokenId_)) return 0;
+
     uint256 timeElapsed = block.timestamp - lastCollectionTimes[tokenId_];
     return taxOwedSince(tokenId_, timeElapsed);
   }
