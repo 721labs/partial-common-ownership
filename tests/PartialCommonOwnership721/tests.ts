@@ -22,24 +22,22 @@ import { now } from "../helpers/Time";
 import { taxationPeriodToSeconds } from "./utils";
 import type { TestConfiguration } from "./types";
 
+const tokenTaxConfigs = {
+  // 5% Quarterly
+  [TOKENS.ONE]: { collectionFrequency: 90, taxRate: 50000000000 },
+  // 100% Monthly
+  [TOKENS.TWO]: { collectionFrequency: 30, taxRate: 1000000000000 },
+  // 100% Annually
+  [TOKENS.THREE]: { collectionFrequency: 365, taxRate: 1000000000000 },
+};
+
 //$ Tests
 
-async function tests(config: TestConfiguration): Promise<void> {
+async function tests(): Promise<void> {
   //$ Constants
   const GLOBAL_TRX_CONFIG = {
     gasLimit: 9500000, // if gas limit is set, estimateGas isn't run superfluously, slowing tests down.
   };
-
-  const TAX_NUMERATOR = ethers.BigNumber.from(config.taxRate);
-
-  const TAX_PERIOD_AS_SECONDS = taxationPeriodToSeconds(
-    config.collectionFrequency
-  );
-
-  // If wallet does not redeposit funds after purchasing,
-  // how many days until the entire deposit is exhausted?
-  const DAYS_TILL_FORECLOSURE_WITHOUT_REDEPOSIT =
-    config.collectionFrequency / (config.taxRate / 10 ** 12) + 1;
 
   //$ Constants declared during setup
   let provider;
@@ -54,19 +52,51 @@ async function tests(config: TestConfiguration): Promise<void> {
   let wallets;
   let walletsByAddress;
   let snapshot;
-  let tenMinDue;
+  let tenMinDue; // TODO: Should have values; is currently hard coded to TOKEN.ONE value.
 
   //$ Helpers
 
   /**
+   * If wallet does not redeposit funds after purchasing, how many days until the entire deposit is exhausted?
+   * @param tokenId id of token
+   * @returns days as number
+   */
+  function daysTillForeclosureWithoutRedeposit(tokenId: TOKENS): number {
+    const { collectionFrequency, taxRate } = tokenTaxConfigs[tokenId];
+    return collectionFrequency / (taxRate / 10 ** 12) + 1;
+  }
+
+  /**
+   * How often are taxes collected? in seconds.
+   * @param tokenId id of token
+   * @returns seconds as big number
+   */
+  function collectionFrequencyInSeconds(tokenId: TOKENS): BigNumber {
+    const { collectionFrequency } = tokenTaxConfigs[tokenId];
+    return taxationPeriodToSeconds(collectionFrequency);
+  }
+
+  /**
+   * Returns tax numerator for a given token as BigNumber
+   * @param tokenId id of token
+   * @returns tax rate numerator
+   */
+  function taxNumerator(tokenId: TOKENS): BigNumber {
+    const { taxRate } = tokenTaxConfigs[tokenId];
+    return ethers.BigNumber.from(taxRate);
+  }
+
+  /**
    * Calculates the tax due.
    * price * % of tax period completed (represented from 0 - 1) * tax rate;
+   * @param tokenId Id of token in question
    * @param price Current price
    * @param now Unix timestamp when request was made
    * @param lastCollectionTime Unix timestamp of last tax collection
    * @returns Tax due between now and last collection.
    */
   function getTaxDue(
+    tokenId: TOKENS,
     price: BigNumber,
     now: BigNumber,
     lastCollectionTime: BigNumber
@@ -74,8 +104,8 @@ async function tests(config: TestConfiguration): Promise<void> {
     const secondsSinceLastCollection = now.sub(lastCollectionTime);
     return price
       .mul(secondsSinceLastCollection)
-      .div(TAX_PERIOD_AS_SECONDS)
-      .mul(TAX_NUMERATOR)
+      .div(collectionFrequencyInSeconds(tokenId))
+      .mul(taxNumerator(tokenId))
       .div(TAX_DENOMINATOR);
   }
 
@@ -128,6 +158,7 @@ async function tests(config: TestConfiguration): Promise<void> {
     } else {
       // Get the balance and then determine how much will be deducted by taxation
       const taxDue = getTaxDue(
+        tokenId,
         currentPriceForVerification,
         (await now()).add(1), // block timestamp
         await contract.lastCollectionTimes(tokenId)
@@ -224,7 +255,7 @@ async function tests(config: TestConfiguration): Promise<void> {
 
     const price = await contract.priceOf(tokenId);
 
-    const due = getTaxDue(price, owed.timestamp, lastCollectionTime);
+    const due = getTaxDue(tokenId, price, owed.timestamp, lastCollectionTime);
 
     expect(owed.amount).to.equal(due);
   }
@@ -261,7 +292,7 @@ async function tests(config: TestConfiguration): Promise<void> {
     const trx = await contract.collectTax(tokenId);
 
     const timeAfter = await now();
-    const due = getTaxDue(currentPrice, timeAfter, before);
+    const due = getTaxDue(tokenId, currentPrice, timeAfter, before);
 
     //$ Expectations
 
@@ -319,7 +350,7 @@ async function tests(config: TestConfiguration): Promise<void> {
     // Compute tax rate for 1ETH over 10 minutes
     const tenMin = await now();
     const prior = tenMin.sub(600);
-    tenMinDue = getTaxDue(ETH1, tenMin, prior);
+    tenMinDue = getTaxDue(TOKENS.ONE, ETH1, tenMin, prior);
 
     provider = new ethers.providers.Web3Provider(web3.currentProvider);
     signers = await ethers.getSigners();
@@ -330,8 +361,6 @@ async function tests(config: TestConfiguration): Promise<void> {
       TEST_NAME,
       TEST_SYMBOL,
       signers[1].address,
-      config.taxRate,
-      config.collectionFrequency,
       GLOBAL_TRX_CONFIG
     );
 
@@ -404,20 +433,26 @@ async function tests(config: TestConfiguration): Promise<void> {
       });
 
       it("sets tax rate", async function () {
-        expect(await contract.taxRateOf(TOKENS.ONE)).to.equal(TAX_NUMERATOR);
-        expect(await contract.taxRateOf(TOKENS.TWO)).to.equal(TAX_NUMERATOR);
-        expect(await contract.taxRateOf(TOKENS.THREE)).to.equal(TAX_NUMERATOR);
+        expect(await contract.taxRateOf(TOKENS.ONE)).to.equal(
+          taxNumerator(TOKENS.ONE)
+        );
+        expect(await contract.taxRateOf(TOKENS.TWO)).to.equal(
+          taxNumerator(TOKENS.TWO)
+        );
+        expect(await contract.taxRateOf(TOKENS.THREE)).to.equal(
+          taxNumerator(TOKENS.THREE)
+        );
       });
 
       it("sets tax period", async function () {
         expect(await contract.taxPeriodOf(TOKENS.ONE)).to.equal(
-          TAX_PERIOD_AS_SECONDS
+          collectionFrequencyInSeconds(TOKENS.ONE)
         );
         expect(await contract.taxPeriodOf(TOKENS.TWO)).to.equal(
-          TAX_PERIOD_AS_SECONDS
+          collectionFrequencyInSeconds(TOKENS.TWO)
         );
         expect(await contract.taxPeriodOf(TOKENS.THREE)).to.equal(
-          TAX_PERIOD_AS_SECONDS
+          collectionFrequencyInSeconds(TOKENS.THREE)
         );
       });
     });
@@ -463,7 +498,9 @@ async function tests(config: TestConfiguration): Promise<void> {
       });
 
       it(`Setting tax rate`, async function () {
-        expect(await contract.taxRateOf(1)).to.equal(TAX_NUMERATOR);
+        expect(await contract.taxRateOf(TOKENS.ONE)).to.equal(
+          taxNumerator(TOKENS.ONE)
+        );
       });
     });
   });
@@ -592,7 +629,9 @@ async function tests(config: TestConfiguration): Promise<void> {
   describe("#taxRateOf()", async function () {
     context("succeeds", async function () {
       it(`returning expected tax rate`, async function () {
-        expect(await alice.contract.taxRateOf(1)).to.equal(TAX_NUMERATOR);
+        expect(await alice.contract.taxRateOf(TOKENS.ONE)).to.equal(
+          taxNumerator(TOKENS.ONE)
+        );
       });
     });
   });
@@ -653,10 +692,12 @@ async function tests(config: TestConfiguration): Promise<void> {
 
         const time = (await now()).sub(1);
 
+        const collectionFrequency = tokenTaxConfigs[token].collectionFrequency;
+
         const expected = price
           .mul(time)
-          .div(taxationPeriodToSeconds(config.collectionFrequency))
-          .mul(TAX_NUMERATOR)
+          .div(taxationPeriodToSeconds(collectionFrequency))
+          .mul(taxNumerator(token))
           .div(TAX_DENOMINATOR);
 
         expect(await contract.taxOwedSince(token, time)).to.equal(expected);
@@ -704,7 +745,7 @@ async function tests(config: TestConfiguration): Promise<void> {
           await buy(alice, token, ETH1, ETH0, ETH2);
 
           await time.increase(
-            time.duration.days(DAYS_TILL_FORECLOSURE_WITHOUT_REDEPOSIT)
+            time.duration.days(daysTillForeclosureWithoutRedeposit(token))
           );
           expect(await contract.foreclosed(token)).to.equal(true);
 
@@ -720,7 +761,7 @@ async function tests(config: TestConfiguration): Promise<void> {
           await buy(alice, token, ETH1, ETH0, ETH2);
 
           await time.increase(
-            time.duration.days(DAYS_TILL_FORECLOSURE_WITHOUT_REDEPOSIT)
+            time.duration.days(daysTillForeclosureWithoutRedeposit(token))
           );
           expect(await contract.foreclosed(token)).to.equal(true);
 
@@ -745,7 +786,7 @@ async function tests(config: TestConfiguration): Promise<void> {
         const { block, trx } = await buy(alice, token, ETH1, ETH0, ETH2);
 
         await time.increase(
-          time.duration.days(DAYS_TILL_FORECLOSURE_WITHOUT_REDEPOSIT)
+          time.duration.days(daysTillForeclosureWithoutRedeposit(token))
         ); // Entire deposit will be exceeded after 1yr
         expect(await contract.foreclosed(token)).to.equal(true);
 
@@ -777,7 +818,7 @@ async function tests(config: TestConfiguration): Promise<void> {
 
         // Exhaust deposit
         await time.increase(
-          time.duration.days(DAYS_TILL_FORECLOSURE_WITHOUT_REDEPOSIT)
+          time.duration.days(daysTillForeclosureWithoutRedeposit(token))
         );
 
         expect(await contract.withdrawableDeposit(token)).to.equal(0);
@@ -964,7 +1005,7 @@ async function tests(config: TestConfiguration): Promise<void> {
 
         // Exhaust deposit
         await time.increase(
-          time.duration.days(DAYS_TILL_FORECLOSURE_WITHOUT_REDEPOSIT)
+          time.duration.days(daysTillForeclosureWithoutRedeposit(token))
         );
 
         // Trigger foreclosure & buy it out of foreclosure
@@ -986,7 +1027,7 @@ async function tests(config: TestConfiguration): Promise<void> {
 
         // Exhaust deposit
         await time.increase(
-          time.duration.days(DAYS_TILL_FORECLOSURE_WITHOUT_REDEPOSIT)
+          time.duration.days(daysTillForeclosureWithoutRedeposit(token))
         );
 
         // Buy out of foreclosure
@@ -1002,7 +1043,7 @@ async function tests(config: TestConfiguration): Promise<void> {
 
         // Exhaust deposit
         await time.increase(
-          time.duration.days(DAYS_TILL_FORECLOSURE_WITHOUT_REDEPOSIT)
+          time.duration.days(daysTillForeclosureWithoutRedeposit(token))
         );
 
         // Buy out of foreclosure
@@ -1147,6 +1188,7 @@ async function tests(config: TestConfiguration): Promise<void> {
 
         // current deposit - tax on exit
         const taxedAmt = getTaxDue(
+          token,
           price,
           ethers.BigNumber.from(timestamp),
           lastCollectionTime
@@ -1188,6 +1230,7 @@ async function tests(config: TestConfiguration): Promise<void> {
 
         // current deposit - tax on exit
         const taxedAmt = getTaxDue(
+          token,
           ETH1,
           ethers.BigNumber.from(timestamp),
           lastCollectionTime
