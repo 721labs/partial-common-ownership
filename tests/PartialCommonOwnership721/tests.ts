@@ -81,25 +81,10 @@ async function tests(config: TestConfiguration): Promise<void> {
   }
 
   /**
-   * Deploys the contract with a given taxation period.
-   * @param taxationPeriod Taxation period in days
-   * @param beneficiaryAddress Address to remit taxes to
-   * @returns contract interface
+   * Scopes a snapshot of the EVM.
    */
-  async function deploy(): Promise<any> {
-    const contract = await factory.deploy(
-      TEST_NAME,
-      TEST_SYMBOL,
-      signers[1].address,
-      config.taxRate,
-      config.collectionFrequency,
-      GLOBAL_TRX_CONFIG
-    );
-
-    await contract.deployed();
-    expect(contract.address).to.not.be.null;
-
-    return contract;
+  async function snapshotEVM(): Promise<void> {
+    snapshot = await provider.send("evm_snapshot", []);
   }
 
   /**
@@ -342,13 +327,22 @@ async function tests(config: TestConfiguration): Promise<void> {
     factory = await ethers.getContractFactory("TestPCO721Token");
 
     //$ Set up contracts
+    contract = await factory.deploy(
+      TEST_NAME,
+      TEST_SYMBOL,
+      signers[1].address,
+      config.taxRate,
+      config.collectionFrequency,
+      GLOBAL_TRX_CONFIG
+    );
 
-    contract = await deploy();
+    await contract.deployed();
     contractAddress = contract.address;
 
     //$ Set up blocker
     const blockerFactory = await ethers.getContractFactory("Blocker");
     blocker = await blockerFactory.deploy(contractAddress);
+    await blocker.deployed();
 
     //$ Set up wallets
 
