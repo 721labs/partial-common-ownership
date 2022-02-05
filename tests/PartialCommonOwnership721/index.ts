@@ -522,7 +522,7 @@ describe("PartialCommonOwnership721.sol", async function () {
       it("when token is not minted", async function () {
         await expect(
           contract.setBeneficiary(4, alice.address)
-        ).to.be.revertedWith(ERC721ErrorMessages.NONEXISTENT_TOKEN);
+        ).to.be.revertedWith(ErrorMessages.NONEXISTENT_TOKEN);
       });
 
       it("When non-beneficiary attempts to update", async function () {
@@ -537,7 +537,7 @@ describe("PartialCommonOwnership721.sol", async function () {
     context("fails", async function () {
       it("when no beneficiary is set", async function () {
         await expect(contract.beneficiaryOf(4)).to.be.revertedWith(
-          ERC721ErrorMessages.NONEXISTENT_TOKEN
+          ErrorMessages.NONEXISTENT_TOKEN
         );
       });
     });
@@ -613,18 +613,18 @@ describe("PartialCommonOwnership721.sol", async function () {
         });
         it("#depositOf()", async function () {
           await expect(contract.depositOf(INVALID_TOKEN_ID)).to.be.revertedWith(
-            ERC721ErrorMessages.NONEXISTENT_TOKEN
+            ErrorMessages.NONEXISTENT_TOKEN
           );
         });
         it("#buy()", async function () {
           await expect(
             contract.buy(INVALID_TOKEN_ID, ETH0, ETH0, { value: ETH0 })
-          ).to.be.revertedWith(ERC721ErrorMessages.NONEXISTENT_TOKEN);
+          ).to.be.revertedWith(ErrorMessages.NONEXISTENT_TOKEN);
         });
         it("#taxOwedSince()", async function () {
           await expect(
             contract.taxOwedSince(INVALID_TOKEN_ID, await now())
-          ).to.be.revertedWith(ERC721ErrorMessages.NONEXISTENT_TOKEN);
+          ).to.be.revertedWith(ErrorMessages.NONEXISTENT_TOKEN);
         });
       });
     });
@@ -933,7 +933,7 @@ describe("PartialCommonOwnership721.sol", async function () {
       it("Attempting to buy an un-minted token", async function () {
         await expect(
           alice.contract.buy(INVALID_TOKEN_ID, ETH1, ETH1, { value: ETH1 })
-        ).to.be.revertedWith(ERC721ErrorMessages.NONEXISTENT_TOKEN);
+        ).to.be.revertedWith(ErrorMessages.NONEXISTENT_TOKEN);
       });
       it("Verifying incorrect Current Price", async function () {
         await expect(

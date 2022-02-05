@@ -13,6 +13,7 @@ enum ErrorMessages {
   NO_OUTSTANDING_REMITTANCE = "No outstanding remittance",
   PROHIBITED_TRANSFER_METHOD = "Transfers may only occur via purchase/foreclosure",
   BENEFICIARY_ONLY = "Current beneficiary only",
+  NONEXISTENT_TOKEN = "Query for nonexistent token",
 }
 
 enum Events {
