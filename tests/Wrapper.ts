@@ -20,6 +20,7 @@ import type { BigNumber } from "ethers";
 
 enum ErrorMessages {
   NOT_APPROVED = "ERC721: transfer caller is not owner nor approved",
+  NONEXISTENT_TOKEN = "ERC721Metadata: URI query for nonexistent token",
 }
 
 enum Events {
@@ -150,6 +151,39 @@ describe("Wrapper.sol", async function () {
             TOKENS.ONE
           )
         ).to.be.revertedWith("Tokens can only be received via #wrap");
+      });
+    });
+  });
+
+  describe("#tokenURI", async function () {
+    context("fails", async function () {
+      it("when token does not exist", async function () {
+        await expect(
+          wrapperContract.tokenURI(
+            wrappedTokenId(testNFTContract.address, TOKENS.ONE)
+          )
+        ).to.be.revertedWith(ErrorMessages.NONEXISTENT_TOKEN);
+      });
+    });
+    context("succeeds", async function () {
+      it("returns token's uri", async function () {
+        const tokenId = TOKENS.ONE;
+        await deployerNFT.contract.approve(wrapperContract.address, tokenId);
+
+        await deployer.contract.wrap(
+          testNFTContract.address,
+          tokenId,
+          ETH1,
+          beneficiary.address,
+          taxConfig.taxRate,
+          taxConfig.collectionFrequency
+        );
+
+        expect(
+          await wrapperContract.tokenURI(
+            wrappedTokenId(testNFTContract.address, tokenId)
+          )
+        ).to.equal(`721.dev/${tokenId}`);
       });
     });
   });

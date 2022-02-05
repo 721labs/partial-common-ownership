@@ -23,6 +23,6 @@ contract TestNFT is ERC721 {
 
   /// @notice Sets the base uri for testing.
   function _baseURI() internal pure override returns (string memory) {
-    return "http://721.dev/pco/test/api/";
+    return "721.dev/";
   }
 }
