@@ -5,7 +5,6 @@ enum ErrorMessages {
   BUY_PRICE_BELOW_CURRENT = "New Price must be >= current price",
   BUY_LACKS_SURPLUS_VALUE = "Message does not contain surplus value for deposit",
   BUY_ALREADY_OWNED = "Buyer is already owner",
-  NONEXISTENT_TOKEN = "ERC721: owner query for nonexistent token",
   NEW_PRICE_ZERO = "New price cannot be zero",
   NEW_PRICE_SAME = "New price cannot be same",
   // Not testing reentrancy lock, currently.
