@@ -33,336 +33,332 @@ const tokenTaxConfigs = {
   [TOKENS.THREE]: { collectionFrequency: 365, taxRate: 1000000000000 },
 };
 
+//$ State
+
+let provider;
+let signers;
+let factory;
+let blocker;
+let contract;
+let contractAddress;
+let beneficiary;
+let alice;
+let bob;
+let wallets;
+let walletsByAddress;
+let snapshot;
+
+let tenMin;
+let prior;
+
+//$ Helpers
+
+/**
+ * Returns a random token. This implement auto-rotation of tokens during tests,
+ * as each token has a different tax rate and collection frequency, thus ensuring the tests
+ * are valid for a range of configurations.
+ */
+function randomToken(): TOKENS {
+  const index = Math.floor(Math.random() * 3);
+  switch (index) {
+    case 0:
+      return TOKENS.ONE;
+    case 1:
+      return TOKENS.TWO;
+    case 2:
+      return TOKENS.THREE;
+  }
+}
+
+/**
+ * If wallet does not redeposit funds after purchasing, how many days until the entire deposit is exhausted?
+ * @param tokenId id of token
+ * @returns days as number
+ */
+function daysTillForeclosureWithoutRedeposit(tokenId: TOKENS): number {
+  const { collectionFrequency, taxRate } = tokenTaxConfigs[tokenId];
+  return collectionFrequency / (taxRate / 10 ** 12) + 1;
+}
+
+/**
+ * How often are taxes collected? in seconds.
+ * @param tokenId id of token
+ * @returns seconds as big number
+ */
+function collectionFrequencyInSeconds(tokenId: TOKENS): BigNumber {
+  const { collectionFrequency } = tokenTaxConfigs[tokenId];
+  return taxationPeriodToSeconds(collectionFrequency);
+}
+
+/**
+ * Returns tax numerator for a given token as BigNumber
+ * @param tokenId id of token
+ * @returns tax rate numerator
+ */
+function taxNumerator(tokenId: TOKENS): BigNumber {
+  const { taxRate } = tokenTaxConfigs[tokenId];
+  return ethers.BigNumber.from(taxRate);
+}
+
+/**
+ * Calculates the tax due.
+ * price * % of tax period completed (represented from 0 - 1) * tax rate;
+ * @param tokenId Id of token in question
+ * @param price Current price
+ * @param now Unix timestamp when request was made
+ * @param lastCollectionTime Unix timestamp of last tax collection
+ * @returns Tax due between now and last collection.
+ */
+function getTaxDue(
+  tokenId: TOKENS,
+  price: BigNumber,
+  now: BigNumber,
+  lastCollectionTime: BigNumber
+): BigNumber {
+  const secondsSinceLastCollection = now.sub(lastCollectionTime);
+  return price
+    .mul(secondsSinceLastCollection)
+    .div(collectionFrequencyInSeconds(tokenId))
+    .mul(taxNumerator(tokenId))
+    .div(TAX_DENOMINATOR);
+}
+
+/**
+ * Scopes a snapshot of the EVM.
+ */
+async function snapshotEVM(): Promise<void> {
+  snapshot = await provider.send("evm_snapshot", []);
+}
+
+/**
+ * Executes purchase and verifies expectations.
+ * @param wallet Wallet making the purchase
+ * @param tokenId Token being purchased
+ * @param purchasePrice Price purchasing for
+ * @param currentPriceForVerification Current price
+ * @param value Trx value
+ * @returns Transaction Receipt
+ */
+async function buy(
+  wallet: Wallet,
+  tokenId: TOKENS,
+  purchasePrice: BigNumber,
+  currentPriceForVerification: BigNumber,
+  value: BigNumber
+): Promise<{
+  trx: any;
+  block: any;
+}> {
+  //$ Setup
+
+  // Determine whether remittance recipient is the previous owner
+  // or the beneficiary (if the token is owned by the contract). Note:
+  // owner may be previous even though foreclosure is pending.
+  const currentOwner = await contract.ownerOf(tokenId);
+  const foreclosed = await contract.foreclosed(tokenId);
+  const remittanceRecipientWallet =
+    foreclosed || currentOwner === contract.address
+      ? beneficiary
+      : walletsByAddress[currentOwner];
+
+  const depositBefore = await contract.depositOf(tokenId);
+
+  let depositUponPurchase;
+
+  // Check if foreclosed
+  if (foreclosed) {
+    // Entire deposit will be taken in the foreclosure
+    depositUponPurchase = ETH0;
+  } else {
+    // Get the balance and then determine how much will be deducted by taxation
+    const taxDue = getTaxDue(
+      tokenId,
+      currentPriceForVerification,
+      (await now()).add(1), // block timestamp
+      await contract.lastCollectionTimes(tokenId)
+    );
+
+    depositUponPurchase = (await contract.depositOf(tokenId)).sub(taxDue);
+  }
+
+  //$ Buy
+
+  const trx = await wallet.contract.buy(
+    tokenId,
+    purchasePrice,
+    currentPriceForVerification,
+    { value, ...GLOBAL_TRX_CONFIG }
+  );
+
+  const block = await provider.getBlock(trx.blockNumber);
+
+  //$ Test Cases
+
+  // Buy Event emitted
+
+  expect(trx).to.emit(contract, Events.APPROVAL);
+
+  expect(trx).to.emit(contract, Events.TRANSFER);
+
+  expect(trx)
+    .to.emit(contract, Events.BUY)
+    .withArgs(tokenId, wallet.address, purchasePrice);
+
+  // Deposit updated
+  const surplus = value.sub(purchasePrice);
+  expect(await contract.depositOf(tokenId)).to.equal(surplus);
+
+  // Price updated
+  expect(await contract.priceOf(tokenId)).to.equal(purchasePrice);
+
+  // Collection timestamp updates
+  expect(await contract.lastCollectionTimes(tokenId)).to.equal(block.timestamp);
+
+  // Last transfer time
+  expect(await contract.lastTransferTimes(tokenId)).to.equal(block.timestamp);
+
+  // Owned updated
+  expect(await contract.ownerOf(tokenId)).to.equal(wallet.address);
+
+  const expectedRemittance = depositUponPurchase.add(purchasePrice);
+  if (expectedRemittance.gt(0)) {
+    // Remittance Event emitted
+    expect(trx)
+      .to.emit(contract, Events.REMITTANCE)
+      .withArgs(
+        RemittanceTriggers.LeaseTakeover,
+        remittanceRecipientWallet.address,
+        expectedRemittance
+      );
+
+    // Eth remitted to beneficiary
+    const { delta } = await remittanceRecipientWallet.balanceDelta();
+    expect(delta).to.equal(
+      foreclosed
+        ? depositBefore.add(expectedRemittance) // Beneficiary will receive the deposit from tax collection in addition
+        : expectedRemittance
+    );
+  }
+
+  //$ Cleanup
+
+  // Baseline wallet balances
+  await wallet.balance();
+  await remittanceRecipientWallet.balance();
+
+  return { trx, block };
+}
+
+/**
+ * Verifies that, after a given amount of time, taxation due is correct.
+ * @param tokenId Token being purchased
+ * @param after Number of days from now to verify after
+ * @returns Nothing.
+ */
+async function verifyCorrectTaxOwed(
+  tokenId: TOKENS,
+  after: number
+): Promise<void> {
+  const lastCollectionTime = await contract.lastCollectionTimes(tokenId);
+
+  await time.increase(after);
+
+  const owed = await contract.taxOwed(tokenId);
+
+  const price = await contract.priceOf(tokenId);
+
+  const due = getTaxDue(tokenId, price, owed.timestamp, lastCollectionTime);
+
+  expect(owed.amount).to.equal(due);
+}
+
+/**
+ * Increases time by a given amount, collects tax, and verifies that the
+ * correct amount of tax was collected.
+ * @param contract Contract that owns the token
+ * @param tokenId Token being purchased
+ * @param after Number of minutes from now to collect after
+ * @param currentPrice Current token price
+ * @returns Nothing.
+ */
+async function collectTax(
+  tokenId: TOKENS,
+  after: number,
+  currentPrice: BigNumber
+): Promise<void> {
+  //$ Setup
+
+  await beneficiary.balance();
+
+  const depositBefore = await contract.depositOf(tokenId);
+  const taxCollectedSinceLastTransferBefore =
+    await contract.taxCollectedSinceLastTransfer(tokenId);
+  const taxCollectedBefore = await contract.taxationCollected(tokenId);
+
+  //$ Collect
+
+  const before = await now();
+
+  await time.increase(time.duration.minutes(after));
+
+  const trx = await contract.collectTax(tokenId);
+
+  const timeAfter = await now();
+  const due = getTaxDue(tokenId, currentPrice, timeAfter, before);
+
+  //$ Expectations
+
+  // Events emitted
+  expect(trx).to.emit(contract, Events.COLLECTION).withArgs(tokenId, due);
+
+  // Remittance emitted
+  expect(trx)
+    .to.emit(contract, Events.REMITTANCE)
+    .withArgs(RemittanceTriggers.TaxCollection, beneficiary.address, due);
+
+  // Deposit updates
+  expect(await contract.depositOf(tokenId)).to.equal(depositBefore.sub(due));
+
+  // Token collection statistics update
+  expect(await contract.lastCollectionTimes(tokenId)).to.equal(timeAfter);
+
+  expect(await contract.taxCollectedSinceLastTransfer(tokenId)).to.equal(
+    taxCollectedSinceLastTransferBefore.add(due)
+  );
+
+  expect(await contract.taxationCollected(tokenId)).to.equal(
+    taxCollectedBefore.add(due)
+  );
+
+  // Beneficiary is remitted the expected amount
+  expect((await beneficiary.balanceDelta()).delta).to.equal(due);
+
+  //$ Cleanup
+
+  await beneficiary.balance();
+}
+
+/**
+ * Verifies that a given token forecloses at the expected time.
+ * Note: Allows for +/- 2s variation from shouldForecloseAt due to
+ * integer division-based slippages between subsequently returned times.
+ * @param contract Contract that owns the token
+ * @param tokenId id of the token
+ * @param shouldForecloseAt timestamp as BigNumber
+ */
+async function verifyExpectedForeclosureTime(
+  tokenId: TOKENS,
+  shouldForecloseAt: BigNumber
+): Promise<void> {
+  expect(await contract.foreclosureTime(tokenId)).to.be.closeTo(
+    shouldForecloseAt,
+    2
+  );
+}
+
 //$ Tests
 
 describe("PartialCommonOwnership721", async function () {
-  //$ State
-
-  let provider;
-  let signers;
-  let factory;
-  let blocker;
-  let contract;
-  let contractAddress;
-  let beneficiary;
-  let alice;
-  let bob;
-  let wallets;
-  let walletsByAddress;
-  let snapshot;
-
-  let tenMin;
-  let prior;
-
-  //$ Helpers
-
-  /**
-   * Returns a random token. This implement auto-rotation of tokens during tests,
-   * as each token has a different tax rate and collection frequency, thus ensuring the tests
-   * are valid for a range of configurations.
-   */
-  function randomToken(): TOKENS {
-    const index = Math.floor(Math.random() * 3);
-    switch (index) {
-      case 0:
-        return TOKENS.ONE;
-      case 1:
-        return TOKENS.TWO;
-      case 2:
-        return TOKENS.THREE;
-    }
-  }
-
-  /**
-   * If wallet does not redeposit funds after purchasing, how many days until the entire deposit is exhausted?
-   * @param tokenId id of token
-   * @returns days as number
-   */
-  function daysTillForeclosureWithoutRedeposit(tokenId: TOKENS): number {
-    const { collectionFrequency, taxRate } = tokenTaxConfigs[tokenId];
-    return collectionFrequency / (taxRate / 10 ** 12) + 1;
-  }
-
-  /**
-   * How often are taxes collected? in seconds.
-   * @param tokenId id of token
-   * @returns seconds as big number
-   */
-  function collectionFrequencyInSeconds(tokenId: TOKENS): BigNumber {
-    const { collectionFrequency } = tokenTaxConfigs[tokenId];
-    return taxationPeriodToSeconds(collectionFrequency);
-  }
-
-  /**
-   * Returns tax numerator for a given token as BigNumber
-   * @param tokenId id of token
-   * @returns tax rate numerator
-   */
-  function taxNumerator(tokenId: TOKENS): BigNumber {
-    const { taxRate } = tokenTaxConfigs[tokenId];
-    return ethers.BigNumber.from(taxRate);
-  }
-
-  /**
-   * Calculates the tax due.
-   * price * % of tax period completed (represented from 0 - 1) * tax rate;
-   * @param tokenId Id of token in question
-   * @param price Current price
-   * @param now Unix timestamp when request was made
-   * @param lastCollectionTime Unix timestamp of last tax collection
-   * @returns Tax due between now and last collection.
-   */
-  function getTaxDue(
-    tokenId: TOKENS,
-    price: BigNumber,
-    now: BigNumber,
-    lastCollectionTime: BigNumber
-  ): BigNumber {
-    const secondsSinceLastCollection = now.sub(lastCollectionTime);
-    return price
-      .mul(secondsSinceLastCollection)
-      .div(collectionFrequencyInSeconds(tokenId))
-      .mul(taxNumerator(tokenId))
-      .div(TAX_DENOMINATOR);
-  }
-
-  /**
-   * Scopes a snapshot of the EVM.
-   */
-  async function snapshotEVM(): Promise<void> {
-    snapshot = await provider.send("evm_snapshot", []);
-  }
-
-  /**
-   * Executes purchase and verifies expectations.
-   * @param wallet Wallet making the purchase
-   * @param tokenId Token being purchased
-   * @param purchasePrice Price purchasing for
-   * @param currentPriceForVerification Current price
-   * @param value Trx value
-   * @returns Transaction Receipt
-   */
-  async function buy(
-    wallet: Wallet,
-    tokenId: TOKENS,
-    purchasePrice: BigNumber,
-    currentPriceForVerification: BigNumber,
-    value: BigNumber
-  ): Promise<{
-    trx: any;
-    block: any;
-  }> {
-    //$ Setup
-
-    // Determine whether remittance recipient is the previous owner
-    // or the beneficiary (if the token is owned by the contract). Note:
-    // owner may be previous even though foreclosure is pending.
-    const currentOwner = await contract.ownerOf(tokenId);
-    const foreclosed = await contract.foreclosed(tokenId);
-    const remittanceRecipientWallet =
-      foreclosed || currentOwner === contract.address
-        ? beneficiary
-        : walletsByAddress[currentOwner];
-
-    const depositBefore = await contract.depositOf(tokenId);
-
-    let depositUponPurchase;
-
-    // Check if foreclosed
-    if (foreclosed) {
-      // Entire deposit will be taken in the foreclosure
-      depositUponPurchase = ETH0;
-    } else {
-      // Get the balance and then determine how much will be deducted by taxation
-      const taxDue = getTaxDue(
-        tokenId,
-        currentPriceForVerification,
-        (await now()).add(1), // block timestamp
-        await contract.lastCollectionTimes(tokenId)
-      );
-
-      depositUponPurchase = (await contract.depositOf(tokenId)).sub(taxDue);
-    }
-
-    //$ Buy
-
-    const trx = await wallet.contract.buy(
-      tokenId,
-      purchasePrice,
-      currentPriceForVerification,
-      { value, ...GLOBAL_TRX_CONFIG }
-    );
-
-    const block = await provider.getBlock(trx.blockNumber);
-
-    //$ Test Cases
-
-    // Buy Event emitted
-
-    expect(trx).to.emit(contract, Events.APPROVAL);
-
-    expect(trx).to.emit(contract, Events.TRANSFER);
-
-    expect(trx)
-      .to.emit(contract, Events.BUY)
-      .withArgs(tokenId, wallet.address, purchasePrice);
-
-    // Deposit updated
-    const surplus = value.sub(purchasePrice);
-    expect(await contract.depositOf(tokenId)).to.equal(surplus);
-
-    // Price updated
-    expect(await contract.priceOf(tokenId)).to.equal(purchasePrice);
-
-    // Collection timestamp updates
-    expect(await contract.lastCollectionTimes(tokenId)).to.equal(
-      block.timestamp
-    );
-
-    // Last transfer time
-    expect(await contract.lastTransferTimes(tokenId)).to.equal(block.timestamp);
-
-    // Owned updated
-    expect(await contract.ownerOf(tokenId)).to.equal(wallet.address);
-
-    const expectedRemittance = depositUponPurchase.add(purchasePrice);
-    if (expectedRemittance.gt(0)) {
-      // Remittance Event emitted
-      expect(trx)
-        .to.emit(contract, Events.REMITTANCE)
-        .withArgs(
-          RemittanceTriggers.LeaseTakeover,
-          remittanceRecipientWallet.address,
-          expectedRemittance
-        );
-
-      // Eth remitted to beneficiary
-      const { delta } = await remittanceRecipientWallet.balanceDelta();
-      expect(delta).to.equal(
-        foreclosed
-          ? depositBefore.add(expectedRemittance) // Beneficiary will receive the deposit from tax collection in addition
-          : expectedRemittance
-      );
-    }
-
-    //$ Cleanup
-
-    // Baseline wallet balances
-    await wallet.balance();
-    await remittanceRecipientWallet.balance();
-
-    return { trx, block };
-  }
-
-  /**
-   * Verifies that, after a given amount of time, taxation due is correct.
-   * @param tokenId Token being purchased
-   * @param after Number of days from now to verify after
-   * @returns Nothing.
-   */
-  async function verifyCorrectTaxOwed(
-    tokenId: TOKENS,
-    after: number
-  ): Promise<void> {
-    const lastCollectionTime = await contract.lastCollectionTimes(tokenId);
-
-    await time.increase(after);
-
-    const owed = await contract.taxOwed(tokenId);
-
-    const price = await contract.priceOf(tokenId);
-
-    const due = getTaxDue(tokenId, price, owed.timestamp, lastCollectionTime);
-
-    expect(owed.amount).to.equal(due);
-  }
-
-  /**
-   * Increases time by a given amount, collects tax, and verifies that the
-   * correct amount of tax was collected.
-   * @param contract Contract that owns the token
-   * @param tokenId Token being purchased
-   * @param after Number of minutes from now to collect after
-   * @param currentPrice Current token price
-   * @returns Nothing.
-   */
-  async function collectTax(
-    tokenId: TOKENS,
-    after: number,
-    currentPrice: BigNumber
-  ): Promise<void> {
-    //$ Setup
-
-    await beneficiary.balance();
-
-    const depositBefore = await contract.depositOf(tokenId);
-    const taxCollectedSinceLastTransferBefore =
-      await contract.taxCollectedSinceLastTransfer(tokenId);
-    const taxCollectedBefore = await contract.taxationCollected(tokenId);
-
-    //$ Collect
-
-    const before = await now();
-
-    await time.increase(time.duration.minutes(after));
-
-    const trx = await contract.collectTax(tokenId);
-
-    const timeAfter = await now();
-    const due = getTaxDue(tokenId, currentPrice, timeAfter, before);
-
-    //$ Expectations
-
-    // Events emitted
-    expect(trx).to.emit(contract, Events.COLLECTION).withArgs(tokenId, due);
-
-    // Remittance emitted
-    expect(trx)
-      .to.emit(contract, Events.REMITTANCE)
-      .withArgs(RemittanceTriggers.TaxCollection, beneficiary.address, due);
-
-    // Deposit updates
-    expect(await contract.depositOf(tokenId)).to.equal(depositBefore.sub(due));
-
-    // Token collection statistics update
-    expect(await contract.lastCollectionTimes(tokenId)).to.equal(timeAfter);
-
-    expect(await contract.taxCollectedSinceLastTransfer(tokenId)).to.equal(
-      taxCollectedSinceLastTransferBefore.add(due)
-    );
-
-    expect(await contract.taxationCollected(tokenId)).to.equal(
-      taxCollectedBefore.add(due)
-    );
-
-    // Beneficiary is remitted the expected amount
-    expect((await beneficiary.balanceDelta()).delta).to.equal(due);
-
-    //$ Cleanup
-
-    await beneficiary.balance();
-  }
-
-  /**
-   * Verifies that a given token forecloses at the expected time.
-   * Note: Allows for +/- 2s variation from shouldForecloseAt due to
-   * integer division-based slippages between subsequently returned times.
-   * @param contract Contract that owns the token
-   * @param tokenId id of the token
-   * @param shouldForecloseAt timestamp as BigNumber
-   */
-  async function verifyExpectedForeclosureTime(
-    tokenId: TOKENS,
-    shouldForecloseAt: BigNumber
-  ): Promise<void> {
-    expect(await contract.foreclosureTime(tokenId)).to.be.closeTo(
-      shouldForecloseAt,
-      2
-    );
-  }
-
-  //$ Setup
-
   before(async function () {
     // Used for computing 10 min prior
     tenMin = await now();
@@ -372,7 +368,7 @@ describe("PartialCommonOwnership721", async function () {
     signers = await ethers.getSigners();
     factory = await ethers.getContractFactory("TestPCO721Token");
 
-    //$ Set up contracts
+    // Set up contracts
     contract = await factory.deploy(
       TEST_NAME,
       TEST_SYMBOL,
@@ -383,12 +379,12 @@ describe("PartialCommonOwnership721", async function () {
     await contract.deployed();
     contractAddress = contract.address;
 
-    //$ Set up blocker
+    // Set up blocker
     const blockerFactory = await ethers.getContractFactory("Blocker");
     blocker = await blockerFactory.deploy(contractAddress);
     await blocker.deployed();
 
-    //$ Set up wallets
+    // Set up wallets
 
     beneficiary = new Wallet(contract, signers[1]);
     alice = new Wallet(contract, signers[2]);
@@ -425,8 +421,6 @@ describe("PartialCommonOwnership721", async function () {
       })
     );
   });
-
-  //$ Tests
 
   describe("TestPCO721Token", async function () {
     context("construction", async function () {
