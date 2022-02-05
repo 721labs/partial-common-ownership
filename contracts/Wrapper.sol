@@ -76,7 +76,7 @@ contract Wrapper is PCO {
     // and taxation information are set.
     require(
       operator_ == address(this),
-      "Tokens can only be recieved via #wrap"
+      "Tokens can only be received via #wrap"
     );
 
     uint256 _wrappedTokenId = wrappedTokenId(msg.sender, tokenId_);
@@ -89,7 +89,6 @@ contract Wrapper is PCO {
 
   /// @notice Takes possession of a given token, creating a "wrapped" version that complies with
   /// Partial Common Ownership. The new token is returned to the owner.
-  /// @dev Note that `#safeTransferFrom` first requires that `msg.sender` be approved.
   /// @param tokenContractAddress_ Issuing contract address for token to be wrapped.
   /// @param tokenId_ ID of token to be wrapped
   /// @param newPrice_ Self assessed valuation of the token.
