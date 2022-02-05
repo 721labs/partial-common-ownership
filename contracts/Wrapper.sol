@@ -11,6 +11,8 @@ struct WrappedToken {
   address contractAddress;
   /// @notice Underlying token ID (issued when minted).
   uint256 tokenId;
+  /// @notice Address that wrapped the token.
+  address operatorAddress;
 }
 
 /// @title Wrapper
@@ -26,7 +28,7 @@ contract Wrapper is PCO {
   // TODO: Add map of who initiated wrapping so that tokens can be unwrapped?
 
   /// @notice Mapping from Wrapped Token IDs to metadata on the underlying token.
-  mapping(uint256 => WrappedToken) private _tokenMap;
+  mapping(uint256 => WrappedToken) private _wrappedTokenMap;
 
   //////////////////////////////
   /// Events
@@ -81,9 +83,10 @@ contract Wrapper is PCO {
     tokenContract.safeTransferFrom(msg.sender, address(this), tokenId_);
 
     uint256 _wrappedTokenId = wrappedTokenId(tokenContractAddress_, tokenId_);
-    _tokenMap[_wrappedTokenId] = WrappedToken({
+    _wrappedTokenMap[_wrappedTokenId] = WrappedToken({
       contractAddress: tokenContractAddress_,
-      tokenId: tokenId_
+      tokenId: tokenId_,
+      operatorAddress: msg.sender
     });
     _safeMint(msg.sender, _wrappedTokenId);
 
@@ -93,6 +96,38 @@ contract Wrapper is PCO {
     PCO._setTaxPeriod(_wrappedTokenId, taxationPeriod_);
 
     emit LogTokenWrapped(tokenContractAddress_, tokenId_, _wrappedTokenId);
+  }
+
+  /// @notice Unwrap a given token. Only callable by the address that originally
+  /// wrapped the token. Burns the wrapped token and transfers the underlying token
+  /// to the last owner of the wrapped token.
+  /// @param tokenId_ Id of wrapped token.
+  function unwrap(uint256 tokenId_) public _tokenMinted(tokenId_) {
+    WrappedToken memory token = _wrappedTokenMap[tokenId_];
+
+    require(token.operatorAddress == msg.sender, "Wrap originator only");
+
+    // Get current owner's address prior to burning.
+    address owner = ownerOf(tokenId_);
+
+    delete _wrappedTokenMap[tokenId_];
+
+    // Burn the wrapped token.
+    _burn(tokenId_);
+
+    // Delete state
+    delete _beneficiaries[tokenId_];
+    delete prices[tokenId_];
+    delete _chainOfTitle[tokenId_];
+    delete _taxNumerators[tokenId_];
+    delete _taxPeriods[tokenId_];
+    delete _locked[tokenId_];
+
+    // TODO: Return the current owner's deposit and ensure outstanding taxes are paid.
+
+    // Transfer ownership of the underlying token to the current owner
+    IERC721 tokenContract = IERC721(token.contractAddress);
+    tokenContract.safeTransferFrom(address(this), owner, token.tokenId);
   }
 
   /// @notice Queries the wrapped token's URI.
@@ -109,7 +144,7 @@ contract Wrapper is PCO {
       "ERC721Metadata: URI query for nonexistent token"
     );
 
-    WrappedToken memory wrappedToken = _tokenMap[tokenId_];
+    WrappedToken memory wrappedToken = _wrappedTokenMap[tokenId_];
     IERC721Metadata metadata = IERC721Metadata(wrappedToken.contractAddress);
     return metadata.tokenURI(wrappedToken.tokenId);
   }

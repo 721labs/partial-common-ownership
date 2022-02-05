@@ -7,10 +7,15 @@ import { taxationPeriodToSeconds } from "./helpers/utils";
 import { snapshotEVM, revertEVM } from "./helpers/EVM";
 
 // Constants
-import { ETH1, GLOBAL_TRX_CONFIG } from "./helpers/constants";
+import { ETH1, ETH2, GLOBAL_TRX_CONFIG } from "./helpers/constants";
 
 // Types
-import { TOKENS } from "./helpers/types";
+import {
+  TOKENS,
+  ERC721ErrorMessages,
+  ERC721MetadataErrorMessages,
+} from "./helpers/types";
+import { ErrorMessages as PCOErrorMessages } from "./PartialCommonOwnership721/types";
 import type { Contract } from "@ethersproject/contracts";
 import type { Web3Provider } from "@ethersproject/providers";
 import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
@@ -19,8 +24,7 @@ import type { BigNumber } from "ethers";
 //$ Local Types
 
 enum ErrorMessages {
-  NOT_APPROVED = "ERC721: transfer caller is not owner nor approved",
-  NONEXISTENT_TOKEN = "ERC721Metadata: URI query for nonexistent token",
+  ORIGINATOR_ONLY = "Wrap originator only",
 }
 
 enum Events {
@@ -51,7 +55,7 @@ let snapshot: any;
  * @param tokenId Token to wrap
  * @returns Transaction data
  */
-async function wrap(tokenId: TOKENS): Promise<any> {
+async function wrap(tokenId: TOKENS): Promise<BigNumber> {
   await deployerNFT.contract.approve(wrapperContract.address, tokenId);
 
   const trx = await deployer.contract.wrap(
@@ -63,7 +67,80 @@ async function wrap(tokenId: TOKENS): Promise<any> {
     taxConfig.collectionFrequency
   );
 
-  return trx;
+  const id = wrappedTokenId(testNFTContract.address, tokenId);
+
+  // NFT is owned by wrapper contract
+  expect(await testNFTContract.ownerOf(tokenId)).to.equal(
+    wrapperContract.address
+  );
+
+  // Token is minted w/ correct ID
+  expect(await wrapperContract.ownerOf(id)).to.equal(deployer.address);
+
+  // Price is set
+  expect(await wrapperContract.priceOf(id)).to.equal(ETH1);
+
+  // Beneficiary is set
+  expect(await wrapperContract.beneficiaryOf(id)).to.equal(beneficiary.address);
+
+  // Tax rate is set
+  expect(await wrapperContract.taxRateOf(id)).to.equal(taxConfig.taxRate);
+
+  // Collection frequency is set
+  expect(await wrapperContract.taxPeriodOf(id)).to.equal(
+    taxationPeriodToSeconds(taxConfig.collectionFrequency)
+  );
+
+  // Event is emitted
+  expect(trx)
+    .to.emit(wrapperContract, Events.TOKEN_WRAPPED)
+    .withArgs(testNFTContract.address, tokenId, id);
+
+  return id;
+}
+
+/**
+ * Unwraps a given wrapped token.
+ * @param id Wrapped token id
+ */
+async function unwrap(id: BigNumber, unwrappedTokenId: TOKENS): Promise<void> {
+  await deployer.contract.unwrap(id);
+
+  // Verify that wrapped token is burned
+  await expect(wrapperContract.ownerOf(id)).to.be.revertedWith(
+    ERC721ErrorMessages.NONEXISTENT_TOKEN
+  );
+
+  // Verify all state is destroyed
+
+  await expect(wrapperContract.beneficiaryOf(id)).to.be.revertedWith(
+    PCOErrorMessages.NONEXISTENT_TOKEN
+  );
+
+  await expect(deployer.contract.changePrice(id, ETH2)).to.be.revertedWith(
+    ERC721ErrorMessages.NONEXISTENT_TOKEN
+  );
+
+  await expect(deployer.contract.priceOf(id)).to.be.revertedWith(
+    PCOErrorMessages.NONEXISTENT_TOKEN
+  );
+
+  await expect(wrapperContract.titleChainOf(id)).to.be.revertedWith(
+    PCOErrorMessages.NONEXISTENT_TOKEN
+  );
+
+  await expect(wrapperContract.taxRateOf(id)).to.be.revertedWith(
+    PCOErrorMessages.NONEXISTENT_TOKEN
+  );
+
+  await expect(wrapperContract.taxPeriodOf(id)).to.be.revertedWith(
+    PCOErrorMessages.NONEXISTENT_TOKEN
+  );
+
+  // Underlying token is transferred to message sender
+  expect(await testNFTContract.ownerOf(unwrappedTokenId)).to.equal(
+    deployer.address
+  );
 }
 
 /**
@@ -182,20 +259,16 @@ describe("Wrapper.sol", async function () {
           wrapperContract.tokenURI(
             wrappedTokenId(testNFTContract.address, TOKENS.ONE)
           )
-        ).to.be.revertedWith(ErrorMessages.NONEXISTENT_TOKEN);
+        ).to.be.revertedWith(ERC721MetadataErrorMessages.NONEXISTENT_TOKEN);
       });
     });
     context("succeeds", async function () {
       it("returns token's uri", async function () {
         const tokenId = TOKENS.ONE;
-
-        await wrap(tokenId);
-
-        expect(
-          await wrapperContract.tokenURI(
-            wrappedTokenId(testNFTContract.address, tokenId)
-          )
-        ).to.equal(`721.dev/${tokenId}`);
+        const id = await wrap(tokenId);
+        expect(await wrapperContract.tokenURI(id)).to.equal(
+          `721.dev/${tokenId}`
+        );
       });
     });
   });
@@ -212,7 +285,7 @@ describe("Wrapper.sol", async function () {
             taxConfig.taxRate,
             taxConfig.collectionFrequency
           )
-        ).to.be.revertedWith(ErrorMessages.NOT_APPROVED);
+        ).to.be.revertedWith(ERC721ErrorMessages.NOT_APPROVED);
       });
 
       it("if owner has not approved wrapper", async function () {
@@ -225,39 +298,44 @@ describe("Wrapper.sol", async function () {
             taxConfig.taxRate,
             taxConfig.collectionFrequency
           )
-        ).to.be.revertedWith(ErrorMessages.NOT_APPROVED);
+        ).to.be.revertedWith(ERC721ErrorMessages.NOT_APPROVED);
       });
     });
     context("succeeds", async function () {
       it("can be wrapped by token owner", async function () {
+        await wrap(TOKENS.ONE);
+      });
+
+      it("can be unwrapped and then re-wrapped", async function () {
         const tokenId = TOKENS.ONE;
-        const trx = await wrap(tokenId);
+        const id = await wrap(tokenId);
+        await unwrap(id, tokenId);
+        await wrap(tokenId);
+      });
+    });
+  });
 
-        const id = wrappedTokenId(testNFTContract.address, tokenId);
-
-        // Token is minted
-        expect(await wrapperContract.ownerOf(id)).to.equal(deployer.address);
-
-        // Price is set
-        expect(await wrapperContract.priceOf(id)).to.equal(ETH1);
-
-        // Beneficiary is set
-        expect(await wrapperContract.beneficiaryOf(id)).to.equal(
-          beneficiary.address
+  describe("#unwrap", async function () {
+    context("fails", async function () {
+      it("token must exist", async function () {
+        await expect(deployer.contract.unwrap(TOKENS.ONE)).to.be.revertedWith(
+          PCOErrorMessages.NONEXISTENT_TOKEN
         );
+      });
 
-        // Tax rate is set
-        expect(await wrapperContract.taxRateOf(id)).to.equal(taxConfig.taxRate);
-
-        // Collection frequency is set
-        expect(await wrapperContract.taxPeriodOf(id)).to.equal(
-          taxationPeriodToSeconds(taxConfig.collectionFrequency)
+      it("only the address that wrapped the token can unwrap it", async function () {
+        const id = await wrap(TOKENS.ONE);
+        await expect(alice.contract.unwrap(id)).to.be.revertedWith(
+          ErrorMessages.ORIGINATOR_ONLY
         );
+      });
+    });
 
-        // Event is emitted
-        expect(trx)
-          .to.emit(wrapperContract, Events.TOKEN_WRAPPED)
-          .withArgs(testNFTContract.address, tokenId, id);
+    context("succeeds", async function () {
+      it("can be unwrapped", async function () {
+        const tokenId = TOKENS.ONE;
+        const id = await wrap(tokenId);
+        await unwrap(id, tokenId);
       });
     });
   });
