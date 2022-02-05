@@ -20,7 +20,6 @@ import {
 } from "./constants";
 import { now } from "../helpers/Time";
 import { taxationPeriodToSeconds } from "./utils";
-import type { TestConfiguration } from "./types";
 
 const tokenTaxConfigs = {
   // 5% Quarterly
