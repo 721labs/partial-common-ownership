@@ -13,6 +13,10 @@ const ETH4 = ethers.utils.parseEther("4");
 
 const TAX_DENOMINATOR = ethers.BigNumber.from("1000000000000");
 
+const GLOBAL_TRX_CONFIG = {
+  gasLimit: 9500000, // if gas limit is set, estimateGas isn't run superfluously, slowing tests down.
+};
+
 export {
   TEST_NAME,
   TEST_SYMBOL,
@@ -23,4 +27,5 @@ export {
   ETH3,
   ETH4,
   TAX_DENOMINATOR,
+  GLOBAL_TRX_CONFIG,
 };

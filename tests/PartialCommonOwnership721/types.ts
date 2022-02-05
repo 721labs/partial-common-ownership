@@ -40,11 +40,4 @@ enum RemittanceTriggers {
   TaxCollection,
 }
 
-type TestConfiguration = {
-  name: string;
-  collectionFrequency: number;
-  taxRate: number;
-};
-
-export type { TestConfiguration };
 export { ErrorMessages, TOKENS, Events, RemittanceTriggers };
