@@ -36,7 +36,7 @@ Please report any security issues you find in [Issues](https://github.com/721lab
 
 ## Contributors
 
-- [Will Holley](https://twitter.com/waholleyiv)
+- [Will Holley (721.dev)](https://twitter.com/waholleyiv)
 - [Victor Sint Nicolaas](https://github.com/vicsn)
 
 ## License
