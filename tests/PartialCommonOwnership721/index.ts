@@ -6,22 +6,14 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 
 import Wallet from "../helpers/Wallet";
+import { ErrorMessages, Events, RemittanceTriggers } from "./types";
+import { TOKENS } from "../helpers/types";
 import {
-  ErrorMessages,
-  TOKENS,
-  Events,
-  RemittanceTriggers,
-} from "../helpers/types";
-import {
-  TEST_NAME,
-  TEST_SYMBOL,
-  INVALID_TOKEN_ID,
   ETH0,
   ETH1,
   ETH2,
   ETH3,
   ETH4,
-  TAX_DENOMINATOR,
   GLOBAL_TRX_CONFIG,
 } from "../helpers/constants";
 import { now } from "../helpers/Time";
@@ -29,6 +21,13 @@ import { taxationPeriodToSeconds } from "../helpers/utils";
 import { snapshotEVM, revertEVM } from "../helpers/EVM";
 
 //$ Test-Specific Constants
+
+const TEST_NAME = "721TEST";
+const TEST_SYMBOL = "TEST";
+
+const INVALID_TOKEN_ID = 999;
+
+const TAX_DENOMINATOR = ethers.BigNumber.from("1000000000000");
 
 const tokenTaxConfigs = {
   // 5% Quarterly
