@@ -1,20 +1,20 @@
-# Partial Common Ownership Tokens
+# Partial Common Ownership Token Standards
 
 [![tests](https://github.com/721labs/partial-common-ownership/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/721labs/partial-common-ownership/actions/workflows/tests.yml)
 
 ## Overview
 
-This project aims to establish a standard, open source implementation of Partial Common Ownership for non-fungible tokens. It builds upon work done by RadicalxChange, Simon de la Rouviere, and others.
+This project establishes standard, open source implementations of Partial Common Ownership of Ethereum ERC721 "NFTs". It builds upon work done by RadicalxChange, Simon de la Rouviere, and others. It aims to be a mature, secure, and all-encompassing starting point for any developer who wants to implement Partial Common Ownership.
 
-## Installing
+## Installation
 
-Using npm:
+#### npm
 
 ```shell
 $ npm i @721labs/partial-common-ownership --save-dev
 ```
 
-Using yarn:
+#### yarn
 
 ```shell
 $ yarn add @721labs/partial-common-ownership --dev
@@ -31,14 +31,15 @@ Usage documentation can be found [here](docs/documentation.md).
 
 ## Security
 
-**Please note that `PartialCommonOwnership721.sol` is in early-development has not been independently audited for security**. While the maintainers strive to ensure best practices, we are not responsible for loss-of-funds resulting from usage of Partial Common Ownership.
+**Please note that none of the contracts have been independently audited for security**. Contributors strive to use best practices, but are not responsible for loss-of-funds resulting from the use of these contracts.
 
 Please report any security issues you find in [Issues](https://github.com/721labs/partial-common-ownership/issues).
 
-## Authors
+## Contributors
 
 - [Will Holley](https://twitter.com/waholleyiv)
+- [Victor Sint Nicolaas](https://github.com/vicsn)
 
 ## License
 
-721 Labs' _Partial Common Ownership Tokens_ is released under the [MIT License](LICENSE).
+This repository and all code herein is released under the [MIT License](LICENSE).
