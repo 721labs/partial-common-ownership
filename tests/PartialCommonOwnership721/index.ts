@@ -50,7 +50,9 @@ describe("PartialCommonOwnership721", async function () {
   let wallets;
   let walletsByAddress;
   let snapshot;
-  let tenMinDue; // TODO: Should have values; is currently hard coded to TOKEN.ONE value.
+
+  let tenMin;
+  let prior;
 
   //$ Helpers
 
@@ -345,10 +347,9 @@ describe("PartialCommonOwnership721", async function () {
   //$ Setup
 
   before(async function () {
-    // Compute tax rate for 1ETH over 10 minutes
-    const tenMin = await now();
-    const prior = tenMin.sub(600);
-    tenMinDue = getTaxDue(TOKENS.ONE, ETH1, tenMin, prior);
+    // Used for computing 10 min prior
+    tenMin = await now();
+    prior = tenMin.sub(600);
 
     provider = new ethers.providers.Web3Provider(web3.currentProvider);
     signers = await ethers.getSigners();
@@ -835,8 +836,9 @@ describe("PartialCommonOwnership721", async function () {
     context("succeeds", async function () {
       it("consistently returns within +/- 1s", async function () {
         const token = TOKENS.ONE;
-
-        await buy(alice, token, ETH1, ETH0, ETH1.add(tenMinDue));
+        const price = ETH1;
+        const tenMinDue = getTaxDue(token, price, tenMin, prior);
+        await buy(alice, token, price, ETH0, ETH1.add(tenMinDue));
 
         // Future:
 
@@ -866,12 +868,14 @@ describe("PartialCommonOwnership721", async function () {
       });
 
       it("time is 10m into the future", async function () {
-        const token = TOKENS.ONE;
+        const token = TOKENS.TWO;
+        const price = ETH1;
+        const tenMinDue = getTaxDue(token, price, tenMin, prior);
 
         await buy(
           alice,
           token,
-          ETH1,
+          price,
           ETH0,
           ETH1.add(tenMinDue) // Deposit a surplus 10 min of patronage
         );
@@ -884,12 +888,14 @@ describe("PartialCommonOwnership721", async function () {
       });
 
       it("returns backdated time if foreclosed", async function () {
-        const token = TOKENS.ONE;
+        const token = TOKENS.THREE;
+        const price = ETH1;
+        const tenMinDue = getTaxDue(token, price, tenMin, prior);
 
         await buy(
           alice,
           token,
-          ETH1,
+          price,
           ETH0,
           ETH1.add(tenMinDue) // Deposit a surplus 10 min of patronage
         );
