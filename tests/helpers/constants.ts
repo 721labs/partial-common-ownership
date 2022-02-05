@@ -1,6 +1,6 @@
 import { ethers } from "hardhat";
 
-const ETH0 = ethers.BigNumber.from("0");
+const ETH0 = ethers.constants.Zero;
 const ETH1 = ethers.utils.parseEther("1");
 const ETH2 = ethers.utils.parseEther("2");
 const ETH3 = ethers.utils.parseEther("3");
