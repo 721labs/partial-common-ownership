@@ -124,16 +124,16 @@ async function snapshotEVM(): Promise<void> {
  * Executes purchase and verifies expectations.
  * @param wallet Wallet making the purchase
  * @param tokenId Token being purchased
- * @param purchasePrice Price purchasing for
- * @param currentPriceForVerification Current price
+ * @param newValuation Self-assess valuation.
+ * @param currentValuation Current owner's self-assessed valuation.
  * @param value Trx value
  * @returns Transaction Receipt
  */
 async function buy(
   wallet: Wallet,
   tokenId: TOKENS,
-  purchasePrice: BigNumber,
-  currentPriceForVerification: BigNumber,
+  newValuation: BigNumber,
+  currentValuation: BigNumber,
   value: BigNumber
 ): Promise<{
   trx: any;
@@ -163,7 +163,7 @@ async function buy(
     // Get the balance and then determine how much will be deducted by taxation
     const taxDue = getTaxDue(
       tokenId,
-      currentPriceForVerification,
+      currentValuation,
       (await now()).add(1), // block timestamp
       await contract.lastCollectionTimes(tokenId)
     );
@@ -175,8 +175,8 @@ async function buy(
 
   const trx = await wallet.contract.buy(
     tokenId,
-    purchasePrice,
-    currentPriceForVerification,
+    newValuation,
+    currentValuation,
     { value, ...GLOBAL_TRX_CONFIG }
   );
 
@@ -192,14 +192,14 @@ async function buy(
 
   expect(trx)
     .to.emit(contract, Events.BUY)
-    .withArgs(tokenId, wallet.address, purchasePrice);
+    .withArgs(tokenId, wallet.address, newValuation);
 
   // Deposit updated
-  const surplus = value.sub(currentPriceForVerification);
+  const surplus = value.sub(currentValuation);
   expect(await contract.depositOf(tokenId)).to.equal(surplus);
 
   // Price updated
-  expect(await contract.priceOf(tokenId)).to.equal(purchasePrice);
+  expect(await contract.priceOf(tokenId)).to.equal(newValuation);
 
   // Collection timestamp updates
   expect(await contract.lastCollectionTimes(tokenId)).to.equal(block.timestamp);
@@ -210,9 +210,7 @@ async function buy(
   // Owned updated
   expect(await contract.ownerOf(tokenId)).to.equal(wallet.address);
 
-  const expectedRemittance = depositUponPurchase.add(
-    currentPriceForVerification
-  );
+  const expectedRemittance = depositUponPurchase.add(currentValuation);
   if (expectedRemittance.gt(0)) {
     // Remittance Event emitted
     expect(trx)
