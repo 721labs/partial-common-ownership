@@ -145,31 +145,21 @@ async function buy(
   // or the beneficiary (if the token is owned by the contract). Note:
   // owner may be previous even though foreclosure is pending.
   const currentOwner = await contract.ownerOf(tokenId);
+
   const foreclosed = await contract.foreclosed(tokenId);
-  const remittanceRecipientWallet =
-    foreclosed || currentOwner === contract.address
-      ? beneficiary
-      : walletsByAddress[currentOwner];
+  const ownedByContract = currentOwner === contract.address;
+  const willBeOwnedByContract = foreclosed || ownedByContract;
 
   const depositBefore = await contract.depositOf(tokenId);
 
-  let depositUponPurchase;
+  const taxDue = getTaxDue(
+    tokenId,
+    currentValuation,
+    (await now()).add(1), // block timestamp
+    await contract.lastCollectionTimes(tokenId)
+  );
 
-  // Check if foreclosed
-  if (foreclosed) {
-    // Entire deposit will be taken in the foreclosure
-    depositUponPurchase = ETH0;
-  } else {
-    // Get the balance and then determine how much will be deducted by taxation
-    const taxDue = getTaxDue(
-      tokenId,
-      currentValuation,
-      (await now()).add(1), // block timestamp
-      await contract.lastCollectionTimes(tokenId)
-    );
-
-    depositUponPurchase = (await contract.depositOf(tokenId)).sub(taxDue);
-  }
+  const depositAfter = depositBefore.sub(taxDue);
 
   //$ Buy
 
@@ -184,12 +174,9 @@ async function buy(
 
   //$ Test Cases
 
-  // Buy Event emitted
-
+  // Events emitted
   expect(trx).to.emit(contract, Events.APPROVAL);
-
   expect(trx).to.emit(contract, Events.TRANSFER);
-
   expect(trx)
     .to.emit(contract, Events.BUY)
     .withArgs(tokenId, wallet.address, newValuation);
@@ -200,8 +187,12 @@ async function buy(
     expect(await contract.depositOf(tokenId)).to.equal(0);
   } else {
     // Deposit updated
-    const surplus = value.sub(currentValuation);
-    expect(await contract.depositOf(tokenId)).to.equal(surplus);
+    expect(await contract.depositOf(tokenId)).to.equal(
+      // If purchasing will trigger foreclosure or token was already
+      // in foreclosure, the deposit will be equal to the entire amount
+      // included by the purchaser.
+      foreclosed ? value : value.sub(currentValuation)
+    );
   }
 
   // Price updated
@@ -216,33 +207,35 @@ async function buy(
   // Owned updated
   expect(await contract.ownerOf(tokenId)).to.equal(wallet.address);
 
-  // If purchased by the beneficiary from the contract, no remittance occurs.
-  if (!(purchasedByBeneficiary && currentValuation == ETH0)) {
-    const expectedRemittance = depositUponPurchase.add(currentValuation);
+  // Remittances
+  // If purchased by the beneficiary from the contract, the token was purchased from the contract,
+  // or the token was purchased from foreclosure, no remittance occurs.
+  if (
+    !willBeOwnedByContract &&
+    !(purchasedByBeneficiary && currentValuation == ETH0)
+  ) {
+    // Get the balance and then determine how much will be deducted by taxation
+    const expectedRemittance = depositAfter.add(currentValuation);
 
-    if (expectedRemittance.gt(0)) {
-      // Remittance Event emitted
-      expect(trx)
-        .to.emit(contract, Events.REMITTANCE)
-        .withArgs(
-          RemittanceTriggers.LeaseTakeover,
-          remittanceRecipientWallet.address,
-          expectedRemittance
-        );
-
-      // Beneficiary or previous owner received their Eth
-      const { delta } = await remittanceRecipientWallet.balanceDelta();
-      expect(delta).to.equal(
-        foreclosed ? depositBefore.add(expectedRemittance) : expectedRemittance
+    expect(trx)
+      .to.emit(contract, Events.REMITTANCE)
+      .withArgs(
+        RemittanceTriggers.LeaseTakeover,
+        currentOwner,
+        expectedRemittance
       );
-    }
+
+    // Eth sent to recipient
+    const recipient = walletsByAddress[currentOwner];
+    const { delta } = await recipient.balanceDelta();
+    expect(delta).to.equal(expectedRemittance);
+    await recipient.balance(); // cleanup
   }
 
   //$ Cleanup
 
   // Baseline wallet balances
   await wallet.balance();
-  await remittanceRecipientWallet.balance();
 
   return { trx, block };
 }
@@ -792,9 +785,9 @@ describe("PartialCommonOwnership721.sol", async function () {
 
           await time.increase(time.duration.days(1));
 
-          // Purchase out of foreclosure
+          // Purchasing will trigger foreclosure and ownership transfer.
           const price = ETH1;
-          await buy(bob, token, price, ETH0, ETH2);
+          await buy(bob, token, price, ETH1, ETH2);
 
           await collectTax(token, 1, price);
         });
@@ -953,6 +946,22 @@ describe("PartialCommonOwnership721.sol", async function () {
 
   describe("#buy()", async function () {
     context("fails", async function () {
+      it("Owner cannot prevent foreclosure by re-calling buy with new deposit", async function () {
+        const token = randomToken();
+
+        await buy(alice, token, ETH1, ETH0, ETH1);
+
+        // Exhaust deposit
+        // How many days until foreclosure?
+        const timeTillForeclosure = await contract.foreclosureTime(token);
+        await time.increaseTo(timeTillForeclosure.add(1).toNumber());
+
+        // The tax collection that puts the token into foreclosure occurs after
+        // ownership assertion.
+        await expect(
+          alice.contract.buy(token, ETH1, ETH1, { value: ETH2 })
+        ).to.be.revertedWith(ErrorMessages.BUY_ALREADY_OWNED);
+      });
       it("Attempting to buy an un-minted token", async function () {
         await expect(
           alice.contract.buy(INVALID_TOKEN_ID, ETH1, ETH1, { value: ETH1 })
@@ -1038,11 +1047,7 @@ describe("PartialCommonOwnership721.sol", async function () {
 
       it("Purchasing token from current owner", async function () {
         const token = randomToken();
-
         await buy(alice, token, ETH1, ETH0, ETH2);
-
-        await time.increase(time.duration.minutes(10));
-
         await buy(bob, token, ETH2, ETH1, ETH3);
       });
 
@@ -1058,7 +1063,7 @@ describe("PartialCommonOwnership721.sol", async function () {
 
         // Trigger foreclosure & buy it out of foreclosure
         expect(
-          await bob.contract.buy(token, ETH1, ETH0, {
+          await bob.contract.buy(token, ETH1, ETH1, {
             value: ETH2,
           })
         )
@@ -1078,6 +1083,9 @@ describe("PartialCommonOwnership721.sol", async function () {
         const timeTillForeclosure = await contract.foreclosureTime(token);
         await time.increaseTo(timeTillForeclosure.add(1).toNumber());
 
+        // Foreclose
+        await contract.collectTax(token);
+
         // Buy out of foreclosure
         await buy(bob, token, ETH1, ETH0, ETH2);
 
@@ -1093,6 +1101,9 @@ describe("PartialCommonOwnership721.sol", async function () {
         // How many days until foreclosure?
         const timeTillForeclosure = await contract.foreclosureTime(token);
         await time.increaseTo(timeTillForeclosure.add(1).toNumber());
+
+        // Trigger foreclosure
+        await contract.collectTax(token);
 
         // Buy out of foreclosure
         await buy(alice, token, ETH1, ETH0, ETH2);
@@ -1129,6 +1140,38 @@ describe("PartialCommonOwnership721.sol", async function () {
         const tokenId = randomToken();
         await buy(alice, tokenId, ETH1, ETH0, ETH2);
         await buy(beneficiary, tokenId, ETH4, ETH1, ETH1);
+      });
+
+      /**
+       * Bugfix e890718185d982a329f7898bc4dd959787372f47
+       * If Alice buys the token with a very small deposit, and Bob purchasing the token
+       * exhausts that deposit, the token will be foreclosed and the valuation will be set to
+       * 0.  If Bob doesn't realize this will happen, his `currentValuation_` param will be
+       * incorrect and the token will not be purchasable until Bob resubmits with a current valuation of 0.
+       * This is unintended behavior.
+       *
+       * As such, https://github.com/721labs/partial-common-ownership/issues/53 changes the tax collection
+       * to occur only after the assertions have passed.  Prior to this, this test would fail.
+       */
+      it("Collects taxes after assertions success", async function () {
+        const token = randomToken();
+        const aliceValuation = ETH1;
+
+        await buy(
+          alice,
+          token,
+          aliceValuation,
+          ETH0,
+          // 10 minutes worth of deposit
+          getTaxDue(token, aliceValuation, tenMin, prior)
+        );
+
+        // 10 min goes by...
+        const elevenMinutes = time.duration.minutes(10);
+        await time.increase(elevenMinutes);
+
+        // Bob attempts to purchases the token, triggering foreclosure.
+        await buy(bob, token, ETH2, aliceValuation, ETH2);
       });
     });
   });
