@@ -217,7 +217,7 @@ async function buy(
   expect(await contract.ownerOf(tokenId)).to.equal(wallet.address);
 
   // If purchased by the beneficiary from the contract, no remittance occurs.
-  if (!(purchasedByBeneficiary && currentPriceForVerification == ETH0)) {
+  if (!(purchasedByBeneficiary && currentValuation == ETH0)) {
     const expectedRemittance = depositUponPurchase.add(currentValuation);
 
     if (expectedRemittance.gt(0)) {
@@ -232,13 +232,8 @@ async function buy(
 
       // Beneficiary or previous owner received their Eth
       const { delta } = await remittanceRecipientWallet.balanceDelta();
-
-      // TODO: This is occurring because Alice is expecting a 4 eth
-      // remittance but the trx only sent 1eth; see #49.
       expect(delta).to.equal(
-        foreclosed
-          ? depositBefore.add(expectedRemittance) // Beneficiary will receive the deposit from tax collection in addition
-          : expectedRemittance
+        foreclosed ? depositBefore.add(expectedRemittance) : expectedRemittance
       );
     }
   }
