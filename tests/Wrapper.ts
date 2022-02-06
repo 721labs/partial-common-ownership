@@ -43,7 +43,7 @@ const wrapValuation = ETH1;
 
 const mintedTestNFTs = [TOKENS.ONE, TOKENS.TWO, TOKENS.THREE];
 
-const taxConfig = { collectionFrequency: 90, taxRate: 50000000000 };
+const taxConfig = { collectionFrequency: 365, taxRate: 50000000000 };
 
 //$ State
 let provider: Web3Provider;
@@ -71,7 +71,7 @@ async function wrap(tokenId: TOKENS, beneficiary: Wallet): Promise<BigNumber> {
   await deployerNFT.contract.approve(wrapperContract.address, tokenId);
 
   // If wrapper is beneficiary, no deposit is necessary; otherwise, it's required.
-  const deposit = beneficiary.address == deployer.address ? ETH0 : ETH1;
+  const deposit = beneficiary.address == deployer.address ? ETH0 : ETH3;
 
   const trx = await deployer.contract.wrap(
     testNFTContract.address,
@@ -124,13 +124,13 @@ async function wrap(tokenId: TOKENS, beneficiary: Wallet): Promise<BigNumber> {
  * @param unwrappedTokenId Id of the underlying token
  */
 async function unwrap(id: BigNumber, unwrappedTokenId: TOKENS): Promise<void> {
-  const lastValuation = await wrapperContract.priceOf(id);
   const deposit = await wrapperContract.depositOf(id);
 
   const currentOwner = walletsByAddress[await wrapperContract.ownerOf(id)];
+  const beneficiary = await wrapperContract.beneficiaryOf(id);
+  const ownedByBeneficiary = currentOwner.address == beneficiary;
 
-  await currentOwner.balance();
-
+  // Deployer is always wrapper so deployer must be un-wrapper.
   const trx = await deployer.contract.unwrap(id);
 
   // Verify that wrapped token is burned
@@ -169,22 +169,24 @@ async function unwrap(id: BigNumber, unwrappedTokenId: TOKENS): Promise<void> {
     currentOwner.address
   );
 
-  // Verify that taxes are collected
-  let taxCollected = 0;
-  if (lastValuation.gt(0)) {
-    expect(trx).to.emit(wrapperContract, PCOEvents.COLLECTION);
+  // Determine if taxes should have been / were collected
+  const receipt = await trx.wait();
+  const event = receipt.events.find(
+    (event: any) => event.event === PCOEvents.COLLECTION
+  );
 
-    // Determine tax collected
-    const receipt = await trx.wait();
-    const event = receipt.events.find(
-      (event: any) => event.event === PCOEvents.COLLECTION
-    );
+  let taxCollected = 0;
+  if (ownedByBeneficiary) {
+    expect(Boolean(event)).to.equal(false);
+  } else {
+    expect(Boolean(event)).to.equal(true);
     taxCollected = event.args.collected;
   }
 
   // Verify that deposit is returned
-  if (deposit.gt(0)) {
-    const depositAfter = deposit.sub(taxCollected);
+  const depositAfter = deposit.sub(taxCollected);
+
+  if (depositAfter.gt(0)) {
     expect(trx)
       .to.emit(wrapperContract, PCOEvents.REMITTANCE)
       .withArgs(
@@ -192,9 +194,6 @@ async function unwrap(id: BigNumber, unwrappedTokenId: TOKENS): Promise<void> {
         currentOwner.address,
         depositAfter
       );
-
-    const { delta } = await currentOwner.balanceDelta();
-    expect(delta).to.equal(depositAfter);
   }
 }
 
@@ -429,9 +428,15 @@ describe("Wrapper.sol", async function () {
     });
 
     context("succeeds", async function () {
-      it("can be unwrapped", async function () {
+      it("can be unwrapped after being wrapped by beneficiary", async function () {
         const tokenId = TOKENS.ONE;
         const id = await wrap(tokenId, deployer);
+        await unwrap(id, tokenId);
+      });
+
+      it("can be unwrapped after being wrapped by non-beneficiary", async function () {
+        const tokenId = TOKENS.ONE;
+        const id = await wrap(tokenId, bob);
         await unwrap(id, tokenId);
       });
 
