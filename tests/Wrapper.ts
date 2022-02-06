@@ -15,7 +15,11 @@ import {
   ERC721ErrorMessages,
   ERC721MetadataErrorMessages,
 } from "./helpers/types";
-import { ErrorMessages as PCOErrorMessages } from "./PartialCommonOwnership721/types";
+import {
+  ErrorMessages as PCOErrorMessages,
+  Events as PCOEvents,
+  RemittanceTriggers,
+} from "./PartialCommonOwnership721/types";
 import type { Contract } from "@ethersproject/contracts";
 import type { Web3Provider } from "@ethersproject/providers";
 import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
@@ -49,6 +53,10 @@ let deployerNFT: Wallet;
 let beneficiary: Wallet;
 let alice: Wallet;
 let snapshot: any;
+let wallets: Array<Wallet>;
+let walletsByAddress: {
+  [address: string]: Wallet;
+};
 
 //$ Helpers
 
@@ -104,13 +112,17 @@ async function wrap(tokenId: TOKENS): Promise<BigNumber> {
 /**
  * Unwraps a given wrapped token.
  * @param id Wrapped token id
+ * @param unwrappedTokenId Id of the underlying token
  */
-async function unwrap(
-  id: BigNumber,
-  unwrappedTokenId: TOKENS,
-  currentOwner: Wallet
-): Promise<void> {
-  await deployer.contract.unwrap(id);
+async function unwrap(id: BigNumber, unwrappedTokenId: TOKENS): Promise<void> {
+  const lastValuation = await wrapperContract.priceOf(id);
+  const deposit = await wrapperContract.depositOf(id);
+
+  const currentOwner = walletsByAddress[await wrapperContract.ownerOf(id)];
+
+  await currentOwner.balance();
+
+  const trx = await deployer.contract.unwrap(id);
 
   // Verify that wrapped token is burned
   await expect(wrapperContract.ownerOf(id)).to.be.revertedWith(
@@ -147,6 +159,35 @@ async function unwrap(
   expect(await testNFTContract.ownerOf(unwrappedTokenId)).to.equal(
     currentOwner.address
   );
+
+  // TODO: Return to these after deposits are implemented.
+  // // Verify that taxes are collected
+  // let taxCollected = 0;
+  // if (lastValuation.gt(0)) {
+  //   expect(trx).to.emit(wrapperContract, PCOEvents.COLLECTION);
+
+  //   // Determine tax collected
+  //   const receipt = await trx.wait();
+  //   const event = receipt.events.find(
+  //     (event: any) => event.event === PCOEvents.COLLECTION
+  //   );
+  //   taxCollected = event.args.collected;
+  // }
+
+  // // Verify that deposit is returned
+  // if (deposit.gt(0)) {
+  //   const depositAfter = deposit.sub(taxCollected);
+  //   expect(trx)
+  //     .to.emit(wrapperContract, PCOEvents.REMITTANCE)
+  //     .withArgs(
+  //       RemittanceTriggers.WithdrawnDeposit,
+  //       currentOwner.address,
+  //       depositAfter
+  //     );
+
+  //   const { delta } = await currentOwner.balanceDelta();
+  //   expect(delta).to.equal(depositAfter);
+  // }
 }
 
 /**
@@ -190,6 +231,19 @@ describe("Wrapper.sol", async function () {
     deployerNFT = new Wallet(testNFTContract, signers[0]);
     beneficiary = new Wallet(wrapperContract, signers[1]);
     alice = new Wallet(wrapperContract, signers[2]);
+
+    wallets = [deployer, beneficiary, alice];
+
+    walletsByAddress = wallets.reduce(
+      (memo, wallet) => ({ ...memo, [wallet.address]: wallet }),
+      {}
+    );
+
+    await Promise.all(
+      wallets.map(function (wallet) {
+        return wallet.setup();
+      })
+    );
 
     snapshot = await snapshotEVM(provider);
   });
@@ -315,7 +369,7 @@ describe("Wrapper.sol", async function () {
       it("can be unwrapped and then re-wrapped", async function () {
         const tokenId = TOKENS.ONE;
         const id = await wrap(tokenId);
-        await unwrap(id, tokenId, deployer);
+        await unwrap(id, tokenId);
         await wrap(tokenId);
       });
     });
@@ -341,7 +395,7 @@ describe("Wrapper.sol", async function () {
       it("can be unwrapped", async function () {
         const tokenId = TOKENS.ONE;
         const id = await wrap(tokenId);
-        await unwrap(id, tokenId, deployer);
+        await unwrap(id, tokenId);
       });
 
       it("collects taxes and returns deposit", async function () {
@@ -356,7 +410,7 @@ describe("Wrapper.sol", async function () {
 
         expect(await wrapperContract.ownerOf(id)).to.equal(alice.address);
 
-        await unwrap(id, tokenId, alice);
+        await unwrap(id, tokenId);
       });
     });
   });
