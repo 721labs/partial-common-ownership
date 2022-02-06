@@ -1088,7 +1088,7 @@ describe("PartialCommonOwnership721", async function () {
       });
 
       /**
-       * Bugfix
+       * Bugfix e890718185d982a329f7898bc4dd959787372f47
        * If Alice buys the token with a very small deposit, and Bob purchasing the token
        * exhausts that deposit, the token will be foreclosed and the valuation will be set to
        * 0.  If Bob doesn't realize this will happen, his `currentValuation_` param will be
@@ -1096,7 +1096,7 @@ describe("PartialCommonOwnership721", async function () {
        * This is unintended behavior.
        *
        * As such, https://github.com/721labs/partial-common-ownership/issues/53 changes the tax collection
-       * to occur only after the assertions have passed.  Prior to #53, this test *should* fail.
+       * to occur only after the assertions have passed.  Prior to this, this test would fail.
        */
       it("Collects taxes after assertions success", async function () {
         const token = randomToken();
