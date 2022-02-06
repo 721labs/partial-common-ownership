@@ -209,7 +209,8 @@ contract PartialCommonOwnership721 is ERC721 {
     _forecloseIfNecessary(tokenId_);
   }
 
-  /// @notice Buy the token.
+  /// @notice Buy the token.  Current owner is remitted the current price and all excess value included
+  /// in the message gets added to the deposit.
   /// @param tokenId_ ID of token the buyer wants to purchase.
   /// @param purchasePrice_ Purchasing price. Must be greater or equal to current price.
   /// @param currentPriceForVerification_ Current price must be given to protect against a front-run attack.
@@ -267,7 +268,7 @@ contract PartialCommonOwnership721 is ERC721 {
     _remit(recipient, remittance, RemittanceTriggers.LeaseTakeover);
 
     // If the token is being purchased for the first time or is being purchased
-    // from foreclosure,last collection time is set to now so that the contract
+    // from foreclosure, last collection time is set to now so that the contract
     // does not incorrectly consider the taxable period to have begun prior to
     // foreclosure and overtax the owner.
     if (currentPrice == 0) {
