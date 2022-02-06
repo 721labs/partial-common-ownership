@@ -160,34 +160,33 @@ async function unwrap(id: BigNumber, unwrappedTokenId: TOKENS): Promise<void> {
     currentOwner.address
   );
 
-  // TODO: Return to these after deposits are implemented.
-  // // Verify that taxes are collected
-  // let taxCollected = 0;
-  // if (lastValuation.gt(0)) {
-  //   expect(trx).to.emit(wrapperContract, PCOEvents.COLLECTION);
+  // Verify that taxes are collected
+  let taxCollected = 0;
+  if (lastValuation.gt(0)) {
+    expect(trx).to.emit(wrapperContract, PCOEvents.COLLECTION);
 
-  //   // Determine tax collected
-  //   const receipt = await trx.wait();
-  //   const event = receipt.events.find(
-  //     (event: any) => event.event === PCOEvents.COLLECTION
-  //   );
-  //   taxCollected = event.args.collected;
-  // }
+    // Determine tax collected
+    const receipt = await trx.wait();
+    const event = receipt.events.find(
+      (event: any) => event.event === PCOEvents.COLLECTION
+    );
+    taxCollected = event.args.collected;
+  }
 
-  // // Verify that deposit is returned
-  // if (deposit.gt(0)) {
-  //   const depositAfter = deposit.sub(taxCollected);
-  //   expect(trx)
-  //     .to.emit(wrapperContract, PCOEvents.REMITTANCE)
-  //     .withArgs(
-  //       RemittanceTriggers.WithdrawnDeposit,
-  //       currentOwner.address,
-  //       depositAfter
-  //     );
+  // Verify that deposit is returned
+  if (deposit.gt(0)) {
+    const depositAfter = deposit.sub(taxCollected);
+    expect(trx)
+      .to.emit(wrapperContract, PCOEvents.REMITTANCE)
+      .withArgs(
+        RemittanceTriggers.WithdrawnDeposit,
+        currentOwner.address,
+        depositAfter
+      );
 
-  //   const { delta } = await currentOwner.balanceDelta();
-  //   expect(delta).to.equal(depositAfter);
-  // }
+    const { delta } = await currentOwner.balanceDelta();
+    expect(delta).to.equal(depositAfter);
+  }
 }
 
 /**
