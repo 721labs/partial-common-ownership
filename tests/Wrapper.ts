@@ -426,7 +426,7 @@ describe("Wrapper.sol", async function () {
         ).to.be.revertedWith(ERC721ErrorMessages.NOT_APPROVED);
       });
 
-      it("if wrapper is beneficiary and included deposit", async function () {
+      it("if operator is beneficiary and included deposit", async function () {
         await expect(
           deployer.contract.wrap(
             testNFTContract.address,
@@ -440,7 +440,7 @@ describe("Wrapper.sol", async function () {
         ).to.be.revertedWith(ErrorMessages.NO_DEPOSIT_REQUIRED);
       });
 
-      it("if wrapper is not beneficiary and didn't include deposit", async function () {
+      it("if operator is not beneficiary and didn't include deposit", async function () {
         await expect(
           deployer.contract.wrap(
             testNFTContract.address,
