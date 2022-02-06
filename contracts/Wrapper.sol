@@ -67,15 +67,21 @@ contract Wrapper is PCO {
   /// @param valuation_ Self assessed valuation of the token.
   /// @param beneficiary_ See `PCO._beneficiaries`.
   /// @param taxRate_ See `PCO._taxNumerators`.
-  /// @param taxationPeriod_ See `PCO._taxPeriods`.
+  /// @param collectionFrequency_ See `PCO._taxPeriods`.
   function wrap(
     address tokenContractAddress_,
     uint256 tokenId_,
     uint256 valuation_,
     address payable beneficiary_,
     uint256 taxRate_,
-    uint256 taxationPeriod_
+    uint256 collectionFrequency_
   ) public payable {
+    // Assertions
+    require(valuation_ > 0, "Valuation must be > 0");
+    require(beneficiary_ != address(0), "Beneficiary cannot be address zero");
+    require(taxRate_ > 0, "Tax rate must be > 0");
+    require(collectionFrequency_ > 0, "Tax frequency must be > 0");
+
     IERC721 tokenContract = IERC721(tokenContractAddress_);
 
     if (msg.sender == beneficiary_) {
@@ -100,7 +106,7 @@ contract Wrapper is PCO {
     PCO.changePrice(_wrappedTokenId, valuation_);
     PCO._setBeneficiary(_wrappedTokenId, beneficiary_);
     PCO._setTaxRate(_wrappedTokenId, taxRate_);
-    PCO._setTaxPeriod(_wrappedTokenId, taxationPeriod_);
+    PCO._setTaxPeriod(_wrappedTokenId, collectionFrequency_);
 
     emit LogTokenWrapped(tokenContractAddress_, tokenId_, _wrappedTokenId);
   }

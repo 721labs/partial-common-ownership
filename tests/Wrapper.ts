@@ -31,6 +31,10 @@ enum ErrorMessages {
   ORIGINATOR_ONLY = "Wrap originator only",
   DEPOSIT_REQUIRED = "Deposit required",
   NO_DEPOSIT_REQUIRED = "No deposit required",
+  VALUATION_GREATER_THAN_ZERO = "Valuation must be > 0",
+  ADDRESS_ZERO = "Beneficiary cannot be address zero",
+  BAD_TAX_RATE = "Tax rate must be > 0",
+  BAD_COLLECTION_FREQUENCY = "Tax frequency must be > 0",
 }
 
 enum Events {
@@ -342,6 +346,59 @@ describe("Wrapper.sol", async function () {
 
   describe("#wrap", async function () {
     context("fails", async function () {
+      it("valuation is 0", async function () {
+        await expect(
+          alice.contract.wrap(
+            testNFTContract.address,
+            TOKENS.ONE,
+            0,
+            alice.address,
+            taxConfig.taxRate,
+            taxConfig.collectionFrequency,
+            { value: 0 }
+          )
+        ).to.be.revertedWith(ErrorMessages.VALUATION_GREATER_THAN_ZERO);
+      });
+
+      it("beneficiary is zero address", async function () {
+        await expect(
+          alice.contract.wrap(
+            testNFTContract.address,
+            TOKENS.ONE,
+            wrapValuation,
+            ethers.constants.AddressZero,
+            taxConfig.taxRate,
+            taxConfig.collectionFrequency
+          )
+        ).to.be.revertedWith(ErrorMessages.ADDRESS_ZERO);
+      });
+
+      it("beneficiary is zero address", async function () {
+        await expect(
+          alice.contract.wrap(
+            testNFTContract.address,
+            TOKENS.ONE,
+            wrapValuation,
+            alice.address,
+            0,
+            taxConfig.collectionFrequency
+          )
+        ).to.be.revertedWith(ErrorMessages.BAD_TAX_RATE);
+      });
+
+      it("beneficiary is zero address", async function () {
+        await expect(
+          alice.contract.wrap(
+            testNFTContract.address,
+            TOKENS.ONE,
+            wrapValuation,
+            alice.address,
+            taxConfig.taxRate,
+            0
+          )
+        ).to.be.revertedWith(ErrorMessages.BAD_COLLECTION_FREQUENCY);
+      });
+
       it("when non-owner tries to wrap", async function () {
         await expect(
           alice.contract.wrap(
