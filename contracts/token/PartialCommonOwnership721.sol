@@ -242,14 +242,29 @@ contract PartialCommonOwnership721 is ERC721 {
       purchasePrice_ >= currentPrice,
       "New Price must be >= current price"
     );
-    // Value sent must be greater than purchase price; surplus is necessary for deposit.
-    require(
-      msg.value > purchasePrice_,
-      "Message does not contain surplus value for deposit"
-    );
 
-    // Seller or this contract if foreclosed.
+    bool senderIsBeneficiary = msg.sender == beneficiaryOf(tokenId_);
+    // Current owner is a wallet address or the address of this contract
+    // if the token is foreclosed or has never been purchased.
     address currentOwner = ownerOf(tokenId_);
+    bool ownedByContract = currentOwner == address(this);
+
+    if (senderIsBeneficiary) {
+      if (ownedByContract) {
+        // If token is owned by contract, beneficiary does not need to pay anything.
+        require(msg.value == 0, "Msg contains value");
+      } else {
+        // Beneficiary only needs to pay the current price,
+        // doesn't need to put down a deposit.
+        require(msg.value == currentPrice, "Msg contains surplus value");
+      }
+    } else {
+      // Value sent must be greater than purchase price; surplus is necessary for deposit.
+      require(
+        msg.value > purchasePrice_,
+        "Message does not contain surplus value for deposit"
+      );
+    }
 
     // Prevent an accidental re-purchase.
     require(msg.sender != currentOwner, "Buyer is already owner");
@@ -257,28 +272,38 @@ contract PartialCommonOwnership721 is ERC721 {
     // After all security checks have occured, lock the token.
     _locked[tokenId_] = true;
 
-    // If token is owned by the contract, remit to the beneficiary.
-    address recipient;
-    if (currentOwner == address(this)) {
-      recipient = beneficiaryOf(tokenId_);
-    } else {
-      recipient = currentOwner;
+    // If token is owned by contract and is being purchased by beneficiary, no
+    // remittance should occur.  Ultimately, the value would beremitted back to the
+    // beneficiary; essentially the beneficiary is acquiring the token for the cost of gas.
+    if (!(senderIsBeneficiary && ownedByContract)) {
+      // If token is owned by the contract, remit to the beneficiary.
+      address recipient;
+      if (ownedByContract) {
+        recipient = beneficiaryOf(tokenId_);
+      } else {
+        recipient = currentOwner;
+      }
+
+      // Remit the purchase price and any available deposit.
+      uint256 remittance = purchasePrice_ + _deposits[tokenId_];
+      _remit(recipient, remittance, RemittanceTriggers.LeaseTakeover);
     }
 
-    // Remit the purchase price and any available deposit.
-    uint256 remittance = purchasePrice_ + _deposits[tokenId_];
-    _remit(recipient, remittance, RemittanceTriggers.LeaseTakeover);
-
     // If the token is being purchased for the first time or is being purchased
-    // from foreclosure,last collection time is set to now so that the contract
+    // from foreclosure, last collection time is set to now so that the contract
     // does not incorrectly consider the taxable period to have begun prior to
     // foreclosure and overtax the owner.
     if (currentPrice == 0) {
       lastCollectionTimes[tokenId_] = block.timestamp;
     }
 
-    // Update deposit with surplus value.
-    _deposits[tokenId_] = msg.value - purchasePrice_;
+    if (senderIsBeneficiary) {
+      // Beneficiary doesn't make deposits as no taxes are collected.
+      _deposits[tokenId_] = 0;
+    } else {
+      // Update deposit with surplus value.
+      _deposits[tokenId_] = msg.value - purchasePrice_;
+    }
 
     _transferToken(tokenId_, currentOwner, msg.sender, purchasePrice_);
     emit LogBuy(tokenId_, msg.sender, purchasePrice_);

@@ -21,3 +21,15 @@ contract YourToken is PartialCommonOwnership721 {
 }
 
 ```
+
+## Partial Common Ownership Wrapper
+
+### Wrapping
+
+#### Deposits
+
+If beneficiary, no deposit necessary (not going to pay taxes to yourself). If not beneficiary, deposit necessary (taxes must be paid to the beneficiary).
+
+#### Purchasing as Beneficiary from the Contract (initial mint or foreclosure)
+
+No message value, (essentially free minus cost of gas) because the value would be remitted back to the beneficiary, providing no benefit and increasing the gas cost. **Because of this, beneficiary is able to hoard the token by setting a prohibitively high price, effectively monopolizing the asset**.

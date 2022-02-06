@@ -204,9 +204,15 @@ async function buy(
     .to.emit(contract, Events.BUY)
     .withArgs(tokenId, wallet.address, purchasePrice);
 
-  // Deposit updated
-  const surplus = value.sub(purchasePrice);
-  expect(await contract.depositOf(tokenId)).to.equal(surplus);
+  // Beneficiary doesn't put down a deposit
+  const purchasedByBeneficiary = wallet.address === beneficiary.address;
+  if (purchasedByBeneficiary) {
+    expect(await contract.depositOf(tokenId)).to.equal(0);
+  } else {
+    // Deposit updated
+    const surplus = value.sub(purchasePrice);
+    expect(await contract.depositOf(tokenId)).to.equal(surplus);
+  }
 
   // Price updated
   expect(await contract.priceOf(tokenId)).to.equal(purchasePrice);
@@ -220,21 +226,25 @@ async function buy(
   // Owned updated
   expect(await contract.ownerOf(tokenId)).to.equal(wallet.address);
 
-  const expectedRemittance = depositUponPurchase.add(purchasePrice);
-  if (expectedRemittance.gt(0)) {
-    // Remittance Event emitted
-    expect(trx)
-      .to.emit(contract, Events.REMITTANCE)
-      .withArgs(
-        RemittanceTriggers.LeaseTakeover,
-        remittanceRecipientWallet.address,
-        expectedRemittance
-      );
+  // If purchased by the beneficiary from the contract, no remittance occurs.
+  if (!(purchasedByBeneficiary && currentPriceForVerification == ETH0)) {
+    const expectedRemittance = depositUponPurchase.add(purchasePrice);
 
-    // Eth remitted to beneficiary
-    // TODO: come back to this – beneficiaries should not be putting down a deposit
-    if (wallet.address != beneficiary.address) {
+    if (expectedRemittance.gt(0)) {
+      // Remittance Event emitted
+      expect(trx)
+        .to.emit(contract, Events.REMITTANCE)
+        .withArgs(
+          RemittanceTriggers.LeaseTakeover,
+          remittanceRecipientWallet.address,
+          expectedRemittance
+        );
+
+      // Beneficiary or previous owner received their Eth
       const { delta } = await remittanceRecipientWallet.balanceDelta();
+
+      // TODO: This is occurring because Alice is expecting a 4 eth
+      // remittance but the trx only sent 1eth; see #49.
       expect(delta).to.equal(
         foreclosed
           ? depositBefore.add(expectedRemittance) // Beneficiary will receive the deposit from tax collection in addition
@@ -590,7 +600,7 @@ describe("PartialCommonOwnership721.sol", async function () {
     context("succeeds", async function () {
       it("no tax collected if token is owned by its beneficiary", async function () {
         const tokenId = randomToken();
-        await buy(beneficiary, tokenId, ETH1, ETH0, ETH2);
+        await buy(beneficiary, tokenId, ETH1, ETH0, ETH0);
         const trx = await contract.collectTax(tokenId);
 
         // Todo: There are other conditions which would true that we're not checking for,
@@ -684,7 +694,7 @@ describe("PartialCommonOwnership721.sol", async function () {
 
       it("no tax owed if token is owned by its beneficiary", async function () {
         const token = randomToken();
-        await buy(beneficiary, token, ETH1, ETH0, ETH2);
+        await buy(beneficiary, token, ETH1, ETH0, ETH0);
         const [owed] = await contract.taxOwed(token);
         expect(owed).to.equal(0);
       });
@@ -1015,6 +1025,19 @@ describe("PartialCommonOwnership721.sol", async function () {
           bob.contract.buy(TOKENS.TWO, ETH3, ETH2, { value: ETH4 })
         ).to.be.revertedWith(ErrorMessages.BUY_ALREADY_OWNED);
       });
+      it("Beneficiary is purchasing from contract and msg includes value", async function () {
+        await expect(
+          buy(beneficiary, randomToken(), ETH1, ETH0, ETH2)
+        ).to.be.revertedWith(ErrorMessages.PROHIBITED_VALUE);
+      });
+      it("Beneficiary is purchasing from Alice and msg includes surplus value for deposit", async function () {
+        const tokenId = randomToken();
+        await buy(alice, tokenId, ETH1, ETH0, ETH2);
+
+        await expect(
+          buy(beneficiary, tokenId, ETH4, ETH1, ETH2)
+        ).to.be.revertedWith(ErrorMessages.PROHIBITED_SURPLUS_VALUE);
+      });
     });
     context("succeeds", async function () {
       it("Purchasing token for the first-time (from contract)", async function () {
@@ -1104,6 +1127,16 @@ describe("PartialCommonOwnership721.sol", async function () {
         expect(chainOfTitle[1].timestamp).to.equal(
           ethers.BigNumber.from(block2.timestamp)
         );
+      });
+
+      it("Beneficiary doesn't pay anything if buying from contract", async function () {
+        await buy(beneficiary, randomToken(), ETH1, ETH0, ETH0);
+      });
+
+      it("Beneficiary only pays purchase price if buying from Alice", async function () {
+        const tokenId = randomToken();
+        await buy(alice, tokenId, ETH1, ETH0, ETH2);
+        await buy(beneficiary, tokenId, ETH4, ETH1, ETH1);
       });
     });
   });

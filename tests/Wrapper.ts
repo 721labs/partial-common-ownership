@@ -7,7 +7,7 @@ import { taxationPeriodToSeconds } from "./helpers/utils";
 import { snapshotEVM, revertEVM } from "./helpers/EVM";
 
 // Constants
-import { ETH1, ETH2, GLOBAL_TRX_CONFIG } from "./helpers/constants";
+import { ETH1, ETH2, ETH3, GLOBAL_TRX_CONFIG } from "./helpers/constants";
 
 // Types
 import {
@@ -337,6 +337,22 @@ describe("Wrapper.sol", async function () {
         const id = await wrap(tokenId);
         await unwrap(id, tokenId);
       });
+
+      // TODO:
+      // it("Taxes are collected and deposit is returned", async function () {
+      //   const tokenId = TOKENS.ONE;
+      //   const id = await wrap(tokenId);
+
+      //   // Alice buys the wrapped token
+      //   await alice.contract.buy(id, ETH2, ETH1, {
+      //     value: ETH3, // Alice is putting down a deposit of 1 Ether.
+      //     ...GLOBAL_TRX_CONFIG,
+      //   });
+
+      //   expect(await wrapperContract.ownerOf(id)).to.equal(alice.address);
+
+      //   //await unwrap(id, tokenId);
+      // });
     });
   });
 });
