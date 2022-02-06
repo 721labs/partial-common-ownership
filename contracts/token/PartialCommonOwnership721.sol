@@ -602,7 +602,6 @@ contract PartialCommonOwnership721 is ERC721 {
     _deposits[tokenId_] -= wei_;
 
     address currentOwner = ownerOf(tokenId_);
-    console.log("withdrawing to", currentOwner);
     require(currentOwner != address(this), "Cannot withdraw deposit to self");
 
     _remit(currentOwner, wei_, RemittanceTriggers.WithdrawnDeposit);
