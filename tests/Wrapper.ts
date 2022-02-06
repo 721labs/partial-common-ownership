@@ -7,7 +7,7 @@ import { taxationPeriodToSeconds } from "./helpers/utils";
 import { snapshotEVM, revertEVM } from "./helpers/EVM";
 
 // Constants
-import { ETH1, ETH2, ETH3, GLOBAL_TRX_CONFIG } from "./helpers/constants";
+import { ETH0, ETH1, ETH2, ETH3, GLOBAL_TRX_CONFIG } from "./helpers/constants";
 
 // Types
 import {
@@ -32,6 +32,8 @@ enum Events {
 }
 
 //$ Constants
+
+const wrapValuation = ETH1;
 
 const mintedTestNFTs = [TOKENS.ONE, TOKENS.TWO, TOKENS.THREE];
 
@@ -61,7 +63,7 @@ async function wrap(tokenId: TOKENS): Promise<BigNumber> {
   const trx = await deployer.contract.wrap(
     testNFTContract.address,
     tokenId,
-    ETH1,
+    wrapValuation,
     beneficiary.address,
     taxConfig.taxRate,
     taxConfig.collectionFrequency
@@ -77,8 +79,8 @@ async function wrap(tokenId: TOKENS): Promise<BigNumber> {
   // Token is minted w/ correct ID
   expect(await wrapperContract.ownerOf(id)).to.equal(deployer.address);
 
-  // Price is set
-  expect(await wrapperContract.priceOf(id)).to.equal(ETH1);
+  // Valuation is set
+  expect(await wrapperContract.priceOf(id)).to.equal(wrapValuation);
 
   // Beneficiary is set
   expect(await wrapperContract.beneficiaryOf(id)).to.equal(beneficiary.address);
@@ -280,7 +282,7 @@ describe("Wrapper.sol", async function () {
           alice.contract.wrap(
             testNFTContract.address,
             TOKENS.ONE,
-            ETH1,
+            wrapValuation,
             deployer.address,
             taxConfig.taxRate,
             taxConfig.collectionFrequency
@@ -293,7 +295,7 @@ describe("Wrapper.sol", async function () {
           deployer.contract.wrap(
             testNFTContract.address,
             TOKENS.ONE,
-            ETH1,
+            wrapValuation,
             deployer.address,
             taxConfig.taxRate,
             taxConfig.collectionFrequency
@@ -338,21 +340,23 @@ describe("Wrapper.sol", async function () {
         await unwrap(id, tokenId);
       });
 
-      // TODO:
-      // it("Taxes are collected and deposit is returned", async function () {
-      //   const tokenId = TOKENS.ONE;
-      //   const id = await wrap(tokenId);
+      it("collects taxes and returns deposit", async function () {
+        const tokenId = TOKENS.ONE;
+        const id = await wrap(tokenId);
 
-      //   // Alice buys the wrapped token
-      //   await alice.contract.buy(id, ETH2, ETH1, {
-      //     value: ETH3, // Alice is putting down a deposit of 1 Ether.
-      //     ...GLOBAL_TRX_CONFIG,
-      //   });
+        // Alice buys the wrapped token
+        // TODO: This is breaking because `_collectTax` is called, which triggers
+        // a tax collection against the Wrapper, but no deposit was provided so the token
+        // is repo'd.
+        await alice.contract.buy(id, ETH2, wrapValuation, {
+          value: ETH3, // 2 Eth deposit (1 Eth paid to owner)
+          ...GLOBAL_TRX_CONFIG,
+        });
 
-      //   expect(await wrapperContract.ownerOf(id)).to.equal(alice.address);
+        expect(await wrapperContract.ownerOf(id)).to.equal(alice.address);
 
-      //   //await unwrap(id, tokenId);
-      // });
+        //await unwrap(id, tokenId);
+      });
     });
   });
 });
