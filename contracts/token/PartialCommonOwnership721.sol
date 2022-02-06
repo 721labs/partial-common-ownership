@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.7;
 
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import {TokenManagement} from "./modules/TokenManagement.sol";
 
 struct TitleTransferEvent {
   /// @notice From address.
@@ -30,7 +31,7 @@ enum RemittanceTriggers {
 /// and can be repurchased at any price > 0.
 /// @dev This code was originally forked from ThisArtworkIsAlwaysOnSale's `v2_contracts/ArtSteward.sol`
 /// contract by Simon de la Rouviere.
-contract PartialCommonOwnership721 is ERC721 {
+contract PartialCommonOwnership721 is ERC721, TokenManagement {
   //////////////////////////////
   /// State
   //////////////////////////////
@@ -132,27 +133,12 @@ contract PartialCommonOwnership721 is ERC721 {
   /// Modifiers
   //////////////////////////////
 
-  /// @notice Checks whether message sender owns a given token id
-  /// @param tokenId_ ID of token to check ownership again.
-  modifier _onlyOwner(uint256 tokenId_) {
-    address owner = ownerOf(tokenId_);
-    require(msg.sender == owner, "Sender does not own this token");
-    _;
-  }
-
   /// @notice Envokes tax collection.
   /// @dev Tax collection is triggered by an external envocation of a method wrapped by
   /// this modifier.
   /// @param tokenId_ ID of token to collect tax for.
   modifier _collectTax(uint256 tokenId_) {
     collectTax(tokenId_);
-    _;
-  }
-
-  /// @notice Requires that token have been minted.
-  /// @param tokenId_ ID of token to verify.
-  modifier _tokenMinted(uint256 tokenId_) {
-    ownerOf(tokenId_);
     _;
   }
 
