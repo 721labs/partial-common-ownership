@@ -373,7 +373,7 @@ describe("Wrapper.sol", async function () {
         ).to.be.revertedWith(ErrorMessages.ADDRESS_ZERO);
       });
 
-      it("beneficiary is zero address", async function () {
+      it("tax rate is 0", async function () {
         await expect(
           alice.contract.wrap(
             testNFTContract.address,
@@ -386,7 +386,7 @@ describe("Wrapper.sol", async function () {
         ).to.be.revertedWith(ErrorMessages.BAD_TAX_RATE);
       });
 
-      it("beneficiary is zero address", async function () {
+      it("tax period is 0", async function () {
         await expect(
           alice.contract.wrap(
             testNFTContract.address,
