@@ -1078,6 +1078,38 @@ describe("PartialCommonOwnership721", async function () {
           ethers.BigNumber.from(block2.timestamp)
         );
       });
+
+      /**
+       * Bugfix
+       * If Alice buys the token with a very small deposit, and Bob purchasing the token
+       * exhausts that deposit, the token will be foreclosed and the valuation will be set to
+       * 0.  If Bob doesn't realize this will happen, his `currentValuation_` param will be
+       * incorrect and the token will not be purchasable until Bob resubmits with a current valuation of 0.
+       * This is unintended behavior.
+       *
+       * As such, https://github.com/721labs/partial-common-ownership/issues/53 changes the tax collection
+       * to occur only after the assertions have passed.  Prior to #53, this test *should* fail.
+       */
+      it("Collects taxes after all param checks have occurred", async function () {
+        const token = randomToken();
+        const aliceValuation = ETH1;
+
+        await buy(
+          alice,
+          token,
+          aliceValuation,
+          ETH0,
+          // 10 minutes worth of deposit
+          getTaxDue(token, aliceValuation, tenMin, prior)
+        );
+
+        // 11 min goes by...
+        const elevenMinutes = time.duration.minutes(11);
+        await time.increase(elevenMinutes);
+
+        // Bob attempts to purchases the token
+        await buy(bob, token, ETH2, aliceValuation, ETH2);
+      });
     });
   });
 
