@@ -262,8 +262,8 @@ contract PartialCommonOwnership721 is ERC721 {
       recipient = currentOwner;
     }
 
-    // Remit the purchase price and any available deposit.
-    uint256 remittance = purchasePrice_ + _deposits[tokenId_];
+    // Remit the current price and current owner's deposit.
+    uint256 remittance = currentPrice + _deposits[tokenId_];
     _remit(recipient, remittance, RemittanceTriggers.LeaseTakeover);
 
     // If the token is being purchased for the first time or is being purchased
@@ -275,7 +275,7 @@ contract PartialCommonOwnership721 is ERC721 {
     }
 
     // Update deposit with surplus value.
-    _deposits[tokenId_] = msg.value - purchasePrice_;
+    _deposits[tokenId_] = msg.value - currentPrice;
 
     _transferToken(tokenId_, currentOwner, msg.sender, purchasePrice_);
     emit LogBuy(tokenId_, msg.sender, purchasePrice_);
