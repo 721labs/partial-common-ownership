@@ -105,7 +105,11 @@ async function wrap(tokenId: TOKENS): Promise<BigNumber> {
  * Unwraps a given wrapped token.
  * @param id Wrapped token id
  */
-async function unwrap(id: BigNumber, unwrappedTokenId: TOKENS): Promise<void> {
+async function unwrap(
+  id: BigNumber,
+  unwrappedTokenId: TOKENS,
+  currentOwner: Wallet
+): Promise<void> {
   await deployer.contract.unwrap(id);
 
   // Verify that wrapped token is burned
@@ -139,9 +143,9 @@ async function unwrap(id: BigNumber, unwrappedTokenId: TOKENS): Promise<void> {
     PCOErrorMessages.NONEXISTENT_TOKEN
   );
 
-  // Underlying token is transferred to message sender
+  // Underlying token is transferred to the current owner of the wrapped token
   expect(await testNFTContract.ownerOf(unwrappedTokenId)).to.equal(
-    deployer.address
+    currentOwner.address
   );
 }
 
@@ -311,7 +315,7 @@ describe("Wrapper.sol", async function () {
       it("can be unwrapped and then re-wrapped", async function () {
         const tokenId = TOKENS.ONE;
         const id = await wrap(tokenId);
-        await unwrap(id, tokenId);
+        await unwrap(id, tokenId, deployer);
         await wrap(tokenId);
       });
     });
@@ -337,7 +341,7 @@ describe("Wrapper.sol", async function () {
       it("can be unwrapped", async function () {
         const tokenId = TOKENS.ONE;
         const id = await wrap(tokenId);
-        await unwrap(id, tokenId);
+        await unwrap(id, tokenId, deployer);
       });
 
       it("collects taxes and returns deposit", async function () {
@@ -345,9 +349,6 @@ describe("Wrapper.sol", async function () {
         const id = await wrap(tokenId);
 
         // Alice buys the wrapped token
-        // TODO: This is breaking because `_collectTax` is called, which triggers
-        // a tax collection against the Wrapper, but no deposit was provided so the token
-        // is repo'd.
         await alice.contract.buy(id, ETH2, wrapValuation, {
           value: ETH3, // 2 Eth deposit (1 Eth paid to owner)
           ...GLOBAL_TRX_CONFIG,
@@ -355,7 +356,7 @@ describe("Wrapper.sol", async function () {
 
         expect(await wrapperContract.ownerOf(id)).to.equal(alice.address);
 
-        //await unwrap(id, tokenId);
+        await unwrap(id, tokenId, alice);
       });
     });
   });
