@@ -64,20 +64,28 @@ contract Wrapper is PCO {
   /// approved by `msg.sender`.
   /// @param tokenContractAddress_ Issuing contract address for token to be wrapped.
   /// @param tokenId_ ID of token to be wrapped
-  /// @param newPrice_ Self assessed valuation of the token.
+  /// @param valuation_ Self assessed valuation of the token.
   /// @param beneficiary_ See `PCO._beneficiaries`.
   /// @param taxRate_ See `PCO._taxNumerators`.
   /// @param taxationPeriod_ See `PCO._taxPeriods`.
   function wrap(
     address tokenContractAddress_,
     uint256 tokenId_,
-    uint256 newPrice_,
+    uint256 valuation_,
     address payable beneficiary_,
     uint256 taxRate_,
     uint256 taxationPeriod_
-  ) public {
-    // Transfer ownership of the token to this contract.
+  ) public payable {
     IERC721 tokenContract = IERC721(tokenContractAddress_);
+
+    if (msg.sender == beneficiary_) {
+      // If sender is the beneficiary, ensure they did not send a deposit
+      require(msg.value == 0, "No deposit required");
+    } else {
+      require(msg.value > 0, "Deposit required");
+    }
+
+    // Transfer ownership of the token to this contract.
     tokenContract.safeTransferFrom(msg.sender, address(this), tokenId_);
 
     uint256 _wrappedTokenId = wrappedTokenId(tokenContractAddress_, tokenId_);
@@ -88,7 +96,8 @@ contract Wrapper is PCO {
     });
     _safeMint(msg.sender, _wrappedTokenId);
 
-    PCO.changePrice(_wrappedTokenId, newPrice_);
+    _deposits[_wrappedTokenId] += msg.value;
+    PCO.changePrice(_wrappedTokenId, valuation_);
     PCO._setBeneficiary(_wrappedTokenId, beneficiary_);
     PCO._setTaxRate(_wrappedTokenId, taxRate_);
     PCO._setTaxPeriod(_wrappedTokenId, taxationPeriod_);

@@ -29,6 +29,8 @@ import type { BigNumber } from "ethers";
 
 enum ErrorMessages {
   ORIGINATOR_ONLY = "Wrap originator only",
+  DEPOSIT_REQUIRED = "Deposit required",
+  NO_DEPOSIT_REQUIRED = "No deposit required",
 }
 
 enum Events {
@@ -50,7 +52,7 @@ let testNFTContract: Contract;
 let wrapperContract: Contract;
 let deployer: Wallet;
 let deployerNFT: Wallet;
-let beneficiary: Wallet;
+let bob: Wallet;
 let alice: Wallet;
 let snapshot: any;
 let wallets: Array<Wallet>;
@@ -65,8 +67,11 @@ let walletsByAddress: {
  * @param tokenId Token to wrap
  * @returns Transaction data
  */
-async function wrap(tokenId: TOKENS): Promise<BigNumber> {
+async function wrap(tokenId: TOKENS, beneficiary: Wallet): Promise<BigNumber> {
   await deployerNFT.contract.approve(wrapperContract.address, tokenId);
+
+  // If wrapper is beneficiary, no deposit is necessary; otherwise, it's required.
+  const deposit = beneficiary.address == deployer.address ? ETH0 : ETH1;
 
   const trx = await deployer.contract.wrap(
     testNFTContract.address,
@@ -74,7 +79,8 @@ async function wrap(tokenId: TOKENS): Promise<BigNumber> {
     wrapValuation,
     beneficiary.address,
     taxConfig.taxRate,
-    taxConfig.collectionFrequency
+    taxConfig.collectionFrequency,
+    { value: deposit }
   );
 
   const id = wrappedTokenId(testNFTContract.address, tokenId);
@@ -86,6 +92,9 @@ async function wrap(tokenId: TOKENS): Promise<BigNumber> {
 
   // Token is minted w/ correct ID
   expect(await wrapperContract.ownerOf(id)).to.equal(deployer.address);
+
+  // Deposit is set
+  expect(await wrapperContract.depositOf(id)).to.equal(deposit);
 
   // Valuation is set
   expect(await wrapperContract.priceOf(id)).to.equal(wrapValuation);
@@ -228,10 +237,10 @@ describe("Wrapper.sol", async function () {
     // Set up wallets
     deployer = new Wallet(wrapperContract, signers[0]);
     deployerNFT = new Wallet(testNFTContract, signers[0]);
-    beneficiary = new Wallet(wrapperContract, signers[1]);
+    bob = new Wallet(wrapperContract, signers[1]);
     alice = new Wallet(wrapperContract, signers[2]);
 
-    wallets = [deployer, beneficiary, alice];
+    wallets = [deployer, bob, alice];
 
     walletsByAddress = wallets.reduce(
       (memo, wallet) => ({ ...memo, [wallet.address]: wallet }),
@@ -324,7 +333,7 @@ describe("Wrapper.sol", async function () {
     context("succeeds", async function () {
       it("returns token's uri", async function () {
         const tokenId = TOKENS.ONE;
-        const id = await wrap(tokenId);
+        const id = await wrap(tokenId, deployer);
         expect(await wrapperContract.tokenURI(id)).to.equal(
           `721.dev/${tokenId}`
         );
@@ -342,7 +351,8 @@ describe("Wrapper.sol", async function () {
             wrapValuation,
             deployer.address,
             taxConfig.taxRate,
-            taxConfig.collectionFrequency
+            taxConfig.collectionFrequency,
+            { value: ETH1 }
           )
         ).to.be.revertedWith(ERC721ErrorMessages.NOT_APPROVED);
       });
@@ -359,17 +369,45 @@ describe("Wrapper.sol", async function () {
           )
         ).to.be.revertedWith(ERC721ErrorMessages.NOT_APPROVED);
       });
+
+      it("if wrapper is beneficiary and included deposit", async function () {
+        await expect(
+          deployer.contract.wrap(
+            testNFTContract.address,
+            TOKENS.ONE,
+            wrapValuation,
+            deployer.address,
+            taxConfig.taxRate,
+            taxConfig.collectionFrequency,
+            { value: ETH1 }
+          )
+        ).to.be.revertedWith(ErrorMessages.NO_DEPOSIT_REQUIRED);
+      });
+
+      it("if wrapper is not beneficiary and didn't include deposit", async function () {
+        await expect(
+          deployer.contract.wrap(
+            testNFTContract.address,
+            TOKENS.ONE,
+            wrapValuation,
+            bob.address,
+            taxConfig.taxRate,
+            taxConfig.collectionFrequency
+          )
+        ).to.be.revertedWith(ErrorMessages.DEPOSIT_REQUIRED);
+      });
     });
+
     context("succeeds", async function () {
       it("can be wrapped by token owner", async function () {
-        await wrap(TOKENS.ONE);
+        await wrap(TOKENS.ONE, bob);
       });
 
       it("can be unwrapped and then re-wrapped", async function () {
         const tokenId = TOKENS.ONE;
-        const id = await wrap(tokenId);
+        const id = await wrap(tokenId, deployer);
         await unwrap(id, tokenId);
-        await wrap(tokenId);
+        await wrap(tokenId, bob);
       });
     });
   });
@@ -383,7 +421,7 @@ describe("Wrapper.sol", async function () {
       });
 
       it("only the address that wrapped the token can unwrap it", async function () {
-        const id = await wrap(TOKENS.ONE);
+        const id = await wrap(TOKENS.ONE, deployer);
         await expect(alice.contract.unwrap(id)).to.be.revertedWith(
           ErrorMessages.ORIGINATOR_ONLY
         );
@@ -393,13 +431,13 @@ describe("Wrapper.sol", async function () {
     context("succeeds", async function () {
       it("can be unwrapped", async function () {
         const tokenId = TOKENS.ONE;
-        const id = await wrap(tokenId);
+        const id = await wrap(tokenId, deployer);
         await unwrap(id, tokenId);
       });
 
       it("collects taxes and returns deposit", async function () {
         const tokenId = TOKENS.ONE;
-        const id = await wrap(tokenId);
+        const id = await wrap(tokenId, deployer);
 
         // Alice buys the wrapped token
         await alice.contract.buy(id, ETH2, wrapValuation, {
