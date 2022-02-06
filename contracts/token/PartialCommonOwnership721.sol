@@ -221,14 +221,15 @@ contract PartialCommonOwnership721 is ERC721 {
     uint256 tokenId_,
     uint256 newValuation_,
     uint256 currentValuation_
-  ) public payable _tokenMinted(tokenId_) _collectTax(tokenId_) {
+  ) public payable _tokenMinted(tokenId_) {
     // Prevent re-entrancy attack
     require(!locked[tokenId_], "Token is locked");
 
-    uint256 currentPrice = _price(tokenId_);
+    uint256 valuationPriorToTaxCollection = _price(tokenId_);
+
     // Prevent front-run.
     require(
-      currentPrice == currentValuation_,
+      valuationPriorToTaxCollection == currentValuation_,
       "Current valuation is incorrect"
     );
 
@@ -239,50 +240,58 @@ contract PartialCommonOwnership721 is ERC721 {
     // Buyer can set the new valuation higher the current price; this renders unnecessary a second gas payment
     // if Buyer wants to immediately self-assess the token at a higher valuation.
     require(
-      newValuation_ >= currentPrice,
+      newValuation_ >= valuationPriorToTaxCollection,
       "New valuation must be >= current valuation"
     );
 
     // Value sent must be greater the amount being remitted to the current owner;
     // surplus is necessary for deposit.
     require(
-      msg.value > currentPrice,
+      msg.value > valuationPriorToTaxCollection,
       "Message does not contain surplus value for deposit"
     );
 
-    // Seller or this contract if foreclosed.
-    address currentOwner = ownerOf(tokenId_);
-
+    // Owner will be seller or this contract if foreclosed.
     // Prevent an accidental re-purchase.
-    require(msg.sender != currentOwner, "Buyer is already owner");
+    require(msg.sender != ownerOf(tokenId_), "Buyer is already owner");
 
     // After all security checks have occured, lock the token.
     locked[tokenId_] = true;
 
-    // If token is owned by the contract, remit to the beneficiary.
-    address recipient;
-    if (currentOwner == address(this)) {
-      recipient = beneficiaryOf(tokenId_);
-    } else {
-      recipient = currentOwner;
-    }
+    // Collect tax.
+    // Note: this may result in unexpected effects for the buyer. For example,
+    // if taxation forecloses on the token, the buyer will be putting down a larger
+    // deposit than they originally anticipated.
+    collectTax(tokenId_);
 
-    // Remit the current price and current owner's deposit.
-    uint256 remittance = currentPrice + _deposits[tokenId_];
-    _remit(recipient, remittance, RemittanceTriggers.LeaseTakeover);
+    address ownerAfterCollection = ownerOf(tokenId_);
 
-    // If the token is being purchased for the first time or is being purchased
-    // from foreclosure, last collection time is set to now so that the contract
-    // does not incorrectly consider the taxable period to have begun prior to
-    // foreclosure and overtax the owner.
-    if (currentPrice == 0) {
+    // Token is being purchased for the first time or out of foreclosure
+    if (ownerAfterCollection == address(this)) {
+      // Deposit takes entire msg value
+      _deposits[tokenId_] = msg.value;
+
+      // If the token is being purchased for the first time or is being purchased
+      // from foreclosure, last collection time is set to now so that the contract
+      // does not incorrectly consider the taxable period to have begun prior to
+      // foreclosure and overtax the owner.
       lastCollectionTimes[tokenId_] = block.timestamp;
+
+      // Note: no remittance occurs. Beneficiary receives no tax on a token that is currently
+      // valued at nothing.
+    } else {
+      _remit(
+        ownerAfterCollection,
+        // Owner receives their self-assessed valuation and the remainder of their deposit.
+        currentValuation_ + _deposits[tokenId_],
+        RemittanceTriggers.LeaseTakeover
+      );
+
+      // Set the new owner's deposit
+      _deposits[tokenId_] = msg.value - currentValuation_;
     }
 
-    // Update deposit with surplus value.
-    _deposits[tokenId_] = msg.value - currentPrice;
-
-    _transferToken(tokenId_, currentOwner, msg.sender, newValuation_);
+    _transferToken(tokenId_, ownerAfterCollection, msg.sender, newValuation_);
     emit LogBuy(tokenId_, msg.sender, newValuation_);
 
     // Unlock token
