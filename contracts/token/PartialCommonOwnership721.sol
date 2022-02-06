@@ -209,17 +209,18 @@ contract PartialCommonOwnership721 is ERC721 {
     _forecloseIfNecessary(tokenId_);
   }
 
-  /// @notice Buy the token.
+  /// @notice Buy the token.  Current owner is remitted the current price and all excess value included
+  /// in the message gets added to the deposit.
   /// @param tokenId_ ID of token the buyer wants to purchase.
-  /// @param purchasePrice_ Purchasing price. Must be greater or equal to current price.
-  /// @param currentPriceForVerification_ Current price must be given to protect against a front-run attack.
+  /// @param newValuation_ New buyer's valuation of the token. Must be greater or equal to current price.
+  /// @param currentValuation_ Current valuation must be given to protect against a front-run attack.
   /// The buyer will only complete the purchase at the agreed upon price. This prevents a malicious,
   /// second buyer from purchasing the token before the first trx is complete, changing the price,
   /// and eating into the first buyer's deposit.
   function buy(
     uint256 tokenId_,
-    uint256 purchasePrice_,
-    uint256 currentPriceForVerification_
+    uint256 newValuation_,
+    uint256 currentValuation_
   ) public payable _tokenMinted(tokenId_) _collectTax(tokenId_) {
     // Prevent re-entrancy attack
     require(!locked[tokenId_], "Token is locked");
@@ -227,21 +228,25 @@ contract PartialCommonOwnership721 is ERC721 {
     uint256 currentPrice = _price(tokenId_);
     // Prevent front-run.
     require(
-      currentPrice == currentPriceForVerification_,
-      "Current Price is incorrect"
+      currentPrice == currentValuation_,
+      "Current valuation is incorrect"
     );
-    // Purchase price must be greater than zero, even if current price is zero, to ensure that
+
+    // New valuation must be greater than zero, even if current valuation is zero, to ensure that
     // funds are available for deposit.
-    require(purchasePrice_ > 0, "New Price cannot be zero");
-    // Buyer can offer more than the current price; this renders unnecessary a second gas payment
+    require(newValuation_ > 0, "New valuation cannot be zero");
+
+    // Buyer can set the new valuation higher the current price; this renders unnecessary a second gas payment
     // if Buyer wants to immediately self-assess the token at a higher valuation.
     require(
-      purchasePrice_ >= currentPrice,
-      "New Price must be >= current price"
+      newValuation_ >= currentPrice,
+      "New valuation must be >= current valuation"
     );
-    // Value sent must be greater than purchase price; surplus is necessary for deposit.
+
+    // Value sent must be greater the amount being remitted to the current owner;
+    // surplus is necessary for deposit.
     require(
-      msg.value > purchasePrice_,
+      msg.value > currentPrice,
       "Message does not contain surplus value for deposit"
     );
 
@@ -262,12 +267,12 @@ contract PartialCommonOwnership721 is ERC721 {
       recipient = currentOwner;
     }
 
-    // Remit the purchase price and any available deposit.
-    uint256 remittance = purchasePrice_ + _deposits[tokenId_];
+    // Remit the current price and current owner's deposit.
+    uint256 remittance = currentPrice + _deposits[tokenId_];
     _remit(recipient, remittance, RemittanceTriggers.LeaseTakeover);
 
     // If the token is being purchased for the first time or is being purchased
-    // from foreclosure,last collection time is set to now so that the contract
+    // from foreclosure, last collection time is set to now so that the contract
     // does not incorrectly consider the taxable period to have begun prior to
     // foreclosure and overtax the owner.
     if (currentPrice == 0) {
@@ -275,10 +280,10 @@ contract PartialCommonOwnership721 is ERC721 {
     }
 
     // Update deposit with surplus value.
-    _deposits[tokenId_] = msg.value - purchasePrice_;
+    _deposits[tokenId_] = msg.value - currentPrice;
 
-    _transferToken(tokenId_, currentOwner, msg.sender, purchasePrice_);
-    emit LogBuy(tokenId_, msg.sender, purchasePrice_);
+    _transferToken(tokenId_, currentOwner, msg.sender, newValuation_);
+    emit LogBuy(tokenId_, msg.sender, newValuation_);
 
     // Unlock token
     locked[tokenId_] = false;
