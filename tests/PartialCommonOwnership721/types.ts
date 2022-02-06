@@ -1,8 +1,8 @@
 enum ErrorMessages {
   ONLY_OWNER = "Sender does not own this token",
-  BUY_ZERO_PRICE = "New Price cannot be zero",
-  BUY_INCORRECT_CURRENT_PRICE = "Current Price is incorrect",
-  BUY_PRICE_BELOW_CURRENT = "New Price must be >= current price",
+  BUY_ZERO_PRICE = "New valuation cannot be zero",
+  BUY_INCORRECT_CURRENT_PRICE = "Current valuation is incorrect",
+  BUY_PRICE_BELOW_CURRENT = "New valuation must be >= current valuation",
   BUY_LACKS_SURPLUS_VALUE = "Message does not contain surplus value for deposit",
   BUY_ALREADY_OWNED = "Buyer is already owner",
   NEW_PRICE_ZERO = "New price cannot be zero",

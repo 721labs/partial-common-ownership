@@ -78,16 +78,6 @@ function randomToken(): TOKENS {
 }
 
 /**
- * If wallet does not redeposit funds after purchasing, how many days until the entire deposit is exhausted?
- * @param tokenId id of token
- * @returns days as number
- */
-function daysTillForeclosureWithoutRedeposit(tokenId: TOKENS): number {
-  const { collectionFrequency, taxRate } = tokenTaxConfigs[tokenId];
-  return collectionFrequency / (taxRate / 10 ** 12) + 1;
-}
-
-/**
  * How often are taxes collected? in seconds.
  * @param tokenId id of token
  * @returns seconds as big number
@@ -134,16 +124,16 @@ function getTaxDue(
  * Executes purchase and verifies expectations.
  * @param wallet Wallet making the purchase
  * @param tokenId Token being purchased
- * @param purchasePrice Price purchasing for
- * @param currentPriceForVerification Current price
+ * @param newValuation Self-assess valuation.
+ * @param currentValuation Current owner's self-assessed valuation.
  * @param value Trx value
  * @returns Transaction Receipt
  */
 async function buy(
   wallet: Wallet,
   tokenId: TOKENS,
-  purchasePrice: BigNumber,
-  currentPriceForVerification: BigNumber,
+  newValuation: BigNumber,
+  currentValuation: BigNumber,
   value: BigNumber
 ): Promise<{
   trx: any;
@@ -173,7 +163,7 @@ async function buy(
     // Get the balance and then determine how much will be deducted by taxation
     const taxDue = getTaxDue(
       tokenId,
-      currentPriceForVerification,
+      currentValuation,
       (await now()).add(1), // block timestamp
       await contract.lastCollectionTimes(tokenId)
     );
@@ -185,8 +175,8 @@ async function buy(
 
   const trx = await wallet.contract.buy(
     tokenId,
-    purchasePrice,
-    currentPriceForVerification,
+    newValuation,
+    currentValuation,
     { value, ...GLOBAL_TRX_CONFIG }
   );
 
@@ -202,7 +192,7 @@ async function buy(
 
   expect(trx)
     .to.emit(contract, Events.BUY)
-    .withArgs(tokenId, wallet.address, purchasePrice);
+    .withArgs(tokenId, wallet.address, newValuation);
 
   // Beneficiary doesn't put down a deposit
   const purchasedByBeneficiary = wallet.address === beneficiary.address;
@@ -210,12 +200,12 @@ async function buy(
     expect(await contract.depositOf(tokenId)).to.equal(0);
   } else {
     // Deposit updated
-    const surplus = value.sub(purchasePrice);
+    const surplus = value.sub(currentValuation);
     expect(await contract.depositOf(tokenId)).to.equal(surplus);
   }
 
   // Price updated
-  expect(await contract.priceOf(tokenId)).to.equal(purchasePrice);
+  expect(await contract.priceOf(tokenId)).to.equal(newValuation);
 
   // Collection timestamp updates
   expect(await contract.lastCollectionTimes(tokenId)).to.equal(block.timestamp);
@@ -228,7 +218,7 @@ async function buy(
 
   // If purchased by the beneficiary from the contract, no remittance occurs.
   if (!(purchasedByBeneficiary && currentPriceForVerification == ETH0)) {
-    const expectedRemittance = depositUponPurchase.add(purchasePrice);
+    const expectedRemittance = depositUponPurchase.add(currentValuation);
 
     if (expectedRemittance.gt(0)) {
       // Remittance Event emitted
@@ -782,9 +772,10 @@ describe("PartialCommonOwnership721.sol", async function () {
 
           await buy(alice, token, ETH1, ETH0, ETH2);
 
-          await time.increase(
-            time.duration.days(daysTillForeclosureWithoutRedeposit(token))
-          );
+          // How many days until foreclosure?
+          const timeTillForeclosure = await contract.foreclosureTime(token);
+          await time.increaseTo(timeTillForeclosure.add(1).toNumber());
+
           expect(await contract.foreclosed(token)).to.equal(true);
 
           await time.increase(time.duration.days(1));
@@ -798,9 +789,10 @@ describe("PartialCommonOwnership721.sol", async function () {
 
           await buy(alice, token, ETH1, ETH0, ETH2);
 
-          await time.increase(
-            time.duration.days(daysTillForeclosureWithoutRedeposit(token))
-          );
+          // How many days until foreclosure?
+          const timeTillForeclosure = await contract.foreclosureTime(token);
+          await time.increaseTo(timeTillForeclosure.add(1).toNumber());
+
           expect(await contract.foreclosed(token)).to.equal(true);
 
           await time.increase(time.duration.days(1));
@@ -823,9 +815,11 @@ describe("PartialCommonOwnership721.sol", async function () {
 
         const { block, trx } = await buy(alice, token, ETH1, ETH0, ETH2);
 
-        await time.increase(
-          time.duration.days(daysTillForeclosureWithoutRedeposit(token))
-        ); // Entire deposit will be exceeded after 1yr
+        // How many days until foreclosure?
+        const timeTillForeclosure = await contract.foreclosureTime(token);
+        await time.increaseTo(timeTillForeclosure.add(1).toNumber());
+
+        // Entire deposit will be exceeded after 1yr
         expect(await contract.foreclosed(token)).to.equal(true);
 
         expect(trx).to.emit(contract, Events.TRANSFER);
@@ -855,9 +849,9 @@ describe("PartialCommonOwnership721.sol", async function () {
         await buy(alice, token, ETH1, ETH0, ETH2);
 
         // Exhaust deposit
-        await time.increase(
-          time.duration.days(daysTillForeclosureWithoutRedeposit(token))
-        );
+        // How many days until foreclosure?
+        const timeTillForeclosure = await contract.foreclosureTime(token);
+        await time.increaseTo(timeTillForeclosure.add(1).toNumber());
 
         expect(await contract.withdrawableDeposit(token)).to.equal(0);
       });
@@ -870,7 +864,7 @@ describe("PartialCommonOwnership721.sol", async function () {
         const owed = await contract.taxOwed(token);
 
         expect(await contract.withdrawableDeposit(token)).to.equal(
-          ETH1.sub(owed.amount)
+          ETH2.sub(owed.amount)
         );
       });
     });
@@ -883,7 +877,7 @@ describe("PartialCommonOwnership721.sol", async function () {
         const token = randomToken();
         const price = ETH1;
         const tenMinDue = getTaxDue(token, price, tenMin, prior);
-        await buy(alice, token, price, ETH0, ETH1.add(tenMinDue));
+        await buy(alice, token, price, ETH0, tenMinDue);
 
         // Future:
 
@@ -922,7 +916,7 @@ describe("PartialCommonOwnership721.sol", async function () {
           token,
           price,
           ETH0,
-          ETH1.add(tenMinDue) // Deposit a surplus 10 min of patronage
+          tenMinDue // Deposit 10 min of patronage
         );
 
         const tenMinutesFromNow = (await now()).add(
@@ -942,7 +936,7 @@ describe("PartialCommonOwnership721.sol", async function () {
           token,
           price,
           ETH0,
-          ETH1.add(tenMinDue) // Deposit a surplus 10 min of patronage
+          tenMinDue // Deposit 10 min of patronage
         );
 
         await time.increase(time.duration.minutes(10));
@@ -1012,9 +1006,12 @@ describe("PartialCommonOwnership721.sol", async function () {
           )
         ).to.be.revertedWith(ErrorMessages.BUY_PRICE_BELOW_CURRENT);
       });
-      it("Attempting to buy without surplus value for deposit", async function () {
+      it("Attempting to buy without surplus value for payment", async function () {
+        const tokenId = TOKENS.ONE;
+        await buy(bob, tokenId, ETH1, ETH0, ETH1);
+
         await expect(
-          alice.contract.buy(TOKENS.ONE, ETH1, ETH0, { value: ETH1 }) // [should be greater than ETH1]
+          alice.contract.buy(tokenId, ETH2, ETH1, { value: ETH1 }) // [should be greater than ETH1]
         ).to.be.revertedWith(ErrorMessages.BUY_LACKS_SURPLUS_VALUE);
       });
       it("Attempting to purchase a token it already owns", async function () {
@@ -1060,9 +1057,9 @@ describe("PartialCommonOwnership721.sol", async function () {
         await buy(alice, token, ETH1, ETH0, ETH2);
 
         // Exhaust deposit
-        await time.increase(
-          time.duration.days(daysTillForeclosureWithoutRedeposit(token))
-        );
+        // How many days until foreclosure?
+        const timeTillForeclosure = await contract.foreclosureTime(token);
+        await time.increaseTo(timeTillForeclosure.add(1).toNumber());
 
         // Trigger foreclosure & buy it out of foreclosure
         expect(
@@ -1082,9 +1079,9 @@ describe("PartialCommonOwnership721.sol", async function () {
         await buy(alice, token, ETH1, ETH0, ETH2);
 
         // Exhaust deposit
-        await time.increase(
-          time.duration.days(daysTillForeclosureWithoutRedeposit(token))
-        );
+        // How many days until foreclosure?
+        const timeTillForeclosure = await contract.foreclosureTime(token);
+        await time.increaseTo(timeTillForeclosure.add(1).toNumber());
 
         // Buy out of foreclosure
         await buy(bob, token, ETH1, ETH0, ETH2);
@@ -1098,9 +1095,9 @@ describe("PartialCommonOwnership721.sol", async function () {
         await buy(alice, token, ETH1, ETH0, ETH2);
 
         // Exhaust deposit
-        await time.increase(
-          time.duration.days(daysTillForeclosureWithoutRedeposit(token))
-        );
+        // How many days until foreclosure?
+        const timeTillForeclosure = await contract.foreclosureTime(token);
+        await time.increaseTo(timeTillForeclosure.add(1).toNumber());
 
         // Buy out of foreclosure
         await buy(alice, token, ETH1, ETH0, ETH2);
@@ -1239,7 +1236,7 @@ describe("PartialCommonOwnership721.sol", async function () {
         const token = randomToken();
         const price = ETH1;
 
-        await buy(alice, token, price, ETH0, ETH3, 30);
+        await buy(alice, token, price, ETH0, ETH3);
 
         // Necessary to determine tax due on exit
         const lastCollectionTime = await contract.lastCollectionTimes(token);
@@ -1260,8 +1257,8 @@ describe("PartialCommonOwnership721.sol", async function () {
           lastCollectionTime
         );
 
-        // Deposit should be 1 ETH - taxed amount.
-        expect(await contract.depositOf(token)).to.equal(ETH1.sub(taxedAmt));
+        // Deposit should be 2 ETH - taxed amount.
+        expect(await contract.depositOf(token)).to.equal(ETH2.sub(taxedAmt));
 
         // Alice's balance should reflect returned deposit [1 ETH] minus fees
         const { delta, fees } = await alice.balanceDelta();
@@ -1302,7 +1299,7 @@ describe("PartialCommonOwnership721.sol", async function () {
           lastCollectionTime
         );
 
-        const expectedRemittance = ETH1.sub(taxedAmt);
+        const expectedRemittance = ETH2.sub(taxedAmt);
 
         // Emits
         expect(trx)
