@@ -20,31 +20,31 @@ The Solidity compiler will raise "unused function parameter" warnings because we
 
 Business logic is split up into a set of modules in order to reduce complexity and make the library more extensible to alternative implementations (e.g. depreciating licenses).
 
-### Beneficiary.sol
+### [Beneficiary.sol](../contracts/token/modules/Beneficiary.sol)
 
 The beneficiary of a given token is the recipient of the Harberger taxation. The module handles state management of the beneficiary registry.
 
-### Lease.sol
+### [Lease.sol](../contracts/token/modules/Lease.sol)
 
 The module handles takeover and valuation assessments for a token's perpetual lease.
 
-### Remittance.sol
+### [Remittance.](../contracts/token/modules/Remittance.sol)
 
 The module handles sending and withdrawing (failed) remittances. By default, an active "push" strategy is employed, which alleviates the need for the tax collector to actively
 check and collect.
 
-### Taxation.sol
+### [Taxation.sol](../contracts/token/modules/Taxation.sol)
 
 The module handles taxation, leasee deposits, and lease foreclosures.
 
-### Title.sol
+### [Title.sol](../contracts/token/modules/Title.sol)
 
 The module handles state management of the chain of title registry.
 
-### TokenManagement.sol
+### [TokenManagement.sol](../contracts/token/modules/TokenManagement.sol)
 
 The module is a light wrapper on top of ERC721 that exposes permissions modifiers.
 
-### Valuation.sol
+### [Valuation.sol](../contracts/token/modules/Valuation.sol)
 
 The module handles state management of the self-assessed valuations registry.
