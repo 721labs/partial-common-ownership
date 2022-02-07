@@ -69,7 +69,23 @@ contract PartialCommonOwnership721 is
     _setTaxPeriod(tokenId_, collectionFrequency_);
   }
 
-  function _burn() internal {}
+  /// @notice Burns a token.
+  /// @param tokenId_ ID of token to burn.
+  function _burn(uint256 tokenId_) internal override _collectTax(tokenId_) {
+    // Return the current owner's deposit.
+    _withdrawDeposit(tokenId_, depositOf(tokenId_));
+
+    // Burn token
+    ERC721._burn(tokenId_);
+
+    // Delete state
+    delete _beneficiaries[tokenId_];
+    delete _valuations[tokenId_];
+    delete _chainOfTitle[tokenId_];
+    delete _taxNumerators[tokenId_];
+    delete _taxPeriods[tokenId_];
+    delete _locked[tokenId_];
+  }
 
   /* solhint-enable no-empty-blocks */
 

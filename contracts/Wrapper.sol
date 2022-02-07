@@ -126,25 +126,11 @@ contract Wrapper is PCO {
     // Get current owner's address prior to burning.
     address owner = ownerOf(tokenId_);
 
-    // Ensure any outstanding taxes are paid
-    collectTax(tokenId_);
-
-    // Return the current owner's deposit.
-    _withdrawDeposit(tokenId_, depositOf(tokenId_));
-
-    // Burn the wrapped token.
-    _burn(tokenId_);
-
     // Delete wrapper state
     delete _wrappedTokenMap[tokenId_];
 
-    // Delete PCO state
-    delete _beneficiaries[tokenId_];
-    delete _valuations[tokenId_];
-    delete _chainOfTitle[tokenId_];
-    delete _taxNumerators[tokenId_];
-    delete _taxPeriods[tokenId_];
-    delete _locked[tokenId_];
+    // Burn the token
+    _burn(tokenId_);
 
     // Transfer ownership of the underlying token to the current owner
     IERC721 tokenContract = IERC721(token.contractAddress);
