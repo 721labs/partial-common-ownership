@@ -40,4 +40,9 @@ interface ITaxation {
     external
     view
     returns (uint256);
+
+  /// @notice Gets current deposit for a given token ID.
+  /// @param tokenId_ ID of token requesting deposit for.
+  /// @return Deposit in Wei.
+  function depositOf(uint256 tokenId_) external view returns (uint256);
 }

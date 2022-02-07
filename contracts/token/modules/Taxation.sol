@@ -29,6 +29,9 @@ abstract contract Taxation is ITaxation, TokenManagement, Valuation {
   /// accurate to the actual possession period.
   mapping(uint256 => uint256) private _lastCollectionTimes;
 
+  /// @notice Mapping from token ID to funds for paying tax ("Deposit") in Wei.
+  mapping(uint256 => uint256) private _deposits;
+
   //////////////////////////////
   /// Public Getters
   //////////////////////////////
@@ -89,6 +92,17 @@ abstract contract Taxation is ITaxation, TokenManagement, Valuation {
     return _lastCollectionTimes[tokenId_];
   }
 
+  /// @dev See {ITaxation.depositOf}
+  function depositOf(uint256 tokenId_)
+    public
+    view
+    override
+    _tokenMinted(tokenId_)
+    returns (uint256)
+  {
+    return _deposits[tokenId_];
+  }
+
   //////////////////////////////
   /// Internal Setters
   //////////////////////////////
@@ -123,6 +137,13 @@ abstract contract Taxation is ITaxation, TokenManagement, Valuation {
     _tokenMinted(tokenId_)
   {
     _taxPeriods[tokenId_] = days_ * 1 days;
+  }
+
+  /// @notice Sets deposit for a given token.
+  /// @param tokenId_ ID of token.
+  /// @param amount_ New deposit amount.
+  function _setDeposit(uint256 tokenId_, uint256 amount_) internal {
+    _deposits[tokenId_] = amount_;
   }
 
   //////////////////////////////

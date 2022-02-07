@@ -7,7 +7,6 @@ import {TokenManagement} from "./modules/TokenManagement.sol";
 import {Valuation} from "./modules/Valuation.sol";
 import {Remittance, RemittanceTriggers} from "./modules/Remittance.sol";
 import {Taxation} from "./modules/Taxation.sol";
-import {Deposit} from "./modules/Deposit.sol";
 import {Foreclosure} from "./modules/Foreclosure.sol";
 
 struct TitleTransferEvent {
@@ -33,7 +32,6 @@ contract PartialCommonOwnership721 is
   TokenManagement,
   Valuation,
   Taxation,
-  Deposit,
   Remittance,
   Foreclosure
 {

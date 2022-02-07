@@ -4,9 +4,8 @@ pragma solidity ^0.8.7;
 
 import "./interfaces/IForeclosure.sol";
 import "./Taxation.sol";
-import "./Deposit.sol";
 
-abstract contract Foreclosure is IForeclosure, Taxation, Deposit {
+abstract contract Foreclosure is IForeclosure, Taxation {
   //////////////////////////////
   /// Public Getters
   //////////////////////////////
