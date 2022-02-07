@@ -11,6 +11,9 @@ abstract contract Taxation is ITaxation, TokenManagement, Valuation {
   /// State
   //////////////////////////////
 
+  /// @notice Mapping from token ID to taxation collected since last transfer in Wei.
+  mapping(uint256 => uint256) private _taxCollectedSinceLastTransfer;
+
   /// @notice  Percentage taxation rate. e.g. 5% or 100%
   /// @dev Granular to an additionial 10 zeroes.
   /// e.g. 100% => 1000000000000
@@ -35,6 +38,17 @@ abstract contract Taxation is ITaxation, TokenManagement, Valuation {
   //////////////////////////////
   /// Public Getters
   //////////////////////////////
+
+  /// @dev See {ITaxation.taxCollectedSinceLastTransferOf}
+  function taxCollectedSinceLastTransferOf(uint256 tokenId_)
+    public
+    view
+    override
+    _tokenMinted(tokenId_)
+    returns (uint256)
+  {
+    return _taxCollectedSinceLastTransfer[tokenId_];
+  }
 
   /// @dev See {ITaxation.taxRateOf}
   function taxRateOf(uint256 tokenId_)
@@ -152,6 +166,15 @@ abstract contract Taxation is ITaxation, TokenManagement, Valuation {
   //////////////////////////////
   /// Internal Setters
   //////////////////////////////
+
+  /// @notice Sets tax collected since last transfer.
+  /// @param tokenId_ ID of token.
+  /// @param amount_ Amount in Wei.
+  function _setTaxCollectedSinceLastTransfer(uint256 tokenId_, uint256 amount_)
+    internal
+  {
+    _taxCollectedSinceLastTransfer[tokenId_] = amount_;
+  }
 
   /// @notice Sets last collection time for a given token.
   /// @param tokenId_ ID of token.

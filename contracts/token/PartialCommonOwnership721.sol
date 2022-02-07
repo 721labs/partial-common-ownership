@@ -33,9 +33,6 @@ contract PartialCommonOwnership721 is
   /// @notice Mapping from token ID to taxation collected over lifetime in Wei.
   mapping(uint256 => uint256) public taxationCollected;
 
-  /// @notice Mapping from token ID to taxation collected since last transfer in Wei.
-  mapping(uint256 => uint256) public taxCollectedSinceLastTransfer;
-
   /// @notice Mapping from token ID to purchase lock status
   /// @dev Used to prevent reentrancy attacks
   mapping(uint256 => bool) private locked;
@@ -125,7 +122,10 @@ contract PartialCommonOwnership721 is
     // Normal collection
     _setDeposit(tokenId_, depositOf(tokenId_) - owed);
     taxationCollected[tokenId_] += owed;
-    taxCollectedSinceLastTransfer[tokenId_] += owed;
+    _setTaxCollectedSinceLastTransfer(
+      tokenId_,
+      taxCollectedSinceLastTransferOf(tokenId_) + owed
+    );
 
     emit LogCollection(tokenId_, owed);
 
@@ -329,10 +329,8 @@ contract PartialCommonOwnership721 is
     // Call `_transfer` directly rather than `_transferFrom()` because `newOwner_`
     // does not require previous approval (as required by `_transferFrom()`) to purchase.
     _transfer(currentOwner_, newOwner_, tokenId_);
-
     _titleTransfer(tokenId_, currentOwner_, newOwner_, newPrice_);
-
-    taxCollectedSinceLastTransfer[tokenId_] = 0;
+    _setTaxCollectedSinceLastTransfer(tokenId_, 0);
   }
 
   //////////////////////////////

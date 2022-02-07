@@ -274,7 +274,7 @@ async function collectTax(
 
   const depositBefore = await contract.depositOf(tokenId);
   const taxCollectedSinceLastTransferBefore =
-    await contract.taxCollectedSinceLastTransfer(tokenId);
+    await contract.taxCollectedSinceLastTransferOf(tokenId);
   const taxCollectedBefore = await contract.taxationCollected(tokenId);
 
   //$ Collect
@@ -304,7 +304,7 @@ async function collectTax(
   // Token collection statistics update
   expect(await contract.lastCollectionTimeOf(tokenId)).to.equal(timeAfter);
 
-  expect(await contract.taxCollectedSinceLastTransfer(tokenId)).to.equal(
+  expect(await contract.taxCollectedSinceLastTransferOf(tokenId)).to.equal(
     taxCollectedSinceLastTransferBefore.add(due)
   );
 
@@ -691,13 +691,13 @@ describe("PartialCommonOwnership721", async function () {
     });
   });
 
-  describe("#taxCollectedSinceLastTransfer()", async function () {
+  describe("#taxCollectedSinceLastTransferOf()", async function () {
     context("fails", async function () {});
     context("succeeds", async function () {
       context("returning correct amount", async function () {
         it("if never transferred", async function () {
           expect(
-            await contract.taxCollectedSinceLastTransfer(TOKENS.ONE)
+            await contract.taxCollectedSinceLastTransferOf(TOKENS.ONE)
           ).to.equal(0);
         });
 
@@ -737,9 +737,9 @@ describe("PartialCommonOwnership721", async function () {
           expect(await contract.foreclosed(token)).to.equal(true);
 
           await time.increase(time.duration.days(1));
-          expect(await contract.taxCollectedSinceLastTransfer(token)).to.equal(
-            0
-          );
+          expect(
+            await contract.taxCollectedSinceLastTransferOf(token)
+          ).to.equal(0);
         });
 
         it("after purchase from foreclosure", async function () {

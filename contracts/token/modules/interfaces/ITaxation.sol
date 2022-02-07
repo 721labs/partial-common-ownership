@@ -7,6 +7,14 @@ interface ITaxation {
   /// Taxation
   //////////////////////////////
 
+  /// @notice Returns the amount of tax collected since last transfer of a token.
+  /// @param tokenId_ ID of token.
+  /// @return Amount in Wei.
+  function taxCollectedSinceLastTransferOf(uint256 tokenId_)
+    external
+    view
+    returns (uint256);
+
   /// @notice Gets the tax rate of a given token
   /// @param tokenId_ Id of token to query for
   /// @return Tax rate as int
