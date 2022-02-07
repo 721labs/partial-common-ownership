@@ -117,6 +117,37 @@ abstract contract Taxation is
     _forecloseIfNecessary(tokenId_);
   }
 
+  /// @dev See {ITaxation.deposit}
+  function deposit(uint256 tokenId_)
+    public
+    payable
+    override
+    _onlyOwner(tokenId_)
+    _collectTax(tokenId_)
+  {
+    _setDeposit(tokenId_, depositOf(tokenId_) + msg.value);
+  }
+
+  /// @dev See {ITaxation.withdrawDeposit}
+  function withdrawDeposit(uint256 tokenId_, uint256 wei_)
+    public
+    override
+    _onlyOwner(tokenId_)
+    _collectTax(tokenId_)
+  {
+    _withdrawDeposit(tokenId_, wei_);
+  }
+
+  /// @dev See {ITaxation.exit}
+  function exit(uint256 tokenId_)
+    public
+    override
+    _onlyOwner(tokenId_)
+    _collectTax(tokenId_)
+  {
+    _withdrawDeposit(tokenId_, depositOf(tokenId_));
+  }
+
   //////////////////////////////
   /// Public Getters
   //////////////////////////////

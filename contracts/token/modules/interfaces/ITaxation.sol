@@ -4,7 +4,24 @@ pragma solidity ^0.8.7;
 
 interface ITaxation {
   //////////////////////////////
-  /// Taxation
+  /// External Methods
+  //////////////////////////////
+
+  /// @notice Enables owner to withdraw some amount of their deposit.
+  /// @param tokenId_ ID of token to withdraw against.
+  /// @param wei_ Amount of Wei to withdraw.
+  function withdrawDeposit(uint256 tokenId_, uint256 wei_) external;
+
+  /// @notice Enables owner to withdraw their entire deposit.
+  /// @param tokenId_ ID of token to withdraw against.
+  function exit(uint256 tokenId_) external;
+
+  /// @notice Increases owner's deposit by `msg.value` Wei.
+  /// @param tokenId_ ID of token.
+  function deposit(uint256 tokenId_) external payable;
+
+  //////////////////////////////
+  /// Taxation Getters
   //////////////////////////////
 
   /// @notice Returns the amount of tax collected since last transfer of a token.
@@ -54,7 +71,7 @@ interface ITaxation {
     returns (uint256);
 
   //////////////////////////////
-  /// Deposits
+  /// Deposit Getters
   //////////////////////////////
 
   /// @notice Gets current deposit for a given token ID.
@@ -72,7 +89,7 @@ interface ITaxation {
     returns (uint256);
 
   //////////////////////////////
-  /// Foreclosure
+  /// Foreclosure Getters
   //////////////////////////////
 
   /// @notice Do the taxes owed exceed the deposit?  If so, the token should be

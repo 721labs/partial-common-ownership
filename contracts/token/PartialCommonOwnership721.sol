@@ -166,17 +166,6 @@ contract PartialCommonOwnership721 is
   /// Owner-Only Methods
   //////////////////////////////
 
-  /// @notice Increases owner's deposit by `msg.value` Wei.
-  /// @param tokenId_ ID of token.
-  function deposit(uint256 tokenId_)
-    public
-    payable
-    _onlyOwner(tokenId_)
-    _collectTax(tokenId_)
-  {
-    _setDeposit(tokenId_, depositOf(tokenId_) + msg.value);
-  }
-
   /// @notice Enables owner to change price in accordance with
   /// self-assessed value.
   /// @param tokenId_ ID of token to change price of.
@@ -191,27 +180,6 @@ contract PartialCommonOwnership721 is
     require(newPrice_ != price, "New price cannot be same");
     _setValuation(tokenId_, newPrice_);
     emit LogPriceChange(tokenId_, newPrice_);
-  }
-
-  /// @notice Enables owner to withdraw some amount of their deposit.
-  /// @param tokenId_ ID of token to withdraw against.
-  /// @param wei_ Amount of Wei to withdraw.
-  function withdrawDeposit(uint256 tokenId_, uint256 wei_)
-    public
-    _onlyOwner(tokenId_)
-    _collectTax(tokenId_)
-  {
-    _withdrawDeposit(tokenId_, wei_);
-  }
-
-  /// @notice Enables owner to withdraw their entire deposit.
-  /// @param tokenId_ ID of token to withdraw against.
-  function exit(uint256 tokenId_)
-    public
-    _onlyOwner(tokenId_)
-    _collectTax(tokenId_)
-  {
-    _withdrawDeposit(tokenId_, depositOf(tokenId_));
   }
 
   //////////////////////////////
