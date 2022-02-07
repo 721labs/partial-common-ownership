@@ -220,7 +220,10 @@ contract PartialCommonOwnership721 is
     // Set the new valuation
     _setValuation(tokenId_, newValuation_);
 
-    _transferToken(tokenId_, ownerAfterCollection, msg.sender, newValuation_);
+    _transfer(ownerAfterCollection, msg.sender, tokenId_);
+    _titleTransfer(tokenId_, ownerAfterCollection, msg.sender, newValuation_);
+    _setTaxCollectedSinceLastTransfer(tokenId_, 0);
+
     emit LogBuy(tokenId_, msg.sender, newValuation_);
 
     // Unlock token
@@ -309,28 +312,13 @@ contract PartialCommonOwnership721 is
 
       // Become steward of asset (aka foreclose)
       address currentOwner = ownerOf(tokenId_);
-      _transferToken(tokenId_, currentOwner, address(this), 0);
+
+      _transfer(currentOwner, address(this), tokenId_);
+      _titleTransfer(tokenId_, currentOwner, address(this), 0);
+      _setTaxCollectedSinceLastTransfer(tokenId_, 0);
 
       emit LogForeclosure(tokenId_, currentOwner);
     }
-  }
-
-  /// @notice Transfers possession of a token.
-  /// @param tokenId_ ID of token to transfer possession of.
-  /// @param currentOwner_ Address of current owner.
-  /// @param newOwner_ Address of new owner.
-  /// @param newPrice_ New price in Wei.
-  function _transferToken(
-    uint256 tokenId_,
-    address currentOwner_,
-    address newOwner_,
-    uint256 newPrice_
-  ) internal {
-    // Call `_transfer` directly rather than `_transferFrom()` because `newOwner_`
-    // does not require previous approval (as required by `_transferFrom()`) to purchase.
-    _transfer(currentOwner_, newOwner_, tokenId_);
-    _titleTransfer(tokenId_, currentOwner_, newOwner_, newPrice_);
-    _setTaxCollectedSinceLastTransfer(tokenId_, 0);
   }
 
   //////////////////////////////
