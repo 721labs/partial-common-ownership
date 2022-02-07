@@ -7,6 +7,7 @@ import {TokenManagement} from "./modules/TokenManagement.sol";
 import {Valuation} from "./modules/Valuation.sol";
 import {Remittance, RemittanceTriggers} from "./modules/Remittance.sol";
 import {Taxation} from "./modules/Taxation.sol";
+import {Deposit} from "./modules/Deposit.sol";
 
 struct TitleTransferEvent {
   /// @notice From address.
@@ -31,6 +32,7 @@ contract PartialCommonOwnership721 is
   TokenManagement,
   Valuation,
   Taxation,
+  Deposit,
   Remittance
 {
   //////////////////////////////
@@ -45,9 +47,6 @@ contract PartialCommonOwnership721 is
 
   /// @notice Mapping from token ID to taxation collected since last transfer in Wei.
   mapping(uint256 => uint256) public taxCollectedSinceLastTransfer;
-
-  /// @notice Mapping from token ID to funds for paying tax ("Deposit") in Wei.
-  mapping(uint256 => uint256) private _deposits;
 
   /// @notice Mapping from token ID to Unix timestamp of when it was last transferred.
   mapping(uint256 => uint256) public lastTransferTimes;
@@ -137,13 +136,13 @@ contract PartialCommonOwnership721 is
     if (foreclosed(tokenId_)) {
       _setLastCollectionTime(tokenId_, _backdatedForeclosureTime(tokenId_));
       // Set remaining deposit to be collected.
-      owed = _deposits[tokenId_];
+      owed = depositOf(tokenId_);
     } else {
       _setLastCollectionTime(tokenId_, block.timestamp);
     }
 
     // Normal collection
-    _deposits[tokenId_] -= owed;
+    _setDeposit(tokenId_, depositOf(tokenId_) - owed);
     taxationCollected[tokenId_] += owed;
     taxCollectedSinceLastTransfer[tokenId_] += owed;
 
@@ -215,7 +214,7 @@ contract PartialCommonOwnership721 is
     // Token is being purchased for the first time or out of foreclosure
     if (ownerAfterCollection == address(this)) {
       // Deposit takes entire msg value
-      _deposits[tokenId_] = msg.value;
+      _setDeposit(tokenId_, msg.value);
 
       // If the token is being purchased for the first time or is being purchased
       // from foreclosure, last collection time is set to now so that the contract
@@ -229,12 +228,12 @@ contract PartialCommonOwnership721 is
       _remit(
         ownerAfterCollection,
         // Owner receives their self-assessed valuation and the remainder of their deposit.
-        currentValuation_ + _deposits[tokenId_],
+        currentValuation_ + depositOf(tokenId_),
         RemittanceTriggers.LeaseTakeover
       );
 
       // Set the new owner's deposit
-      _deposits[tokenId_] = msg.value - currentValuation_;
+      _setDeposit(tokenId_, msg.value - currentValuation_);
     }
 
     _transferToken(tokenId_, ownerAfterCollection, msg.sender, newValuation_);
@@ -272,7 +271,7 @@ contract PartialCommonOwnership721 is
     _onlyOwner(tokenId_)
     _collectTax(tokenId_)
   {
-    _deposits[tokenId_] += msg.value;
+    _setDeposit(tokenId_, depositOf(tokenId_) + msg.value);
   }
 
   /// @notice Enables owner to change price in accordance with
@@ -309,7 +308,7 @@ contract PartialCommonOwnership721 is
     _onlyOwner(tokenId_)
     _collectTax(tokenId_)
   {
-    _withdrawDeposit(tokenId_, _deposits[tokenId_]);
+    _withdrawDeposit(tokenId_, depositOf(tokenId_));
   }
 
   //////////////////////////////
@@ -340,18 +339,6 @@ contract PartialCommonOwnership721 is
     return _chainOfTitle[tokenId_];
   }
 
-  /// @notice Gets current deposit for a given token ID.
-  /// @param tokenId_ ID of token requesting deposit for.
-  /// @return Deposit in Wei.
-  function depositOf(uint256 tokenId_)
-    public
-    view
-    _tokenMinted(tokenId_)
-    returns (uint256)
-  {
-    return _deposits[tokenId_];
-  }
-
   /// @notice Do the taxes owed exceed the deposit?  If so, the token should be
   /// "foreclosed" by the contract.  The price should be zero and anyone can
   /// purchase the token for the cost of the gas fee.
@@ -361,7 +348,7 @@ contract PartialCommonOwnership721 is
   /// @return Returns boolean indicating whether or not the contract is foreclosed.
   function foreclosed(uint256 tokenId_) public view returns (bool) {
     uint256 owed = _taxOwed(tokenId_);
-    if (owed >= _deposits[tokenId_]) {
+    if (owed >= depositOf(tokenId_)) {
       return true;
     } else {
       return false;
@@ -376,7 +363,7 @@ contract PartialCommonOwnership721 is
     if (foreclosed(tokenId_)) {
       return 0;
     } else {
-      return _deposits[tokenId_] - _taxOwed(tokenId_);
+      return depositOf(tokenId_) - _taxOwed(tokenId_);
     }
   }
 
@@ -409,9 +396,9 @@ contract PartialCommonOwnership721 is
   /// @param wei_ Amount of Wei to withdraw.
   function _withdrawDeposit(uint256 tokenId_, uint256 wei_) internal {
     // Note: Can withdraw whole deposit, which immediately triggers foreclosure.
-    require(wei_ <= _deposits[tokenId_], "Cannot withdraw more than deposited");
+    require(wei_ <= depositOf(tokenId_), "Cannot withdraw more than deposited");
 
-    _deposits[tokenId_] -= wei_;
+    _setDeposit(tokenId_, depositOf(tokenId_) - wei_);
 
     _remit(msg.sender, wei_, RemittanceTriggers.WithdrawnDeposit);
 
@@ -423,7 +410,7 @@ contract PartialCommonOwnership721 is
   function _forecloseIfNecessary(uint256 tokenId_) internal {
     // If there are not enough funds to cover the entire amount owed, `__collectTax`
     // will take whatever's left of the deposit, resulting in a zero balance.
-    if (_deposits[tokenId_] == 0) {
+    if (depositOf(tokenId_) == 0) {
       // Become steward of asset (aka foreclose)
       address currentOwner = ownerOf(tokenId_);
       _transferToken(tokenId_, currentOwner, address(this), 0);
@@ -490,7 +477,7 @@ contract PartialCommonOwnership721 is
   {
     uint256 last = lastCollectionTimeOf(tokenId_);
     uint256 timeElapsed = block.timestamp - last;
-    return last + ((timeElapsed * _deposits[tokenId_]) / _taxOwed(tokenId_));
+    return last + ((timeElapsed * depositOf(tokenId_)) / _taxOwed(tokenId_));
   }
 
   //////////////////////////////
