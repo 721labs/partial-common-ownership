@@ -4,16 +4,20 @@
 
 Once installed, you can use the contracts by importing and inheriting from them:
 
+### [PartialCommonOwnership721.sol](contracts/token/PartialCommonOwnership721.sol)
+
+`PartialCommonOwnership721.sol` enables you to launch new ERC721 tokens that are governed by PCO.
+
 ```solidity
 import "./PartialCommonOwnership721.sol";
 
-/// @dev 100% patronage
 contract YourToken is PartialCommonOwnership721 {
   constructor()
     PartialCommonOwnership721(
       "YourToken",
       "TOKEN",
       payable(msg.sender),
+      // 100% patronage per year
       1000000000000,
       365
     )
@@ -22,14 +26,15 @@ contract YourToken is PartialCommonOwnership721 {
 
 ```
 
-## Partial Common Ownership Wrapper
+### [Wrapper.sol](contracts/Wrapper.sol)
 
-### Wrapping
+`Wrapper.sol` enables you to launch your own contracts that wrap existent ERC721 tokens.
 
-#### Deposits
+```solidity
+import "../Wrapper.sol";
 
-If beneficiary, no deposit necessary (not going to pay taxes to yourself). If not beneficiary, deposit necessary (taxes must be paid to the beneficiary).
+contract YourWrapper is Wrapper {
+  constructor() Wrapper("Partial Common Ownership NFT", "pcoNFT") {}
+}
 
-#### Purchasing as Beneficiary from the Contract (initial mint or foreclosure)
-
-No message value, (essentially free minus cost of gas) because the value would be remitted back to the beneficiary, providing no benefit and increasing the gas cost. **Because of this, beneficiary is able to hoard the token by setting a prohibitively high price, effectively monopolizing the asset**.
+```
