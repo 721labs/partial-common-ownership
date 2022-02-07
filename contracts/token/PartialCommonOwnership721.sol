@@ -12,12 +12,9 @@ import {Title} from "./modules/Title.sol";
 import {Lease} from "./modules/Lease.sol";
 
 /// @title PartialCommonOwnership721
-/// @author Simon de la Rouviere, Will Holley
 /// @notice Extends the ERC721 standard by requiring tax payments from a token's current owner
 /// using a Harberger Tax model; if payments are not made, the token is repossessed by the contract
 /// and can be repurchased at any price > 0.
-/// @dev This code was originally forked from ThisArtworkIsAlwaysOnSale's `v2_contracts/ArtSteward.sol`
-/// contract by Simon de la Rouviere.
 contract PartialCommonOwnership721 is
   ERC721,
   TokenManagement,

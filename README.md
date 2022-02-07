@@ -4,7 +4,7 @@
 
 ## Overview
 
-This project establishes standard, open source implementations of Partial Common Ownership of Ethereum ERC721 "NFTs". It builds upon work done by RadicalxChange, Simon de la Rouviere, and others. It aims to be a mature, secure, and all-encompassing starting point for any developer who wants to implement Partial Common Ownership.
+This project establishes standard, open source implementations of Partial Common Ownership of Ethereum ERC721 "NFTs". It aims to be a mature, secure, and all-encompassing starting point for any developer who wants to implement Partial Common Ownership.
 
 ## Installation
 
@@ -38,6 +38,7 @@ Please report any security issues you find in [Issues](https://github.com/721lab
 
 - [Will Holley (721.dev)](https://twitter.com/waholleyiv)
 - [Victor Sint Nicolaas](https://github.com/vicsn)
+- [Simon de la Rouviere](https://github.com/simondlr/thisartworkisalwaysonsale)
 
 ## License
 
