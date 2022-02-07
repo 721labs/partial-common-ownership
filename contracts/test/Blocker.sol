@@ -18,7 +18,7 @@ contract Blocker {
     if (_shouldBlock) revert("");
   }
 
-  function buy(
+  function takeoverLease(
     uint256 tokenId_,
     uint256 purchasePrice_,
     uint256 currentPriceForVerification_
@@ -26,7 +26,7 @@ contract Blocker {
     // solhint-disable avoid-low-level-calls
     address(_testContract).call{value: msg.value}(
       abi.encodeWithSignature(
-        "buy(uint256,uint256,uint256)",
+        "takeoverLease(uint256,uint256,uint256)",
         tokenId_,
         purchasePrice_,
         currentPriceForVerification_

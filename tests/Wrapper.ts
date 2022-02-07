@@ -101,7 +101,7 @@ async function wrap(tokenId: TOKENS, beneficiary: Wallet): Promise<BigNumber> {
   expect(await wrapperContract.depositOf(id)).to.equal(deposit);
 
   // Valuation is set
-  expect(await wrapperContract.priceOf(id)).to.equal(wrapValuation);
+  expect(await wrapperContract.valuationOf(id)).to.equal(wrapValuation);
 
   // Beneficiary is set
   expect(await wrapperContract.beneficiaryOf(id)).to.equal(beneficiary.address);
@@ -148,11 +148,11 @@ async function unwrap(id: BigNumber, unwrappedTokenId: TOKENS): Promise<void> {
     PCOErrorMessages.NONEXISTENT_TOKEN
   );
 
-  await expect(deployer.contract.changePrice(id, ETH2)).to.be.revertedWith(
+  await expect(deployer.contract.selfAssess(id, ETH2)).to.be.revertedWith(
     ERC721ErrorMessages.NONEXISTENT_TOKEN
   );
 
-  await expect(deployer.contract.priceOf(id)).to.be.revertedWith(
+  await expect(deployer.contract.valuationOf(id)).to.be.revertedWith(
     PCOErrorMessages.NONEXISTENT_TOKEN
   );
 
@@ -502,7 +502,7 @@ describe("Wrapper.sol", async function () {
         const id = await wrap(tokenId, deployer);
 
         // Alice buys the wrapped token
-        await alice.contract.buy(id, ETH2, wrapValuation, {
+        await alice.contract.takeoverLease(id, ETH2, wrapValuation, {
           value: ETH3, // 2 Eth deposit (1 Eth paid to owner)
           ...GLOBAL_TRX_CONFIG,
         });

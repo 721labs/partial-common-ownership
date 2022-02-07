@@ -102,11 +102,11 @@ contract Wrapper is PCO {
     });
     _safeMint(msg.sender, _wrappedTokenId);
 
-    _deposits[_wrappedTokenId] += msg.value;
-    PCO.changePrice(_wrappedTokenId, valuation_);
-    PCO._setBeneficiary(_wrappedTokenId, beneficiary_);
-    PCO._setTaxRate(_wrappedTokenId, taxRate_);
-    PCO._setTaxPeriod(_wrappedTokenId, collectionFrequency_);
+    _setDeposit(_wrappedTokenId, msg.value);
+    _setValuation(_wrappedTokenId, valuation_);
+    _setBeneficiary(_wrappedTokenId, beneficiary_);
+    _setTaxRate(_wrappedTokenId, taxRate_);
+    _setTaxPeriod(_wrappedTokenId, collectionFrequency_);
 
     emit LogTokenWrapped(tokenContractAddress_, tokenId_, _wrappedTokenId);
   }
@@ -127,7 +127,7 @@ contract Wrapper is PCO {
     collectTax(tokenId_);
 
     // Return the current owner's deposit.
-    _withdrawDeposit(tokenId_, _deposits[tokenId_]);
+    _withdrawDeposit(tokenId_, depositOf(tokenId_));
 
     // Burn the wrapped token.
     _burn(tokenId_);
@@ -137,7 +137,7 @@ contract Wrapper is PCO {
 
     // Delete PCO state
     delete _beneficiaries[tokenId_];
-    delete prices[tokenId_];
+    delete _valuations[tokenId_];
     delete _chainOfTitle[tokenId_];
     delete _taxNumerators[tokenId_];
     delete _taxPeriods[tokenId_];

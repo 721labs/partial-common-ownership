@@ -1,10 +1,10 @@
 enum ErrorMessages {
   ONLY_OWNER = "Sender does not own this token",
-  BUY_ZERO_PRICE = "New valuation cannot be zero",
-  BUY_INCORRECT_CURRENT_PRICE = "Current valuation is incorrect",
-  BUY_PRICE_BELOW_CURRENT = "New valuation must be >= current valuation",
-  BUY_LACKS_SURPLUS_VALUE = "Message does not contain surplus value for deposit",
-  BUY_ALREADY_OWNED = "Buyer is already owner",
+  LEASE_TAKEOVER_ZERO_PRICE = "New valuation cannot be zero",
+  LEASE_TAKEOVER_INCORRECT_CURRENT_PRICE = "Current valuation is incorrect",
+  LEASE_TAKEOVER_PRICE_BELOW_CURRENT = "New valuation must be >= current valuation",
+  LEASE_TAKEOVER_LACKS_SURPLUS_VALUE = "Message does not contain surplus value for deposit",
+  LEASE_TAKEOVER_ALREADY_OWNED = "Buyer is already owner",
   NEW_PRICE_ZERO = "New price cannot be zero",
   NEW_PRICE_SAME = "New price cannot be same",
   // Not testing reentrancy lock, currently.
@@ -21,9 +21,9 @@ enum ErrorMessages {
 enum Events {
   APPROVAL = "Approval",
   TRANSFER = "Transfer",
-  BUY = "LogBuy",
+  LEASE_TAKEOVER = "LogLeaseTakeover",
   OUTSTANDING_REMITTANCE = "LogOutstandingRemittance",
-  PRICE_CHANGE = "LogPriceChange",
+  VALUATION_REASSESSMENT = "LogValuationReassessment",
   FORECLOSURE = "LogForeclosure",
   COLLECTION = "LogCollection",
   REMITTANCE = "LogRemittance",
