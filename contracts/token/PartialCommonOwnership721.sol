@@ -9,6 +9,7 @@ import {Remittance, RemittanceTriggers} from "./modules/Remittance.sol";
 import {Taxation} from "./modules/Taxation.sol";
 import {Beneficiary} from "./modules/Beneficiary.sol";
 import {Title} from "./modules/Title.sol";
+import {Lease} from "./modules/Lease.sol";
 
 /// @title PartialCommonOwnership721
 /// @author Simon de la Rouviere, Will Holley
@@ -24,7 +25,8 @@ contract PartialCommonOwnership721 is
   Title,
   Remittance,
   Beneficiary,
-  Taxation
+  Taxation,
+  Lease
 {
   //////////////////////////////
   /// State
@@ -47,11 +49,6 @@ contract PartialCommonOwnership721 is
     address indexed owner,
     uint256 indexed price
   );
-
-  /// @notice Alert owner changed price.
-  /// @param tokenId ID of token.
-  /// @param newPrice New price in Wei.
-  event LogPriceChange(uint256 indexed tokenId, uint256 indexed newPrice);
 
   //////////////////////////////
   /// Constructor
@@ -160,26 +157,6 @@ contract PartialCommonOwnership721 is
 
     // Unlock token
     locked[tokenId_] = false;
-  }
-
-  //////////////////////////////
-  /// Owner-Only Methods
-  //////////////////////////////
-
-  /// @notice Enables owner to change price in accordance with
-  /// self-assessed value.
-  /// @param tokenId_ ID of token to change price of.
-  /// @param newPrice_ New price in Wei.
-  function changePrice(uint256 tokenId_, uint256 newPrice_)
-    public
-    _onlyOwner(tokenId_)
-    _collectTax(tokenId_)
-  {
-    uint256 price = valuationOf(tokenId_);
-    require(newPrice_ > 0, "New price cannot be zero");
-    require(newPrice_ != price, "New price cannot be same");
-    _setValuation(tokenId_, newPrice_);
-    emit LogPriceChange(tokenId_, newPrice_);
   }
 
   //////////////////////////////

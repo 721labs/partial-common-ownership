@@ -540,9 +540,9 @@ describe("PartialCommonOwnership721", async function () {
           ).to.be.revertedWith(ErrorMessages.ONLY_OWNER);
         });
 
-        it("#changePrice()", async function () {
+        it("#selfAssess()", async function () {
           await expect(
-            alice.contract.changePrice(TOKENS.ONE, 500)
+            alice.contract.selfAssess(TOKENS.ONE, 500)
           ).to.be.revertedWith(ErrorMessages.ONLY_OWNER);
         });
 
@@ -1146,28 +1146,28 @@ describe("PartialCommonOwnership721", async function () {
     });
   });
 
-  describe("#changePrice()", async function () {
+  describe("#selfAssess()", async function () {
     context("fails", async function () {
       it("only owner can update price", async function () {
         await expect(
-          alice.contract.changePrice(TOKENS.ONE, 500)
+          alice.contract.selfAssess(TOKENS.ONE, 500)
         ).to.be.revertedWith(ErrorMessages.ONLY_OWNER);
       });
       it("cannot have a new price of zero", async function () {
         const token = randomToken();
 
         await buy(alice, token, ETH1, ETH0, ETH2);
-        await expect(
-          alice.contract.changePrice(token, ETH0)
-        ).to.be.revertedWith(ErrorMessages.NEW_PRICE_ZERO);
+        await expect(alice.contract.selfAssess(token, ETH0)).to.be.revertedWith(
+          ErrorMessages.NEW_PRICE_ZERO
+        );
       });
       it("cannot have price set to same amount", async function () {
         const token = randomToken();
 
         await buy(alice, token, ETH1, ETH0, ETH2);
-        await expect(
-          alice.contract.changePrice(token, ETH1)
-        ).to.be.revertedWith(ErrorMessages.NEW_PRICE_SAME);
+        await expect(alice.contract.selfAssess(token, ETH1)).to.be.revertedWith(
+          ErrorMessages.NEW_PRICE_SAME
+        );
       });
     });
     context("succeeds", async function () {
@@ -1176,8 +1176,8 @@ describe("PartialCommonOwnership721", async function () {
 
         await buy(alice, token, ETH1, ETH0, ETH2);
 
-        expect(await alice.contract.changePrice(token, ETH2))
-          .to.emit(contract, Events.PRICE_CHANGE)
+        expect(await alice.contract.selfAssess(token, ETH2))
+          .to.emit(contract, Events.VALUATION_REASSESSMENT)
           .withArgs(token, ETH2);
 
         expect(await contract.valuationOf(token)).to.equal(ETH2);
@@ -1188,8 +1188,8 @@ describe("PartialCommonOwnership721", async function () {
 
         await buy(alice, token, ETH2, ETH0, ETH3);
 
-        expect(await alice.contract.changePrice(token, ETH1))
-          .to.emit(contract, Events.PRICE_CHANGE)
+        expect(await alice.contract.selfAssess(token, ETH1))
+          .to.emit(contract, Events.VALUATION_REASSESSMENT)
           .withArgs(token, ETH1);
 
         expect(await contract.valuationOf(token)).to.equal(ETH1);

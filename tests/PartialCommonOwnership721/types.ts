@@ -27,7 +27,7 @@ enum Events {
   TRANSFER = "Transfer",
   BUY = "LogBuy",
   OUTSTANDING_REMITTANCE = "LogOutstandingRemittance",
-  PRICE_CHANGE = "LogPriceChange",
+  VALUATION_REASSESSMENT = "LogValuationReassessment",
   FORECLOSURE = "LogForeclosure",
   COLLECTION = "LogCollection",
   REMITTANCE = "LogRemittance",
