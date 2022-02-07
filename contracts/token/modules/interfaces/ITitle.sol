@@ -21,4 +21,9 @@ interface ITitle {
     external
     view
     returns (TitleTransferEvent[] memory);
+
+  /// @notice Returns the time that a title was last transferred.
+  /// @param tokenId_ ID of token to fetch title for.
+  /// @return Timestamp.
+  function lastTransferTimeOf(uint256 tokenId_) external view returns (uint256);
 }

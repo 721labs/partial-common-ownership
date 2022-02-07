@@ -29,6 +29,19 @@ abstract contract Title is ITitle, TokenManagement {
     return _chainOfTitle[tokenId_];
   }
 
+  /// @dev See {ITitle.lastTransferTimeOf}
+  function lastTransferTimeOf(uint256 tokenId_)
+    public
+    view
+    override
+    _tokenMinted(tokenId_)
+    returns (uint256)
+  {
+    TitleTransferEvent[] memory chain = _chainOfTitle[tokenId_];
+    TitleTransferEvent memory transferEvent = chain[chain.length - 1];
+    return transferEvent.timestamp;
+  }
+
   //////////////////////////////
   /// Internal Methods
   //////////////////////////////

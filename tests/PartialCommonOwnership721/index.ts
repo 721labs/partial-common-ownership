@@ -198,7 +198,7 @@ async function buy(
   );
 
   // Last transfer time
-  expect(await contract.lastTransferTimes(tokenId)).to.equal(block.timestamp);
+  expect(await contract.lastTransferTimeOf(tokenId)).to.equal(block.timestamp);
 
   // Owned updated
   expect(await contract.ownerOf(tokenId)).to.equal(wallet.address);
@@ -783,7 +783,7 @@ describe("PartialCommonOwnership721", async function () {
         expect(trx).to.emit(contract, Events.TRANSFER);
 
         // Transfer time is set during foreclosure
-        expect(await contract.lastTransferTimes(token)).to.equal(
+        expect(await contract.lastTransferTimeOf(token)).to.equal(
           block.timestamp
         );
       });

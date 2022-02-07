@@ -36,9 +36,6 @@ contract PartialCommonOwnership721 is
   /// @notice Mapping from token ID to taxation collected since last transfer in Wei.
   mapping(uint256 => uint256) public taxCollectedSinceLastTransfer;
 
-  /// @notice Mapping from token ID to Unix timestamp of when it was last transferred.
-  mapping(uint256 => uint256) public lastTransferTimes;
-
   /// @notice Mapping from token ID to purchase lock status
   /// @dev Used to prevent reentrancy attacks
   mapping(uint256 => bool) private locked;
@@ -220,6 +217,9 @@ contract PartialCommonOwnership721 is
       _setDeposit(tokenId_, msg.value - currentValuation_);
     }
 
+    // Set the new valuation
+    _setValuation(tokenId_, newValuation_);
+
     _transferToken(tokenId_, ownerAfterCollection, msg.sender, newValuation_);
     emit LogBuy(tokenId_, msg.sender, newValuation_);
 
@@ -304,9 +304,13 @@ contract PartialCommonOwnership721 is
     // If there are not enough funds to cover the entire amount owed, `__collectTax`
     // will take whatever's left of the deposit, resulting in a zero balance.
     if (depositOf(tokenId_) == 0) {
+      // Unset the valuation
+      _setValuation(tokenId_, 0);
+
       // Become steward of asset (aka foreclose)
       address currentOwner = ownerOf(tokenId_);
       _transferToken(tokenId_, currentOwner, address(this), 0);
+
       emit LogForeclosure(tokenId_, currentOwner);
     }
   }
@@ -326,11 +330,7 @@ contract PartialCommonOwnership721 is
     // does not require previous approval (as required by `_transferFrom()`) to purchase.
     _transfer(currentOwner_, newOwner_, tokenId_);
 
-    _setValuation(tokenId_, newPrice_);
-
     _titleTransfer(tokenId_, currentOwner_, newOwner_, newPrice_);
-
-    lastTransferTimes[tokenId_] = block.timestamp;
 
     taxCollectedSinceLastTransfer[tokenId_] = 0;
   }
