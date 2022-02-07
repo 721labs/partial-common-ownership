@@ -4,6 +4,7 @@ pragma solidity 0.8.7;
 
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {TokenManagement} from "./modules/TokenManagement.sol";
+import {Price} from "./modules/Price.sol";
 
 struct TitleTransferEvent {
   /// @notice From address.
@@ -31,16 +32,13 @@ enum RemittanceTriggers {
 /// and can be repurchased at any price > 0.
 /// @dev This code was originally forked from ThisArtworkIsAlwaysOnSale's `v2_contracts/ArtSteward.sol`
 /// contract by Simon de la Rouviere.
-contract PartialCommonOwnership721 is ERC721, TokenManagement {
+contract PartialCommonOwnership721 is ERC721, TokenManagement, Price {
   //////////////////////////////
   /// State
   //////////////////////////////
 
   /// @notice Map of tokens to their beneficiaries.
   mapping(uint256 => address) private _beneficiaries;
-
-  /// @notice Mapping from token ID to token price in Wei.
-  mapping(uint256 => uint256) public prices;
 
   /// @notice Mapping from token ID to taxation collected over lifetime in Wei.
   mapping(uint256 => uint256) public taxationCollected;
@@ -164,7 +162,7 @@ contract PartialCommonOwnership721 is ERC721, TokenManagement {
   /// @param tokenId_ ID of token to collect tax for.
   /// @dev Strictly envoked by modifier but can be called publically.
   function collectTax(uint256 tokenId_) public {
-    uint256 price = _price(tokenId_);
+    uint256 price = priceOf(tokenId_);
 
     // There's no tax to be collected on an unvalued token.
     if (price == 0) return;
@@ -211,7 +209,7 @@ contract PartialCommonOwnership721 is ERC721, TokenManagement {
     // Prevent re-entrancy attack
     require(!locked[tokenId_], "Token is locked");
 
-    uint256 valuationPriorToTaxCollection = _price(tokenId_);
+    uint256 valuationPriorToTaxCollection = this.priceOf(tokenId_);
 
     // Prevent front-run.
     require(
@@ -324,10 +322,10 @@ contract PartialCommonOwnership721 is ERC721, TokenManagement {
     _onlyOwner(tokenId_)
     _collectTax(tokenId_)
   {
-    uint256 price = prices[tokenId_];
+    uint256 price = priceOf(tokenId_);
     require(newPrice_ > 0, "New price cannot be zero");
     require(newPrice_ != price, "New price cannot be same");
-    prices[tokenId_] = newPrice_;
+    _setPrice(tokenId_, newPrice_);
     emit LogPriceChange(tokenId_, newPrice_);
   }
 
@@ -420,19 +418,6 @@ contract PartialCommonOwnership721 is ERC721, TokenManagement {
     return _chainOfTitle[tokenId_];
   }
 
-  /// @notice Gets current price for a given token ID. Requires that
-  /// the token has been minted.
-  /// @param tokenId_ ID of token requesting price for.
-  /// @return Price in Wei.
-  function priceOf(uint256 tokenId_)
-    public
-    view
-    _tokenMinted(tokenId_)
-    returns (uint256)
-  {
-    return _price(tokenId_);
-  }
-
   /// @notice Gets current deposit for a given token ID.
   /// @param tokenId_ ID of token requesting deposit for.
   /// @return Deposit in Wei.
@@ -456,7 +441,7 @@ contract PartialCommonOwnership721 is ERC721, TokenManagement {
     _tokenMinted(tokenId_)
     returns (uint256 taxDue)
   {
-    uint256 price = _price(tokenId_);
+    uint256 price = this.priceOf(tokenId_);
     return
       (((price * time_) / taxPeriodOf(tokenId_)) * taxRateOf(tokenId_)) /
       TAX_DENOMINATOR;
@@ -595,7 +580,7 @@ contract PartialCommonOwnership721 is ERC721, TokenManagement {
     // does not require previous approval (as required by `_transferFrom()`) to purchase.
     _transfer(currentOwner_, newOwner_, tokenId_);
 
-    prices[tokenId_] = newPrice_;
+    _setPrice(tokenId_, newPrice_);
 
     TitleTransferEvent memory transferEvent = TitleTransferEvent(
       currentOwner_,
@@ -646,13 +631,6 @@ contract PartialCommonOwnership721 is ERC721, TokenManagement {
   //////////////////////////////
   /// Prviate Getters
   //////////////////////////////
-
-  /// @notice Gets current price for a given token ID.
-  /// @param tokenId_ ID of token requesting price for.
-  /// @return Price in Wei.
-  function _price(uint256 tokenId_) private view returns (uint256) {
-    return prices[tokenId_];
-  }
 
   /// @notice How much is owed from the last collection until now?
   /// @param tokenId_ ID of token requesting amount for.
