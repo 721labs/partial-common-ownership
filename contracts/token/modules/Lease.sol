@@ -2,10 +2,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
+import "./interfaces/ILease.sol";
 import "./TokenManagement.sol";
 import "./Taxation.sol";
 
-abstract contract Lease is TokenManagement, Taxation {
+abstract contract Lease is ILease, TokenManagement, Taxation {
   //////////////////////////////
   /// Events
   //////////////////////////////
@@ -22,11 +23,10 @@ abstract contract Lease is TokenManagement, Taxation {
   /// Public Methods
   //////////////////////////////
 
-  /// @notice Enables owner to self-assess the value of a token.
-  /// @param tokenId_ ID of token.
-  /// @param newValuation_ New valuation in Wei.
+  /// @dev See {ILease.selfAssess}
   function selfAssess(uint256 tokenId_, uint256 newValuation_)
     public
+    override
     _onlyOwner(tokenId_)
     _collectTax(tokenId_)
   {
