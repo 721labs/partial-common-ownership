@@ -7,6 +7,7 @@ import {TokenManagement} from "./modules/TokenManagement.sol";
 import {Valuation} from "./modules/Valuation.sol";
 import {Remittance, RemittanceTriggers} from "./modules/Remittance.sol";
 import {Taxation} from "./modules/Taxation.sol";
+import {Beneficiary} from "./modules/Beneficiary.sol";
 
 struct TitleTransferEvent {
   /// @notice From address.
@@ -31,14 +32,12 @@ contract PartialCommonOwnership721 is
   TokenManagement,
   Valuation,
   Taxation,
-  Remittance
+  Remittance,
+  Beneficiary
 {
   //////////////////////////////
   /// State
   //////////////////////////////
-
-  /// @notice Map of tokens to their beneficiaries.
-  mapping(uint256 => address) private _beneficiaries;
 
   /// @notice Mapping from token ID to taxation collected over lifetime in Wei.
   mapping(uint256 => uint256) public taxationCollected;
@@ -242,22 +241,6 @@ contract PartialCommonOwnership721 is
   }
 
   //////////////////////////////
-  /// Beneficiary Methods
-  //////////////////////////////
-
-  /// @notice Sets the beneficiary for a given token.
-  /// @dev Should only be called by beneficiary.
-  /// @param tokenId_ Token to set beneficiary of.
-  /// @param beneficiary_ Address of beneficiary.
-  function setBeneficiary(uint256 tokenId_, address payable beneficiary_)
-    public
-    _tokenMinted(tokenId_)
-  {
-    require(msg.sender == _beneficiaries[tokenId_], "Current beneficiary only");
-    _setBeneficiary(tokenId_, beneficiary_);
-  }
-
-  //////////////////////////////
   /// Owner-Only Methods
   //////////////////////////////
 
@@ -312,18 +295,6 @@ contract PartialCommonOwnership721 is
   //////////////////////////////
   /// Public Getters
   //////////////////////////////
-
-  /// @notice Gets the beneficiary of a given token
-  /// @param tokenId_ Id of token to query for
-  /// @return Beneficiary address
-  function beneficiaryOf(uint256 tokenId_)
-    public
-    view
-    _tokenMinted(tokenId_)
-    returns (address)
-  {
-    return _beneficiaries[tokenId_];
-  }
 
   /// @notice Returns an array of metadata about transfers for a given token.
   /// @param tokenId_ ID of the token requesting for.
@@ -397,17 +368,6 @@ contract PartialCommonOwnership721 is
     lastTransferTimes[tokenId_] = block.timestamp;
 
     taxCollectedSinceLastTransfer[tokenId_] = 0;
-  }
-
-  /// @notice Internal beneficiary setter.
-  /// @dev Should be invoked immediately after calling `#_safeMint`
-  /// @param tokenId_ Token to set beneficiary of.
-  /// @param beneficiary_ Address of beneficiary.
-  function _setBeneficiary(uint256 tokenId_, address payable beneficiary_)
-    internal
-    _tokenMinted(tokenId_)
-  {
-    _beneficiaries[tokenId_] = beneficiary_;
   }
 
   //////////////////////////////
