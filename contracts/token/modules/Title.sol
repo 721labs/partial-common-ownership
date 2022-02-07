@@ -37,9 +37,8 @@ abstract contract Title is ITitle, TokenManagement {
     _tokenMinted(tokenId_)
     returns (uint256)
   {
-    TitleTransferEvent[] memory chain = _chainOfTitle[tokenId_];
-    TitleTransferEvent memory transferEvent = chain[chain.length - 1];
-    return transferEvent.timestamp;
+    return
+      _chainOfTitle[tokenId_][_chainOfTitle[tokenId_].length - 1].timestamp;
   }
 
   //////////////////////////////
