@@ -3,6 +3,10 @@
 pragma solidity ^0.8.7;
 
 interface ITaxation {
+  //////////////////////////////
+  /// Taxation
+  //////////////////////////////
+
   /// @notice Gets the tax rate of a given token
   /// @param tokenId_ Id of token to query for
   /// @return Tax rate as int
@@ -41,10 +45,27 @@ interface ITaxation {
     view
     returns (uint256);
 
+  //////////////////////////////
+  /// Deposits
+  //////////////////////////////
+
   /// @notice Gets current deposit for a given token ID.
   /// @param tokenId_ ID of token requesting deposit for.
   /// @return Deposit in Wei.
   function depositOf(uint256 tokenId_) external view returns (uint256);
+
+  /// @notice The amount of deposit that is withdrawable i.e. any deposited amount greater
+  /// than the taxable amount owed.
+  /// @param tokenId_ ID of token requesting withdrawable deposit for.
+  /// @return amount in Wei.
+  function withdrawableDeposit(uint256 tokenId_)
+    external
+    view
+    returns (uint256);
+
+  //////////////////////////////
+  /// Foreclosure
+  //////////////////////////////
 
   /// @notice Do the taxes owed exceed the deposit?  If so, the token should be
   /// "foreclosed" by the contract.  The price should be zero and anyone can

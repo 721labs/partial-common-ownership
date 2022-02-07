@@ -103,6 +103,20 @@ abstract contract Taxation is ITaxation, TokenManagement, Valuation {
     return _deposits[tokenId_];
   }
 
+  /// @dev See {ITaxation.withdrawableDeposit}
+  function withdrawableDeposit(uint256 tokenId_)
+    public
+    view
+    override
+    returns (uint256)
+  {
+    if (foreclosed(tokenId_)) {
+      return 0;
+    } else {
+      return depositOf(tokenId_) - _taxOwed(tokenId_);
+    }
+  }
+
   /// @dev See {ITaxation.foreclosed}
   function foreclosed(uint256 tokenId_) public view override returns (bool) {
     uint256 owed = _taxOwed(tokenId_);

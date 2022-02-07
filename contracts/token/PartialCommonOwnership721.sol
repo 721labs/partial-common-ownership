@@ -337,18 +337,6 @@ contract PartialCommonOwnership721 is
     return _chainOfTitle[tokenId_];
   }
 
-  /// @notice The amount of deposit that is withdrawable i.e. any deposited amount greater
-  /// than the taxable amount owed.
-  /// @param tokenId_ ID of token requesting withdrawable deposit for.
-  /// @return amount in Wei.
-  function withdrawableDeposit(uint256 tokenId_) public view returns (uint256) {
-    if (foreclosed(tokenId_)) {
-      return 0;
-    } else {
-      return depositOf(tokenId_) - _taxOwed(tokenId_);
-    }
-  }
-
   /// @notice Determines how long a token owner has until forclosure.
   /// @param tokenId_ ID of token requesting foreclosure time for.
   /// @return Unix timestamp
