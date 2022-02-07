@@ -7,17 +7,22 @@ import "./Valuation.sol";
 import "./TokenManagement.sol";
 import "./Title.sol";
 import "./Remittance.sol";
+import "./Beneficiary.sol";
 
 abstract contract Taxation is
   ITaxation,
   TokenManagement,
   Valuation,
   Title,
-  Remittance
+  Remittance,
+  Beneficiary
 {
   //////////////////////////////
   /// State
   //////////////////////////////
+
+  /// @notice Mapping from token ID to taxation collected over lifetime in Wei.
+  mapping(uint256 => uint256) public taxationCollected;
 
   /// @notice Mapping from token ID to taxation collected since last transfer in Wei.
   mapping(uint256 => uint256) private _taxCollectedSinceLastTransfer;
@@ -51,6 +56,66 @@ abstract contract Taxation is
   /// @param tokenId ID of token.
   /// @param prevOwner Address of previous owner.
   event LogForeclosure(uint256 indexed tokenId, address indexed prevOwner);
+
+  /// @notice Alert tax collected.
+  /// @param tokenId ID of token.
+  /// @param collected Amount in wei.
+  event LogCollection(uint256 indexed tokenId, uint256 indexed collected);
+
+  //////////////////////////////
+  /// Modifiers
+  //////////////////////////////
+
+  /// @notice Envokes tax collection.
+  /// @dev Tax collection is triggered by an external envocation of a method wrapped by
+  /// this modifier.
+  /// @param tokenId_ ID of token to collect tax for.
+  modifier _collectTax(uint256 tokenId_) {
+    collectTax(tokenId_);
+    _;
+  }
+
+  //////////////////////////////
+  /// Public Methods
+  //////////////////////////////
+
+  /// @notice Collects tax.
+  /// @param tokenId_ ID of token to collect tax for.
+  /// @dev Strictly envoked by modifier but can be called publically.
+  function collectTax(uint256 tokenId_) public {
+    uint256 price = valuationOf(tokenId_);
+
+    // There's no tax to be collected on an unvalued token.
+    if (price == 0) return;
+
+    // If price > 0, contract has not foreclosed.
+    uint256 owed = _taxOwed(tokenId_);
+
+    // If foreclosure should have occured in the past, last collection time will be
+    // backdated to when the tax was last paid for.
+    if (foreclosed(tokenId_)) {
+      _setLastCollectionTime(tokenId_, _backdatedForeclosureTime(tokenId_));
+      // Set remaining deposit to be collected.
+      owed = depositOf(tokenId_);
+    } else {
+      _setLastCollectionTime(tokenId_, block.timestamp);
+    }
+
+    // Normal collection
+    _setDeposit(tokenId_, depositOf(tokenId_) - owed);
+    taxationCollected[tokenId_] += owed;
+    _setTaxCollectedSinceLastTransfer(
+      tokenId_,
+      taxCollectedSinceLastTransferOf(tokenId_) + owed
+    );
+
+    emit LogCollection(tokenId_, owed);
+
+    /// Remit taxation to beneficiary.
+    _remit(beneficiaryOf(tokenId_), owed, RemittanceTriggers.TaxCollection);
+
+    _forecloseIfNecessary(tokenId_);
+  }
 
   //////////////////////////////
   /// Public Getters
