@@ -28,7 +28,7 @@ The beneficiary of a given token is the recipient of the Harberger taxation. The
 
 The module handles takeover and valuation assessments for a token's perpetual lease.
 
-### [Remittance.](../contracts/token/modules/Remittance.sol)
+### [Remittance.sol](../contracts/token/modules/Remittance.sol)
 
 The module handles sending and withdrawing (failed) remittances. By default, an active "push" strategy is employed, which alleviates the need for the tax collector to actively
 check and collect.
