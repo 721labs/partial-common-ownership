@@ -40,6 +40,37 @@ contract PartialCommonOwnership721 is
     ERC721(name_, symbol_)
   {}
 
+  //////////////////////////////
+  /// Internal Methods
+  //////////////////////////////
+
+  /// @notice Mints a new token.
+  /// @param tokenId_ Token's ID.
+  /// @param leasee_ Token's leasee.
+  /// @param deposit_ Token's deposit.
+  /// @param valuation_ Leasee's self assessed valuation of the token.
+  /// @param beneficiary_ Beneficiary of the token's taxation.
+  /// @param taxRate_ Tax rate (numerator).
+  /// @param collectionFrequency_ Tax collection frequency.
+  function _mint(
+    uint256 tokenId_,
+    address leasee_,
+    uint256 deposit_,
+    uint256 valuation_,
+    address payable beneficiary_,
+    uint256 taxRate_,
+    uint256 collectionFrequency_
+  ) internal {
+    ERC721._safeMint(leasee_, tokenId_);
+    _setDeposit(tokenId_, deposit_);
+    _setValuation(tokenId_, valuation_);
+    _setBeneficiary(tokenId_, beneficiary_);
+    _setTaxRate(tokenId_, taxRate_);
+    _setTaxPeriod(tokenId_, collectionFrequency_);
+  }
+
+  function _burn() internal {}
+
   /* solhint-enable no-empty-blocks */
 
   //////////////////////////////

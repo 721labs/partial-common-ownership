@@ -100,13 +100,16 @@ contract Wrapper is PCO {
       tokenId: tokenId_,
       operatorAddress: msg.sender
     });
-    _safeMint(msg.sender, _wrappedTokenId);
 
-    _setDeposit(_wrappedTokenId, msg.value);
-    _setValuation(_wrappedTokenId, valuation_);
-    _setBeneficiary(_wrappedTokenId, beneficiary_);
-    _setTaxRate(_wrappedTokenId, taxRate_);
-    _setTaxPeriod(_wrappedTokenId, collectionFrequency_);
+    _mint(
+      _wrappedTokenId,
+      msg.sender,
+      msg.value,
+      valuation_,
+      beneficiary_,
+      taxRate_,
+      collectionFrequency_
+    );
 
     emit LogTokenWrapped(tokenContractAddress_, tokenId_, _wrappedTokenId);
   }
