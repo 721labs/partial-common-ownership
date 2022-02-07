@@ -75,4 +75,9 @@ interface ITaxation {
   /// @param tokenId_ ID of token requesting foreclosure status for.
   /// @return Returns boolean indicating whether or not the contract is foreclosed.
   function foreclosed(uint256 tokenId_) external view returns (bool);
+
+  /// @notice Determines how long a token owner has until forclosure.
+  /// @param tokenId_ ID of token requesting foreclosure time for.
+  /// @return Unix timestamp
+  function foreclosureTime(uint256 tokenId_) external view returns (uint256);
 }

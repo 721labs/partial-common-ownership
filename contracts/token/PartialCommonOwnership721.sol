@@ -337,25 +337,6 @@ contract PartialCommonOwnership721 is
     return _chainOfTitle[tokenId_];
   }
 
-  /// @notice Determines how long a token owner has until forclosure.
-  /// @param tokenId_ ID of token requesting foreclosure time for.
-  /// @return Unix timestamp
-  function foreclosureTime(uint256 tokenId_) public view returns (uint256) {
-    uint256 taxPerSecond = taxOwedSince(tokenId_, 1);
-    uint256 withdrawable = withdrawableDeposit(tokenId_);
-    if (withdrawable > 0) {
-      // Time until deposited surplus no longer surpasses amount owed.
-      return block.timestamp + withdrawable / taxPerSecond;
-    } else if (taxPerSecond > 0) {
-      // Token is active but in foreclosed state.
-      // Returns when foreclosure should have occured i.e. when tax owed > deposits.
-      return _backdatedForeclosureTime(tokenId_);
-    } else {
-      // Actively foreclosed (price is 0)
-      return lastCollectionTimeOf(tokenId_);
-    }
-  }
-
   //////////////////////////////
   /// Internal Methods
   //////////////////////////////
