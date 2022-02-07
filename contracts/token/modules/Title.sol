@@ -56,12 +56,13 @@ abstract contract Title is ITitle, TokenManagement {
     address newOwner_,
     uint256 newValuation_
   ) internal {
-    TitleTransferEvent memory transferEvent = TitleTransferEvent(
-      currentOwner_,
-      newOwner_,
-      block.timestamp,
-      newValuation_
+    _chainOfTitle[tokenId_].push(
+      TitleTransferEvent(
+        currentOwner_,
+        newOwner_,
+        block.timestamp,
+        newValuation_
+      )
     );
-    _chainOfTitle[tokenId_].push(transferEvent);
   }
 }
