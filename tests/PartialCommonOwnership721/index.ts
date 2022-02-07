@@ -190,7 +190,7 @@ async function buy(
   );
 
   // Price updated
-  expect(await contract.priceOf(tokenId)).to.equal(newValuation);
+  expect(await contract.valuationOf(tokenId)).to.equal(newValuation);
 
   // Collection timestamp updates
   expect(await contract.lastCollectionTimes(tokenId)).to.equal(block.timestamp);
@@ -245,7 +245,7 @@ async function verifyCorrectTaxOwed(
 
   const owed = await contract.taxOwed(tokenId);
 
-  const price = await contract.priceOf(tokenId);
+  const price = await contract.valuationOf(tokenId);
 
   const due = getTaxDue(tokenId, price, owed.timestamp, lastCollectionTime);
 
@@ -586,7 +586,7 @@ describe("PartialCommonOwnership721", async function () {
   describe("#tokenMinted()", async function () {
     context("fails", async function () {
       context("when token not minted but required", async function () {
-        it("#priceOf()", async function () {
+        it("#valuationOf()", async function () {
           await expect(contract.ownerOf(INVALID_TOKEN_ID)).to.be.revertedWith(
             ErrorMessages.NONEXISTENT_TOKEN
           );
@@ -620,10 +620,10 @@ describe("PartialCommonOwnership721", async function () {
     });
   });
 
-  describe("#priceOf()", async function () {
+  describe("#valuationOf()", async function () {
     context("succeeds", async function () {
       it("returning expected price [ETH0]", async function () {
-        expect(await contract.priceOf(TOKENS.ONE)).to.equal(ETH0);
+        expect(await contract.valuationOf(TOKENS.ONE)).to.equal(ETH0);
       });
     });
   });
@@ -631,7 +631,7 @@ describe("PartialCommonOwnership721", async function () {
   describe("#depositOf()", async function () {
     context("succeeds", async function () {
       it("returning expected deposit [ETH0]", async function () {
-        expect(await contract.priceOf(TOKENS.ONE)).to.equal(ETH0);
+        expect(await contract.valuationOf(TOKENS.ONE)).to.equal(ETH0);
       });
     });
   });
@@ -1178,7 +1178,7 @@ describe("PartialCommonOwnership721", async function () {
           .to.emit(contract, Events.PRICE_CHANGE)
           .withArgs(token, ETH2);
 
-        expect(await contract.priceOf(token)).to.equal(ETH2);
+        expect(await contract.valuationOf(token)).to.equal(ETH2);
       });
 
       it("owner can decrease price", async function () {
@@ -1190,7 +1190,7 @@ describe("PartialCommonOwnership721", async function () {
           .to.emit(contract, Events.PRICE_CHANGE)
           .withArgs(token, ETH1);
 
-        expect(await contract.priceOf(token)).to.equal(ETH1);
+        expect(await contract.valuationOf(token)).to.equal(ETH1);
       });
     });
   });
@@ -1304,7 +1304,7 @@ describe("PartialCommonOwnership721", async function () {
         expect(await contract.depositOf(token)).to.equal(0);
 
         // Token should foreclose
-        expect(await contract.priceOf(token)).to.equal(0);
+        expect(await contract.valuationOf(token)).to.equal(0);
       });
     });
   });
