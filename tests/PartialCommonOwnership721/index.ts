@@ -156,7 +156,7 @@ async function buy(
     tokenId,
     currentValuation,
     (await now()).add(1), // block timestamp
-    await contract.lastCollectionTimes(tokenId)
+    await contract.lastCollectionTimeOf(tokenId)
   );
 
   const depositAfter = depositBefore.sub(taxDue);
@@ -193,7 +193,9 @@ async function buy(
   expect(await contract.valuationOf(tokenId)).to.equal(newValuation);
 
   // Collection timestamp updates
-  expect(await contract.lastCollectionTimes(tokenId)).to.equal(block.timestamp);
+  expect(await contract.lastCollectionTimeOf(tokenId)).to.equal(
+    block.timestamp
+  );
 
   // Last transfer time
   expect(await contract.lastTransferTimes(tokenId)).to.equal(block.timestamp);
@@ -239,7 +241,7 @@ async function verifyCorrectTaxOwed(
   tokenId: TOKENS,
   after: number
 ): Promise<void> {
-  const lastCollectionTime = await contract.lastCollectionTimes(tokenId);
+  const lastCollectionTime = await contract.lastCollectionTimeOf(tokenId);
 
   await time.increase(after);
 
@@ -300,7 +302,7 @@ async function collectTax(
   expect(await contract.depositOf(tokenId)).to.equal(depositBefore.sub(due));
 
   // Token collection statistics update
-  expect(await contract.lastCollectionTimes(tokenId)).to.equal(timeAfter);
+  expect(await contract.lastCollectionTimeOf(tokenId)).to.equal(timeAfter);
 
   expect(await contract.taxCollectedSinceLastTransfer(tokenId)).to.equal(
     taxCollectedSinceLastTransferBefore.add(due)
@@ -1222,7 +1224,7 @@ describe("PartialCommonOwnership721", async function () {
         await buy(alice, token, price, ETH0, ETH3);
 
         // Necessary to determine tax due on exit
-        const lastCollectionTime = await contract.lastCollectionTimes(token);
+        const lastCollectionTime = await contract.lastCollectionTimeOf(token);
 
         const trx = await alice.contract.withdrawDeposit(token, ETH1);
         const { timestamp } = await provider.getBlock(trx.blockNumber);
@@ -1269,7 +1271,7 @@ describe("PartialCommonOwnership721", async function () {
         await buy(alice, token, ETH1, ETH0, ETH2);
 
         // Determine tax due on exit
-        const lastCollectionTime = await contract.lastCollectionTimes(token);
+        const lastCollectionTime = await contract.lastCollectionTimeOf(token);
 
         const trx = await alice.contract.exit(token);
         const { timestamp } = await provider.getBlock(trx.blockNumber);

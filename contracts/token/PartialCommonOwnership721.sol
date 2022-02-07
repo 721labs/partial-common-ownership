@@ -6,6 +6,7 @@ import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {TokenManagement} from "./modules/TokenManagement.sol";
 import {Valuation} from "./modules/Valuation.sol";
 import {Remittance, RemittanceTriggers} from "./modules/Remittance.sol";
+import {Taxation} from "./modules/Taxation.sol";
 
 struct TitleTransferEvent {
   /// @notice From address.
@@ -29,6 +30,7 @@ contract PartialCommonOwnership721 is
   ERC721,
   TokenManagement,
   Valuation,
+  Taxation,
   Remittance
 {
   //////////////////////////////
@@ -47,30 +49,12 @@ contract PartialCommonOwnership721 is
   /// @notice Mapping from token ID to funds for paying tax ("Deposit") in Wei.
   mapping(uint256 => uint256) private _deposits;
 
-  /// @notice Mapping from token ID to Unix timestamp when last tax collection occured.
-  /// @dev This is used to determine how much time has passed since last collection and the present
-  /// and resultingly how much tax is due in the present.
-  /// @dev In the event that a foreclosure happens AFTER it should have, this
-  /// variable is backdated to when it should've occurred. Thus: `_chainOfTitle` is
-  /// accurate to the actual possession period.
-  mapping(uint256 => uint256) public lastCollectionTimes;
-
   /// @notice Mapping from token ID to Unix timestamp of when it was last transferred.
   mapping(uint256 => uint256) public lastTransferTimes;
 
   /// @notice Mapping from token ID to array of transfer events.
   /// @dev This includes foreclosures.
   mapping(uint256 => TitleTransferEvent[]) private _chainOfTitle;
-
-  /// @notice  Percentage taxation rate. e.g. 5% or 100%
-  /// @dev Granular to an additionial 10 zeroes.
-  /// e.g. 100% => 1000000000000
-  /// e.g. 5% => 50000000000
-  mapping(uint256 => uint256) private _taxNumerators;
-  uint256 private constant TAX_DENOMINATOR = 1000000000000;
-
-  /// @notice Over what period, in days, should taxation be applied?
-  mapping(uint256 => uint256) private _taxPeriods;
 
   /// @notice Mapping from token ID to purchase lock status
   /// @dev Used to prevent reentrancy attacks
@@ -151,11 +135,11 @@ contract PartialCommonOwnership721 is
     // If foreclosure should have occured in the past, last collection time will be
     // backdated to when the tax was last paid for.
     if (foreclosed(tokenId_)) {
-      lastCollectionTimes[tokenId_] = _backdatedForeclosureTime(tokenId_);
+      _setLastCollectionTime(tokenId_, _backdatedForeclosureTime(tokenId_));
       // Set remaining deposit to be collected.
       owed = _deposits[tokenId_];
     } else {
-      lastCollectionTimes[tokenId_] = block.timestamp;
+      _setLastCollectionTime(tokenId_, block.timestamp);
     }
 
     // Normal collection
@@ -237,7 +221,7 @@ contract PartialCommonOwnership721 is
       // from foreclosure, last collection time is set to now so that the contract
       // does not incorrectly consider the taxable period to have begun prior to
       // foreclosure and overtax the owner.
-      lastCollectionTimes[tokenId_] = block.timestamp;
+      _setLastCollectionTime(tokenId_, block.timestamp);
 
       // Note: no remittance occurs. Beneficiary receives no tax on a token that is currently
       // valued at nothing.
@@ -332,30 +316,6 @@ contract PartialCommonOwnership721 is
   /// Public Getters
   //////////////////////////////
 
-  /// @notice Gets the tax rate of a given token
-  /// @param tokenId_ Id of token to query for
-  /// @return Tax rate as int
-  function taxRateOf(uint256 tokenId_)
-    public
-    view
-    _tokenMinted(tokenId_)
-    returns (uint256)
-  {
-    return _taxNumerators[tokenId_];
-  }
-
-  /// @notice Gets the tax period of a given token
-  /// @param tokenId_ Id of token to query for
-  /// @return Tax period as days
-  function taxPeriodOf(uint256 tokenId_)
-    public
-    view
-    _tokenMinted(tokenId_)
-    returns (uint256)
-  {
-    return _taxPeriods[tokenId_];
-  }
-
   /// @notice Gets the beneficiary of a given token
   /// @param tokenId_ Id of token to query for
   /// @return Beneficiary address
@@ -390,36 +350,6 @@ contract PartialCommonOwnership721 is
     returns (uint256)
   {
     return _deposits[tokenId_];
-  }
-
-  /// @notice Determines the taxable amount accumulated between now and
-  /// a given time in the past.
-  /// @param tokenId_ ID of token requesting amount for.
-  /// @param time_ Unix timestamp.
-  /// @return taxDue Tax Due in Wei.
-  function taxOwedSince(uint256 tokenId_, uint256 time_)
-    public
-    view
-    _tokenMinted(tokenId_)
-    returns (uint256 taxDue)
-  {
-    uint256 price = valuationOf(tokenId_);
-    return
-      (((price * time_) / taxPeriodOf(tokenId_)) * taxRateOf(tokenId_)) /
-      TAX_DENOMINATOR;
-  }
-
-  /// @notice Public method for the tax owed. Returns with the current time.
-  /// for use calculating expected tax obligations.
-  /// @param tokenId_ ID of token requesting amount for.
-  /// @return amount Tax Due in Wei.
-  /// @return timestamp Now as Unix timestamp.
-  function taxOwed(uint256 tokenId_)
-    public
-    view
-    returns (uint256 amount, uint256 timestamp)
-  {
-    return (_taxOwed(tokenId_), block.timestamp);
   }
 
   /// @notice Do the taxes owed exceed the deposit?  If so, the token should be
@@ -465,7 +395,7 @@ contract PartialCommonOwnership721 is
       return _backdatedForeclosureTime(tokenId_);
     } else {
       // Actively foreclosed (price is 0)
-      return lastCollectionTimes[tokenId_];
+      return lastCollectionTimeOf(tokenId_);
     }
   }
 
@@ -542,39 +472,9 @@ contract PartialCommonOwnership721 is
     _beneficiaries[tokenId_] = beneficiary_;
   }
 
-  /// @notice Internal tax rate setter.
-  /// @dev Should be invoked immediately after calling `#_safeMint`
-  /// @param tokenId_ Token to set
-  /// @param rate_ The taxation rate up to 10 decimal places. See `_taxNumerators` declaration.
-  function _setTaxRate(uint256 tokenId_, uint256 rate_)
-    internal
-    _tokenMinted(tokenId_)
-  {
-    _taxNumerators[tokenId_] = rate_;
-  }
-
-  /// @notice Internal period setter.
-  /// @dev Should be invoked immediately after calling `#_safeMint`
-  /// @param tokenId_ Token to set
-  /// @param days_ The number of days that constitute one taxation period.
-  function _setTaxPeriod(uint256 tokenId_, uint256 days_)
-    internal
-    _tokenMinted(tokenId_)
-  {
-    _taxPeriods[tokenId_] = days_ * 1 days;
-  }
-
   //////////////////////////////
   /// Prviate Getters
   //////////////////////////////
-
-  /// @notice How much is owed from the last collection until now?
-  /// @param tokenId_ ID of token requesting amount for.
-  /// @return Tax Due in wei
-  function _taxOwed(uint256 tokenId_) private view returns (uint256) {
-    uint256 timeElapsed = block.timestamp - lastCollectionTimes[tokenId_];
-    return taxOwedSince(tokenId_, timeElapsed);
-  }
 
   /// @notice Returns the time when tax owed initially exceeded deposits.
   /// @dev last collected time + ((time_elapsed * deposit) / owed)
@@ -588,7 +488,7 @@ contract PartialCommonOwnership721 is
     view
     returns (uint256)
   {
-    uint256 last = lastCollectionTimes[tokenId_];
+    uint256 last = lastCollectionTimeOf(tokenId_);
     uint256 timeElapsed = block.timestamp - last;
     return last + ((timeElapsed * _deposits[tokenId_]) / _taxOwed(tokenId_));
   }
