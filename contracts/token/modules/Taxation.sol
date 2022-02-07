@@ -5,8 +5,9 @@ pragma solidity ^0.8.7;
 import "./interfaces/ITaxation.sol";
 import "./Valuation.sol";
 import "./TokenManagement.sol";
+import "./Title.sol";
 
-abstract contract Taxation is ITaxation, TokenManagement, Valuation {
+abstract contract Taxation is ITaxation, TokenManagement, Valuation, Title {
   //////////////////////////////
   /// State
   //////////////////////////////
@@ -34,6 +35,15 @@ abstract contract Taxation is ITaxation, TokenManagement, Valuation {
 
   /// @notice Mapping from token ID to funds for paying tax ("Deposit") in Wei.
   mapping(uint256 => uint256) private _deposits;
+
+  //////////////////////////////
+  /// Events
+  //////////////////////////////
+
+  /// @notice Alert token foreclosed.
+  /// @param tokenId ID of token.
+  /// @param prevOwner Address of previous owner.
+  event LogForeclosure(uint256 indexed tokenId, address indexed prevOwner);
 
   //////////////////////////////
   /// Public Getters
@@ -160,6 +170,30 @@ abstract contract Taxation is ITaxation, TokenManagement, Valuation {
     } else {
       // Actively foreclosed (price is 0)
       return lastCollectionTimeOf(tokenId_);
+    }
+  }
+
+  //////////////////////////////
+  /// Internal Methods
+  //////////////////////////////
+
+  /// @notice Forecloses if no deposit for a given token.
+  /// @param tokenId_ ID of token to potentially foreclose.
+  function _forecloseIfNecessary(uint256 tokenId_) internal {
+    // If there are not enough funds to cover the entire amount owed, `__collectTax`
+    // will take whatever's left of the deposit, resulting in a zero balance.
+    if (depositOf(tokenId_) == 0) {
+      // Unset the valuation
+      _setValuation(tokenId_, 0);
+
+      // Become steward of asset (aka foreclose)
+      address currentOwner = ownerOf(tokenId_);
+
+      _transfer(currentOwner, address(this), tokenId_);
+      _titleTransfer(tokenId_, currentOwner, address(this), 0);
+      _setTaxCollectedSinceLastTransfer(tokenId_, 0);
+
+      emit LogForeclosure(tokenId_, currentOwner);
     }
   }
 

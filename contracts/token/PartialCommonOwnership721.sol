@@ -19,12 +19,12 @@ import {Title} from "./modules/Title.sol";
 /// contract by Simon de la Rouviere.
 contract PartialCommonOwnership721 is
   ERC721,
-  TokenManagement,
-  Valuation,
-  Taxation,
   Remittance,
+  TokenManagement,
   Beneficiary,
-  Title
+  Valuation,
+  Title,
+  Taxation
 {
   //////////////////////////////
   /// State
@@ -55,11 +55,6 @@ contract PartialCommonOwnership721 is
   /// @param tokenId ID of token.
   /// @param newPrice New price in Wei.
   event LogPriceChange(uint256 indexed tokenId, uint256 indexed newPrice);
-
-  /// @notice Alert token foreclosed.
-  /// @param tokenId ID of token.
-  /// @param prevOwner Address of previous owner.
-  event LogForeclosure(uint256 indexed tokenId, address indexed prevOwner);
 
   /// @notice Alert tax collected.
   /// @param tokenId ID of token.
@@ -299,26 +294,6 @@ contract PartialCommonOwnership721 is
     _remit(msg.sender, wei_, RemittanceTriggers.WithdrawnDeposit);
 
     _forecloseIfNecessary(tokenId_);
-  }
-
-  /// @notice Forecloses if no deposit for a given token.
-  /// @param tokenId_ ID of token to potentially foreclose.
-  function _forecloseIfNecessary(uint256 tokenId_) internal {
-    // If there are not enough funds to cover the entire amount owed, `__collectTax`
-    // will take whatever's left of the deposit, resulting in a zero balance.
-    if (depositOf(tokenId_) == 0) {
-      // Unset the valuation
-      _setValuation(tokenId_, 0);
-
-      // Become steward of asset (aka foreclose)
-      address currentOwner = ownerOf(tokenId_);
-
-      _transfer(currentOwner, address(this), tokenId_);
-      _titleTransfer(tokenId_, currentOwner, address(this), 0);
-      _setTaxCollectedSinceLastTransfer(tokenId_, 0);
-
-      emit LogForeclosure(tokenId_, currentOwner);
-    }
   }
 
   //////////////////////////////
