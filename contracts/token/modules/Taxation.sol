@@ -6,8 +6,15 @@ import "./interfaces/ITaxation.sol";
 import "./Valuation.sol";
 import "./TokenManagement.sol";
 import "./Title.sol";
+import "./Remittance.sol";
 
-abstract contract Taxation is ITaxation, TokenManagement, Valuation, Title {
+abstract contract Taxation is
+  ITaxation,
+  TokenManagement,
+  Valuation,
+  Title,
+  Remittance
+{
   //////////////////////////////
   /// State
   //////////////////////////////
@@ -195,6 +202,21 @@ abstract contract Taxation is ITaxation, TokenManagement, Valuation, Title {
 
       emit LogForeclosure(tokenId_, currentOwner);
     }
+  }
+
+  /// @notice Withdraws deposit back to its owner.
+  /// @dev Parent callers must enforce `ownerOnly(tokenId_)`.
+  /// @param tokenId_ ID of token to withdraw deposit for.
+  /// @param wei_ Amount of Wei to withdraw.
+  function _withdrawDeposit(uint256 tokenId_, uint256 wei_) internal {
+    // Note: Can withdraw whole deposit, which immediately triggers foreclosure.
+    require(wei_ <= depositOf(tokenId_), "Cannot withdraw more than deposited");
+
+    _setDeposit(tokenId_, depositOf(tokenId_) - wei_);
+
+    _remit(msg.sender, wei_, RemittanceTriggers.WithdrawnDeposit);
+
+    _forecloseIfNecessary(tokenId_);
   }
 
   //////////////////////////////

@@ -1,6 +1,6 @@
 // contracts/token/PartialCommonOwnership721.sol
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.7;
+pragma solidity ^0.8.7;
 
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {TokenManagement} from "./modules/TokenManagement.sol";
@@ -19,11 +19,11 @@ import {Title} from "./modules/Title.sol";
 /// contract by Simon de la Rouviere.
 contract PartialCommonOwnership721 is
   ERC721,
-  Remittance,
   TokenManagement,
   Beneficiary,
   Valuation,
   Title,
+  Remittance,
   Taxation
 {
   //////////////////////////////
@@ -275,25 +275,6 @@ contract PartialCommonOwnership721 is
     _collectTax(tokenId_)
   {
     _withdrawDeposit(tokenId_, depositOf(tokenId_));
-  }
-
-  //////////////////////////////
-  /// Internal Methods
-  //////////////////////////////
-
-  /// @notice Withdraws deposit back to its owner.
-  /// @dev Parent callers must enforce `ownerOnly(tokenId_)`.
-  /// @param tokenId_ ID of token to withdraw deposit for.
-  /// @param wei_ Amount of Wei to withdraw.
-  function _withdrawDeposit(uint256 tokenId_, uint256 wei_) internal {
-    // Note: Can withdraw whole deposit, which immediately triggers foreclosure.
-    require(wei_ <= depositOf(tokenId_), "Cannot withdraw more than deposited");
-
-    _setDeposit(tokenId_, depositOf(tokenId_) - wei_);
-
-    _remit(msg.sender, wei_, RemittanceTriggers.WithdrawnDeposit);
-
-    _forecloseIfNecessary(tokenId_);
   }
 
   //////////////////////////////
