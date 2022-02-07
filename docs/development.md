@@ -31,7 +31,7 @@ The module handles takeover and valuation assessments for a token's perpetual le
 A few important notes:
 
 - If a lease is being taken over for the first time, or out of foreclosure, the transaction's entire value is deposited. Otherwise, the message value pays the current leasee their self-assessed valuation and the remainder is deposited.
-- If the beneficiary of a token is taking over a token's lease,
+- If the beneficiary of a token is taking over a token's lease:
   - No deposit is necessary (taxes would be going to itself in a convoluted loop at the cost of gas). As such, transactions with value will be rejected.
   - **Because of this, the beneficiary is able to effectively monopolizing the asset the token by purchasing it at the current owner's self-assessed valuation (or for free out of foreclosure) then setting a prohibitively high price**.
 
