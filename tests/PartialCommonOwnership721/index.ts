@@ -1077,13 +1077,13 @@ describe("PartialCommonOwnership721", async function () {
 
         expect(chainOfTitle[0].from).to.equal(contractAddress);
         expect(chainOfTitle[0].to).to.equal(bob.address);
-        expect(chainOfTitle[0].price).to.equal(ETH1);
+        expect(chainOfTitle[0].valuation).to.equal(ETH1);
         expect(chainOfTitle[0].timestamp).to.equal(
           ethers.BigNumber.from(block1.timestamp)
         );
         expect(chainOfTitle[1].from).to.equal(bob.address);
         expect(chainOfTitle[1].to).to.equal(alice.address);
-        expect(chainOfTitle[1].price).to.equal(ETH2);
+        expect(chainOfTitle[1].valuation).to.equal(ETH2);
         expect(chainOfTitle[1].timestamp).to.equal(
           ethers.BigNumber.from(block2.timestamp)
         );

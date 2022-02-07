@@ -8,17 +8,7 @@ import {Valuation} from "./modules/Valuation.sol";
 import {Remittance, RemittanceTriggers} from "./modules/Remittance.sol";
 import {Taxation} from "./modules/Taxation.sol";
 import {Beneficiary} from "./modules/Beneficiary.sol";
-
-struct TitleTransferEvent {
-  /// @notice From address.
-  address from;
-  /// @notice To address.
-  address to;
-  /// @notice Unix timestamp.
-  uint256 timestamp;
-  /// @notice Price in Wei
-  uint256 price;
-}
+import {Title} from "./modules/Title.sol";
 
 /// @title PartialCommonOwnership721
 /// @author Simon de la Rouviere, Will Holley
@@ -33,7 +23,8 @@ contract PartialCommonOwnership721 is
   Valuation,
   Taxation,
   Remittance,
-  Beneficiary
+  Beneficiary,
+  Title
 {
   //////////////////////////////
   /// State
@@ -47,10 +38,6 @@ contract PartialCommonOwnership721 is
 
   /// @notice Mapping from token ID to Unix timestamp of when it was last transferred.
   mapping(uint256 => uint256) public lastTransferTimes;
-
-  /// @notice Mapping from token ID to array of transfer events.
-  /// @dev This includes foreclosures.
-  mapping(uint256 => TitleTransferEvent[]) private _chainOfTitle;
 
   /// @notice Mapping from token ID to purchase lock status
   /// @dev Used to prevent reentrancy attacks
@@ -293,22 +280,6 @@ contract PartialCommonOwnership721 is
   }
 
   //////////////////////////////
-  /// Public Getters
-  //////////////////////////////
-
-  /// @notice Returns an array of metadata about transfers for a given token.
-  /// @param tokenId_ ID of the token requesting for.
-  /// @return Array of TitleTransferEvents.
-  function titleChainOf(uint256 tokenId_)
-    public
-    view
-    _tokenMinted(tokenId_)
-    returns (TitleTransferEvent[] memory)
-  {
-    return _chainOfTitle[tokenId_];
-  }
-
-  //////////////////////////////
   /// Internal Methods
   //////////////////////////////
 
@@ -357,13 +328,7 @@ contract PartialCommonOwnership721 is
 
     _setValuation(tokenId_, newPrice_);
 
-    TitleTransferEvent memory transferEvent = TitleTransferEvent(
-      currentOwner_,
-      newOwner_,
-      block.timestamp,
-      newPrice_
-    );
-    _chainOfTitle[tokenId_].push(transferEvent);
+    _titleTransfer(tokenId_, currentOwner_, newOwner_, newPrice_);
 
     lastTransferTimes[tokenId_] = block.timestamp;
 
