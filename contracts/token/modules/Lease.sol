@@ -19,14 +19,14 @@ abstract contract Lease is ILease, TokenManagement, Taxation {
   /// Events
   //////////////////////////////
 
-  /// @notice Alert of purchase.
+  /// @notice Alert of lease takeover.
   /// @param tokenId ID of token.
   /// @param owner Address of new token owner.
-  /// @param price Price paid by new owner.
-  event LogBuy(
+  /// @param newValuation New owenr's self assessed valuation.
+  event LogLeaseTakeover(
     uint256 indexed tokenId,
     address indexed owner,
-    uint256 indexed price
+    uint256 indexed newValuation
   );
 
   /// @notice Alert owner re-assessed the valuation.
@@ -41,8 +41,8 @@ abstract contract Lease is ILease, TokenManagement, Taxation {
   /// Public Methods
   //////////////////////////////
 
-  /// @dev See {ILease.buy}
-  function buy(
+  /// @dev See {ILease.takeoverLease}
+  function takeoverLease(
     uint256 tokenId_,
     uint256 newValuation_,
     uint256 currentValuation_
@@ -123,7 +123,7 @@ abstract contract Lease is ILease, TokenManagement, Taxation {
     _titleTransfer(tokenId_, ownerAfterCollection, msg.sender, newValuation_);
     _setTaxCollectedSinceLastTransfer(tokenId_, 0);
 
-    emit LogBuy(tokenId_, msg.sender, newValuation_);
+    emit LogLeaseTakeover(tokenId_, msg.sender, newValuation_);
 
     // Unlock token
     locked[tokenId_] = false;

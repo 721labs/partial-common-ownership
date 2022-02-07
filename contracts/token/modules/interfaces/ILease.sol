@@ -11,7 +11,7 @@ interface ILease {
   /// The buyer will only complete the purchase at the agreed upon price. This prevents a malicious,
   /// second buyer from purchasing the token before the first trx is complete, changing the price,
   /// and eating into the first buyer's deposit.
-  function buy(
+  function takeoverLease(
     uint256 tokenId_,
     uint256 newValuation_,
     uint256 currentValuation_
