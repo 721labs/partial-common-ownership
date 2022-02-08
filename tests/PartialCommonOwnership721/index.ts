@@ -508,10 +508,18 @@ describe("PartialCommonOwnership721.sol", async function () {
   describe("#setBeneficiary", async function () {
     context("succeeds", async function () {
       it("current beneficiary can set new beneficiary", async function () {
-        await beneficiary.contract.setBeneficiary(TOKENS.ONE, alice.address);
+        const trx = await beneficiary.contract.setBeneficiary(
+          TOKENS.ONE,
+          alice.address
+        );
+
         expect(await contract.beneficiaryOf(TOKENS.ONE)).to.equal(
           alice.address
         );
+
+        expect(trx)
+          .to.emit(contract, Events.BENEFICIARY_UPDATED)
+          .withArgs(TOKENS.ONE, alice.address);
       });
     });
     context("fails", async function () {

@@ -27,6 +27,7 @@ enum Events {
   FORECLOSURE = "LogForeclosure",
   COLLECTION = "LogCollection",
   REMITTANCE = "LogRemittance",
+  BENEFICIARY_UPDATED = "LogBeneficiaryUpdated",
 }
 
 enum RemittanceTriggers {

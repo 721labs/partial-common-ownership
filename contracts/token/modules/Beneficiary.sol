@@ -14,6 +14,18 @@ abstract contract Beneficiary is IBeneficiary, TokenManagement {
   mapping(uint256 => address) internal _beneficiaries;
 
   //////////////////////////////
+  /// Events
+  //////////////////////////////
+
+  /// @notice Alert of new beneficiary
+  /// @param tokenId ID of token.
+  /// @param newBeneficiary Address of new beneficiary.
+  event LogBeneficiaryUpdated(
+    uint256 indexed tokenId,
+    address indexed newBeneficiary
+  );
+
+  //////////////////////////////
   /// Public Methods
   //////////////////////////////
 
@@ -51,5 +63,7 @@ abstract contract Beneficiary is IBeneficiary, TokenManagement {
     _tokenMinted(tokenId_)
   {
     _beneficiaries[tokenId_] = beneficiary_;
+
+    emit LogBeneficiaryUpdated(tokenId_, beneficiary_);
   }
 }
