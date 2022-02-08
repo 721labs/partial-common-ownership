@@ -185,7 +185,7 @@ abstract contract Taxation is
     return _taxPeriods[tokenId_];
   }
 
-  /// @dev See {Taxation.taxOwedSince}
+  /// @dev See {ITaxation.taxOwedSince}
   function taxOwedSince(uint256 tokenId_, uint256 time_)
     public
     view
@@ -199,7 +199,7 @@ abstract contract Taxation is
       TAX_DENOMINATOR;
   }
 
-  /// @dev See {Taxation.taxOwed}
+  /// @dev See {ITaxation.taxOwed}
   function taxOwed(uint256 tokenId_)
     public
     view
