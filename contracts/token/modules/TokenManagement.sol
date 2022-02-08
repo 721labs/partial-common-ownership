@@ -20,7 +20,7 @@ abstract contract TokenManagement is ERC721 {
   /// @notice Requires that token have been minted.
   /// @param tokenId_ ID of token to verify.
   modifier _tokenMinted(uint256 tokenId_) {
-    ownerOf(tokenId_);
+    require(_exists(tokenId_), "Query for nonexistent token");
     _;
   }
 }

@@ -6,23 +6,30 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 
 import Wallet from "../helpers/Wallet";
-import { ErrorMessages, TOKENS, Events, RemittanceTriggers } from "./types";
+import { ErrorMessages, Events, RemittanceTriggers } from "./types";
 import {
-  TEST_NAME,
-  TEST_SYMBOL,
-  INVALID_TOKEN_ID,
   ETH0,
   ETH1,
   ETH2,
   ETH3,
   ETH4,
-  TAX_DENOMINATOR,
   GLOBAL_TRX_CONFIG,
-} from "./constants";
+} from "../helpers/constants";
 import { now } from "../helpers/Time";
-import { taxationPeriodToSeconds } from "./utils";
+import { taxationPeriodToSeconds } from "../helpers/utils";
+import { snapshotEVM, revertEVM } from "../helpers/EVM";
+
+// Types
+import { ERC721ErrorMessages, TOKENS } from "../helpers/types";
 
 //$ Test-Specific Constants
+
+const TEST_NAME = "721TEST";
+const TEST_SYMBOL = "TEST";
+
+const INVALID_TOKEN_ID = 999;
+
+const TAX_DENOMINATOR = ethers.BigNumber.from("1000000000000");
 
 const tokenTaxConfigs = {
   // 5% Quarterly
@@ -114,13 +121,6 @@ function getTaxDue(
 }
 
 /**
- * Scopes a snapshot of the EVM.
- */
-async function snapshotEVM(): Promise<void> {
-  snapshot = await provider.send("evm_snapshot", []);
-}
-
-/**
  * Executes purchase and verifies expectations.
  * @param wallet Wallet making the purchase
  * @param tokenId Token being purchased
@@ -181,13 +181,19 @@ async function takeoverLease(
     .to.emit(contract, Events.LEASE_TAKEOVER)
     .withArgs(tokenId, wallet.address, newValuation);
 
-  // Deposit updated
-  expect(await contract.depositOf(tokenId)).to.equal(
-    // If purchasing will trigger foreclosure or token was already
-    // in foreclosure, the deposit will be equal to the entire amount
-    // included by the purchaser.
-    foreclosed ? value : value.sub(currentValuation)
-  );
+  // Beneficiary doesn't put down a deposit
+  const purchasedByBeneficiary = wallet.address === beneficiary.address;
+  if (purchasedByBeneficiary) {
+    expect(await contract.depositOf(tokenId)).to.equal(0);
+  } else {
+    // Deposit updated
+    expect(await contract.depositOf(tokenId)).to.equal(
+      // If purchasing will trigger foreclosure or token was already
+      // in foreclosure, the deposit will be equal to the entire amount
+      // included by the purchaser.
+      foreclosed ? value : value.sub(currentValuation)
+    );
+  }
 
   // Price updated
   expect(await contract.valuationOf(tokenId)).to.equal(newValuation);
@@ -204,7 +210,12 @@ async function takeoverLease(
   expect(await contract.ownerOf(tokenId)).to.equal(wallet.address);
 
   // Remittances
-  if (!willBeOwnedByContract) {
+  // If purchased by the beneficiary from the contract, the token was purchased from the contract,
+  // or the token was purchased from foreclosure, no remittance occurs.
+  if (
+    !willBeOwnedByContract &&
+    !(purchasedByBeneficiary && currentValuation == ETH0)
+  ) {
     // Get the balance and then determine how much will be deducted by taxation
     const expectedRemittance = depositAfter.add(currentValuation);
 
@@ -257,6 +268,9 @@ async function verifyCorrectTaxOwed(
 /**
  * Increases time by a given amount, collects tax, and verifies that the
  * correct amount of tax was collected.
+ * NOTE: Function assumes that the current owner is the not the beneficiary;
+ * when that is the case no tax is collected; `getTaxDue()` does not account
+ * for this!
  * @param contract Contract that owns the token
  * @param tokenId Token being purchased
  * @param after Number of minutes from now to collect after
@@ -340,7 +354,7 @@ async function verifyExpectedForeclosureTime(
 
 //$ Tests
 
-describe("PartialCommonOwnership721", async function () {
+describe("PartialCommonOwnership721.sol", async function () {
   before(async function () {
     // Used for computing 10 min prior
     tenMin = await now();
@@ -385,7 +399,7 @@ describe("PartialCommonOwnership721", async function () {
       })
     );
 
-    await snapshotEVM();
+    snapshot = await snapshotEVM(provider);
   });
 
   /**
@@ -393,8 +407,8 @@ describe("PartialCommonOwnership721", async function () {
    */
   beforeEach(async function () {
     // Reset contract state
-    await provider.send("evm_revert", [snapshot]);
-    await snapshotEVM();
+    await revertEVM(provider, snapshot);
+    snapshot = await snapshotEVM(provider);
 
     // Reset balance trackers
     await Promise.all(
@@ -564,6 +578,17 @@ describe("PartialCommonOwnership721", async function () {
   describe("#collectTax()", async function () {
     context("fails", async function () {});
     context("succeeds", async function () {
+      it("no tax collected if token is owned by its beneficiary", async function () {
+        const tokenId = randomToken();
+        await takeoverLease(beneficiary, tokenId, ETH1, ETH0, ETH0);
+        const trx = await contract.collectTax(tokenId);
+
+        // Todo: There are other conditions which would true that we're not checking for,
+        // e.g. deposit and beneficiary balance are unchanged.  This test *should* verify
+        // that all effects from `owed > 0` have not fired.
+        expect(trx).to.not.emit(contract, Events.COLLECTION);
+      });
+
       it("collects after 10m", async function () {
         const price = ETH1;
         const token = randomToken();
@@ -590,7 +615,7 @@ describe("PartialCommonOwnership721", async function () {
       context("when token not minted but required", async function () {
         it("#valuationOf()", async function () {
           await expect(contract.ownerOf(INVALID_TOKEN_ID)).to.be.revertedWith(
-            ErrorMessages.NONEXISTENT_TOKEN
+            ERC721ErrorMessages.NONEXISTENT_TOKEN
           );
         });
         it("#depositOf()", async function () {
@@ -647,6 +672,13 @@ describe("PartialCommonOwnership721", async function () {
         const token = randomToken();
         await takeoverLease(alice, token, ETH1, ETH0, ETH2);
         await verifyCorrectTaxOwed(token, 1);
+      });
+
+      it("no tax owed if token is owned by its beneficiary", async function () {
+        const token = randomToken();
+        await takeoverLease(beneficiary, token, ETH1, ETH0, ETH0);
+        const [owed] = await contract.taxOwed(token);
+        expect(owed).to.equal(0);
       });
     });
 
@@ -1008,6 +1040,19 @@ describe("PartialCommonOwnership721", async function () {
           bob.contract.takeoverLease(TOKENS.TWO, ETH3, ETH2, { value: ETH4 })
         ).to.be.revertedWith(ErrorMessages.LEASE_TAKEOVER_ALREADY_OWNED);
       });
+      it("Beneficiary is purchasing from contract and msg includes value", async function () {
+        await expect(
+          takeoverLease(beneficiary, randomToken(), ETH1, ETH0, ETH2)
+        ).to.be.revertedWith(ErrorMessages.PROHIBITED_VALUE);
+      });
+      it("Beneficiary is purchasing from Alice and msg includes surplus value for deposit", async function () {
+        const tokenId = randomToken();
+        await takeoverLease(alice, tokenId, ETH1, ETH0, ETH2);
+
+        await expect(
+          takeoverLease(beneficiary, tokenId, ETH4, ETH1, ETH2)
+        ).to.be.revertedWith(ErrorMessages.PROHIBITED_SURPLUS_VALUE);
+      });
     });
     context("succeeds", async function () {
       it("Purchasing token for the first-time (from contract)", async function () {
@@ -1111,6 +1156,16 @@ describe("PartialCommonOwnership721", async function () {
         expect(chainOfTitle[1].timestamp).to.equal(
           ethers.BigNumber.from(block2.timestamp)
         );
+      });
+
+      it("Beneficiary doesn't pay anything if buying from contract", async function () {
+        await takeoverLease(beneficiary, randomToken(), ETH1, ETH0, ETH0);
+      });
+
+      it("Beneficiary only pays purchase price if buying from Alice", async function () {
+        const tokenId = randomToken();
+        await takeoverLease(alice, tokenId, ETH1, ETH0, ETH2);
+        await takeoverLease(beneficiary, tokenId, ETH4, ETH1, ETH1);
       });
 
       /**

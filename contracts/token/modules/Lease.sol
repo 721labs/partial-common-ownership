@@ -13,7 +13,7 @@ abstract contract Lease is ILease, TokenManagement, Taxation {
 
   /// @notice Mapping from token ID to purchase lock status
   /// @dev Used to prevent reentrancy attacks
-  mapping(uint256 => bool) private locked;
+  mapping(uint256 => bool) internal _locked;
 
   //////////////////////////////
   /// Events
@@ -48,7 +48,7 @@ abstract contract Lease is ILease, TokenManagement, Taxation {
     uint256 currentValuation_
   ) public payable override _tokenMinted(tokenId_) {
     // Prevent re-entrancy attack
-    require(!locked[tokenId_], "Token is locked");
+    require(!_locked[tokenId_], "Token is locked");
 
     uint256 valuationPriorToTaxCollection = valuationOf(tokenId_);
 
@@ -69,19 +69,35 @@ abstract contract Lease is ILease, TokenManagement, Taxation {
       "New valuation must be >= current valuation"
     );
 
-    // Value sent must be greater the amount being remitted to the current owner;
-    // surplus is necessary for deposit.
-    require(
-      msg.value > valuationPriorToTaxCollection,
-      "Message does not contain surplus value for deposit"
-    );
+    bool senderIsBeneficiary = msg.sender == beneficiaryOf(tokenId_);
+    // Current owner is a wallet address or the address of this contract
+    // if the token is foreclosed or has never been purchased.
+    address currentOwner = ownerOf(tokenId_);
+
+    if (senderIsBeneficiary) {
+      if (currentOwner == address(this)) {
+        // If token is owned by contract, beneficiary does not need to pay anything.
+        require(msg.value == 0, "Msg contains value");
+      } else {
+        // Beneficiary only needs to pay the current price,
+        // doesn't need to put down a deposit.
+        require(msg.value == currentValuation_, "Msg contains surplus value");
+      }
+    } else {
+      // Value sent must be greater the amount being remitted to the current owner;
+      // surplus is necessary for deposit.
+      require(
+        msg.value > valuationPriorToTaxCollection,
+        "Message does not contain surplus value for deposit"
+      );
+    }
 
     // Owner will be seller or this contract if foreclosed.
     // Prevent an accidental re-purchase.
     require(msg.sender != ownerOf(tokenId_), "Buyer is already owner");
 
     // After all security checks have occured, lock the token.
-    locked[tokenId_] = true;
+    _locked[tokenId_] = true;
 
     // Collect tax.
     // Note: this may result in unexpected effects for the buyer. For example,
@@ -90,9 +106,10 @@ abstract contract Lease is ILease, TokenManagement, Taxation {
     collectTax(tokenId_);
 
     address ownerAfterCollection = ownerOf(tokenId_);
+    bool purchasedFromContract = ownerAfterCollection == address(this);
 
     // Token is being purchased for the first time or out of foreclosure
-    if (ownerAfterCollection == address(this)) {
+    if (purchasedFromContract) {
       // Deposit takes entire msg value
       _setDeposit(tokenId_, msg.value);
 
@@ -111,7 +128,16 @@ abstract contract Lease is ILease, TokenManagement, Taxation {
         currentValuation_ + depositOf(tokenId_),
         RemittanceTriggers.LeaseTakeover
       );
+    }
 
+    // Update deposit
+    if (senderIsBeneficiary) {
+      // Beneficiary doesn't make deposits as no taxes are collected.
+      _setDeposit(tokenId_, 0);
+    } else if (purchasedFromContract) {
+      // Deposit takes entire msg value
+      _setDeposit(tokenId_, msg.value);
+    } else {
       // Set the new owner's deposit
       _setDeposit(tokenId_, msg.value - currentValuation_);
     }
@@ -126,7 +152,7 @@ abstract contract Lease is ILease, TokenManagement, Taxation {
     emit LogLeaseTakeover(tokenId_, msg.sender, newValuation_);
 
     // Unlock token
-    locked[tokenId_] = false;
+    _locked[tokenId_] = false;
   }
 
   /// @dev See {ILease.selfAssess}

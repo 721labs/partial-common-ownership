@@ -12,7 +12,7 @@ abstract contract Title is ITitle, TokenManagement {
 
   /// @notice Mapping from token ID to array of transfer events.
   /// @dev This includes foreclosures.
-  mapping(uint256 => TitleTransferEvent[]) private _chainOfTitle;
+  mapping(uint256 => TitleTransferEvent[]) internal _chainOfTitle;
 
   //////////////////////////////
   /// Public Getters

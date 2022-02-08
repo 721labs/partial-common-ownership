@@ -11,7 +11,7 @@ abstract contract Beneficiary is IBeneficiary, TokenManagement {
   //////////////////////////////
 
   /// @notice Map of tokens to their beneficiaries.
-  mapping(uint256 => address) private _beneficiaries;
+  mapping(uint256 => address) internal _beneficiaries;
 
   //////////////////////////////
   /// Public Methods

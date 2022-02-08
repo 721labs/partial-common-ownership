@@ -31,11 +31,11 @@ abstract contract Taxation is
   /// @dev Granular to an additionial 10 zeroes.
   /// e.g. 100% => 1000000000000
   /// e.g. 5% => 50000000000
-  mapping(uint256 => uint256) private _taxNumerators;
+  mapping(uint256 => uint256) internal _taxNumerators;
   uint256 private constant TAX_DENOMINATOR = 1000000000000;
 
   /// @notice Over what period, in days, should taxation be applied?
-  mapping(uint256 => uint256) private _taxPeriods;
+  mapping(uint256 => uint256) internal _taxPeriods;
 
   /// @notice Mapping from token ID to Unix timestamp when last tax collection occured.
   /// @dev This is used to determine how much time has passed since last collection and the present
@@ -90,6 +90,10 @@ abstract contract Taxation is
 
     // If price > 0, contract has not foreclosed.
     uint256 owed = _taxOwed(tokenId_);
+
+    // Owed will be 0 when the token is owned by its beneficiary.
+    // i.e. no tax is owed.
+    if (owed == 0) return;
 
     // If foreclosure should have occured in the past, last collection time will be
     // backdated to when the tax was last paid for.
@@ -305,12 +309,18 @@ abstract contract Taxation is
   /// @param tokenId_ ID of token to withdraw deposit for.
   /// @param wei_ Amount of Wei to withdraw.
   function _withdrawDeposit(uint256 tokenId_, uint256 wei_) internal {
+    // If triggered with no wei, return.
+    if (wei_ == 0) return;
+
     // Note: Can withdraw whole deposit, which immediately triggers foreclosure.
     require(wei_ <= depositOf(tokenId_), "Cannot withdraw more than deposited");
 
+    address currentOwner = ownerOf(tokenId_);
+    require(currentOwner != address(this), "Cannot withdraw deposit to self");
+
     _setDeposit(tokenId_, depositOf(tokenId_) - wei_);
 
-    _remit(msg.sender, wei_, RemittanceTriggers.WithdrawnDeposit);
+    _remit(currentOwner, wei_, RemittanceTriggers.WithdrawnDeposit);
 
     _forecloseIfNecessary(tokenId_);
   }
@@ -375,6 +385,10 @@ abstract contract Taxation is
   /// @param tokenId_ ID of token requesting amount for.
   /// @return Tax Due in wei
   function _taxOwed(uint256 tokenId_) internal view returns (uint256) {
+    // If the token is owned by its beneficiary, nothing is owed.
+    // (e.g. beneficiary wrapped a token).
+    if (ownerOf(tokenId_) == beneficiaryOf(tokenId_)) return 0;
+
     uint256 timeElapsed = block.timestamp - _lastCollectionTimes[tokenId_];
     return taxOwedSince(tokenId_, timeElapsed);
   }

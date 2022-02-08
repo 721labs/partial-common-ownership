@@ -11,7 +11,7 @@ abstract contract Valuation is IValuation, TokenManagement {
   //////////////////////////////
 
   /// @notice Mapping from token ID to token price in Wei.
-  mapping(uint256 => uint256) private _valuations;
+  mapping(uint256 => uint256) internal _valuations;
 
   //////////////////////////////
   /// Public Getters

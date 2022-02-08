@@ -5,7 +5,6 @@ enum ErrorMessages {
   LEASE_TAKEOVER_PRICE_BELOW_CURRENT = "New valuation must be >= current valuation",
   LEASE_TAKEOVER_LACKS_SURPLUS_VALUE = "Message does not contain surplus value for deposit",
   LEASE_TAKEOVER_ALREADY_OWNED = "Buyer is already owner",
-  NONEXISTENT_TOKEN = "ERC721: owner query for nonexistent token",
   NEW_PRICE_ZERO = "New price cannot be zero",
   NEW_PRICE_SAME = "New price cannot be same",
   // Not testing reentrancy lock, currently.
@@ -14,12 +13,9 @@ enum ErrorMessages {
   NO_OUTSTANDING_REMITTANCE = "No outstanding remittance",
   PROHIBITED_TRANSFER_METHOD = "Transfers may only occur via purchase/foreclosure",
   BENEFICIARY_ONLY = "Current beneficiary only",
-}
-
-enum TOKENS {
-  ONE = 1,
-  TWO = 2,
-  THREE = 3,
+  NONEXISTENT_TOKEN = "Query for nonexistent token",
+  PROHIBITED_SURPLUS_VALUE = "Msg contains surplus value",
+  PROHIBITED_VALUE = "Msg contains value",
 }
 
 enum Events {
@@ -40,4 +36,4 @@ enum RemittanceTriggers {
   TaxCollection,
 }
 
-export { ErrorMessages, TOKENS, Events, RemittanceTriggers };
+export { ErrorMessages, Events, RemittanceTriggers };
