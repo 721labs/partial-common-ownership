@@ -19,7 +19,7 @@ import {
   ErrorMessages as PCOErrorMessages,
   Events as PCOEvents,
   RemittanceTriggers,
-} from "./PartialCommonOwnership721/types";
+} from "./PartialCommonOwnership/types";
 import type { Contract } from "@ethersproject/contracts";
 import type { Web3Provider } from "@ethersproject/providers";
 import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";

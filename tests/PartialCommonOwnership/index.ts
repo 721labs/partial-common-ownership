@@ -354,7 +354,7 @@ async function verifyExpectedForeclosureTime(
 
 //$ Tests
 
-describe("PartialCommonOwnership721.sol", async function () {
+describe("PartialCommonOwnership.sol", async function () {
   before(async function () {
     // Used for computing 10 min prior
     tenMin = await now();
@@ -362,7 +362,7 @@ describe("PartialCommonOwnership721.sol", async function () {
 
     provider = new ethers.providers.Web3Provider(web3.currentProvider);
     signers = await ethers.getSigners();
-    factory = await ethers.getContractFactory("TestPCO721Token");
+    factory = await ethers.getContractFactory("TestPCOToken");
 
     // Set up contracts
     contract = await factory.deploy(
@@ -418,7 +418,7 @@ describe("PartialCommonOwnership721.sol", async function () {
     );
   });
 
-  describe("TestPCO721Token", async function () {
+  describe("TestPCOToken", async function () {
     context("construction", async function () {
       it("mints three tokens", async function () {
         expect(await contract.ownerOf(TOKENS.ONE)).to.equal(contractAddress);

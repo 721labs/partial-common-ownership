@@ -1,4 +1,4 @@
-// contracts/token/PartialCommonOwnership721.sol
+// contracts/token/PartialCommonOwnership.sol
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
@@ -11,11 +11,11 @@ import {Beneficiary} from "./modules/Beneficiary.sol";
 import {Title} from "./modules/Title.sol";
 import {Lease} from "./modules/Lease.sol";
 
-/// @title PartialCommonOwnership721
+/// @title PartialCommonOwnership
 /// @notice Extends the ERC721 standard by requiring tax payments from a token's current owner
 /// using a Harberger Tax model; if payments are not made, the token is repossessed by the contract
 /// and can be repurchased at any price > 0.
-contract PartialCommonOwnership721 is
+contract PartialCommonOwnership is
   ERC721,
   TokenManagement,
   Valuation,

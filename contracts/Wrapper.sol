@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.7;
 
-import {PartialCommonOwnership721 as PCO} from "./token/PartialCommonOwnership721.sol";
+import {PartialCommonOwnership as PCO} from "./token/PartialCommonOwnership.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 
