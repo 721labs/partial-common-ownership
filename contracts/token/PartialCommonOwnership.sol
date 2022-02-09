@@ -63,7 +63,7 @@ contract PartialCommonOwnership is
     _setValuation(tokenId_, valuation_);
     _setBeneficiary(tokenId_, beneficiary_);
     _setTaxRate(tokenId_, taxRate_);
-    _setTaxPeriod(tokenId_, collectionFrequency_);
+    _setCollectionFrequency(tokenId_, collectionFrequency_);
   }
 
   /// @notice Burns a token.
@@ -80,7 +80,7 @@ contract PartialCommonOwnership is
     delete _valuations[tokenId_];
     delete _chainOfTitle[tokenId_];
     delete _taxNumerators[tokenId_];
-    delete _taxPeriods[tokenId_];
+    delete _collectionFrequencies[tokenId_];
     delete _locked[tokenId_];
   }
 

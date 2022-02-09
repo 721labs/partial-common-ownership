@@ -451,13 +451,13 @@ describe("PartialCommonOwnership.sol", async function () {
       });
 
       it("sets tax period", async function () {
-        expect(await contract.taxPeriodOf(TOKENS.ONE)).to.equal(
+        expect(await contract.collectionFrequencyOf(TOKENS.ONE)).to.equal(
           collectionFrequencyInSeconds(TOKENS.ONE)
         );
-        expect(await contract.taxPeriodOf(TOKENS.TWO)).to.equal(
+        expect(await contract.collectionFrequencyOf(TOKENS.TWO)).to.equal(
           collectionFrequencyInSeconds(TOKENS.TWO)
         );
-        expect(await contract.taxPeriodOf(TOKENS.THREE)).to.equal(
+        expect(await contract.collectionFrequencyOf(TOKENS.THREE)).to.equal(
           collectionFrequencyInSeconds(TOKENS.THREE)
         );
       });

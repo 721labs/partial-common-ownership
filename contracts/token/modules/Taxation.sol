@@ -35,7 +35,7 @@ abstract contract Taxation is
   uint256 private constant TAX_DENOMINATOR = 1000000000000;
 
   /// @notice Over what period, in days, should taxation be applied?
-  mapping(uint256 => uint256) internal _taxPeriods;
+  mapping(uint256 => uint256) internal _collectionFrequencies;
 
   /// @notice Mapping from token ID to Unix timestamp when last tax collection occured.
   /// @dev This is used to determine how much time has passed since last collection and the present
@@ -178,15 +178,15 @@ abstract contract Taxation is
     return _taxNumerators[tokenId_];
   }
 
-  /// @dev See {ITaxation.taxPeriodOf}
-  function taxPeriodOf(uint256 tokenId_)
+  /// @dev See {ITaxation.collectionFrequencyOf}
+  function collectionFrequencyOf(uint256 tokenId_)
     public
     view
     override
     _tokenMinted(tokenId_)
     returns (uint256)
   {
-    return _taxPeriods[tokenId_];
+    return _collectionFrequencies[tokenId_];
   }
 
   /// @dev See {ITaxation.taxOwedSince}
@@ -199,8 +199,8 @@ abstract contract Taxation is
   {
     uint256 valuation = valuationOf(tokenId_);
     return
-      (((valuation * time_) / taxPeriodOf(tokenId_)) * taxRateOf(tokenId_)) /
-      TAX_DENOMINATOR;
+      (((valuation * time_) / collectionFrequencyOf(tokenId_)) *
+        taxRateOf(tokenId_)) / TAX_DENOMINATOR;
   }
 
   /// @dev See {ITaxation.taxOwed}
@@ -362,12 +362,12 @@ abstract contract Taxation is
   /// @notice Internal period setter.
   /// @dev Should be invoked immediately after calling `#_safeMint`
   /// @param tokenId_ Token to set
-  /// @param days_ The number of days that constitute one taxation period.
-  function _setTaxPeriod(uint256 tokenId_, uint256 days_)
+  /// @param days_ How many days are between subsequent tax collections?
+  function _setCollectionFrequency(uint256 tokenId_, uint256 days_)
     internal
     _tokenMinted(tokenId_)
   {
-    _taxPeriods[tokenId_] = days_ * 1 days;
+    _collectionFrequencies[tokenId_] = days_ * 1 days;
   }
 
   /// @notice Sets deposit for a given token.

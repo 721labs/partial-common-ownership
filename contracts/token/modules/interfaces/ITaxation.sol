@@ -40,7 +40,10 @@ interface ITaxation {
   /// @notice Gets the tax period of a given token
   /// @param tokenId_ Id of token to query for
   /// @return Tax period as days
-  function taxPeriodOf(uint256 tokenId_) external view returns (uint256);
+  function collectionFrequencyOf(uint256 tokenId_)
+    external
+    view
+    returns (uint256);
 
   /// @notice Determines the taxable amount accumulated between now and
   /// a given time in the past.
