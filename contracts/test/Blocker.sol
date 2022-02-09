@@ -20,16 +20,16 @@ contract Blocker {
 
   function takeoverLease(
     uint256 tokenId_,
-    uint256 purchasePrice_,
-    uint256 currentPriceForVerification_
+    uint256 newValuation_,
+    uint256 currentValuation_
   ) public payable {
     // solhint-disable avoid-low-level-calls
     address(_testContract).call{value: msg.value}(
       abi.encodeWithSignature(
         "takeoverLease(uint256,uint256,uint256)",
         tokenId_,
-        purchasePrice_,
-        currentPriceForVerification_
+        newValuation_,
+        currentValuation_
       )
     );
   }

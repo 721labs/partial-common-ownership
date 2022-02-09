@@ -83,12 +83,12 @@ abstract contract Taxation is
   /// @param tokenId_ ID of token to collect tax for.
   /// @dev Strictly envoked by modifier but can be called publically.
   function collectTax(uint256 tokenId_) public {
-    uint256 price = valuationOf(tokenId_);
+    uint256 valuation = valuationOf(tokenId_);
 
     // There's no tax to be collected on an unvalued token.
-    if (price == 0) return;
+    if (valuation == 0) return;
 
-    // If price > 0, contract has not foreclosed.
+    // If valuation > 0, contract has not foreclosed.
     uint256 owed = _taxOwed(tokenId_);
 
     // Owed will be 0 when the token is owned by its beneficiary.
@@ -197,9 +197,9 @@ abstract contract Taxation is
     _tokenMinted(tokenId_)
     returns (uint256 taxDue)
   {
-    uint256 price = valuationOf(tokenId_);
+    uint256 valuation = valuationOf(tokenId_);
     return
-      (((price * time_) / taxPeriodOf(tokenId_)) * taxRateOf(tokenId_)) /
+      (((valuation * time_) / taxPeriodOf(tokenId_)) * taxRateOf(tokenId_)) /
       TAX_DENOMINATOR;
   }
 
@@ -275,7 +275,7 @@ abstract contract Taxation is
       // Returns when foreclosure should have occured i.e. when tax owed > deposits.
       return _backdatedForeclosureTime(tokenId_);
     } else {
-      // Actively foreclosed (price is 0)
+      // Actively foreclosed (valuation is 0)
       return lastCollectionTimeOf(tokenId_);
     }
   }

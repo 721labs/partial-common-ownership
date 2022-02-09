@@ -33,12 +33,11 @@ A few important notes:
 - If a lease is being taken over for the first time, or out of foreclosure, the transaction's entire value is deposited. Otherwise, the message value pays the current leasee their self-assessed valuation and the remainder is deposited.
 - If the beneficiary of a token is taking over a token's lease:
   - No deposit is necessary (taxes would be going to itself in a convoluted loop at the cost of gas). As such, transactions with value will be rejected.
-  - **Because of this, the beneficiary is able to effectively monopolizing the asset the token by purchasing it at the current owner's self-assessed valuation (or for free out of foreclosure) then setting a prohibitively high price**.
+  - **Because of this, the beneficiary is able to effectively monopolize the token: by taking over the lease at the current owner's self-assessed valuation (or for free out of foreclosure) then self-assessing a prohibitively high valuation**.
 
 ### [Remittance.sol](../contracts/token/modules/Remittance.sol)
 
-The module handles sending and withdrawing (failed) remittances. By default, an active "push" strategy is employed, which alleviates the need for the tax collector to actively
-check and collect.
+The module handles sending and withdrawing (failed) remittances. By default, an active "push" strategy is employed, which alleviates the need for the tax collector to actively check and collect.
 
 ### [Taxation.sol](../contracts/token/modules/Taxation.sol)
 
