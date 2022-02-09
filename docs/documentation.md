@@ -4,16 +4,16 @@
 
 Once installed, you can use the contracts by importing and inheriting from them:
 
-### [PartialCommonOwnership721.sol](contracts/token/PartialCommonOwnership721.sol)
+### [PartialCommonOwnership.sol](contracts/token/PartialCommonOwnership.sol)
 
-`PartialCommonOwnership721.sol` enables you to launch new ERC721 tokens that are governed by PCO.
+`PartialCommonOwnership.sol` enables you to launch new ERC721 tokens that are governed by PCO.
 
 ```solidity
-import "./PartialCommonOwnership721.sol";
+import "./PartialCommonOwnership.sol";
 
-contract YourToken is PartialCommonOwnership721 {
+contract YourToken is PartialCommonOwnership {
   constructor()
-    PartialCommonOwnership721(
+    PartialCommonOwnership(
       "YourToken",
       "TOKEN",
       payable(msg.sender),

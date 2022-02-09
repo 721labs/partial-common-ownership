@@ -2,16 +2,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.7;
 
-import "./TestPCO721Token.sol";
+import "./TestPCOToken.sol";
 
 contract Blocker {
-  TestPCO721Token private _testContract;
+  TestPCOToken private _testContract;
 
   /// @dev Block by default
   bool private _shouldBlock = true;
 
   constructor(address contractAddress_) {
-    _testContract = TestPCO721Token(contractAddress_);
+    _testContract = TestPCOToken(contractAddress_);
   }
 
   receive() external payable {
@@ -20,16 +20,16 @@ contract Blocker {
 
   function takeoverLease(
     uint256 tokenId_,
-    uint256 purchasePrice_,
-    uint256 currentPriceForVerification_
+    uint256 newValuation_,
+    uint256 currentValuation_
   ) public payable {
     // solhint-disable avoid-low-level-calls
     address(_testContract).call{value: msg.value}(
       abi.encodeWithSignature(
         "takeoverLease(uint256,uint256,uint256)",
         tokenId_,
-        purchasePrice_,
-        currentPriceForVerification_
+        newValuation_,
+        currentValuation_
       )
     );
   }

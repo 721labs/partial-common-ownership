@@ -40,7 +40,10 @@ interface ITaxation {
   /// @notice Gets the tax period of a given token
   /// @param tokenId_ Id of token to query for
   /// @return Tax period as days
-  function taxPeriodOf(uint256 tokenId_) external view returns (uint256);
+  function collectionFrequencyOf(uint256 tokenId_)
+    external
+    view
+    returns (uint256);
 
   /// @notice Determines the taxable amount accumulated between now and
   /// a given time in the past.
@@ -93,9 +96,9 @@ interface ITaxation {
   //////////////////////////////
 
   /// @notice Do the taxes owed exceed the deposit?  If so, the token should be
-  /// "foreclosed" by the contract.  The price should be zero and anyone can
-  /// purchase the token for the cost of the gas fee.
-  /// @dev This is a useful helper function when price should be zero, but contract doesn't
+  /// "foreclosed" by the contract.  The valuation should be zero and anyone can
+  /// takeover the token's lease for the cost of the gas fee.
+  /// @dev This is a useful helper function when valuation should be zero, but contract doesn't
   /// reflect it yet because `#_forecloseIfNecessary` has not yet been called..
   /// @param tokenId_ ID of token requesting foreclosure status for.
   /// @return Returns boolean indicating whether or not the contract is foreclosed.

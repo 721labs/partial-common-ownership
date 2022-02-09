@@ -99,21 +99,21 @@ function taxNumerator(tokenId: TOKENS): BigNumber {
 
 /**
  * Calculates the tax due.
- * price * % of tax period completed (represented from 0 - 1) * tax rate;
+ * valuation * % of tax period completed (represented from 0 - 1) * tax rate;
  * @param tokenId Id of token in question
- * @param price Current price
+ * @param valuation Current valuation
  * @param now Unix timestamp when request was made
  * @param lastCollectionTime Unix timestamp of last tax collection
  * @returns Tax due between now and last collection.
  */
 function getTaxDue(
   tokenId: TOKENS,
-  price: BigNumber,
+  valuation: BigNumber,
   now: BigNumber,
   lastCollectionTime: BigNumber
 ): BigNumber {
   const secondsSinceLastCollection = now.sub(lastCollectionTime);
-  return price
+  return valuation
     .mul(secondsSinceLastCollection)
     .div(collectionFrequencyInSeconds(tokenId))
     .mul(taxNumerator(tokenId))
@@ -195,7 +195,7 @@ async function takeoverLease(
     );
   }
 
-  // Price updated
+  // Valuation updated
   expect(await contract.valuationOf(tokenId)).to.equal(newValuation);
 
   // Collection timestamp updates
@@ -258,9 +258,9 @@ async function verifyCorrectTaxOwed(
 
   const owed = await contract.taxOwed(tokenId);
 
-  const price = await contract.valuationOf(tokenId);
+  const valuation = await contract.valuationOf(tokenId);
 
-  const due = getTaxDue(tokenId, price, owed.timestamp, lastCollectionTime);
+  const due = getTaxDue(tokenId, valuation, owed.timestamp, lastCollectionTime);
 
   expect(owed.amount).to.equal(due);
 }
@@ -274,13 +274,13 @@ async function verifyCorrectTaxOwed(
  * @param contract Contract that owns the token
  * @param tokenId Token being purchased
  * @param after Number of minutes from now to collect after
- * @param currentPrice Current token price
+ * @param currentValuation Token's current valuation
  * @returns Nothing.
  */
 async function collectTax(
   tokenId: TOKENS,
   after: number,
-  currentPrice: BigNumber
+  currentValuation: BigNumber
 ): Promise<void> {
   //$ Setup
 
@@ -300,7 +300,7 @@ async function collectTax(
   const trx = await contract.collectTax(tokenId);
 
   const timeAfter = await now();
-  const due = getTaxDue(tokenId, currentPrice, timeAfter, before);
+  const due = getTaxDue(tokenId, currentValuation, timeAfter, before);
 
   //$ Expectations
 
@@ -354,7 +354,7 @@ async function verifyExpectedForeclosureTime(
 
 //$ Tests
 
-describe("PartialCommonOwnership721.sol", async function () {
+describe("PartialCommonOwnership.sol", async function () {
   before(async function () {
     // Used for computing 10 min prior
     tenMin = await now();
@@ -362,7 +362,7 @@ describe("PartialCommonOwnership721.sol", async function () {
 
     provider = new ethers.providers.Web3Provider(web3.currentProvider);
     signers = await ethers.getSigners();
-    factory = await ethers.getContractFactory("TestPCO721Token");
+    factory = await ethers.getContractFactory("TestPCOToken");
 
     // Set up contracts
     contract = await factory.deploy(
@@ -418,7 +418,7 @@ describe("PartialCommonOwnership721.sol", async function () {
     );
   });
 
-  describe("TestPCO721Token", async function () {
+  describe("TestPCOToken", async function () {
     context("construction", async function () {
       it("mints three tokens", async function () {
         expect(await contract.ownerOf(TOKENS.ONE)).to.equal(contractAddress);
@@ -451,13 +451,13 @@ describe("PartialCommonOwnership721.sol", async function () {
       });
 
       it("sets tax period", async function () {
-        expect(await contract.taxPeriodOf(TOKENS.ONE)).to.equal(
+        expect(await contract.collectionFrequencyOf(TOKENS.ONE)).to.equal(
           collectionFrequencyInSeconds(TOKENS.ONE)
         );
-        expect(await contract.taxPeriodOf(TOKENS.TWO)).to.equal(
+        expect(await contract.collectionFrequencyOf(TOKENS.TWO)).to.equal(
           collectionFrequencyInSeconds(TOKENS.TWO)
         );
-        expect(await contract.taxPeriodOf(TOKENS.THREE)).to.equal(
+        expect(await contract.collectionFrequencyOf(TOKENS.THREE)).to.equal(
           collectionFrequencyInSeconds(TOKENS.THREE)
         );
       });
@@ -598,22 +598,22 @@ describe("PartialCommonOwnership721.sol", async function () {
       });
 
       it("collects after 10m", async function () {
-        const price = ETH1;
+        const valuation = ETH1;
         const token = randomToken();
 
-        await takeoverLease(alice, token, price, ETH0, ETH2);
+        await takeoverLease(alice, token, valuation, ETH0, ETH2);
 
-        await collectTax(token, 10, price);
+        await collectTax(token, 10, valuation);
       });
 
       it("collects after 10m and subsequently after 10m", async function () {
-        const price = ETH1;
+        const valuation = ETH1;
         const token = randomToken();
 
-        await takeoverLease(alice, token, price, ETH0, ETH2);
+        await takeoverLease(alice, token, valuation, ETH0, ETH2);
 
-        await collectTax(token, 10, price);
-        await collectTax(token, 10, price);
+        await collectTax(token, 10, valuation);
+        await collectTax(token, 10, valuation);
       });
     });
   });
@@ -659,7 +659,7 @@ describe("PartialCommonOwnership721.sol", async function () {
 
   describe("#valuationOf()", async function () {
     context("succeeds", async function () {
-      it("returning expected price [ETH0]", async function () {
+      it("returning expected valuation [ETH0]", async function () {
         expect(await contract.valuationOf(TOKENS.ONE)).to.equal(ETH0);
       });
     });
@@ -714,15 +714,15 @@ describe("PartialCommonOwnership721.sol", async function () {
 
       it("Returns correct amount", async function () {
         const token = randomToken();
-        const price = ETH1;
+        const valuation = ETH1;
 
-        await takeoverLease(alice, token, price, ETH0, ETH2);
+        await takeoverLease(alice, token, valuation, ETH0, ETH2);
 
         const time = (await now()).sub(1);
 
         const collectionFrequency = tokenTaxConfigs[token].collectionFrequency;
 
-        const expected = price
+        const expected = valuation
           .mul(time)
           .div(taxationPeriodToSeconds(collectionFrequency))
           .mul(taxNumerator(token))
@@ -745,26 +745,26 @@ describe("PartialCommonOwnership721.sol", async function () {
 
         it("after initial purchase", async function () {
           const token = randomToken();
-          const price = ETH1;
+          const valuation = ETH1;
 
-          await takeoverLease(alice, token, price, ETH0, ETH2);
+          await takeoverLease(alice, token, valuation, ETH0, ETH2);
 
-          await collectTax(token, 1, price);
+          await collectTax(token, 1, valuation);
         });
 
         it("after 1 secondary-purchase", async function () {
           const token = randomToken();
-          const price = ETH1;
+          const valuation = ETH1;
 
-          await takeoverLease(alice, token, price, ETH0, ETH2);
+          await takeoverLease(alice, token, valuation, ETH0, ETH2);
 
-          await collectTax(token, 1, price);
+          await collectTax(token, 1, valuation);
 
-          const secondaryPrice = ETH2;
+          const subsequentValuation = ETH2;
 
-          await takeoverLease(bob, token, secondaryPrice, ETH1, ETH3);
+          await takeoverLease(bob, token, subsequentValuation, ETH1, ETH3);
 
-          await collectTax(token, 1, secondaryPrice);
+          await collectTax(token, 1, subsequentValuation);
         });
 
         it("when foreclosed", async function () {
@@ -798,10 +798,10 @@ describe("PartialCommonOwnership721.sol", async function () {
           await time.increase(time.duration.days(1));
 
           // Purchasing will trigger foreclosure and ownership transfer.
-          const price = ETH1;
-          await takeoverLease(bob, token, price, ETH1, ETH2);
+          const valuation = ETH1;
+          await takeoverLease(bob, token, valuation, ETH1, ETH2);
 
-          await collectTax(token, 1, price);
+          await collectTax(token, 1, valuation);
         });
       });
     });
@@ -881,9 +881,9 @@ describe("PartialCommonOwnership721.sol", async function () {
     context("succeeds", async function () {
       it("consistently returns within +/- 1s", async function () {
         const token = randomToken();
-        const price = ETH1;
-        const tenMinDue = getTaxDue(token, price, tenMin, prior);
-        await takeoverLease(alice, token, price, ETH0, tenMinDue);
+        const valuation = ETH1;
+        const tenMinDue = getTaxDue(token, valuation, tenMin, prior);
+        await takeoverLease(alice, token, valuation, ETH0, tenMinDue);
 
         // Future:
 
@@ -914,13 +914,13 @@ describe("PartialCommonOwnership721.sol", async function () {
 
       it("time is 10m into the future", async function () {
         const token = randomToken();
-        const price = ETH1;
-        const tenMinDue = getTaxDue(token, price, tenMin, prior);
+        const valuation = ETH1;
+        const tenMinDue = getTaxDue(token, valuation, tenMin, prior);
 
         await takeoverLease(
           alice,
           token,
-          price,
+          valuation,
           ETH0,
           tenMinDue // Deposit 10 min of patronage
         );
@@ -934,13 +934,13 @@ describe("PartialCommonOwnership721.sol", async function () {
 
       it("returns backdated time if foreclosed", async function () {
         const token = randomToken();
-        const price = ETH1;
-        const tenMinDue = getTaxDue(token, price, tenMin, prior);
+        const valuation = ETH1;
+        const tenMinDue = getTaxDue(token, valuation, tenMin, prior);
 
         await takeoverLease(
           alice,
           token,
-          price,
+          valuation,
           ETH0,
           tenMinDue // Deposit 10 min of patronage
         );
@@ -987,16 +987,16 @@ describe("PartialCommonOwnership721.sol", async function () {
           })
         ).to.be.revertedWith(ErrorMessages.NONEXISTENT_TOKEN);
       });
-      it("Verifying incorrect Current Price", async function () {
+      it("Verifying incorrect Current valuation", async function () {
         await expect(
           alice.contract.takeoverLease(
             TOKENS.ONE,
-            ETH1, // Purchase price of 1
-            ETH1, // current price of 1 [should be ETH0]
+            ETH1, // Purchase valuation of 1
+            ETH1, // current valuation of 1 [should be ETH0]
             { value: ETH1 }
           )
         ).to.be.revertedWith(
-          ErrorMessages.LEASE_TAKEOVER_INCORRECT_CURRENT_PRICE
+          ErrorMessages.LEASE_TAKEOVER_INCORRECT_CURRENT_VALUATION
         );
       });
       it("Attempting to takeover lease of with 0 Wei", async function () {
@@ -1007,19 +1007,19 @@ describe("PartialCommonOwnership721.sol", async function () {
             ETH0,
             { value: ETH0 } // [must be greater than 0]
           )
-        ).to.be.revertedWith(ErrorMessages.LEASE_TAKEOVER_ZERO_PRICE);
+        ).to.be.revertedWith(ErrorMessages.LEASE_TAKEOVER_ZERO_VALUATION);
       });
-      it("When purchase price is less than message value", async function () {
+      it("When purchase valuation is less than message value", async function () {
         await expect(
           alice.contract.takeoverLease(
             TOKENS.ONE,
-            ETH0, // Purchase price of zero
-            ETH0, // Current Price [correct]
+            ETH0, // Purchase valuation of zero
+            ETH0, // Current valuation [correct]
             { value: ETH1 } // Send 1 Eth
           )
-        ).to.be.revertedWith(ErrorMessages.LEASE_TAKEOVER_ZERO_PRICE);
+        ).to.be.revertedWith(ErrorMessages.LEASE_TAKEOVER_ZERO_VALUATION);
       });
-      it("Attempting to takeover lease of with price less than current price", async function () {
+      it("Attempting to takeover lease of with valuation less than current valuation", async function () {
         // Purchase as Bob for 2 ETH
         await takeoverLease(bob, TOKENS.TWO, ETH2, ETH0, ETH3);
 
@@ -1030,7 +1030,9 @@ describe("PartialCommonOwnership721.sol", async function () {
             ETH2, // Correct
             { value: ETH1 } // [should be ETH2]
           )
-        ).to.be.revertedWith(ErrorMessages.LEASE_TAKEOVER_PRICE_BELOW_CURRENT);
+        ).to.be.revertedWith(
+          ErrorMessages.LEASE_TAKEOVER_VALUATION_BELOW_CURRENT
+        );
       });
       it("Attempting to takeover lease of without surplus value for payment", async function () {
         const tokenId = TOKENS.ONE;
@@ -1170,7 +1172,7 @@ describe("PartialCommonOwnership721.sol", async function () {
         await takeoverLease(beneficiary, randomToken(), ETH1, ETH0, ETH0);
       });
 
-      it("Beneficiary only pays purchase price if buying from Alice", async function () {
+      it("Beneficiary only pays purchase valuation if buying from Alice", async function () {
         const tokenId = randomToken();
         await takeoverLease(alice, tokenId, ETH1, ETH0, ETH2);
         await takeoverLease(beneficiary, tokenId, ETH4, ETH1, ETH1);
@@ -1235,30 +1237,30 @@ describe("PartialCommonOwnership721.sol", async function () {
 
   describe("#selfAssess()", async function () {
     context("fails", async function () {
-      it("only owner can update price", async function () {
+      it("only owner can update valuation", async function () {
         await expect(
           alice.contract.selfAssess(TOKENS.ONE, 500)
         ).to.be.revertedWith(ErrorMessages.ONLY_OWNER);
       });
-      it("cannot have a new price of zero", async function () {
+      it("cannot have a new valuation of zero", async function () {
         const token = randomToken();
 
         await takeoverLease(alice, token, ETH1, ETH0, ETH2);
         await expect(alice.contract.selfAssess(token, ETH0)).to.be.revertedWith(
-          ErrorMessages.NEW_PRICE_ZERO
+          ErrorMessages.NEW_VALUATION_ZERO
         );
       });
-      it("cannot have price set to same amount", async function () {
+      it("cannot have valuation set to same amount", async function () {
         const token = randomToken();
 
         await takeoverLease(alice, token, ETH1, ETH0, ETH2);
         await expect(alice.contract.selfAssess(token, ETH1)).to.be.revertedWith(
-          ErrorMessages.NEW_PRICE_SAME
+          ErrorMessages.NEW_VALUATION_SAME
         );
       });
     });
     context("succeeds", async function () {
-      it("owner can increase price", async function () {
+      it("owner can increase valuation", async function () {
         const token = randomToken();
 
         await takeoverLease(alice, token, ETH1, ETH0, ETH2);
@@ -1270,7 +1272,7 @@ describe("PartialCommonOwnership721.sol", async function () {
         expect(await contract.valuationOf(token)).to.equal(ETH2);
       });
 
-      it("owner can decrease price", async function () {
+      it("owner can decrease valuation", async function () {
         const token = randomToken();
 
         await takeoverLease(alice, token, ETH2, ETH0, ETH3);
@@ -1306,9 +1308,9 @@ describe("PartialCommonOwnership721.sol", async function () {
     context("succeeds", async function () {
       it("Withdraws expected amount", async function () {
         const token = randomToken();
-        const price = ETH1;
+        const valuation = ETH1;
 
-        await takeoverLease(alice, token, price, ETH0, ETH3);
+        await takeoverLease(alice, token, valuation, ETH0, ETH3);
 
         // Necessary to determine tax due on exit
         const lastCollectionTime = await contract.lastCollectionTimeOf(token);
@@ -1324,7 +1326,7 @@ describe("PartialCommonOwnership721.sol", async function () {
         // current deposit - tax on exit
         const taxedAmt = getTaxDue(
           token,
-          price,
+          valuation,
           ethers.BigNumber.from(timestamp),
           lastCollectionTime
         );

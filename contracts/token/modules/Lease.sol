@@ -62,7 +62,7 @@ abstract contract Lease is ILease, TokenManagement, Taxation {
     // funds are available for deposit.
     require(newValuation_ > 0, "New valuation cannot be zero");
 
-    // Buyer can set the new valuation higher the current price; this renders unnecessary a second gas payment
+    // Buyer can self-assess the valuation higher the current valuation; this renders unnecessary a second gas payment
     // if Buyer wants to immediately self-assess the token at a higher valuation.
     require(
       newValuation_ >= valuationPriorToTaxCollection,
@@ -79,7 +79,7 @@ abstract contract Lease is ILease, TokenManagement, Taxation {
         // If token is owned by contract, beneficiary does not need to pay anything.
         require(msg.value == 0, "Msg contains value");
       } else {
-        // Beneficiary only needs to pay the current price,
+        // Beneficiary only needs to pay the current valuation,
         // doesn't need to put down a deposit.
         require(msg.value == currentValuation_, "Msg contains surplus value");
       }
@@ -163,8 +163,8 @@ abstract contract Lease is ILease, TokenManagement, Taxation {
     _collectTax(tokenId_)
   {
     uint256 currentValuation = valuationOf(tokenId_);
-    require(newValuation_ > 0, "New price cannot be zero");
-    require(newValuation_ != currentValuation, "New price cannot be same");
+    require(newValuation_ > 0, "New valuation cannot be zero");
+    require(newValuation_ != currentValuation, "New valuation cannot be same");
 
     _setValuation(tokenId_, newValuation_);
     emit LogValuationReassessment(tokenId_, newValuation_);

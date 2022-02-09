@@ -19,7 +19,7 @@ import {
   ErrorMessages as PCOErrorMessages,
   Events as PCOEvents,
   RemittanceTriggers,
-} from "./PartialCommonOwnership721/types";
+} from "./PartialCommonOwnership/types";
 import type { Contract } from "@ethersproject/contracts";
 import type { Web3Provider } from "@ethersproject/providers";
 import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
@@ -110,7 +110,7 @@ async function wrap(tokenId: TOKENS, beneficiary: Wallet): Promise<BigNumber> {
   expect(await wrapperContract.taxRateOf(id)).to.equal(taxConfig.taxRate);
 
   // Collection frequency is set
-  expect(await wrapperContract.taxPeriodOf(id)).to.equal(
+  expect(await wrapperContract.collectionFrequencyOf(id)).to.equal(
     taxationPeriodToSeconds(taxConfig.collectionFrequency)
   );
 
@@ -164,7 +164,7 @@ async function unwrap(id: BigNumber, unwrappedTokenId: TOKENS): Promise<void> {
     PCOErrorMessages.NONEXISTENT_TOKEN
   );
 
-  await expect(wrapperContract.taxPeriodOf(id)).to.be.revertedWith(
+  await expect(wrapperContract.collectionFrequencyOf(id)).to.be.revertedWith(
     PCOErrorMessages.NONEXISTENT_TOKEN
   );
 

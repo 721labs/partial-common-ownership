@@ -18,8 +18,8 @@ abstract contract Remittance is IRemittance {
   //////////////////////////////
 
   /// @notice Mapping of address to Wei.
-  /// @dev If for whatever reason a remittance payment fails during a purchase, the amount
-  /// (purchase price + deposit) is added to `outstandingRemittances` so the previous
+  /// @dev If for whatever reason a remittance payment fails during a lease takeover, the amount
+  /// (current valuation) is added to `outstandingRemittances` so the previous
   /// owner can withdraw it.
   mapping(address => uint256) public outstandingRemittances;
 

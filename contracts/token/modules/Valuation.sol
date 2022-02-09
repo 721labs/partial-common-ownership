@@ -10,7 +10,7 @@ abstract contract Valuation is IValuation, TokenManagement {
   /// State
   //////////////////////////////
 
-  /// @notice Mapping from token ID to token price in Wei.
+  /// @notice Mapping from token ID to token valuation in Wei.
   mapping(uint256 => uint256) internal _valuations;
 
   //////////////////////////////
@@ -34,9 +34,9 @@ abstract contract Valuation is IValuation, TokenManagement {
 
   /// @notice Sets valuation for a given token.
   /// @param tokenId_ ID of token to set.
-  /// @param price_ New price.
-  function _setValuation(uint256 tokenId_, uint256 price_) internal {
-    _valuations[tokenId_] = price_;
+  /// @param valuation_ New valuation.
+  function _setValuation(uint256 tokenId_, uint256 valuation_) internal {
+    _valuations[tokenId_] = valuation_;
   }
 
   //////////////////////////////

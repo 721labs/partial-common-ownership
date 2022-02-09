@@ -35,7 +35,7 @@ abstract contract Taxation is
   uint256 private constant TAX_DENOMINATOR = 1000000000000;
 
   /// @notice Over what period, in days, should taxation be applied?
-  mapping(uint256 => uint256) internal _taxPeriods;
+  mapping(uint256 => uint256) internal _collectionFrequencies;
 
   /// @notice Mapping from token ID to Unix timestamp when last tax collection occured.
   /// @dev This is used to determine how much time has passed since last collection and the present
@@ -83,12 +83,12 @@ abstract contract Taxation is
   /// @param tokenId_ ID of token to collect tax for.
   /// @dev Strictly envoked by modifier but can be called publically.
   function collectTax(uint256 tokenId_) public {
-    uint256 price = valuationOf(tokenId_);
+    uint256 valuation = valuationOf(tokenId_);
 
     // There's no tax to be collected on an unvalued token.
-    if (price == 0) return;
+    if (valuation == 0) return;
 
-    // If price > 0, contract has not foreclosed.
+    // If valuation > 0, contract has not foreclosed.
     uint256 owed = _taxOwed(tokenId_);
 
     // Owed will be 0 when the token is owned by its beneficiary.
@@ -178,15 +178,15 @@ abstract contract Taxation is
     return _taxNumerators[tokenId_];
   }
 
-  /// @dev See {ITaxation.taxPeriodOf}
-  function taxPeriodOf(uint256 tokenId_)
+  /// @dev See {ITaxation.collectionFrequencyOf}
+  function collectionFrequencyOf(uint256 tokenId_)
     public
     view
     override
     _tokenMinted(tokenId_)
     returns (uint256)
   {
-    return _taxPeriods[tokenId_];
+    return _collectionFrequencies[tokenId_];
   }
 
   /// @dev See {ITaxation.taxOwedSince}
@@ -197,10 +197,10 @@ abstract contract Taxation is
     _tokenMinted(tokenId_)
     returns (uint256 taxDue)
   {
-    uint256 price = valuationOf(tokenId_);
+    uint256 valuation = valuationOf(tokenId_);
     return
-      (((price * time_) / taxPeriodOf(tokenId_)) * taxRateOf(tokenId_)) /
-      TAX_DENOMINATOR;
+      (((valuation * time_) / collectionFrequencyOf(tokenId_)) *
+        taxRateOf(tokenId_)) / TAX_DENOMINATOR;
   }
 
   /// @dev See {ITaxation.taxOwed}
@@ -275,7 +275,7 @@ abstract contract Taxation is
       // Returns when foreclosure should have occured i.e. when tax owed > deposits.
       return _backdatedForeclosureTime(tokenId_);
     } else {
-      // Actively foreclosed (price is 0)
+      // Actively foreclosed (valuation is 0)
       return lastCollectionTimeOf(tokenId_);
     }
   }
@@ -362,12 +362,12 @@ abstract contract Taxation is
   /// @notice Internal period setter.
   /// @dev Should be invoked immediately after calling `#_safeMint`
   /// @param tokenId_ Token to set
-  /// @param days_ The number of days that constitute one taxation period.
-  function _setTaxPeriod(uint256 tokenId_, uint256 days_)
+  /// @param days_ How many days are between subsequent tax collections?
+  function _setCollectionFrequency(uint256 tokenId_, uint256 days_)
     internal
     _tokenMinted(tokenId_)
   {
-    _taxPeriods[tokenId_] = days_ * 1 days;
+    _collectionFrequencies[tokenId_] = days_ * 1 days;
   }
 
   /// @notice Sets deposit for a given token.
