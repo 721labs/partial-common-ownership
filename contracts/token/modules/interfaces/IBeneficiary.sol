@@ -1,6 +1,6 @@
 // contracts/token/modules/interfaces/IBeneficiary.sol
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.7;
+pragma solidity ^0.8.10;
 
 interface IBeneficiary {
   /// @notice Sets the beneficiary for a given token.

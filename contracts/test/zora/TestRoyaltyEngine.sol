@@ -1,17 +1,17 @@
-// contracts/test/TestWrapper.sol
+// contracts/test/TestRoyaltyEngine.sol
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.10;
 
-import "../Wrapper.sol";
+import "@manifoldxyz/royalty-registry-solidity/contracts/RoyaltyEngineV1.sol";
 
-/// @title TestWrapper – Example implementation of Wrapper PCO for 721 for use in testing.
-contract TestWrapper is Wrapper {
+/// @title TestERC20TransferHelper
+contract TestRoyaltyEngine is RoyaltyEngineV1 {
   //////////////////////////////
   /// Constructor
   //////////////////////////////
 
   /// @notice Creates the Wrapper.
   /* solhint-disable no-empty-blocks */
-  constructor() Wrapper("Partial Common Ownership NFT", "pcoNFT") {}
+  constructor() RoyaltyEngineV1 () {}
   /* solhint-enable no-empty-blocks */
 }
