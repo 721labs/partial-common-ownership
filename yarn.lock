@@ -590,6 +590,23 @@
     "@ethersproject/properties" "^5.5.0"
     "@ethersproject/strings" "^5.5.0"
 
+"@manifoldxyz/libraries-solidity@^1.0.2":
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/@manifoldxyz/libraries-solidity/-/libraries-solidity-1.0.2.tgz#c63284d910ff6e7af3e1954a54dd126abd084518"
+  integrity sha512-qdCLBD5CicgT6UtDB1fED1kpJfgDqIB6WahtsfZ23ha/nYEBXKHJZ1urIHaIeCOdw8cTi6fMQbQWrld4V1S7dQ==
+  dependencies:
+    "@openzeppelin/contracts" "^4.2.0"
+    "@openzeppelin/contracts-upgradeable" "^4.2.0"
+
+"@manifoldxyz/royalty-registry-solidity@^1.0.8":
+  version "1.0.8"
+  resolved "https://registry.yarnpkg.com/@manifoldxyz/royalty-registry-solidity/-/royalty-registry-solidity-1.0.8.tgz#dd634eb88c3e8e88bcced118104cc31d532ff1c7"
+  integrity sha512-/SYJgtjHtn8ycvHe/NMxDDN91UF1xLR40XAOb6xg19YtqYYwHMDGZr20ffZoRc/ibHUdbX4CD3YCucNJdEx9xw==
+  dependencies:
+    "@manifoldxyz/libraries-solidity" "^1.0.2"
+    "@openzeppelin/contracts" "^4.3.2"
+    "@openzeppelin/contracts-upgradeable" "^4.3.2"
+
 "@nomiclabs/hardhat-ethers@^2.0.2":
   version "2.0.4"
   resolved "https://registry.yarnpkg.com/@nomiclabs/hardhat-ethers/-/hardhat-ethers-2.0.4.tgz#288889c338acaf47cabd29020e561d0077b7efcf"
@@ -618,6 +635,16 @@
     find-up "^4.1.0"
     fs-extra "^8.1.0"
 
+"@openzeppelin/contracts-upgradeable@^4.2.0", "@openzeppelin/contracts-upgradeable@^4.3.2":
+  version "4.5.1"
+  resolved "https://registry.yarnpkg.com/@openzeppelin/contracts-upgradeable/-/contracts-upgradeable-4.5.1.tgz#dc354082460eb34f5833afdecfab46538b208c4f"
+  integrity sha512-xcKycsSyFauIGMhSeeTJW/Jzz9jZUJdiFNP9Wo/9VhMhw8t5X0M92RY6x176VfcIWsxURMHFWOJVTlFA78HI/w==
+
+"@openzeppelin/contracts@^4.2.0":
+  version "4.5.0"
+  resolved "https://registry.yarnpkg.com/@openzeppelin/contracts/-/contracts-4.5.0.tgz#3fd75d57de172b3743cdfc1206883f56430409cc"
+  integrity sha512-fdkzKPYMjrRiPK6K4y64e6GzULR7R7RwxSigHS8DDp7aWDeoReqsQI+cxHV1UuhAqX69L1lAaWDxenfP+xiqzA==
+
 "@openzeppelin/contracts@^4.3.2":
   version "4.4.1"
   resolved "https://registry.yarnpkg.com/@openzeppelin/contracts/-/contracts-4.4.1.tgz#3382db2cd83ab565ed9626765e7da92944b45de8"
@@ -638,6 +665,11 @@
     semver "^5.6.0"
     web3 "^1.2.5"
     web3-utils "^1.2.5"
+
+"@rari-capital/solmate@^6.2.0":
+  version "6.2.0"
+  resolved "https://registry.yarnpkg.com/@rari-capital/solmate/-/solmate-6.2.0.tgz#4f70dc236606c27ec2cb1b4261dd830235d01fe4"
+  integrity sha512-g94F+Ra9ixyJyNgvnOIufNjUz488uEG0nxIEEtJ7+g+tA1XGUupRB2kB5b+VO7WYO26RNOVD2fW6xE4e14iWpg==
 
 "@resolver-engine/core@^0.3.3":
   version "0.3.3"
