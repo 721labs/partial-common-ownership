@@ -8,6 +8,12 @@ This project establishes standard, open source implementations of Partial Common
 
 ## Installation
 
+#### Init submodules
+
+```shell
+$ git submodule update --init --recursive
+```
+
 #### npm
 
 ```shell
