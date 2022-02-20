@@ -1,6 +1,6 @@
 // contracts/token/PartialCommonOwnership.sol
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.7;
+pragma solidity ^0.8.10;
 
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {TokenManagement} from "./modules/TokenManagement.sol";
@@ -10,6 +10,7 @@ import {Taxation} from "./modules/Taxation.sol";
 import {Beneficiary} from "./modules/Beneficiary.sol";
 import {Title} from "./modules/Title.sol";
 import {Lease} from "./modules/Lease.sol";
+import {Listed} from "./modules/Listed.sol";
 
 /// @title PartialCommonOwnership
 /// @notice Extends the ERC721 standard by requiring tax payments from a token's current owner
@@ -23,7 +24,8 @@ contract PartialCommonOwnership is
   Remittance,
   Beneficiary,
   Taxation,
-  Lease
+  Lease,
+  Listed
 {
   //////////////////////////////
   /// Constructor
