@@ -1,6 +1,6 @@
 // contracts/token/PartialCommonOwnership.sol
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.7;
+pragma solidity ^0.8.12;
 
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {TokenManagement} from "./modules/TokenManagement.sol";
