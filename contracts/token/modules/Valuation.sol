@@ -1,6 +1,6 @@
 // contracts/token/modules/Valuation.sol
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.7;
+pragma solidity ^0.8.12;
 
 import "./TokenManagement.sol";
 import "./interfaces/IValuation.sol";

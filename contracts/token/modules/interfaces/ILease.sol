@@ -1,6 +1,6 @@
 // contracts/token/modules/interfaces/ILease.sol
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.7;
+pragma solidity ^0.8.12;
 
 interface ILease {
   /// @notice Takeover the lease of a token. Current owner is remitted the current valuation and all excess value included

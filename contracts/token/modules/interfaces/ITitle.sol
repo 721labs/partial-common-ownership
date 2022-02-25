@@ -1,6 +1,6 @@
 // contracts/token/modules/interfaces/ITitle.sol
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.7;
+pragma solidity ^0.8.12;
 
 struct TitleTransferEvent {
   /// @notice From address.

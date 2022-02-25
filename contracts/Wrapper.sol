@@ -1,6 +1,6 @@
 // contracts/Wrapper.sol
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.7;
+pragma solidity 0.8.12;
 
 import {PartialCommonOwnership as PCO} from "./token/PartialCommonOwnership.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";

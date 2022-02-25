@@ -17,7 +17,7 @@ export default {
   //defaultNetwork: "",
   //networks: {},
   solidity: {
-    version: "0.8.7",
+    version: "0.8.12",
     settings: {
       optimizer: {
         enabled: true,
