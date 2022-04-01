@@ -29,7 +29,7 @@ abstract contract Valuation is IValuation, TokenManagement {
   }
 
   //////////////////////////////
-  /// Prviate Setters
+  /// Private Setters
   //////////////////////////////
 
   /// @notice Sets valuation for a given token.
@@ -40,7 +40,7 @@ abstract contract Valuation is IValuation, TokenManagement {
   }
 
   //////////////////////////////
-  /// Prviate Getters
+  /// Private Getters
   //////////////////////////////
 
   /// @notice Returns the self-assessed valuation for a token.
