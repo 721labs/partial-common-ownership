@@ -111,15 +111,6 @@ contract PartialCommonOwnership is
   function safeTransferFrom(
     address from,
     address to,
-    uint256 tokenId
-  ) public pure override {
-    revert("Transfers may only occur via purchase/foreclosure");
-  }
-
-  /// @dev Override to make effectively-private.
-  function safeTransferFrom(
-    address from,
-    address to,
     uint256 tokenId,
     bytes memory _data
   ) public pure override {
