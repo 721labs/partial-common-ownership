@@ -472,7 +472,7 @@ describe("PartialCommonOwnership.sol", async function () {
         ).to.be.revertedWith(ErrorMessages.PROHIBITED_TRANSFER_METHOD);
       });
 
-      it("#safeTransferFrom()", async function () {
+      it("#safeTransferFrom(address,address,uint256)", async function () {
         await expect(
           contract.functions["safeTransferFrom(address,address,uint256)"](
             contractAddress,
@@ -480,7 +480,9 @@ describe("PartialCommonOwnership.sol", async function () {
             TOKENS.ONE
           )
         ).to.be.revertedWith(ErrorMessages.PROHIBITED_TRANSFER_METHOD);
+      });
 
+      it("#safeTransferFrom(address,address,uint256,bytes)", async () => {
         await expect(
           contract.functions["safeTransferFrom(address,address,uint256,bytes)"](
             contractAddress,
@@ -489,7 +491,7 @@ describe("PartialCommonOwnership.sol", async function () {
             0x0
           )
         ).to.be.revertedWith(ErrorMessages.PROHIBITED_TRANSFER_METHOD);
-      });
+      })
     });
   });
 
