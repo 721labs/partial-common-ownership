@@ -181,6 +181,10 @@ async function takeoverLease(
     .to.emit(contract, Events.LEASE_TAKEOVER)
     .withArgs(tokenId, wallet.address, newValuation);
 
+  expect(trx)
+    .to.emit(contract, Events.VALUATION)
+    .withArgs(tokenId, newValuation);
+
   // Beneficiary doesn't put down a deposit
   const purchasedByBeneficiary = wallet.address === beneficiary.address;
   if (purchasedByBeneficiary) {
@@ -1266,7 +1270,7 @@ describe("PartialCommonOwnership.sol", async function () {
         await takeoverLease(alice, token, ETH1, ETH0, ETH2);
 
         expect(await alice.contract.selfAssess(token, ETH2))
-          .to.emit(contract, Events.VALUATION_REASSESSMENT)
+          .to.emit(contract, Events.VALUATION)
           .withArgs(token, ETH2);
 
         expect(await contract.valuationOf(token)).to.equal(ETH2);
@@ -1278,7 +1282,7 @@ describe("PartialCommonOwnership.sol", async function () {
         await takeoverLease(alice, token, ETH2, ETH0, ETH3);
 
         expect(await alice.contract.selfAssess(token, ETH1))
-          .to.emit(contract, Events.VALUATION_REASSESSMENT)
+          .to.emit(contract, Events.VALUATION)
           .withArgs(token, ETH1);
 
         expect(await contract.valuationOf(token)).to.equal(ETH1);

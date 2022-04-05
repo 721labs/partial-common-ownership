@@ -29,14 +29,6 @@ abstract contract Lease is ILease, TokenManagement, Taxation {
     uint256 indexed newValuation
   );
 
-  /// @notice Alert owner re-assessed the valuation.
-  /// @param tokenId ID of token.
-  /// @param newValuation New valuation in Wei.
-  event LogValuationReassessment(
-    uint256 indexed tokenId,
-    uint256 indexed newValuation
-  );
-
   //////////////////////////////
   /// Public Methods
   //////////////////////////////
@@ -167,6 +159,5 @@ abstract contract Lease is ILease, TokenManagement, Taxation {
     require(newValuation_ != currentValuation, "New valuation cannot be same");
 
     _setValuation(tokenId_, newValuation_);
-    emit LogValuationReassessment(tokenId_, newValuation_);
   }
 }
