@@ -61,6 +61,38 @@ let prior;
 //$ Helpers
 
 /**
+ * Tests "friendly" transfers; calling `safeTransferFrom` or `transferFrom` collects tax
+ * and transfers ownership to the given address, maintaining the tax obligation and deposit
+ * of the previous owner.
+ * @param method Transfer method to call.
+ */
+async function friendlyTransfer(method: string) {
+  const token = randomToken();
+  await takeoverLease(alice, token, ETH1, ETH0, ETH2);
+
+  const args = [alice.address, bob.address, token];
+
+  if (method.includes("bytes")) args.push(ethers.utils.randomBytes(1));
+
+  const trx = await alice.contract.functions[method](...args);
+
+  // Tax was collected
+  expect(trx).to.emit(contract, Events.COLLECTION);
+
+  // Owner updated
+  expect(trx).to.emit(contract, Events.TRANSFER);
+  expect(await contract.ownerOf(token)).to.equal(bob.address);
+
+  // Valuation hasn't changed
+  expect(await contract.valuationOf(token)).to.equal(ETH1);
+
+  // New owner received full, post-tax deposit
+  const receipt = await trx.wait();
+  const taxCollected = receipt.events[0].args.collected;
+  expect(await contract.depositOf(token)).to.equal(ETH2.sub(taxCollected));
+}
+
+/**
  * Returns a random token. This implement auto-rotation of tokens during tests,
  * as each token has a different tax rate and collection frequency, thus ensuring the tests
  * are valid for a range of configurations.
@@ -465,34 +497,17 @@ describe("PartialCommonOwnership.sol", async function () {
     });
   });
 
-  describe("Prevent non-takeover/foreclosure (i.e. ERC721) transfers", async function () {
-    context("fails", async function () {
-      it("#transferFrom()", async function () {
-        await expect(
-          contract.transferFrom(contractAddress, alice.address, TOKENS.ONE)
-        ).to.be.revertedWith(ErrorMessages.PROHIBITED_TRANSFER_METHOD);
-      });
+  describe("'Friendly' Transfers", async function () {
+    it("#transferFrom()", async function () {
+      await friendlyTransfer("transferFrom(address,address,uint256)");
+    });
 
-      it("#safeTransferFrom(address,address,uint256)", async function () {
-        await expect(
-          contract.functions["safeTransferFrom(address,address,uint256)"](
-            contractAddress,
-            alice.address,
-            TOKENS.ONE
-          )
-        ).to.be.revertedWith(ErrorMessages.PROHIBITED_TRANSFER_METHOD);
-      });
+    it("#safeTransferFrom(address,address,uint256)", async function () {
+      await friendlyTransfer("safeTransferFrom(address,address,uint256)");
+    });
 
-      it("#safeTransferFrom(address,address,uint256,bytes)", async () => {
-        await expect(
-          contract.functions["safeTransferFrom(address,address,uint256,bytes)"](
-            contractAddress,
-            alice.address,
-            TOKENS.ONE,
-            0x0
-          )
-        ).to.be.revertedWith(ErrorMessages.PROHIBITED_TRANSFER_METHOD);
-      })
+    it("#safeTransferFrom(address,address,uint256,bytes)", async () => {
+      await friendlyTransfer("safeTransferFrom(address,address,uint256,bytes)");
     });
   });
 

@@ -36,6 +36,38 @@ contract PartialCommonOwnership is
   {}
 
   //////////////////////////////
+  /// Public Methods
+  //////////////////////////////
+
+  /// @notice Trasfers token after collecting taxes.  Note this transfers the deposit
+  /// and the tax burden for the token.
+  /// @param from_ Address to transfer token from
+  /// @param to_ Address to transfer token to
+  /// @param tokenId_ ID of token to transfer
+  function transferFrom(
+    address from_,
+    address to_,
+    uint256 tokenId_
+  ) public override _collectTax(tokenId_) {
+    ERC721.transferFrom(from_, to_, tokenId_);
+  }
+
+  /// @notice Trasfers token after collecting taxes.  Note this transfers the deposit
+  /// and the tax burden for the token.
+  /// @param from_ Address to transfer token from
+  /// @param to_ Address to transfer token to
+  /// @param tokenId_ ID of token to transfer
+  /// param data_ Arbitrary data
+  function safeTransferFrom(
+    address from_,
+    address to_,
+    uint256 tokenId_,
+    bytes memory data_
+  ) public override _collectTax(tokenId_) {
+    ERC721.safeTransferFrom(from_, to_, tokenId_, data_);
+  }
+
+  //////////////////////////////
   /// Internal Methods
   //////////////////////////////
 
@@ -81,39 +113,16 @@ contract PartialCommonOwnership is
     delete _locked[tokenId_];
   }
 
-  /* solhint-enable no-empty-blocks */
-
-  //////////////////////////////
-  /// ERC721 Overrides
-  //////////////////////////////
-
-  /**
-   * Override ERC721 public transfer methods to ensure that purchasing and
-   * foreclosure are the only way tokens can be transferred.
-   */
-
-  /* solhint-disable no-unused-vars */
-  /* solhint-disable ordering */
-
-  /// @dev Override to make effectively-private.
-  function transferFrom(
-    address from,
-    address to,
-    uint256 tokenId
-  ) public pure override {
-    revert("Transfers may only occur via purchase/foreclosure");
+  /// @notice Transfers token and updates tax stats.
+  /// @param from_ Address to transfer token from
+  /// @param to_ Address to transfer token to
+  /// @param tokenId_ ID of token to transfer
+  function _transfer(
+    address from_,
+    address to_,
+    uint256 tokenId_
+  ) internal override {
+    ERC721._transfer(from_, to_, tokenId_);
+    _setTaxCollectedSinceLastTransfer(tokenId_, 0);
   }
-
-  /// @dev Override to make effectively-private.
-  function safeTransferFrom(
-    address from,
-    address to,
-    uint256 tokenId,
-    bytes memory _data
-  ) public pure override {
-    revert("Transfers may only occur via purchase/foreclosure");
-  }
-
-  /* solhint-enable no-unused-vars */
-  /* solhint-enable ordering */
 }
