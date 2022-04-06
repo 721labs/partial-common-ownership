@@ -3,6 +3,7 @@ import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-waffle";
 import "@nomiclabs/hardhat-web3";
 import "hardhat-gas-reporter";
+import "@typechain/hardhat";
 
 import path from "path";
 import dotenv from "dotenv";
@@ -41,5 +42,9 @@ export default {
     enabled: process.env.REPORT_GAS === "true",
     currency: "USD",
     coinmarketcap: process.env.COINMARKETCAP_API_KEY,
+  },
+  typechain: {
+    outDir: "types",
+    target: "ethers-v5",
   },
 };

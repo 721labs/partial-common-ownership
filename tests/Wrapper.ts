@@ -20,10 +20,11 @@ import {
   Events as PCOEvents,
   RemittanceTriggers,
 } from "./PartialCommonOwnership/types";
-import type { Contract } from "@ethersproject/contracts";
 import type { Web3Provider } from "@ethersproject/providers";
 import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import type { BigNumber } from "ethers";
+import type { Wrapper } from "../types/contracts/Wrapper";
+import type { TestNFT } from "../types/contracts/test/TestNFT";
 
 //$ Local Types
 
@@ -52,8 +53,8 @@ const taxConfig = { collectionFrequency: 365, taxRate: 50000000000 };
 //$ State
 let provider: Web3Provider;
 let signers: Array<SignerWithAddress>;
-let testNFTContract: Contract;
-let wrapperContract: Contract;
+let testNFTContract: TestNFT;
+let wrapperContract: Wrapper;
 let deployer: Wallet;
 let deployerNFT: Wallet;
 let bob: Wallet;
@@ -225,12 +226,16 @@ describe("Wrapper.sol", async function () {
 
     // Deploy the test NFT contract
     const testNFTFactory = await ethers.getContractFactory("TestNFT");
-    testNFTContract = await testNFTFactory.deploy(GLOBAL_TRX_CONFIG);
+    testNFTContract = (await testNFTFactory.deploy(
+      GLOBAL_TRX_CONFIG
+    )) as TestNFT;
     await testNFTContract.deployed();
 
     // Deploy the test wrapper contract
     const wrapperFactory = await ethers.getContractFactory("TestWrapper");
-    wrapperContract = await wrapperFactory.deploy(GLOBAL_TRX_CONFIG);
+    wrapperContract = (await wrapperFactory.deploy(
+      GLOBAL_TRX_CONFIG
+    )) as Wrapper;
     await wrapperContract.deployed();
 
     // Set up wallets
