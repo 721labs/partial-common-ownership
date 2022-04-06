@@ -35,7 +35,8 @@
     "prettier": "prettier --write 'contracts/**/*.sol'",
     "solhint": "solhint contracts/*.sol contracts/**/*.sol contracts/**/**/*.sol contracts/**/**/**/*.sol",
     "publish": "npm publish --access public",
-    "coverage": "yarn hardhat clean && yarn hardhat coverage"
+    "coverage": "yarn hardhat clean && yarn hardhat coverage",
+    "typechain": "yarn hardhat typechain"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.2",
@@ -43,6 +44,8 @@
     "@nomiclabs/hardhat-web3": "^2.0.0",
     "@openzeppelin/contracts": "^4.3.2",
     "@openzeppelin/test-helpers": "^0.5.13",
+    "@typechain/ethers-v5": "^10.0.0",
+    "@typechain/hardhat": "^6.0.0",
     "@types/chai": "^4.2.21",
     "@types/js-yaml": "^4.0.3",
     "@types/mocha": "^9.0.0",
@@ -59,6 +62,7 @@
     "solhint-plugin-prettier": "^0.0.5",
     "solidity-coverage": "^0.7.20",
     "ts-node": "^10.2.1",
+    "typechain": "^8.0.0",
     "typescript": "^4.4.2",
     "web3": "^1.5.2"
   },

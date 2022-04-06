@@ -1,9 +1,8 @@
-//@ts-nocheck
-
+//@ts-expect-error
 import { time } from "@openzeppelin/test-helpers";
 
 import { expect } from "chai";
-import { ethers } from "hardhat";
+import { ethers, web3 } from "hardhat";
 
 import Wallet from "../helpers/Wallet";
 import { ErrorMessages, Events, RemittanceTriggers } from "./types";
@@ -21,6 +20,11 @@ import { snapshotEVM, revertEVM } from "../helpers/EVM";
 
 // Types
 import { ERC721ErrorMessages, TOKENS } from "../helpers/types";
+import type { ExternalProvider, Web3Provider } from "@ethersproject/providers";
+import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import type { PartialCommonOwnership } from "../../types/contracts/token/PartialCommonOwnership";
+import type { Blocker } from "../../types/contracts/test/Blocker";
+import type { BigNumber } from "ethers";
 
 //$ Test-Specific Constants
 
@@ -42,21 +46,20 @@ const tokenTaxConfigs = {
 
 //$ State
 
-let provider;
-let signers;
-let factory;
-let blocker;
-let contract;
-let contractAddress;
-let beneficiary;
-let alice;
-let bob;
-let wallets;
-let walletsByAddress;
-let snapshot;
+let provider: Web3Provider;
+let signers: Array<SignerWithAddress>;
+let blocker: Blocker;
+let contract: PartialCommonOwnership;
+let contractAddress: string;
+let beneficiary: Wallet;
+let alice: Wallet;
+let bob: Wallet;
+let wallets: Array<Wallet>;
+let walletsByAddress: { [address: string]: Wallet };
+let snapshot: string;
 
-let tenMin;
-let prior;
+let tenMin: BigNumber;
+let prior: BigNumber;
 
 //$ Helpers
 
@@ -70,7 +73,7 @@ async function friendlyTransfer(method: string) {
   const token = randomToken();
   await takeoverLease(alice, token, ETH1, ETH0, ETH2);
 
-  const args = [alice.address, bob.address, token];
+  const args: Array<any> = [alice.address, bob.address, token];
 
   if (method.includes("bytes")) args.push(ethers.utils.randomBytes(1));
 
@@ -107,6 +110,7 @@ function randomToken(): TOKENS {
     case 2:
       return TOKENS.THREE;
   }
+  throw new Error();
 }
 
 /**
@@ -393,24 +397,26 @@ describe("PartialCommonOwnership.sol", async function () {
     tenMin = await now();
     prior = tenMin.sub(600);
 
-    provider = new ethers.providers.Web3Provider(web3.currentProvider);
+    provider = new ethers.providers.Web3Provider(
+      web3.currentProvider as ExternalProvider
+    );
     signers = await ethers.getSigners();
-    factory = await ethers.getContractFactory("TestPCOToken");
+    const factory = await ethers.getContractFactory("TestPCOToken");
 
     // Set up contracts
-    contract = await factory.deploy(
+    contract = (await factory.deploy(
       TEST_NAME,
       TEST_SYMBOL,
       signers[1].address,
       GLOBAL_TRX_CONFIG
-    );
+    )) as PartialCommonOwnership;
 
     await contract.deployed();
     contractAddress = contract.address;
 
     // Set up blocker
     const blockerFactory = await ethers.getContractFactory("Blocker");
-    blocker = await blockerFactory.deploy(contractAddress);
+    blocker = (await blockerFactory.deploy(contractAddress)) as Blocker;
     await blocker.deployed();
 
     // Set up wallets
@@ -1446,21 +1452,6 @@ describe("PartialCommonOwnership.sol", async function () {
           blocker.address,
           expectedRemittance
         );
-    });
-  });
-
-  describe("#transferToken()", async function () {
-    context("fails", async function () {
-      it("it's an internal method", async function () {
-        try {
-          await contract.transferToken();
-        } catch (error) {
-          expect(error).instanceOf(TypeError);
-          expect(error.message).to.equal(
-            "contract.transferToken is not a function"
-          );
-        }
-      });
     });
   });
 });
