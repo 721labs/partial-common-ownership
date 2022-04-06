@@ -21,12 +21,8 @@ if (process.env.TYPE_COMPILATION !== "false") {
  * @type import('hardhat/config').HardhatUserConfig
  */
 export default {
-  defaultNetwork: "hardhat",
-  networks: {
-    hardhat: {
-      allowUnlimitedContractSize: true,
-    },
-  },
+  // defaultNetwork: "",
+  // networks: {},
   solidity: {
     version: "0.8.12",
     settings: {
