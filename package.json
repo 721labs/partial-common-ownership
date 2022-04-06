@@ -35,7 +35,7 @@
     "prettier": "prettier --write 'contracts/**/*.sol'",
     "solhint": "solhint contracts/*.sol contracts/**/*.sol contracts/**/**/*.sol contracts/**/**/**/*.sol",
     "publish": "npm publish --access public",
-    "coverage": "yarn hardhat coverage"
+    "coverage": "yarn hardhat clean && yarn hardhat coverage"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.2",
