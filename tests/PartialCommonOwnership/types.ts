@@ -23,11 +23,11 @@ enum Events {
   TRANSFER = "Transfer",
   LEASE_TAKEOVER = "LogLeaseTakeover",
   OUTSTANDING_REMITTANCE = "LogOutstandingRemittance",
-  VALUATION_REASSESSMENT = "LogValuationReassessment",
   FORECLOSURE = "LogForeclosure",
   COLLECTION = "LogCollection",
   REMITTANCE = "LogRemittance",
   BENEFICIARY_UPDATED = "LogBeneficiaryUpdated",
+  VALUATION = "LogValuation",
 }
 
 enum RemittanceTriggers {

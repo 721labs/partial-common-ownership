@@ -5,7 +5,6 @@ pragma solidity ^0.8.12;
 import "./interfaces/ITaxation.sol";
 import "./Valuation.sol";
 import "./TokenManagement.sol";
-import "./Title.sol";
 import "./Remittance.sol";
 import "./Beneficiary.sol";
 
@@ -13,7 +12,6 @@ abstract contract Taxation is
   ITaxation,
   TokenManagement,
   Valuation,
-  Title,
   Remittance,
   Beneficiary
 {
@@ -297,7 +295,6 @@ abstract contract Taxation is
       address currentOwner = ownerOf(tokenId_);
 
       _transfer(currentOwner, address(this), tokenId_);
-      _titleTransfer(tokenId_, currentOwner, address(this), 0);
       _setTaxCollectedSinceLastTransfer(tokenId_, 0);
 
       emit LogForeclosure(tokenId_, currentOwner);
