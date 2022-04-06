@@ -295,7 +295,6 @@ abstract contract Taxation is
       address currentOwner = ownerOf(tokenId_);
 
       _transfer(currentOwner, address(this), tokenId_);
-      _setTaxCollectedSinceLastTransfer(tokenId_, 0);
 
       emit LogForeclosure(tokenId_, currentOwner);
     }

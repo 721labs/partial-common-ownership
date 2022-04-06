@@ -138,7 +138,6 @@ abstract contract Lease is ILease, TokenManagement, Taxation {
     _setValuation(tokenId_, newValuation_);
 
     _transfer(ownerAfterCollection, msg.sender, tokenId_);
-    _setTaxCollectedSinceLastTransfer(tokenId_, 0);
 
     emit LogLeaseTakeover(tokenId_, msg.sender, newValuation_);
 
