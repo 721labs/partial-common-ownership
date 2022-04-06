@@ -156,10 +156,6 @@ async function unwrap(id: BigNumber, unwrappedTokenId: TOKENS): Promise<void> {
     PCOErrorMessages.NONEXISTENT_TOKEN
   );
 
-  await expect(wrapperContract.titleChainOf(id)).to.be.revertedWith(
-    PCOErrorMessages.NONEXISTENT_TOKEN
-  );
-
   await expect(wrapperContract.taxRateOf(id)).to.be.revertedWith(
     PCOErrorMessages.NONEXISTENT_TOKEN
   );
