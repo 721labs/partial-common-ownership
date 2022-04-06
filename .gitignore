@@ -1,5 +1,6 @@
 # Solidity Coverage
-coverage
+/coverage
+coverage.json
 
 # Environment Variables
 .env
