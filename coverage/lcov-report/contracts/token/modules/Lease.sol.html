@@ -1,0 +1,548 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Code coverage report for contracts/token/modules/Lease.sol</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../../../prettify.css" />
+    <link rel="stylesheet" href="../../../base.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(../../../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+<body>
+<div class='wrapper'>
+  <div class='pad1'>
+    <h1>
+      <a href="../../../index.html">all files</a> / <a href="index.html">contracts/token/modules/</a> Lease.sol
+    </h1>
+    <div class='clearfix'>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">100% </span>
+        <span class="quiet">Statements</span>
+        <span class='fraction'>34/34</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">96.67% </span>
+        <span class="quiet">Branches</span>
+        <span class='fraction'>29/30</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">100% </span>
+        <span class="quiet">Functions</span>
+        <span class='fraction'>2/2</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">100% </span>
+        <span class="quiet">Lines</span>
+        <span class='fraction'>33/33</span>
+      </div>
+    </div>
+  </div>
+  <div class='status-line high'></div>
+<pre><table class="coverage">
+<tr><td class="line-count quiet">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126
+127
+128
+129
+130
+131
+132
+133
+134
+135
+136
+137
+138
+139
+140
+141
+142
+143
+144
+145
+146
+147
+148
+149
+150
+151
+152
+153
+154
+155
+156
+157
+158
+159
+160
+161
+162</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">65×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">65×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">65×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">64×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">62×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">61×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">61×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">61×</span>
+<span class="cline-any cline-yes">6×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">55×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">58×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">56×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">56×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">56×</span>
+<span class="cline-any cline-yes">56×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">56×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">50×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">50×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">56×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">47×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">5×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">56×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">56×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">56×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">56×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">// contracts/token/modules/Lease.sol
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.12;
+&nbsp;
+import "./interfaces/ILease.sol";
+import "./TokenManagement.sol";
+import "./Taxation.sol";
+&nbsp;
+abstract contract Lease is ILease, TokenManagement, Taxation {
+  //////////////////////////////
+  /// State
+  //////////////////////////////
+&nbsp;
+  /// @notice Mapping from token ID to purchase lock status
+  /// @dev Used to prevent reentrancy attacks
+  mapping(uint256 =&gt; bool) internal _locked;
+&nbsp;
+  //////////////////////////////
+  /// Events
+  //////////////////////////////
+&nbsp;
+  /// @notice Alert of lease takeover.
+  /// @param tokenId ID of token.
+  /// @param owner Address of new token owner.
+  /// @param newValuation New owenr's self assessed valuation.
+  event LogLeaseTakeover(
+    uint256 indexed tokenId,
+    address indexed owner,
+    uint256 indexed newValuation
+  );
+&nbsp;
+  //////////////////////////////
+  /// Public Methods
+  //////////////////////////////
+&nbsp;
+  /// @dev See {ILease.takeoverLease}
+  function takeoverLease(
+    uint256 tokenId_,
+    uint256 newValuation_,
+    uint256 currentValuation_
+  ) public payable override _tokenMinted(tokenId_) {
+    // Prevent re-entrancy attack
+    <span class="missing-if-branch" title="else path not taken" >E</span>require(!_locked[tokenId_], "Token is locked");
+&nbsp;
+    uint256 valuationPriorToTaxCollection = valuationOf(tokenId_);
+&nbsp;
+    // Prevent front-run.
+    require(
+      valuationPriorToTaxCollection == currentValuation_,
+      "Current valuation is incorrect"
+    );
+&nbsp;
+    // New valuation must be greater than zero, even if current valuation is zero, to ensure that
+    // funds are available for deposit.
+    require(newValuation_ &gt; 0, "New valuation cannot be zero");
+&nbsp;
+    // Buyer can self-assess the valuation higher the current valuation; this renders unnecessary a second gas payment
+    // if Buyer wants to immediately self-assess the token at a higher valuation.
+    require(
+      newValuation_ &gt;= valuationPriorToTaxCollection,
+      "New valuation must be &gt;= current valuation"
+    );
+&nbsp;
+    bool senderIsBeneficiary = msg.sender == beneficiaryOf(tokenId_);
+    // Current owner is a wallet address or the address of this contract
+    // if the token is foreclosed or has never been purchased.
+    address currentOwner = ownerOf(tokenId_);
+&nbsp;
+    if (senderIsBeneficiary) {
+      if (currentOwner == address(this)) {
+        // If token is owned by contract, beneficiary does not need to pay anything.
+        require(msg.value == 0, "Msg contains value");
+      } else {
+        // Beneficiary only needs to pay the current valuation,
+        // doesn't need to put down a deposit.
+        require(msg.value == currentValuation_, "Msg contains surplus value");
+      }
+    } else {
+      // Value sent must be greater the amount being remitted to the current owner;
+      // surplus is necessary for deposit.
+      require(
+        msg.value &gt; valuationPriorToTaxCollection,
+        "Message does not contain surplus value for deposit"
+      );
+    }
+&nbsp;
+    // Owner will be seller or this contract if foreclosed.
+    // Prevent an accidental re-purchase.
+    require(msg.sender != ownerOf(tokenId_), "Buyer is already owner");
+&nbsp;
+    // After all security checks have occured, lock the token.
+    _locked[tokenId_] = true;
+&nbsp;
+    // Collect tax.
+    // Note: this may result in unexpected effects for the buyer. For example,
+    // if taxation forecloses on the token, the buyer will be putting down a larger
+    // deposit than they originally anticipated.
+    collectTax(tokenId_);
+&nbsp;
+    address ownerAfterCollection = ownerOf(tokenId_);
+    bool purchasedFromContract = ownerAfterCollection == address(this);
+&nbsp;
+    // Token is being purchased for the first time or out of foreclosure
+    if (purchasedFromContract) {
+      // Deposit takes entire msg value
+      _setDeposit(tokenId_, msg.value);
+&nbsp;
+      // If the token is being purchased for the first time or is being purchased
+      // from foreclosure, last collection time is set to now so that the contract
+      // does not incorrectly consider the taxable period to have begun prior to
+      // foreclosure and overtax the owner.
+      _setLastCollectionTime(tokenId_, block.timestamp);
+&nbsp;
+      // Note: no remittance occurs. Beneficiary receives no tax on a token that is currently
+      // valued at nothing.
+    } else {
+      _remit(
+        ownerAfterCollection,
+        // Owner receives their self-assessed valuation and the remainder of their deposit.
+        currentValuation_ + depositOf(tokenId_),
+        RemittanceTriggers.LeaseTakeover
+      );
+    }
+&nbsp;
+    // Update deposit
+    if (senderIsBeneficiary) {
+      // Beneficiary doesn't make deposits as no taxes are collected.
+      _setDeposit(tokenId_, 0);
+    } else if (purchasedFromContract) {
+      // Deposit takes entire msg value
+      _setDeposit(tokenId_, msg.value);
+    } else {
+      // Set the new owner's deposit
+      _setDeposit(tokenId_, msg.value - currentValuation_);
+    }
+&nbsp;
+    // Set the new valuation
+    _setValuation(tokenId_, newValuation_);
+&nbsp;
+    _transfer(ownerAfterCollection, msg.sender, tokenId_);
+&nbsp;
+    emit LogLeaseTakeover(tokenId_, msg.sender, newValuation_);
+&nbsp;
+    // Unlock token
+    _locked[tokenId_] = false;
+  }
+&nbsp;
+  /// @dev See {ILease.selfAssess}
+  function selfAssess(uint256 tokenId_, uint256 newValuation_)
+    public
+    override
+    _onlyOwner(tokenId_)
+    _collectTax(tokenId_)
+  {
+    uint256 currentValuation = valuationOf(tokenId_);
+    require(newValuation_ &gt; 0, "New valuation cannot be zero");
+    require(newValuation_ != currentValuation, "New valuation cannot be same");
+&nbsp;
+    _setValuation(tokenId_, newValuation_);
+  }
+}
+&nbsp;</pre></td></tr>
+</table></pre>
+<div class='push'></div><!-- for sticky footer -->
+</div><!-- /wrapper -->
+<div class='footer quiet pad2 space-top1 center small'>
+  Code coverage
+  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Tue Apr 05 2022 22:55:51 GMT-0400 (Eastern Daylight Time)
+</div>
+</div>
+<script src="../../../prettify.js"></script>
+<script>
+window.onload = function () {
+        if (typeof prettyPrint === 'function') {
+            prettyPrint();
+        }
+};
+</script>
+<script src="../../../sorter.js"></script>
+</body>
+</html>
