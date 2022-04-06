@@ -4,13 +4,18 @@ import "@nomiclabs/hardhat-waffle";
 import "@nomiclabs/hardhat-web3";
 import "hardhat-gas-reporter";
 import "solidity-coverage";
-import "@typechain/hardhat";
 
 import path from "path";
 import dotenv from "dotenv";
 dotenv.config({
   path: path.resolve(process.cwd(), ".env"),
 });
+
+// Type compilation can be turned off.  This is useful when compiling for
+// coverage determination.
+if (process.env.TYPE_COMPILATION !== "false") {
+  require("@typechain/hardhat");
+}
 
 /**
  * @type import('hardhat/config').HardhatUserConfig

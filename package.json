@@ -35,7 +35,7 @@
     "prettier": "prettier --write 'contracts/**/*.sol'",
     "solhint": "solhint contracts/*.sol contracts/**/*.sol contracts/**/**/*.sol contracts/**/**/**/*.sol",
     "publish": "npm publish --access public",
-    "coverage": "yarn hardhat clean && yarn hardhat coverage",
+    "coverage": "cross-env TYPE_COMPILATION=false yarn hardhat coverage",
     "typechain": "yarn hardhat typechain"
   },
   "devDependencies": {
@@ -51,6 +51,7 @@
     "@types/mocha": "^9.0.0",
     "@types/node": "^16.7.10",
     "chai": "^4.3.4",
+    "cross-env": "^7.0.3",
     "dotenv": "^10.0.0",
     "ethereum-waffle": "^3.4.0",
     "ethers": "^5.4.5",
@@ -60,7 +61,7 @@
     "prettier-plugin-solidity": "^1.0.0-beta.17",
     "solhint": "^3.3.6",
     "solhint-plugin-prettier": "^0.0.5",
-    "solidity-coverage": "^0.7.20",
+    "solidity-coverage": "^0.8.0-beta.1",
     "ts-node": "^10.2.1",
     "typechain": "^8.0.0",
     "typescript": "^4.4.2",
