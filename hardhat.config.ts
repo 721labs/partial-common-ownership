@@ -15,8 +15,12 @@ dotenv.config({
  * @type import('hardhat/config').HardhatUserConfig
  */
 export default {
-  //defaultNetwork: "",
-  //networks: {},
+  defaultNetwork: "hardhat",
+  networks: {
+    hardhat: {
+      allowUnlimitedContractSize: true,
+    },
+  },
   solidity: {
     version: "0.8.12",
     settings: {
