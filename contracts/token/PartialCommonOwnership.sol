@@ -8,7 +8,6 @@ import {Valuation} from "./modules/Valuation.sol";
 import {Remittance, RemittanceTriggers} from "./modules/Remittance.sol";
 import {Taxation} from "./modules/Taxation.sol";
 import {Beneficiary} from "./modules/Beneficiary.sol";
-import {Title} from "./modules/Title.sol";
 import {Lease} from "./modules/Lease.sol";
 
 /// @title PartialCommonOwnership
@@ -19,7 +18,6 @@ contract PartialCommonOwnership is
   ERC721,
   TokenManagement,
   Valuation,
-  Title,
   Remittance,
   Beneficiary,
   Taxation,
@@ -78,7 +76,6 @@ contract PartialCommonOwnership is
     // Delete state
     delete _beneficiaries[tokenId_];
     delete _valuations[tokenId_];
-    delete _chainOfTitle[tokenId_];
     delete _taxNumerators[tokenId_];
     delete _collectionFrequencies[tokenId_];
     delete _locked[tokenId_];

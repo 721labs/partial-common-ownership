@@ -181,6 +181,10 @@ async function takeoverLease(
     .to.emit(contract, Events.LEASE_TAKEOVER)
     .withArgs(tokenId, wallet.address, newValuation);
 
+  expect(trx)
+    .to.emit(contract, Events.VALUATION)
+    .withArgs(tokenId, newValuation);
+
   // Beneficiary doesn't put down a deposit
   const purchasedByBeneficiary = wallet.address === beneficiary.address;
   if (purchasedByBeneficiary) {
@@ -202,9 +206,6 @@ async function takeoverLease(
   expect(await contract.lastCollectionTimeOf(tokenId)).to.equal(
     block.timestamp
   );
-
-  // Last transfer time
-  expect(await contract.lastTransferTimeOf(tokenId)).to.equal(block.timestamp);
 
   // Owned updated
   expect(await contract.ownerOf(tokenId)).to.equal(wallet.address);
@@ -829,11 +830,6 @@ describe("PartialCommonOwnership.sol", async function () {
         expect(await contract.foreclosed(token)).to.equal(true);
 
         expect(trx).to.emit(contract, Events.TRANSFER);
-
-        // Transfer time is set during foreclosure
-        expect(await contract.lastTransferTimeOf(token)).to.equal(
-          block.timestamp
-        );
       });
       it("true negative", async function () {
         const token = randomToken();
@@ -1151,21 +1147,6 @@ describe("PartialCommonOwnership.sol", async function () {
           ETH1,
           ETH3
         );
-
-        const chainOfTitle = await contract.titleChainOf(token);
-
-        expect(chainOfTitle[0].from).to.equal(contractAddress);
-        expect(chainOfTitle[0].to).to.equal(bob.address);
-        expect(chainOfTitle[0].valuation).to.equal(ETH1);
-        expect(chainOfTitle[0].timestamp).to.equal(
-          ethers.BigNumber.from(block1.timestamp)
-        );
-        expect(chainOfTitle[1].from).to.equal(bob.address);
-        expect(chainOfTitle[1].to).to.equal(alice.address);
-        expect(chainOfTitle[1].valuation).to.equal(ETH2);
-        expect(chainOfTitle[1].timestamp).to.equal(
-          ethers.BigNumber.from(block2.timestamp)
-        );
       });
 
       it("Beneficiary doesn't pay anything if buying from contract", async function () {
@@ -1266,7 +1247,7 @@ describe("PartialCommonOwnership.sol", async function () {
         await takeoverLease(alice, token, ETH1, ETH0, ETH2);
 
         expect(await alice.contract.selfAssess(token, ETH2))
-          .to.emit(contract, Events.VALUATION_REASSESSMENT)
+          .to.emit(contract, Events.VALUATION)
           .withArgs(token, ETH2);
 
         expect(await contract.valuationOf(token)).to.equal(ETH2);
@@ -1278,7 +1259,7 @@ describe("PartialCommonOwnership.sol", async function () {
         await takeoverLease(alice, token, ETH2, ETH0, ETH3);
 
         expect(await alice.contract.selfAssess(token, ETH1))
-          .to.emit(contract, Events.VALUATION_REASSESSMENT)
+          .to.emit(contract, Events.VALUATION)
           .withArgs(token, ETH1);
 
         expect(await contract.valuationOf(token)).to.equal(ETH1);

@@ -14,6 +14,15 @@ abstract contract Valuation is IValuation, TokenManagement {
   mapping(uint256 => uint256) internal _valuations;
 
   //////////////////////////////
+  /// Events
+  //////////////////////////////
+
+  /// @notice Alert of new valuation.
+  /// @param tokenId ID of token.
+  /// @param newValuation in Wei.
+  event LogValuation(uint256 indexed tokenId, uint256 indexed newValuation);
+
+  //////////////////////////////
   /// Public Getters
   //////////////////////////////
 
@@ -37,6 +46,8 @@ abstract contract Valuation is IValuation, TokenManagement {
   /// @param valuation_ New valuation.
   function _setValuation(uint256 tokenId_, uint256 valuation_) internal {
     _valuations[tokenId_] = valuation_;
+
+    emit LogValuation(tokenId_, valuation_);
   }
 
   //////////////////////////////
