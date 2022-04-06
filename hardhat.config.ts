@@ -27,7 +27,8 @@ export default {
     version: "0.8.12",
     settings: {
       optimizer: {
-        enabled: true,
+        // Dev: Turn on for production compilations
+        enabled: false,
         runs: 200,
       },
     },
