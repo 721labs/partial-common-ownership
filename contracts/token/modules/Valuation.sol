@@ -34,7 +34,7 @@ abstract contract Valuation is IValuation, TokenManagement {
     _tokenMinted(tokenId_)
     returns (uint256)
   {
-    return _valuation(tokenId_);
+    return _valuations[tokenId_];
   }
 
   //////////////////////////////
@@ -48,16 +48,5 @@ abstract contract Valuation is IValuation, TokenManagement {
     _valuations[tokenId_] = valuation_;
 
     emit LogValuation(tokenId_, valuation_);
-  }
-
-  //////////////////////////////
-  /// Private Getters
-  //////////////////////////////
-
-  /// @notice Returns the self-assessed valuation for a token.
-  /// @param tokenId_ ID of token.
-  /// @return Valuation in Wei.
-  function _valuation(uint256 tokenId_) private view returns (uint256) {
-    return _valuations[tokenId_];
   }
 }
