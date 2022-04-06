@@ -5,6 +5,26 @@ on:
     branches:
       - "*" # All branches
 jobs:
+  coverage:
+    name: "coverage"
+    runs-on: ubuntu-latest
+    needs: []
+    steps:
+      - name: "Checkout Repo"
+        uses: actions/checkout@master
+      - name: "Install Node"
+        uses: actions/setup-node@v2
+        with:
+          node-version: "16"
+      - name: "Cache Dependencies"
+        uses: actions/cache@v2
+        with:
+          path: "**/node_modules"
+          key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
+      - name: "Install JS Dependencies"
+        run: "yarn install --frozen-lockfile --dev"
+      - name: "Run solidity-coverage"
+        run: "yarn coverage"
   solhint:
     name: "solhint"
     runs-on: ubuntu-latest

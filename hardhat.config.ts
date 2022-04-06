@@ -3,7 +3,7 @@ import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-waffle";
 import "@nomiclabs/hardhat-web3";
 import "hardhat-gas-reporter";
-import "@typechain/hardhat";
+import "solidity-coverage";
 
 import path from "path";
 import dotenv from "dotenv";
@@ -11,17 +11,24 @@ dotenv.config({
   path: path.resolve(process.cwd(), ".env"),
 });
 
+// Type compilation can be turned off.  This is useful when compiling for
+// coverage determination.
+if (process.env.TYPE_COMPILATION !== "false") {
+  require("@typechain/hardhat");
+}
+
 /**
  * @type import('hardhat/config').HardhatUserConfig
  */
 export default {
-  //defaultNetwork: "",
-  //networks: {},
+  // defaultNetwork: "",
+  // networks: {},
   solidity: {
     version: "0.8.12",
     settings: {
       optimizer: {
-        enabled: true,
+        // Dev: Turn on for production compilations
+        enabled: false,
         runs: 200,
       },
     },
