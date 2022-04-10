@@ -619,14 +619,6 @@ describe("PartialCommonOwnership.sol", async function () {
     });
   });
 
-  describe("#valuationOf()", async function () {
-    context("succeeds", async function () {
-      it("returning expected valuation [ETH0]", async function () {
-        expect(await contract.valuationOf(TOKENS.ONE)).to.equal(ETH0);
-      });
-    });
-  });
-
   describe("#depositOf()", async function () {
     context("succeeds", async function () {
       it("returning expected deposit [ETH0]", async function () {
