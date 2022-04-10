@@ -50,49 +50,9 @@ abstract contract ERC721 is Context, ERC165, IERC721 {
     _;
   }
 
-  /**
-   * @dev See {IERC165-supportsInterface}.
-   */
-  function supportsInterface(bytes4 interfaceId)
-    public
-    view
-    virtual
-    override(ERC165, IERC165)
-    returns (bool)
-  {
-    return
-      interfaceId == type(IERC721).interfaceId ||
-      super.supportsInterface(interfaceId);
-  }
-
-  /**
-   * @dev See {IERC721-balanceOf}.
-   */
-  function balanceOf(address owner)
-    public
-    view
-    virtual
-    override
-    returns (uint256)
-  {
-    require(owner != address(0), "ERC721: address zero is not a valid owner");
-    return _balances[owner];
-  }
-
-  /**
-   * @dev See {IERC721-ownerOf}.
-   */
-  function ownerOf(uint256 tokenId)
-    public
-    view
-    virtual
-    override
-    returns (address)
-  {
-    address owner = _owners[tokenId];
-    require(owner != address(0), "ERC721: owner query for nonexistent token");
-    return owner;
-  }
+  //////////////////////////////
+  /// Public Methods
+  //////////////////////////////
 
   /**
    * @dev See {IERC721-approve}.
@@ -101,27 +61,14 @@ abstract contract ERC721 is Context, ERC165, IERC721 {
     address owner = ERC721.ownerOf(tokenId);
     require(to != owner, "ERC721: approval to current owner");
 
+    /* solhint-disable reason-string */
     require(
       _msgSender() == owner || isApprovedForAll(owner, _msgSender()),
       "ERC721: approve caller is not owner nor approved for all"
     );
+    /* solhint-enable reason-string */
 
     _approve(to, tokenId);
-  }
-
-  /**
-   * @dev See {IERC721-getApproved}.
-   */
-  function getApproved(uint256 tokenId)
-    public
-    view
-    virtual
-    override
-    returns (address)
-  {
-    require(_exists(tokenId), "ERC721: approved query for nonexistent token");
-
-    return _tokenApprovals[tokenId];
   }
 
   /**
@@ -133,19 +80,6 @@ abstract contract ERC721 is Context, ERC165, IERC721 {
     override
   {
     _setApprovalForAll(_msgSender(), operator, approved);
-  }
-
-  /**
-   * @dev See {IERC721-isApprovedForAll}.
-   */
-  function isApprovedForAll(address owner, address operator)
-    public
-    view
-    virtual
-    override
-    returns (bool)
-  {
-    return _operatorApprovals[owner][operator];
   }
 
   /**
@@ -192,6 +126,86 @@ abstract contract ERC721 is Context, ERC165, IERC721 {
     _safeTransfer(from, to, tokenId, _data);
   }
 
+  //////////////////////////////
+  /// Public View Methods
+  //////////////////////////////
+
+  /**
+   * @dev See {IERC165-supportsInterface}.
+   */
+  function supportsInterface(bytes4 interfaceId)
+    public
+    view
+    virtual
+    override(ERC165, IERC165)
+    returns (bool)
+  {
+    return
+      interfaceId == type(IERC721).interfaceId ||
+      super.supportsInterface(interfaceId);
+  }
+
+  /**
+   * @dev See {IERC721-balanceOf}.
+   */
+  function balanceOf(address owner)
+    public
+    view
+    virtual
+    override
+    returns (uint256)
+  {
+    require(owner != address(0), "ERC721: address zero is not a valid owner");
+    return _balances[owner];
+  }
+
+  /**
+   * @dev See {IERC721-ownerOf}.
+   */
+  function ownerOf(uint256 tokenId)
+    public
+    view
+    virtual
+    override
+    returns (address)
+  {
+    address owner = _owners[tokenId];
+    require(owner != address(0), "ERC721: owner query for nonexistent token");
+    return owner;
+  }
+
+  /**
+   * @dev See {IERC721-getApproved}.
+   */
+  function getApproved(uint256 tokenId)
+    public
+    view
+    virtual
+    override
+    returns (address)
+  {
+    require(_exists(tokenId), "ERC721: approved query for nonexistent token");
+
+    return _tokenApprovals[tokenId];
+  }
+
+  /**
+   * @dev See {IERC721-isApprovedForAll}.
+   */
+  function isApprovedForAll(address owner, address operator)
+    public
+    view
+    virtual
+    override
+    returns (bool)
+  {
+    return _operatorApprovals[owner][operator];
+  }
+
+  //////////////////////////////
+  /// Internal Methods
+  //////////////////////////////
+
   /**
    * @dev Safely transfers `tokenId` token from `from` to `to`, checking first that contract recipients
    * are aware of the ERC721 protocol to prevent tokens from being forever locked.
@@ -221,38 +235,6 @@ abstract contract ERC721 is Context, ERC165, IERC721 {
       _checkOnERC721Received(from, to, tokenId, _data),
       "ERC721: transfer to non ERC721Receiver implementer"
     );
-  }
-
-  /**
-   * @dev Returns whether `tokenId` exists.
-   *
-   * Tokens can be managed by their owner or approved accounts via {approve} or {setApprovalForAll}.
-   *
-   * Tokens start existing when they are minted (`_mint`),
-   * and stop existing when they are burned (`_burn`).
-   */
-  function _exists(uint256 tokenId) internal view virtual returns (bool) {
-    return _owners[tokenId] != address(0);
-  }
-
-  /**
-   * @dev Returns whether `spender` is allowed to manage `tokenId`.
-   *
-   * Requirements:
-   *
-   * - `tokenId` must exist.
-   */
-  function _isApprovedOrOwner(address spender, uint256 tokenId)
-    internal
-    view
-    virtual
-    returns (bool)
-  {
-    require(_exists(tokenId), "ERC721: operator query for nonexistent token");
-    address owner = ERC721.ownerOf(tokenId);
-    return (spender == owner ||
-      isApprovedForAll(owner, spender) ||
-      getApproved(tokenId) == spender);
   }
 
   /**
@@ -399,6 +381,89 @@ abstract contract ERC721 is Context, ERC165, IERC721 {
   }
 
   /**
+   * @dev Hook that is called before any token transfer. This includes minting
+   * and burning.
+   *
+   * Calling conditions:
+   *
+   * - When `from` and `to` are both non-zero, ``from``'s `tokenId` will be
+   * transferred to `to`.
+   * - When `from` is zero, `tokenId` will be minted for `to`.
+   * - When `to` is zero, ``from``'s `tokenId` will be burned.
+   * - `from` and `to` are never both zero.
+   *
+   * To learn more about hooks, head to xref:ROOT:extending-contracts.adoc#using-hooks[Using Hooks].
+   */
+  /* solhint-disable no-empty-blocks */
+  function _beforeTokenTransfer(
+    address from,
+    address to,
+    uint256 tokenId
+  ) internal virtual {}
+
+  /* solhint-enable no-empty-blocks */
+
+  /**
+   * @dev Hook that is called after any transfer of tokens. This includes
+   * minting and burning.
+   *
+   * Calling conditions:
+   *
+   * - when `from` and `to` are both non-zero.
+   * - `from` and `to` are never both zero.
+   *
+   * To learn more about hooks, head to xref:ROOT:extending-contracts.adoc#using-hooks[Using Hooks].
+   */
+  /* solhint-disable no-empty-blocks */
+  function _afterTokenTransfer(
+    address from,
+    address to,
+    uint256 tokenId
+  ) internal virtual {}
+
+  /* solhint-enable no-empty-blocks */
+
+  //////////////////////////////
+  /// Internal View Methods
+  //////////////////////////////
+
+  /**
+   * @dev Returns whether `tokenId` exists.
+   *
+   * Tokens can be managed by their owner or approved accounts via {approve} or {setApprovalForAll}.
+   *
+   * Tokens start existing when they are minted (`_mint`),
+   * and stop existing when they are burned (`_burn`).
+   */
+  function _exists(uint256 tokenId) internal view virtual returns (bool) {
+    return _owners[tokenId] != address(0);
+  }
+
+  /**
+   * @dev Returns whether `spender` is allowed to manage `tokenId`.
+   *
+   * Requirements:
+   *
+   * - `tokenId` must exist.
+   */
+  function _isApprovedOrOwner(address spender, uint256 tokenId)
+    internal
+    view
+    virtual
+    returns (bool)
+  {
+    require(_exists(tokenId), "ERC721: operator query for nonexistent token");
+    address owner = ERC721.ownerOf(tokenId);
+    return (spender == owner ||
+      isApprovedForAll(owner, spender) ||
+      getApproved(tokenId) == spender);
+  }
+
+  //////////////////////////////
+  /// Private Methods
+  //////////////////////////////
+
+  /**
    * @dev Internal function to invoke {IERC721Receiver-onERC721Received} on a target address.
    * The call is not executed if the target address is not a contract.
    *
@@ -423,50 +488,15 @@ abstract contract ERC721 is Context, ERC165, IERC721 {
         if (reason.length == 0) {
           revert("ERC721: transfer to non ERC721Receiver implementer");
         } else {
+          /* solhint-disable no-inline-assembly */
           assembly {
             revert(add(32, reason), mload(reason))
           }
+          /* solhint-enable no-inline-assebly */
         }
       }
     } else {
       return true;
     }
   }
-
-  /**
-   * @dev Hook that is called before any token transfer. This includes minting
-   * and burning.
-   *
-   * Calling conditions:
-   *
-   * - When `from` and `to` are both non-zero, ``from``'s `tokenId` will be
-   * transferred to `to`.
-   * - When `from` is zero, `tokenId` will be minted for `to`.
-   * - When `to` is zero, ``from``'s `tokenId` will be burned.
-   * - `from` and `to` are never both zero.
-   *
-   * To learn more about hooks, head to xref:ROOT:extending-contracts.adoc#using-hooks[Using Hooks].
-   */
-  function _beforeTokenTransfer(
-    address from,
-    address to,
-    uint256 tokenId
-  ) internal virtual {}
-
-  /**
-   * @dev Hook that is called after any transfer of tokens. This includes
-   * minting and burning.
-   *
-   * Calling conditions:
-   *
-   * - when `from` and `to` are both non-zero.
-   * - `from` and `to` are never both zero.
-   *
-   * To learn more about hooks, head to xref:ROOT:extending-contracts.adoc#using-hooks[Using Hooks].
-   */
-  function _afterTokenTransfer(
-    address from,
-    address to,
-    uint256 tokenId
-  ) internal virtual {}
 }
