@@ -515,49 +515,6 @@ describe("PartialCommonOwnership.sol", async function () {
     });
   });
 
-  describe("#setBeneficiary", async function () {
-    context("succeeds", async function () {
-      it("current beneficiary can set new beneficiary", async function () {
-        const trx = await beneficiary.contract.setBeneficiary(
-          TOKENS.ONE,
-          alice.address
-        );
-
-        expect(await contract.beneficiaryOf(TOKENS.ONE)).to.equal(
-          alice.address
-        );
-
-        expect(trx)
-          .to.emit(contract, Events.BENEFICIARY_UPDATED)
-          .withArgs(TOKENS.ONE, alice.address);
-      });
-    });
-    context("fails", async function () {
-      it("When non-beneficiary attempts to update", async function () {
-        await expect(
-          alice.contract.setBeneficiary(1, alice.address)
-        ).to.be.revertedWith(ErrorMessages.BENEFICIARY_ONLY);
-      });
-    });
-  });
-
-  describe("#beneficiaryOf", async function () {
-    context("fails", async function () {});
-
-    context("succeeds", async function () {
-      it("displays correct beneficiary after set", async function () {
-        await beneficiary.contract.setBeneficiary(TOKENS.ONE, bob.address);
-        expect(await contract.beneficiaryOf(TOKENS.ONE)).to.equal(bob.address);
-      });
-
-      it("returns zero address when no beneficiary is set", async () => {
-        expect(await contract.beneficiaryOf(4)).to.equal(
-          ethers.constants.AddressZero
-        );
-      });
-    });
-  });
-
   describe("#onlyOwner()", async function () {
     context("fails", async function () {
       context("when required but signer is not owner", async function () {
