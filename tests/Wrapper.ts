@@ -153,8 +153,8 @@ async function unwrap(id: BigNumber, unwrappedTokenId: TOKENS): Promise<void> {
     ERC721ErrorMessages.NONEXISTENT_TOKEN
   );
 
-  await expect(deployer.contract.valuationOf(id)).to.be.revertedWith(
-    PCOErrorMessages.NONEXISTENT_TOKEN
+  expect(await deployer.contract.valuationOf(id)).to.equal(
+    ethers.constants.Zero
   );
 
   await expect(wrapperContract.taxRateOf(id)).to.be.revertedWith(
