@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.12;
 
-import "./TokenManagement.sol";
+import "./ERC721";
 import "./interfaces/IValuation.sol";
 
 abstract contract Valuation is IValuation, ERC721 {

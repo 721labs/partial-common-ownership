@@ -4,7 +4,7 @@ pragma solidity ^0.8.12;
 
 import "./interfaces/ITaxation.sol";
 import "./Valuation.sol";
-import "./TokenManagement.sol";
+import "./ERC721";
 import "./Remittance.sol";
 import "./Beneficiary.sol";
 

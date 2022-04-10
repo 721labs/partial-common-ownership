@@ -3,7 +3,7 @@
 pragma solidity ^0.8.12;
 
 import "./interfaces/ILease.sol";
-import "./TokenManagement.sol";
+import "./ERC721";
 import "./Taxation.sol";
 
 abstract contract Lease is ILease, ERC721, Taxation {

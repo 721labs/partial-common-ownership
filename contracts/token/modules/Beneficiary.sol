@@ -3,7 +3,7 @@
 pragma solidity ^0.8.12;
 
 import "./interfaces/IBeneficiary.sol";
-import "./TokenManagement.sol";
+import "./ERC721";
 
 abstract contract Beneficiary is IBeneficiary, ERC721 {
   //////////////////////////////

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.12;
 
-import {ERC721} from "./modules/TokenManagement.sol";
+import {ERC721} from "./modules/ERC721";
 import {Valuation} from "./modules/Valuation.sol";
 import {Remittance, RemittanceTriggers} from "./modules/Remittance.sol";
 import {Taxation} from "./modules/Taxation.sol";
