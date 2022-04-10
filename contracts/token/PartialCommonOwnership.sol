@@ -15,7 +15,6 @@ import {Lease} from "./modules/Lease.sol";
 /// using a Harberger Tax model; if payments are not made, the token is repossessed by the contract
 /// and can be repurchased at any valuation > 0.
 contract PartialCommonOwnership is
-  ERC721,
   TokenManagement,
   Valuation,
   Remittance,
