@@ -321,6 +321,26 @@ abstract contract Taxation is
     _forecloseIfNecessary(tokenId_);
   }
 
+  /// @notice Collect Tax
+  function _beforeTokenTransfer(
+    address from_,
+    address to_,
+    uint256 tokenId_
+  ) internal virtual override(ERC721) {
+    collectTax(tokenId_);
+    super._beforeTokenTransfer(from_, to_, tokenId_);
+  }
+
+  /// @notice Reset tax collected
+  function _afterTokenTransfer(
+    address from_,
+    address to_,
+    uint256 tokenId_
+  ) internal virtual override(ERC721) {
+    _setTaxCollectedSinceLastTransfer(tokenId_, 0);
+    super._afterTokenTransfer(from_, to_, tokenId_);
+  }
+
   //////////////////////////////
   /// Internal Setters
   //////////////////////////////
