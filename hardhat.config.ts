@@ -5,8 +5,12 @@ import "@nomiclabs/hardhat-web3";
 import "hardhat-gas-reporter";
 import "solidity-coverage";
 
+// Dependencies
+import { subtask } from "hardhat/config";
+import { TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS } from "hardhat/builtin-tasks/task-names";
 import path from "path";
 import dotenv from "dotenv";
+
 dotenv.config({
   path: path.resolve(process.cwd(), ".env"),
 });
@@ -16,6 +20,15 @@ dotenv.config({
 if (process.env.TYPE_COMPILATION !== "false") {
   require("@typechain/hardhat");
 }
+
+// Ignore Forge test files during compilation; otherwise these will throw exceptions
+// due to their using the alternative dependency system.
+subtask(TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS).setAction(
+  async (_, __, runSuper) => {
+    const paths = await runSuper();
+    return paths.filter((p: string) => !p.endsWith(".t.sol"));
+  }
+);
 
 /**
  * @type import('hardhat/config').HardhatUserConfig
