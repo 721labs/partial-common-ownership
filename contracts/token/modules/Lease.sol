@@ -149,7 +149,7 @@ abstract contract Lease is ILease, ERC721, Taxation {
   function selfAssess(uint256 tokenId_, uint256 newValuation_)
     public
     override
-    _onlyOwner(tokenId_)
+    _onlyApprovedOrOwner(tokenId_)
     _collectTax(tokenId_)
   {
     uint256 currentValuation = valuationOf(tokenId_);

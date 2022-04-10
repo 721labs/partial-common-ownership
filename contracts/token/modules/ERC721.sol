@@ -37,9 +37,11 @@ abstract contract ERC721 is Context, ERC165, IERC721 {
 
   /// @notice Checks whether message sender owns a given token id
   /// @param tokenId_ ID of token to check ownership again.
-  modifier _onlyOwner(uint256 tokenId_) {
-    address owner = ownerOf(tokenId_);
-    require(_msgSender() == owner, "Sender does not own this token");
+  modifier _onlyApprovedOrOwner(uint256 tokenId_) {
+    require(
+      _isApprovedOrOwner(_msgSender(), tokenId_),
+      "ERC721: caller is not owner nor approved"
+    );
     _;
   }
 
@@ -89,13 +91,7 @@ abstract contract ERC721 is Context, ERC165, IERC721 {
     address from,
     address to,
     uint256 tokenId
-  ) public virtual override {
-    //solhint-disable-next-line max-line-length
-    require(
-      _isApprovedOrOwner(_msgSender(), tokenId),
-      "ERC721: transfer caller is not owner nor approved"
-    );
-
+  ) public virtual override _onlyApprovedOrOwner(tokenId) {
     _transfer(from, to, tokenId);
   }
 
@@ -118,11 +114,7 @@ abstract contract ERC721 is Context, ERC165, IERC721 {
     address to,
     uint256 tokenId,
     bytes memory _data
-  ) public virtual override {
-    require(
-      _isApprovedOrOwner(_msgSender(), tokenId),
-      "ERC721: transfer caller is not owner nor approved"
-    );
+  ) public virtual override _onlyApprovedOrOwner(tokenId) {
     _safeTransfer(from, to, tokenId, _data);
   }
 
