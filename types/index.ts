@@ -44,8 +44,6 @@ export type { Remittance } from "./contracts/token/modules/Remittance";
 export { Remittance__factory } from "./factories/contracts/token/modules/Remittance__factory";
 export type { Taxation } from "./contracts/token/modules/Taxation";
 export { Taxation__factory } from "./factories/contracts/token/modules/Taxation__factory";
-export type { TokenManagement } from "./contracts/token/modules/TokenManagement";
-export { TokenManagement__factory } from "./factories/contracts/token/modules/TokenManagement__factory";
 export type { Valuation } from "./contracts/token/modules/Valuation";
 export { Valuation__factory } from "./factories/contracts/token/modules/Valuation__factory";
 export type { PartialCommonOwnership } from "./contracts/token/PartialCommonOwnership";
