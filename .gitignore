@@ -1,3 +1,6 @@
+# Foundry
+out
+
 # Solidity Coverage
 /coverage
 coverage.json
