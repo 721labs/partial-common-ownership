@@ -13,7 +13,7 @@ enum ErrorMessages {
   NO_OUTSTANDING_REMITTANCE = "No outstanding remittance",
   PROHIBITED_TRANSFER_METHOD = "Transfers may only occur via purchase/foreclosure",
   BENEFICIARY_ONLY = "Current beneficiary only",
-  NONEXISTENT_TOKEN = "Query for nonexistent token",
+  NONEXISTENT_TOKEN = "ERC721: query for nonexistent token",
   PROHIBITED_SURPLUS_VALUE = "Msg contains surplus value",
   PROHIBITED_VALUE = "Msg contains value",
 }

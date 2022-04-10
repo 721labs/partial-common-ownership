@@ -46,7 +46,7 @@ abstract contract ERC721 is Context, ERC165, IERC721 {
   /// @notice Requires that token have been minted.
   /// @param tokenId_ ID of token to verify.
   modifier _tokenMinted(uint256 tokenId_) {
-    require(_exists(tokenId_), "Query for nonexistent token");
+    require(_exists(tokenId_), "ERC721: query for nonexistent token");
     _;
   }
 
@@ -182,10 +182,9 @@ abstract contract ERC721 is Context, ERC165, IERC721 {
     view
     virtual
     override
+    _tokenMinted(tokenId)
     returns (address)
   {
-    require(_exists(tokenId), "ERC721: approved query for nonexistent token");
-
     return _tokenApprovals[tokenId];
   }
 
@@ -450,9 +449,9 @@ abstract contract ERC721 is Context, ERC165, IERC721 {
     internal
     view
     virtual
+    _tokenMinted(tokenId)
     returns (bool)
   {
-    require(_exists(tokenId), "ERC721: operator query for nonexistent token");
     address owner = ERC721.ownerOf(tokenId);
     return (spender == owner ||
       isApprovedForAll(owner, spender) ||
