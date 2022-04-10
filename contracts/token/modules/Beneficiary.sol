@@ -5,7 +5,7 @@ pragma solidity ^0.8.12;
 import "./interfaces/IBeneficiary.sol";
 import "./TokenManagement.sol";
 
-abstract contract Beneficiary is IBeneficiary, TokenManagement {
+abstract contract Beneficiary is IBeneficiary, ERC721 {
   //////////////////////////////
   /// State
   //////////////////////////////

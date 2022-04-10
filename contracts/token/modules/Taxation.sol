@@ -10,7 +10,7 @@ import "./Beneficiary.sol";
 
 abstract contract Taxation is
   ITaxation,
-  TokenManagement,
+  ERC721,
   Valuation,
   Remittance,
   Beneficiary

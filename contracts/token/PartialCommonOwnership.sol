@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.12;
 
-import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import {TokenManagement} from "./modules/TokenManagement.sol";
+import {ERC721} from "./modules/TokenManagement.sol";
 import {Valuation} from "./modules/Valuation.sol";
 import {Remittance, RemittanceTriggers} from "./modules/Remittance.sol";
 import {Taxation} from "./modules/Taxation.sol";
@@ -14,7 +13,7 @@ import {Lease} from "./modules/Lease.sol";
 /// @notice Extends the ERC721 standard by requiring tax payments from a token's current owner
 /// using a Harberger Tax model; if payments are not made, the token is repossessed by the contract
 /// and can be repurchased at any valuation > 0.
-contract PartialCommonOwnership is TokenManagement, Valuation, Lease {
+contract PartialCommonOwnership is ERC721, Valuation, Lease {
   //////////////////////////////
   /// Constructor
   //////////////////////////////

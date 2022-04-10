@@ -6,7 +6,7 @@ import "./interfaces/ILease.sol";
 import "./TokenManagement.sol";
 import "./Taxation.sol";
 
-abstract contract Lease is ILease, TokenManagement, Taxation {
+abstract contract Lease is ILease, ERC721, Taxation {
   //////////////////////////////
   /// State
   //////////////////////////////
