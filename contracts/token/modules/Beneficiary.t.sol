@@ -3,7 +3,7 @@
 pragma solidity 0.8.12;
 
 import "ds-test/test.sol";
-import {Beneficiary} from "../contracts/token/modules/Beneficiary.sol";
+import {Beneficiary} from "./Beneficiary.sol";
 
 interface CheatCodes {
   function expectRevert(bytes calldata msg) external;
