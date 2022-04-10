@@ -39,7 +39,7 @@ abstract contract ERC721 is Context, ERC165, IERC721 {
   /// @param tokenId_ ID of token to check ownership again.
   modifier _onlyOwner(uint256 tokenId_) {
     address owner = ownerOf(tokenId_);
-    require(msg.sender == owner, "Sender does not own this token");
+    require(_msgSender() == owner, "Sender does not own this token");
     _;
   }
 
