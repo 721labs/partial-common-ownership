@@ -15,38 +15,6 @@ import {Lease} from "./modules/Lease.sol";
 /// and can be repurchased at any valuation > 0.
 contract PartialCommonOwnership is ERC721, Valuation, Lease {
   //////////////////////////////
-  /// Public Methods
-  //////////////////////////////
-
-  /// @notice Trasfers token after collecting taxes.  Note this transfers the deposit
-  /// and the tax burden for the token.
-  /// @param from_ Address to transfer token from
-  /// @param to_ Address to transfer token to
-  /// @param tokenId_ ID of token to transfer
-  function transferFrom(
-    address from_,
-    address to_,
-    uint256 tokenId_
-  ) public override _collectTax(tokenId_) {
-    ERC721.transferFrom(from_, to_, tokenId_);
-  }
-
-  /// @notice Trasfers token after collecting taxes.  Note this transfers the deposit
-  /// and the tax burden for the token.
-  /// @param from_ Address to transfer token from
-  /// @param to_ Address to transfer token to
-  /// @param tokenId_ ID of token to transfer
-  /// param data_ Arbitrary data
-  function safeTransferFrom(
-    address from_,
-    address to_,
-    uint256 tokenId_,
-    bytes memory data_
-  ) public override _collectTax(tokenId_) {
-    ERC721.safeTransferFrom(from_, to_, tokenId_, data_);
-  }
-
-  //////////////////////////////
   /// Internal Methods
   //////////////////////////////
 
@@ -92,16 +60,25 @@ contract PartialCommonOwnership is ERC721, Valuation, Lease {
     delete _locked[tokenId_];
   }
 
-  /// @notice Transfers token and updates tax stats.
-  /// @param from_ Address to transfer token from
-  /// @param to_ Address to transfer token to
-  /// @param tokenId_ ID of token to transfer
-  function _transfer(
+  /* solhint-disable no-unused-vars*/
+
+  /// @notice Collect Tax
+  function _beforeTokenTransfer(
     address from_,
     address to_,
     uint256 tokenId_
   ) internal override {
-    ERC721._transfer(from_, to_, tokenId_);
+    collectTax(tokenId_);
+  }
+
+  /// @notice Reset tax collected
+  function _afterTokenTransfer(
+    address from_,
+    address to_,
+    uint256 tokenId_
+  ) internal override {
     _setTaxCollectedSinceLastTransfer(tokenId_, 0);
   }
+
+  /* solhint-enable no-unused-vars*/
 }
