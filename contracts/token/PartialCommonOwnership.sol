@@ -14,14 +14,7 @@ import {Lease} from "./modules/Lease.sol";
 /// @notice Extends the ERC721 standard by requiring tax payments from a token's current owner
 /// using a Harberger Tax model; if payments are not made, the token is repossessed by the contract
 /// and can be repurchased at any valuation > 0.
-contract PartialCommonOwnership is
-  TokenManagement,
-  Valuation,
-  Remittance,
-  Beneficiary,
-  Taxation,
-  Lease
-{
+contract PartialCommonOwnership is TokenManagement, Valuation, Lease {
   //////////////////////////////
   /// Constructor
   //////////////////////////////
