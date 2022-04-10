@@ -2,10 +2,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.12;
 
-import "./ERC721.sol";
 import "./interfaces/IValuation.sol";
 
-abstract contract Valuation is IValuation, ERC721 {
+abstract contract Valuation is IValuation {
   //////////////////////////////
   /// State
   //////////////////////////////
@@ -31,7 +30,6 @@ abstract contract Valuation is IValuation, ERC721 {
     public
     view
     override
-    _tokenMinted(tokenId_)
     returns (uint256)
   {
     return _valuations[tokenId_];

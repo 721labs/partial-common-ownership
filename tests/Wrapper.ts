@@ -145,16 +145,16 @@ async function unwrap(id: BigNumber, unwrappedTokenId: TOKENS): Promise<void> {
 
   // Verify all state is destroyed
 
-  await expect(wrapperContract.beneficiaryOf(id)).to.be.revertedWith(
-    PCOErrorMessages.NONEXISTENT_TOKEN
+  expect(await wrapperContract.beneficiaryOf(id)).to.equal(
+    ethers.constants.AddressZero
   );
 
   await expect(deployer.contract.selfAssess(id, ETH2)).to.be.revertedWith(
     ERC721ErrorMessages.NONEXISTENT_TOKEN
   );
 
-  await expect(deployer.contract.valuationOf(id)).to.be.revertedWith(
-    PCOErrorMessages.NONEXISTENT_TOKEN
+  expect(await deployer.contract.valuationOf(id)).to.equal(
+    ethers.constants.Zero
   );
 
   await expect(wrapperContract.taxRateOf(id)).to.be.revertedWith(

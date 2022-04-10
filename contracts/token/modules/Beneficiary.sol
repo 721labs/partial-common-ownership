@@ -3,9 +3,11 @@
 pragma solidity ^0.8.12;
 
 import "./interfaces/IBeneficiary.sol";
-import "./ERC721.sol";
 
-abstract contract Beneficiary is IBeneficiary, ERC721 {
+/// @dev Note that this implementation is agnostic to whether or not a token
+/// has actually been minted. Resultantly, it allows setting the beneficiary of yet-to-be
+/// minuted tokens by directly calling `_setBeneficiary`.
+abstract contract Beneficiary is IBeneficiary {
   //////////////////////////////
   /// State
   //////////////////////////////
@@ -33,7 +35,6 @@ abstract contract Beneficiary is IBeneficiary, ERC721 {
   function setBeneficiary(uint256 tokenId_, address payable beneficiary_)
     public
     override
-    _tokenMinted(tokenId_)
   {
     require(msg.sender == _beneficiaries[tokenId_], "Current beneficiary only");
     _setBeneficiary(tokenId_, beneficiary_);
@@ -44,7 +45,6 @@ abstract contract Beneficiary is IBeneficiary, ERC721 {
     public
     view
     override
-    _tokenMinted(tokenId_)
     returns (address)
   {
     return _beneficiaries[tokenId_];
@@ -60,7 +60,6 @@ abstract contract Beneficiary is IBeneficiary, ERC721 {
   /// @param beneficiary_ Address of beneficiary.
   function _setBeneficiary(uint256 tokenId_, address payable beneficiary_)
     internal
-    _tokenMinted(tokenId_)
   {
     _beneficiaries[tokenId_] = beneficiary_;
 

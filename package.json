@@ -36,7 +36,8 @@
     "solhint": "solhint contracts/*.sol contracts/**/*.sol contracts/**/**/*.sol contracts/**/**/**/*.sol",
     "publish": "npm publish --access public",
     "coverage": "cross-env TYPE_COMPILATION=false yarn hardhat coverage",
-    "typechain": "yarn hardhat typechain"
+    "typechain": "yarn hardhat typechain",
+    "postinstall": "yarn typechain"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.2",
