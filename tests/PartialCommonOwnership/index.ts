@@ -405,8 +405,6 @@ describe("PartialCommonOwnership.sol", async function () {
 
     // Set up contracts
     contract = (await factory.deploy(
-      TEST_NAME,
-      TEST_SYMBOL,
       signers[1].address,
       GLOBAL_TRX_CONFIG
     )) as PartialCommonOwnership;
@@ -514,18 +512,6 @@ describe("PartialCommonOwnership.sol", async function () {
 
     it("#safeTransferFrom(address,address,uint256,bytes)", async () => {
       await friendlyTransfer("safeTransferFrom(address,address,uint256,bytes)");
-    });
-  });
-
-  describe("#constructor()", async function () {
-    context("succeeds", async function () {
-      it("Setting name", async function () {
-        expect(await contract.name()).to.equal(TEST_NAME);
-      });
-
-      it("Setting symbol", async function () {
-        expect(await contract.symbol()).to.equal(TEST_SYMBOL);
-      });
     });
   });
 

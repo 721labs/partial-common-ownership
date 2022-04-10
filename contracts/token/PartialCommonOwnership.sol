@@ -15,18 +15,6 @@ import {Lease} from "./modules/Lease.sol";
 /// and can be repurchased at any valuation > 0.
 contract PartialCommonOwnership is ERC721, Valuation, Lease {
   //////////////////////////////
-  /// Constructor
-  //////////////////////////////
-
-  /// @notice Creates the token.
-  /// @param name_ ERC721 Token Name
-  /// @param symbol_ ERC721 Token Symbol
-  /* solhint-disable no-empty-blocks */
-  constructor(string memory name_, string memory symbol_)
-    ERC721(name_, symbol_)
-  {}
-
-  //////////////////////////////
   /// Public Methods
   //////////////////////////////
 

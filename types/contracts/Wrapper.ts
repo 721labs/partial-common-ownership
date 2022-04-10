@@ -42,7 +42,6 @@ export interface WrapperInterface extends utils.Interface {
     "getApproved(uint256)": FunctionFragment;
     "isApprovedForAll(address,address)": FunctionFragment;
     "lastCollectionTimeOf(uint256)": FunctionFragment;
-    "name()": FunctionFragment;
     "onERC721Received(address,address,uint256,bytes)": FunctionFragment;
     "outstandingRemittances(address)": FunctionFragment;
     "ownerOf(uint256)": FunctionFragment;
@@ -52,7 +51,6 @@ export interface WrapperInterface extends utils.Interface {
     "setApprovalForAll(address,bool)": FunctionFragment;
     "setBeneficiary(uint256,address)": FunctionFragment;
     "supportsInterface(bytes4)": FunctionFragment;
-    "symbol()": FunctionFragment;
     "takeoverLease(uint256,uint256,uint256)": FunctionFragment;
     "taxCollectedSinceLastTransferOf(uint256)": FunctionFragment;
     "taxOwed(uint256)": FunctionFragment;
@@ -85,7 +83,6 @@ export interface WrapperInterface extends utils.Interface {
       | "getApproved"
       | "isApprovedForAll"
       | "lastCollectionTimeOf"
-      | "name"
       | "onERC721Received"
       | "outstandingRemittances"
       | "ownerOf"
@@ -95,7 +92,6 @@ export interface WrapperInterface extends utils.Interface {
       | "setApprovalForAll"
       | "setBeneficiary"
       | "supportsInterface"
-      | "symbol"
       | "takeoverLease"
       | "taxCollectedSinceLastTransferOf"
       | "taxOwed"
@@ -159,7 +155,6 @@ export interface WrapperInterface extends utils.Interface {
     functionFragment: "lastCollectionTimeOf",
     values: [BigNumberish]
   ): string;
-  encodeFunctionData(functionFragment: "name", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "onERC721Received",
     values: [string, string, BigNumberish, BytesLike]
@@ -196,7 +191,6 @@ export interface WrapperInterface extends utils.Interface {
     functionFragment: "supportsInterface",
     values: [BytesLike]
   ): string;
-  encodeFunctionData(functionFragment: "symbol", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "takeoverLease",
     values: [BigNumberish, BigNumberish, BigNumberish]
@@ -296,7 +290,6 @@ export interface WrapperInterface extends utils.Interface {
     functionFragment: "lastCollectionTimeOf",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "name", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "onERC721Received",
     data: BytesLike
@@ -327,7 +320,6 @@ export interface WrapperInterface extends utils.Interface {
     functionFragment: "supportsInterface",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "symbol", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "takeoverLease",
     data: BytesLike
@@ -621,8 +613,6 @@ export interface Wrapper extends BaseContract {
       overrides?: CallOverrides
     ): Promise<[BigNumber]>;
 
-    name(overrides?: CallOverrides): Promise<[string]>;
-
     onERC721Received(
       operator_: string,
       from_: string,
@@ -678,8 +668,6 @@ export interface Wrapper extends BaseContract {
       interfaceId: BytesLike,
       overrides?: CallOverrides
     ): Promise<[boolean]>;
-
-    symbol(overrides?: CallOverrides): Promise<[string]>;
 
     takeoverLease(
       tokenId_: BigNumberish,
@@ -834,8 +822,6 @@ export interface Wrapper extends BaseContract {
     overrides?: CallOverrides
   ): Promise<BigNumber>;
 
-  name(overrides?: CallOverrides): Promise<string>;
-
   onERC721Received(
     operator_: string,
     from_: string,
@@ -888,8 +874,6 @@ export interface Wrapper extends BaseContract {
     interfaceId: BytesLike,
     overrides?: CallOverrides
   ): Promise<boolean>;
-
-  symbol(overrides?: CallOverrides): Promise<string>;
 
   takeoverLease(
     tokenId_: BigNumberish,
@@ -1035,8 +1019,6 @@ export interface Wrapper extends BaseContract {
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
-    name(overrides?: CallOverrides): Promise<string>;
-
     onERC721Received(
       operator_: string,
       from_: string,
@@ -1089,8 +1071,6 @@ export interface Wrapper extends BaseContract {
       interfaceId: BytesLike,
       overrides?: CallOverrides
     ): Promise<boolean>;
-
-    symbol(overrides?: CallOverrides): Promise<string>;
 
     takeoverLease(
       tokenId_: BigNumberish,
@@ -1352,8 +1332,6 @@ export interface Wrapper extends BaseContract {
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
-    name(overrides?: CallOverrides): Promise<BigNumber>;
-
     onERC721Received(
       operator_: string,
       from_: string,
@@ -1409,8 +1387,6 @@ export interface Wrapper extends BaseContract {
       interfaceId: BytesLike,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
-
-    symbol(overrides?: CallOverrides): Promise<BigNumber>;
 
     takeoverLease(
       tokenId_: BigNumberish,
@@ -1567,8 +1543,6 @@ export interface Wrapper extends BaseContract {
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
-    name(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
     onERC721Received(
       operator_: string,
       from_: string,
@@ -1624,8 +1598,6 @@ export interface Wrapper extends BaseContract {
       interfaceId: BytesLike,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
-
-    symbol(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     takeoverLease(
       tokenId_: BigNumberish,

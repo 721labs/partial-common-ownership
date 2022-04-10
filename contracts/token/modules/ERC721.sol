@@ -4,7 +4,6 @@ pragma solidity ^0.8.12;
 
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
@@ -12,19 +11,13 @@ import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 
 /// @dev Re-implementation of OpenZeppelin's ERC721, removing IERC721Metadata
 /// compatability.
-abstract contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
+abstract contract ERC721 is Context, ERC165, IERC721 {
   using Address for address;
   using Strings for uint256;
 
   //////////////////////////////
   /// State
   //////////////////////////////
-
-  // Token name
-  string private _name;
-
-  // Token symbol
-  string private _symbol;
 
   // Mapping from token ID to owner address
   mapping(uint256 => address) private _owners;
@@ -58,14 +51,6 @@ abstract contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
   }
 
   /**
-   * @dev Initializes the contract by setting a `name` and a `symbol` to the token collection.
-   */
-  constructor(string memory name_, string memory symbol_) {
-    _name = name_;
-    _symbol = symbol_;
-  }
-
-  /**
    * @dev See {IERC165-supportsInterface}.
    */
   function supportsInterface(bytes4 interfaceId)
@@ -77,7 +62,6 @@ abstract contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
   {
     return
       interfaceId == type(IERC721).interfaceId ||
-      interfaceId == type(IERC721Metadata).interfaceId ||
       super.supportsInterface(interfaceId);
   }
 
@@ -108,51 +92,6 @@ abstract contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
     address owner = _owners[tokenId];
     require(owner != address(0), "ERC721: owner query for nonexistent token");
     return owner;
-  }
-
-  /**
-   * @dev See {IERC721Metadata-name}.
-   */
-  function name() public view virtual override returns (string memory) {
-    return _name;
-  }
-
-  /**
-   * @dev See {IERC721Metadata-symbol}.
-   */
-  function symbol() public view virtual override returns (string memory) {
-    return _symbol;
-  }
-
-  /**
-   * @dev See {IERC721Metadata-tokenURI}.
-   */
-  function tokenURI(uint256 tokenId)
-    public
-    view
-    virtual
-    override
-    returns (string memory)
-  {
-    require(
-      _exists(tokenId),
-      "ERC721Metadata: URI query for nonexistent token"
-    );
-
-    string memory baseURI = _baseURI();
-    return
-      bytes(baseURI).length > 0
-        ? string(abi.encodePacked(baseURI, tokenId.toString()))
-        : "";
-  }
-
-  /**
-   * @dev Base URI for computing {tokenURI}. If set, the resulting URI for each
-   * token will be the concatenation of the `baseURI` and the `tokenId`. Empty
-   * by default, can be overridden in child contracts.
-   */
-  function _baseURI() internal view virtual returns (string memory) {
-    return "";
   }
 
   /**

@@ -42,7 +42,6 @@ export interface LeaseInterface extends utils.Interface {
     "getApproved(uint256)": FunctionFragment;
     "isApprovedForAll(address,address)": FunctionFragment;
     "lastCollectionTimeOf(uint256)": FunctionFragment;
-    "name()": FunctionFragment;
     "outstandingRemittances(address)": FunctionFragment;
     "ownerOf(uint256)": FunctionFragment;
     "safeTransferFrom(address,address,uint256)": FunctionFragment;
@@ -51,14 +50,12 @@ export interface LeaseInterface extends utils.Interface {
     "setApprovalForAll(address,bool)": FunctionFragment;
     "setBeneficiary(uint256,address)": FunctionFragment;
     "supportsInterface(bytes4)": FunctionFragment;
-    "symbol()": FunctionFragment;
     "takeoverLease(uint256,uint256,uint256)": FunctionFragment;
     "taxCollectedSinceLastTransferOf(uint256)": FunctionFragment;
     "taxOwed(uint256)": FunctionFragment;
     "taxOwedSince(uint256,uint256)": FunctionFragment;
     "taxRateOf(uint256)": FunctionFragment;
     "taxationCollected(uint256)": FunctionFragment;
-    "tokenURI(uint256)": FunctionFragment;
     "transferFrom(address,address,uint256)": FunctionFragment;
     "valuationOf(uint256)": FunctionFragment;
     "withdrawDeposit(uint256,uint256)": FunctionFragment;
@@ -81,7 +78,6 @@ export interface LeaseInterface extends utils.Interface {
       | "getApproved"
       | "isApprovedForAll"
       | "lastCollectionTimeOf"
-      | "name"
       | "outstandingRemittances"
       | "ownerOf"
       | "safeTransferFrom(address,address,uint256)"
@@ -90,14 +86,12 @@ export interface LeaseInterface extends utils.Interface {
       | "setApprovalForAll"
       | "setBeneficiary"
       | "supportsInterface"
-      | "symbol"
       | "takeoverLease"
       | "taxCollectedSinceLastTransferOf"
       | "taxOwed"
       | "taxOwedSince"
       | "taxRateOf"
       | "taxationCollected"
-      | "tokenURI"
       | "transferFrom"
       | "valuationOf"
       | "withdrawDeposit"
@@ -151,7 +145,6 @@ export interface LeaseInterface extends utils.Interface {
     functionFragment: "lastCollectionTimeOf",
     values: [BigNumberish]
   ): string;
-  encodeFunctionData(functionFragment: "name", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "outstandingRemittances",
     values: [string]
@@ -184,7 +177,6 @@ export interface LeaseInterface extends utils.Interface {
     functionFragment: "supportsInterface",
     values: [BytesLike]
   ): string;
-  encodeFunctionData(functionFragment: "symbol", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "takeoverLease",
     values: [BigNumberish, BigNumberish, BigNumberish]
@@ -207,10 +199,6 @@ export interface LeaseInterface extends utils.Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "taxationCollected",
-    values: [BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "tokenURI",
     values: [BigNumberish]
   ): string;
   encodeFunctionData(
@@ -265,7 +253,6 @@ export interface LeaseInterface extends utils.Interface {
     functionFragment: "lastCollectionTimeOf",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "name", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "outstandingRemittances",
     data: BytesLike
@@ -292,7 +279,6 @@ export interface LeaseInterface extends utils.Interface {
     functionFragment: "supportsInterface",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "symbol", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "takeoverLease",
     data: BytesLike
@@ -311,7 +297,6 @@ export interface LeaseInterface extends utils.Interface {
     functionFragment: "taxationCollected",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "tokenURI", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "transferFrom",
     data: BytesLike
@@ -566,8 +551,6 @@ export interface Lease extends BaseContract {
       overrides?: CallOverrides
     ): Promise<[BigNumber]>;
 
-    name(overrides?: CallOverrides): Promise<[string]>;
-
     outstandingRemittances(
       arg0: string,
       overrides?: CallOverrides
@@ -616,8 +599,6 @@ export interface Lease extends BaseContract {
       overrides?: CallOverrides
     ): Promise<[boolean]>;
 
-    symbol(overrides?: CallOverrides): Promise<[string]>;
-
     takeoverLease(
       tokenId_: BigNumberish,
       newValuation_: BigNumberish,
@@ -652,11 +633,6 @@ export interface Lease extends BaseContract {
       arg0: BigNumberish,
       overrides?: CallOverrides
     ): Promise<[BigNumber]>;
-
-    tokenURI(
-      tokenId: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<[string]>;
 
     transferFrom(
       from: string,
@@ -750,8 +726,6 @@ export interface Lease extends BaseContract {
     overrides?: CallOverrides
   ): Promise<BigNumber>;
 
-  name(overrides?: CallOverrides): Promise<string>;
-
   outstandingRemittances(
     arg0: string,
     overrides?: CallOverrides
@@ -797,8 +771,6 @@ export interface Lease extends BaseContract {
     overrides?: CallOverrides
   ): Promise<boolean>;
 
-  symbol(overrides?: CallOverrides): Promise<string>;
-
   takeoverLease(
     tokenId_: BigNumberish,
     newValuation_: BigNumberish,
@@ -833,8 +805,6 @@ export interface Lease extends BaseContract {
     arg0: BigNumberish,
     overrides?: CallOverrides
   ): Promise<BigNumber>;
-
-  tokenURI(tokenId: BigNumberish, overrides?: CallOverrides): Promise<string>;
 
   transferFrom(
     from: string,
@@ -922,8 +892,6 @@ export interface Lease extends BaseContract {
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
-    name(overrides?: CallOverrides): Promise<string>;
-
     outstandingRemittances(
       arg0: string,
       overrides?: CallOverrides
@@ -969,8 +937,6 @@ export interface Lease extends BaseContract {
       overrides?: CallOverrides
     ): Promise<boolean>;
 
-    symbol(overrides?: CallOverrides): Promise<string>;
-
     takeoverLease(
       tokenId_: BigNumberish,
       newValuation_: BigNumberish,
@@ -1005,8 +971,6 @@ export interface Lease extends BaseContract {
       arg0: BigNumberish,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
-
-    tokenURI(tokenId: BigNumberish, overrides?: CallOverrides): Promise<string>;
 
     transferFrom(
       from: string,
@@ -1199,8 +1163,6 @@ export interface Lease extends BaseContract {
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
-    name(overrides?: CallOverrides): Promise<BigNumber>;
-
     outstandingRemittances(
       arg0: string,
       overrides?: CallOverrides
@@ -1249,8 +1211,6 @@ export interface Lease extends BaseContract {
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
-    symbol(overrides?: CallOverrides): Promise<BigNumber>;
-
     takeoverLease(
       tokenId_: BigNumberish,
       newValuation_: BigNumberish,
@@ -1281,11 +1241,6 @@ export interface Lease extends BaseContract {
 
     taxationCollected(
       arg0: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
-    tokenURI(
-      tokenId: BigNumberish,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
@@ -1385,8 +1340,6 @@ export interface Lease extends BaseContract {
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
-    name(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
     outstandingRemittances(
       arg0: string,
       overrides?: CallOverrides
@@ -1435,8 +1388,6 @@ export interface Lease extends BaseContract {
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
-    symbol(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
     takeoverLease(
       tokenId_: BigNumberish,
       newValuation_: BigNumberish,
@@ -1467,11 +1418,6 @@ export interface Lease extends BaseContract {
 
     taxationCollected(
       arg0: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
-    tokenURI(
-      tokenId: BigNumberish,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
