@@ -55,26 +55,4 @@ contract PartialCommonOwnership is Lease {
     delete _collectionFrequencies[tokenId_];
     delete _locked[tokenId_];
   }
-
-  /* solhint-disable no-unused-vars*/
-
-  /// @notice Collect Tax
-  function _beforeTokenTransfer(
-    address from_,
-    address to_,
-    uint256 tokenId_
-  ) internal override {
-    collectTax(tokenId_);
-  }
-
-  /// @notice Reset tax collected
-  function _afterTokenTransfer(
-    address from_,
-    address to_,
-    uint256 tokenId_
-  ) internal override {
-    _setTaxCollectedSinceLastTransfer(tokenId_, 0);
-  }
-
-  /* solhint-enable no-unused-vars*/
 }

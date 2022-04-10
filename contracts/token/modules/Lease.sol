@@ -3,10 +3,9 @@
 pragma solidity ^0.8.12;
 
 import "./interfaces/ILease.sol";
-import "./ERC721.sol";
 import "./Taxation.sol";
 
-abstract contract Lease is ILease, ERC721, Taxation {
+abstract contract Lease is ILease, Taxation {
   //////////////////////////////
   /// State
   //////////////////////////////
