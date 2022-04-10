@@ -3,17 +3,13 @@
 pragma solidity ^0.8.12;
 
 import {ERC721} from "./modules/ERC721.sol";
-import {Valuation} from "./modules/Valuation.sol";
-import {Remittance, RemittanceTriggers} from "./modules/Remittance.sol";
-import {Taxation} from "./modules/Taxation.sol";
-import {Beneficiary} from "./modules/Beneficiary.sol";
 import {Lease} from "./modules/Lease.sol";
 
 /// @title PartialCommonOwnership
 /// @notice Extends the ERC721 standard by requiring tax payments from a token's current owner
 /// using a Harberger Tax model; if payments are not made, the token is repossessed by the contract
 /// and can be repurchased at any valuation > 0.
-contract PartialCommonOwnership is ERC721, Valuation, Lease {
+contract PartialCommonOwnership is Lease {
   //////////////////////////////
   /// Internal Methods
   //////////////////////////////
@@ -35,7 +31,7 @@ contract PartialCommonOwnership is ERC721, Valuation, Lease {
     uint256 taxRate_,
     uint256 collectionFrequency_
   ) internal {
-    ERC721._safeMint(leasee_, tokenId_);
+    _safeMint(leasee_, tokenId_);
     _setDeposit(tokenId_, deposit_);
     _setValuation(tokenId_, valuation_);
     _setBeneficiary(tokenId_, beneficiary_);
