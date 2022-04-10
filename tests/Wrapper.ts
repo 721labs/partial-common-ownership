@@ -145,8 +145,8 @@ async function unwrap(id: BigNumber, unwrappedTokenId: TOKENS): Promise<void> {
 
   // Verify all state is destroyed
 
-  await expect(wrapperContract.beneficiaryOf(id)).to.be.revertedWith(
-    PCOErrorMessages.NONEXISTENT_TOKEN
+  expect(await wrapperContract.beneficiaryOf(id)).to.equal(
+    ethers.constants.AddressZero
   );
 
   await expect(deployer.contract.selfAssess(id, ETH2)).to.be.revertedWith(

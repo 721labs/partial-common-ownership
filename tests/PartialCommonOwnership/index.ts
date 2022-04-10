@@ -547,12 +547,6 @@ describe("PartialCommonOwnership.sol", async function () {
       });
     });
     context("fails", async function () {
-      it("when token is not minted", async function () {
-        await expect(
-          contract.setBeneficiary(4, alice.address)
-        ).to.be.revertedWith(ErrorMessages.NONEXISTENT_TOKEN);
-      });
-
       it("When non-beneficiary attempts to update", async function () {
         await expect(
           alice.contract.setBeneficiary(1, alice.address)
@@ -562,17 +556,18 @@ describe("PartialCommonOwnership.sol", async function () {
   });
 
   describe("#beneficiaryOf", async function () {
-    context("fails", async function () {
-      it("when no beneficiary is set", async function () {
-        await expect(contract.beneficiaryOf(4)).to.be.revertedWith(
-          ErrorMessages.NONEXISTENT_TOKEN
-        );
-      });
-    });
+    context("fails", async function () {});
+
     context("succeeds", async function () {
       it("displays correct beneficiary after set", async function () {
         await beneficiary.contract.setBeneficiary(TOKENS.ONE, bob.address);
         expect(await contract.beneficiaryOf(TOKENS.ONE)).to.equal(bob.address);
+      });
+
+      it("returns zero address when no beneficiary is set", async () => {
+        expect(await contract.beneficiaryOf(4)).to.equal(
+          ethers.constants.AddressZero
+        );
       });
     });
   });
