@@ -4,13 +4,13 @@ pragma solidity ^0.8.12;
 
 import "./interfaces/ITaxation.sol";
 import "./Valuation.sol";
-import "./TokenManagement.sol";
+import "./ERC721.sol";
 import "./Remittance.sol";
 import "./Beneficiary.sol";
 
 abstract contract Taxation is
   ITaxation,
-  TokenManagement,
+  ERC721,
   Valuation,
   Remittance,
   Beneficiary
@@ -124,7 +124,7 @@ abstract contract Taxation is
     public
     payable
     override
-    _onlyOwner(tokenId_)
+    _onlyApprovedOrOwner(tokenId_)
     _collectTax(tokenId_)
   {
     _setDeposit(tokenId_, depositOf(tokenId_) + msg.value);
@@ -134,7 +134,7 @@ abstract contract Taxation is
   function withdrawDeposit(uint256 tokenId_, uint256 wei_)
     public
     override
-    _onlyOwner(tokenId_)
+    _onlyApprovedOrOwner(tokenId_)
     _collectTax(tokenId_)
   {
     _withdrawDeposit(tokenId_, wei_);
@@ -144,7 +144,7 @@ abstract contract Taxation is
   function exit(uint256 tokenId_)
     public
     override
-    _onlyOwner(tokenId_)
+    _onlyApprovedOrOwner(tokenId_)
     _collectTax(tokenId_)
   {
     _withdrawDeposit(tokenId_, depositOf(tokenId_));

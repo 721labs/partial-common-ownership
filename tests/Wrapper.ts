@@ -278,20 +278,6 @@ describe("Wrapper.sol", async function () {
     });
   });
 
-  describe("#constructor()", async function () {
-    // No fail circumstances.
-    context("fails", async function () {});
-
-    context("succeeds", async function () {
-      it("Assigns name and symbol to PCO contract", async function () {
-        expect(await wrapperContract.name()).to.equal(
-          "Partial Common Ownership NFT"
-        );
-        expect(await wrapperContract.symbol()).to.equal("pcoNFT");
-      });
-    });
-  });
-
   describe("#wrappedTokenId()", async function () {
     // No fail circumstances.
     context("fails", async function () {});

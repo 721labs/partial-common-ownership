@@ -3,10 +3,10 @@
 pragma solidity ^0.8.12;
 
 import "./interfaces/ILease.sol";
-import "./TokenManagement.sol";
+import "./ERC721.sol";
 import "./Taxation.sol";
 
-abstract contract Lease is ILease, TokenManagement, Taxation {
+abstract contract Lease is ILease, ERC721, Taxation {
   //////////////////////////////
   /// State
   //////////////////////////////
@@ -149,7 +149,7 @@ abstract contract Lease is ILease, TokenManagement, Taxation {
   function selfAssess(uint256 tokenId_, uint256 newValuation_)
     public
     override
-    _onlyOwner(tokenId_)
+    _onlyApprovedOrOwner(tokenId_)
     _collectTax(tokenId_)
   {
     uint256 currentValuation = valuationOf(tokenId_);

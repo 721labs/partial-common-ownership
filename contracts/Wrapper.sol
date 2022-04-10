@@ -43,18 +43,6 @@ contract Wrapper is PCO {
   );
 
   //////////////////////////////
-  /// Constructor
-  //////////////////////////////
-
-  /// @notice Creates the Wrapper.
-  /// @param name_ PCO Contract Name.
-  /// @param symbol_ PCO Contract Symbol.
-  /* solhint-disable no-empty-blocks */
-  constructor(string memory name_, string memory symbol_) PCO(name_, symbol_) {}
-
-  /* solhint-enable no-empty-blocks */
-
-  //////////////////////////////
   /// Public Methods
   //////////////////////////////
 
@@ -140,12 +128,7 @@ contract Wrapper is PCO {
   /// @notice Queries the wrapped token's URI.
   /// @param tokenId_ See IERC721
   /// @return Token URI string.
-  function tokenURI(uint256 tokenId_)
-    public
-    view
-    override
-    returns (string memory)
-  {
+  function tokenURI(uint256 tokenId_) public view returns (string memory) {
     require(
       _exists(tokenId_),
       "ERC721Metadata: URI query for nonexistent token"

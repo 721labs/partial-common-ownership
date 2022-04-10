@@ -6,7 +6,7 @@ enum TOKENS {
 
 enum ERC721ErrorMessages {
   NOT_APPROVED = "ERC721: transfer caller is not owner nor approved",
-  NONEXISTENT_TOKEN = "ERC721: owner query for nonexistent token",
+  NONEXISTENT_TOKEN = "ERC721: query for nonexistent token",
 }
 
 enum ERC721MetadataErrorMessages {

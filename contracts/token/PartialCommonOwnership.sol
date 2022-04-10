@@ -2,63 +2,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.12;
 
-import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import {TokenManagement} from "./modules/TokenManagement.sol";
-import {Valuation} from "./modules/Valuation.sol";
-import {Remittance, RemittanceTriggers} from "./modules/Remittance.sol";
-import {Taxation} from "./modules/Taxation.sol";
-import {Beneficiary} from "./modules/Beneficiary.sol";
+import {ERC721} from "./modules/ERC721.sol";
 import {Lease} from "./modules/Lease.sol";
 
 /// @title PartialCommonOwnership
 /// @notice Extends the ERC721 standard by requiring tax payments from a token's current owner
 /// using a Harberger Tax model; if payments are not made, the token is repossessed by the contract
 /// and can be repurchased at any valuation > 0.
-contract PartialCommonOwnership is TokenManagement, Valuation, Lease {
-  //////////////////////////////
-  /// Constructor
-  //////////////////////////////
-
-  /// @notice Creates the token.
-  /// @param name_ ERC721 Token Name
-  /// @param symbol_ ERC721 Token Symbol
-  /* solhint-disable no-empty-blocks */
-  constructor(string memory name_, string memory symbol_)
-    ERC721(name_, symbol_)
-  {}
-
-  //////////////////////////////
-  /// Public Methods
-  //////////////////////////////
-
-  /// @notice Trasfers token after collecting taxes.  Note this transfers the deposit
-  /// and the tax burden for the token.
-  /// @param from_ Address to transfer token from
-  /// @param to_ Address to transfer token to
-  /// @param tokenId_ ID of token to transfer
-  function transferFrom(
-    address from_,
-    address to_,
-    uint256 tokenId_
-  ) public override _collectTax(tokenId_) {
-    ERC721.transferFrom(from_, to_, tokenId_);
-  }
-
-  /// @notice Trasfers token after collecting taxes.  Note this transfers the deposit
-  /// and the tax burden for the token.
-  /// @param from_ Address to transfer token from
-  /// @param to_ Address to transfer token to
-  /// @param tokenId_ ID of token to transfer
-  /// param data_ Arbitrary data
-  function safeTransferFrom(
-    address from_,
-    address to_,
-    uint256 tokenId_,
-    bytes memory data_
-  ) public override _collectTax(tokenId_) {
-    ERC721.safeTransferFrom(from_, to_, tokenId_, data_);
-  }
-
+contract PartialCommonOwnership is Lease {
   //////////////////////////////
   /// Internal Methods
   //////////////////////////////
@@ -80,7 +31,7 @@ contract PartialCommonOwnership is TokenManagement, Valuation, Lease {
     uint256 taxRate_,
     uint256 collectionFrequency_
   ) internal {
-    ERC721._safeMint(leasee_, tokenId_);
+    _safeMint(leasee_, tokenId_);
     _setDeposit(tokenId_, deposit_);
     _setValuation(tokenId_, valuation_);
     _setBeneficiary(tokenId_, beneficiary_);
@@ -105,16 +56,25 @@ contract PartialCommonOwnership is TokenManagement, Valuation, Lease {
     delete _locked[tokenId_];
   }
 
-  /// @notice Transfers token and updates tax stats.
-  /// @param from_ Address to transfer token from
-  /// @param to_ Address to transfer token to
-  /// @param tokenId_ ID of token to transfer
-  function _transfer(
+  /* solhint-disable no-unused-vars*/
+
+  /// @notice Collect Tax
+  function _beforeTokenTransfer(
     address from_,
     address to_,
     uint256 tokenId_
   ) internal override {
-    ERC721._transfer(from_, to_, tokenId_);
+    collectTax(tokenId_);
+  }
+
+  /// @notice Reset tax collected
+  function _afterTokenTransfer(
+    address from_,
+    address to_,
+    uint256 tokenId_
+  ) internal override {
     _setTaxCollectedSinceLastTransfer(tokenId_, 0);
   }
+
+  /* solhint-enable no-unused-vars*/
 }
