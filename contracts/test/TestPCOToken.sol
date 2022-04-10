@@ -7,11 +7,7 @@ import "../token/PartialCommonOwnership.sol";
 /// @title TestPCOToken – Example implementation of PCO for 721 for use in testing.
 contract TestPCOToken is PartialCommonOwnership {
   /// @notice Constructs token and mints 1 - 3.
-  constructor(
-    string memory _name,
-    string memory _symbol,
-    address payable _beneficiary
-  ) PartialCommonOwnership(_name, _symbol) {
+  constructor(address payable _beneficiary) {
     _safeMint(address(this), 1);
     _setBeneficiary(1, _beneficiary);
     // 5% Quarterly

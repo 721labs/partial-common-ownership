@@ -405,8 +405,6 @@ describe("PartialCommonOwnership.sol", async function () {
 
     // Set up contracts
     contract = (await factory.deploy(
-      TEST_NAME,
-      TEST_SYMBOL,
       signers[1].address,
       GLOBAL_TRX_CONFIG
     )) as PartialCommonOwnership;
@@ -517,18 +515,6 @@ describe("PartialCommonOwnership.sol", async function () {
     });
   });
 
-  describe("#constructor()", async function () {
-    context("succeeds", async function () {
-      it("Setting name", async function () {
-        expect(await contract.name()).to.equal(TEST_NAME);
-      });
-
-      it("Setting symbol", async function () {
-        expect(await contract.symbol()).to.equal(TEST_SYMBOL);
-      });
-    });
-  });
-
   describe("#setBeneficiary", async function () {
     context("succeeds", async function () {
       it("current beneficiary can set new beneficiary", async function () {
@@ -547,12 +533,6 @@ describe("PartialCommonOwnership.sol", async function () {
       });
     });
     context("fails", async function () {
-      it("when token is not minted", async function () {
-        await expect(
-          contract.setBeneficiary(4, alice.address)
-        ).to.be.revertedWith(ErrorMessages.NONEXISTENT_TOKEN);
-      });
-
       it("When non-beneficiary attempts to update", async function () {
         await expect(
           alice.contract.setBeneficiary(1, alice.address)
@@ -562,17 +542,18 @@ describe("PartialCommonOwnership.sol", async function () {
   });
 
   describe("#beneficiaryOf", async function () {
-    context("fails", async function () {
-      it("when no beneficiary is set", async function () {
-        await expect(contract.beneficiaryOf(4)).to.be.revertedWith(
-          ErrorMessages.NONEXISTENT_TOKEN
-        );
-      });
-    });
+    context("fails", async function () {});
+
     context("succeeds", async function () {
       it("displays correct beneficiary after set", async function () {
         await beneficiary.contract.setBeneficiary(TOKENS.ONE, bob.address);
         expect(await contract.beneficiaryOf(TOKENS.ONE)).to.equal(bob.address);
+      });
+
+      it("returns zero address when no beneficiary is set", async () => {
+        expect(await contract.beneficiaryOf(4)).to.equal(
+          ethers.constants.AddressZero
+        );
       });
     });
   });

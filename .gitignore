@@ -1,6 +1,9 @@
 # Foundry
 out
 
+# Typechain
+types
+
 # Solidity Coverage
 /coverage
 coverage.json
