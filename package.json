@@ -32,6 +32,7 @@
     "console": "yarn hardhat console",
     "compile": "yarn hardhat compile",
     "test": "yarn typechain && yarn hardhat --network hardhat test",
+    "test:forge": "forge test -vvv",
     "prettier": "prettier --write 'contracts/**/*.sol'",
     "solhint": "solhint contracts/*.sol contracts/**/*.sol contracts/**/**/*.sol contracts/**/**/**/*.sol",
     "publish": "npm publish --access public",
