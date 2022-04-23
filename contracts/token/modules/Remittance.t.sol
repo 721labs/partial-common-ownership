@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.12;
 
-import "ds-test/test.sol";
+import "forge-std/Test.sol";
+import "forge-std/console2.sol";
 
 import {Remittance, RemittanceTriggers} from "./Remittance.sol";
 
@@ -19,14 +20,14 @@ interface CheatCodes {
   function expectRevert(bytes4) external;
 
   function deal(address who, uint256 newBalance) external;
-
-  function startPrank(address, address) external;
-
-  function stopPrank() external;
 }
 
-contract RemittanceTest is DSTest, Remittance {
+contract TestContract is Remittance {}
+
+contract RemittanceTest is Test, Remittance {
   CheatCodes constant cheats = CheatCodes(HEVM_ADDRESS);
+
+  ///Remittance private constant TEST_CONTRACT = TestContract();
 
   //////////////////////////////
   /// Success Criteria
@@ -78,22 +79,31 @@ contract RemittanceTest is DSTest, Remittance {
 
   /// @dev Test that caller can withdraw oustanding remittances.
   /// TODO: Fix this test.
-  function test_withdrawOutstandingRemittance(address addr_, uint256 balance_)
-    public
-  {
-    // zero address cannot be caller
-    cheats.assume(addr_ != address(0));
-    cheats.assume(balance_ >= 1);
-    cheats.startPrank(addr_, tx.origin);
+  function test_withdrawOutstandingRemittance(uint256 balance_) public {
+    // Tested elsewhere
+    cheats.assume(balance_ > 0);
 
-    outstandingRemittances[addr_] = balance_;
+    // Provide balance to remit
+    cheats.deal(address(this), balance_);
 
+    outstandingRemittances[msg.sender] = balance_;
+    console2.log("Balance", balance_);
+
+    // Expect successful emittance
+    cheats.expectEmit(true, true, true, true);
+    emit LogRemittance(
+      RemittanceTriggers.OutstandingRemittance,
+      msg.sender,
+      balance_
+    );
+
+    // DEV: `.send` is failing within remit.
     withdrawOutstandingRemittance();
 
-    assertEq(outstandingRemittances[addr_], 0);
-    assertEq(addr_.balance, balance_);
+    console2.log("After", outstandingRemittances[msg.sender]);
 
-    cheats.stopPrank();
+    assertEq(outstandingRemittances[msg.sender], 0);
+    assertEq(address(msg.sender).balance, balance_);
   }
 
   //////////////////////////////
