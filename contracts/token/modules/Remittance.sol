@@ -12,6 +12,11 @@ enum RemittanceTriggers {
   TaxCollection
 }
 
+/// @dev Rather than using the Pull "Withdrawal from Contracts" strategy recommended by the Solidity docs
+/// (see: https://docs.soliditylang.org/en/v0.8.13/common-patterns.html#withdrawal-from-contracts),
+/// this module implements a "Push" strategy".  It does so to ensure that the party owed tax recieves it
+/// without needing to actively collect.
+/// @dev TODO: Rename `PushRemittance`
 abstract contract Remittance is IRemittance {
   //////////////////////////////
   /// State
@@ -22,6 +27,16 @@ abstract contract Remittance is IRemittance {
   /// (current valuation) is added to `outstandingRemittances` so the previous
   /// owner can withdraw it.
   mapping(address => uint256) public outstandingRemittances;
+
+  //////////////////////////////
+  /// Errors
+  //////////////////////////////
+
+  error DestinationZeroAddress();
+
+  error AmountZero();
+
+  error NoOutstandingBalance();
 
   //////////////////////////////
   /// Events
@@ -49,7 +64,9 @@ abstract contract Remittance is IRemittance {
   function withdrawOutstandingRemittance() public override {
     uint256 outstanding = outstandingRemittances[msg.sender];
 
-    require(outstanding > 0, "No outstanding remittance");
+    if (outstanding == 0) {
+      revert NoOutstandingBalance();
+    }
 
     outstandingRemittances[msg.sender] = 0;
 
@@ -72,6 +89,16 @@ abstract contract Remittance is IRemittance {
     uint256 remittance_,
     RemittanceTriggers trigger_
   ) internal {
+    // Opinion: funds cannot be remitted to burn address
+    if (recipient_ == address(0)) {
+      revert DestinationZeroAddress();
+    }
+
+    // Cannot send no funds.
+    if (remittance_ == 0) {
+      revert AmountZero();
+    }
+
     address payable payableRecipient = payable(recipient_);
     // If the remittance fails, hold funds for the seller to retrieve.
     // For example, if `payableReceipient` is a contract that reverts on receipt or
