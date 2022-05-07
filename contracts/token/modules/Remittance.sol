@@ -36,6 +36,8 @@ abstract contract Remittance is IRemittance {
 
   error AmountZero();
 
+  error InsufficientBalance();
+
   error NoOutstandingBalance();
 
   //////////////////////////////
@@ -61,16 +63,15 @@ abstract contract Remittance is IRemittance {
   //////////////////////////////
 
   /// @dev See {IRemittance.withdrawOutstandingRemittance}
-  function withdrawOutstandingRemittance() public override {
-    uint256 outstanding = outstandingRemittances[msg.sender];
+  function withdrawOutstandingRemittance() public override returns (bool) {
+    uint256 balance = outstandingRemittances[msg.sender];
 
-    if (outstanding == 0) {
-      revert NoOutstandingBalance();
-    }
+    if (balance == 0) revert NoOutstandingBalance();
 
     outstandingRemittances[msg.sender] = 0;
 
-    _remit(msg.sender, outstanding, RemittanceTriggers.OutstandingRemittance);
+    return
+      _remit(msg.sender, balance, RemittanceTriggers.OutstandingRemittance);
   }
 
   //////////////////////////////
@@ -84,32 +85,34 @@ abstract contract Remittance is IRemittance {
   /// @param recipient_ Address to send remittance to.
   /// @param remittance_ Remittance amount
   /// @param trigger_ What triggered this remittance?
+  /// @return boolean Was remittance successful?
   function _remit(
     address recipient_,
     uint256 remittance_,
     RemittanceTriggers trigger_
-  ) internal {
+  ) internal returns (bool) {
     // Opinion: funds cannot be remitted to burn address
-    if (recipient_ == address(0)) {
-      revert DestinationZeroAddress();
-    }
+    if (recipient_ == address(0)) revert DestinationZeroAddress();
 
     // Cannot send no funds.
-    if (remittance_ == 0) {
-      revert AmountZero();
-    }
+    if (remittance_ == 0) revert AmountZero();
 
-    address payable payableRecipient = payable(recipient_);
+    // Warning: This state should never be reached.  It indicates the contract
+    // is leaking funds somewhere.
+    if (address(this).balance < remittance_) revert InsufficientBalance();
+
     // If the remittance fails, hold funds for the seller to retrieve.
     // For example, if `payableReceipient` is a contract that reverts on receipt or
     // if the call runs out of gas.
-    if (payableRecipient.send(remittance_)) {
+    if (payable(recipient_).send(remittance_)) {
       emit LogRemittance(trigger_, recipient_, remittance_);
+      return true;
     } else {
       /* solhint-disable reentrancy */
       outstandingRemittances[recipient_] += remittance_;
       emit LogOutstandingRemittance(recipient_);
       /* solhint-enable reentrancy */
+      return false;
     }
   }
 }
