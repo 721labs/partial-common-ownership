@@ -3,5 +3,6 @@ src = 'contracts'
 test = 'contracts'
 out = 'out'
 libs = ['lib']
+solc_version = "0.8.12"
 
 # See more config options https://github.com/gakonst/foundry/tree/master/config
