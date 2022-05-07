@@ -61,29 +61,29 @@ contract RemittanceTest is Test, Remittance {
   }
 
   /// @dev Test that caller can withdraw oustanding remittances.
-  // TODO: Fix this test.
   function test_withdrawOutstandingRemittance(uint256 balance_) public {
     // Tested elsewhere
     vm.assume(balance_ > 0);
+
+    // Ensure msg sender has no initial balance; this prevents post-withdrawal balance
+    // from overflowing b/c fuzzed `balance_` value is too high.
+    vm.deal(msg.sender, 0);
 
     // Provide balance to remit
     vm.deal(address(this), balance_);
     outstandingRemittances[msg.sender] = balance_;
 
     // Expect successful emittance
-    // vm.expectEmit(true, true, true, true);
-    // emit LogRemittance(
-    //   RemittanceTriggers.OutstandingRemittance,
-    //   msg.sender,
-    //   balance_
-    // );
-
-    console.log(msg.sender);
+    vm.expectEmit(true, true, true, true);
+    emit LogRemittance(
+      RemittanceTriggers.OutstandingRemittance,
+      msg.sender,
+      balance_
+    );
 
     withdrawOutstandingRemittance();
-
-    //assertEq(outstandingRemittances[msg.sender], 0);
-    //assertEq(address(msg.sender).balance, balance_);
+    assertEq(outstandingRemittances[msg.sender], 0);
+    assertEq(address(msg.sender).balance, balance_);
   }
 
   //////////////////////////////
@@ -110,8 +110,8 @@ contract RemittanceTest is Test, Remittance {
     _remit(recipient_, 1, RemittanceTriggers.TaxCollection);
   }
 
-  // function test_withdrawOutstandingRemittance_noOutstandingBalance() public {
-  //   vm.expectRevert(NoOutstandingBalance.selector);
-  //   withdrawOutstandingRemittance();
-  // }
+  function test_withdrawOutstandingRemittance_noOutstandingBalance() public {
+    vm.expectRevert(NoOutstandingBalance.selector);
+    withdrawOutstandingRemittance();
+  }
 }
