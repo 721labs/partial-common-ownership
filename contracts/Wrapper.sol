@@ -3,8 +3,8 @@
 pragma solidity 0.8.12;
 
 import {PartialCommonOwnership as PCO} from "./token/PartialCommonOwnership.sol";
-import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
+import "openzeppelin-contracts/contracts/token/ERC721/IERC721.sol";
+import "openzeppelin-contracts/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 
 struct WrappedToken {
   /// @notice Issuing contract address.
