@@ -16,6 +16,12 @@ abstract contract Beneficiary is IBeneficiary {
   mapping(uint256 => address) internal _beneficiaries;
 
   //////////////////////////////
+  /// Errors
+  //////////////////////////////
+
+  error BeneficiaryOnly();
+
+  //////////////////////////////
   /// Events
   //////////////////////////////
 
@@ -36,7 +42,7 @@ abstract contract Beneficiary is IBeneficiary {
     public
     override
   {
-    require(msg.sender == _beneficiaries[tokenId_], "Current beneficiary only");
+    if (msg.sender != _beneficiaries[tokenId_]) revert BeneficiaryOnly();
     _setBeneficiary(tokenId_, beneficiary_);
   }
 

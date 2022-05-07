@@ -2,25 +2,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.12;
 
-import "ds-test/test.sol";
+import "forge-std/Test.sol";
 import {Beneficiary} from "./Beneficiary.sol";
 
-interface CheatCodes {
-  function expectRevert(bytes calldata msg) external;
-
-  function expectEmit(
-    bool checkTopic1,
-    bool checkTopic2,
-    bool checkTopic3,
-    bool checkData
-  ) external;
-
-  function expectCall(address where, bytes calldata data) external;
-}
-
-contract BeneficiaryTest is DSTest, Beneficiary {
-  CheatCodes constant cheats = CheatCodes(HEVM_ADDRESS);
-
+/* solhint-disable func-name-mixedcase */
+contract BeneficiaryTest is Test, Beneficiary {
   //////////////////////////////
   /// Success Criteria
   //////////////////////////////
@@ -28,7 +14,7 @@ contract BeneficiaryTest is DSTest, Beneficiary {
   function test__setBeneficiary(uint256 tokenId_, address address_) public {
     // 1. Test that it emits.
     // Emits `LogBeneficiaryUpdated`
-    cheats.expectEmit(true, true, false, true);
+    vm.expectEmit(true, true, false, true);
 
     // Emit the expected event
     emit Beneficiary.LogBeneficiaryUpdated(tokenId_, address_);
@@ -45,17 +31,10 @@ contract BeneficiaryTest is DSTest, Beneficiary {
     // Set initial beneficiary
     _setBeneficiary(tokenId_, payable(msg.sender));
 
-    //! DEV: This fails currently; see https://github.com/gakonst/foundry/issues/432
-    // setBeneficiary should call _setBeneficiary(tokenId_, payable(address_))
-    // cheats.expectCall(
-    //   address(this),
-    //   abi.encodeCall(_setBeneficiary, (tokenId_, payable(address_)))
-    // );
-
     // Call
     setBeneficiary(tokenId_, payable(address_));
 
-    // Because `cheats.expectCall` doesn't work, verify that _setBeneficiary properly set
+    // Because `vm.expectCall` doesn't work, verify that _setBeneficiary properly set
     // by verifying its pre-determined successful state.
     assertEq(_beneficiaries[tokenId_], address_);
   }
@@ -82,7 +61,7 @@ contract BeneficiaryTest is DSTest, Beneficiary {
     uint256 tokenId_,
     address address_
   ) public {
-    cheats.expectRevert("Current beneficiary only");
+    vm.expectRevert(BeneficiaryOnly.selector);
     setBeneficiary(tokenId_, payable(address_));
   }
 }

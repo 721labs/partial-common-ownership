@@ -9,8 +9,6 @@ import {Remittance, RemittanceTriggers} from "./Remittance.sol";
 /* solhint-disable func-name-mixedcase */
 
 contract RemittanceTest is Test, Remittance {
-  ///Remittance private constant TEST_CONTRACT = TestContract();
-
   //////////////////////////////
   /// Success Criteria
   //////////////////////////////
