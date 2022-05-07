@@ -5,6 +5,5 @@ pragma solidity ^0.8.12;
 interface IRemittance {
   /// @notice Enables previous owners to withdraw remittances that failed to send.
   /// @dev To reduce complexity, pull funds are entirely separate from current deposit.
-  /// @return boolean Was remittance successful?
-  function withdrawOutstandingRemittance() external returns (bool);
+  function withdrawOutstandingRemittance() external;
 }

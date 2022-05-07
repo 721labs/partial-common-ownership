@@ -63,15 +63,22 @@ abstract contract Remittance is IRemittance {
   //////////////////////////////
 
   /// @dev See {IRemittance.withdrawOutstandingRemittance}
-  function withdrawOutstandingRemittance() public override returns (bool) {
-    uint256 balance = outstandingRemittances[msg.sender];
+  function withdrawOutstandingRemittance() public override {
+    address recipient = msg.sender;
+    uint256 balance = outstandingRemittances[recipient];
 
     if (balance == 0) revert NoOutstandingBalance();
+    if (address(this).balance < balance) revert InsufficientBalance();
 
-    outstandingRemittances[msg.sender] = 0;
+    outstandingRemittances[recipient] = 0;
 
-    return
-      _remit(msg.sender, balance, RemittanceTriggers.OutstandingRemittance);
+    payable(recipient).transfer(balance);
+
+    emit LogRemittance(
+      RemittanceTriggers.OutstandingRemittance,
+      recipient,
+      balance
+    );
   }
 
   //////////////////////////////
