@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.12;
 
-import "openzeppelin-contracts/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 
 /// @title TestNFT – An ERC721 NFT for use in testing.
 contract TestNFT is ERC721 {
