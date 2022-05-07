@@ -32,7 +32,7 @@
     "console": "yarn hardhat console",
     "compile": "yarn hardhat compile",
     "test:hardhat": "yarn typechain && yarn hardhat --network hardhat test",
-    "test:forge": "forge test -vvv",
+    "test:forge": "forge test -vvvv",
     "test": "yarn test:hardhat && yarn test:forge",
     "prettier": "prettier --write 'contracts/**/*.sol'",
     "solhint": "solhint contracts/*.sol contracts/**/*.sol contracts/**/**/*.sol contracts/**/**/**/*.sol",
