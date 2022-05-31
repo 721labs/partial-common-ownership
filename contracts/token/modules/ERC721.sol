@@ -32,23 +32,30 @@ abstract contract ERC721 is Context, ERC165, IERC721 {
   mapping(address => mapping(address => bool)) private _operatorApprovals;
 
   //////////////////////////////
+  /// Errors
+  //////////////////////////////
+
+  error OwnerOnly();
+
+  error ApprovedOnly();
+
+  error NonexistentToken();
+
+  //////////////////////////////
   /// Modifiers
   //////////////////////////////
 
   /// @notice Checks whether message sender owns a given token id
   /// @param tokenId_ ID of token to check ownership again.
   modifier _onlyApprovedOrOwner(uint256 tokenId_) {
-    require(
-      _isApprovedOrOwner(_msgSender(), tokenId_),
-      "ERC721: caller is not owner nor approved"
-    );
+    if (!_isApprovedOrOwner(_msgSender(), tokenId_)) revert ApprovedOnly();
     _;
   }
 
   /// @notice Requires that token have been minted.
   /// @param tokenId_ ID of token to verify.
   modifier _tokenMinted(uint256 tokenId_) {
-    require(_exists(tokenId_), "ERC721: query for nonexistent token");
+    if (!_exists(tokenId_)) revert NonexistentToken();
     _;
   }
 
@@ -162,7 +169,7 @@ abstract contract ERC721 is Context, ERC165, IERC721 {
     returns (address)
   {
     address owner = _owners[tokenId];
-    require(owner != address(0), "ERC721: owner query for nonexistent token");
+    if (owner == address(0)) revert OwnerOnly();
     return owner;
   }
 
