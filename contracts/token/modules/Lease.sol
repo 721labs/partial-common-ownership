@@ -15,6 +15,26 @@ abstract contract Lease is ILease, Taxation {
   mapping(uint256 => bool) internal _locked;
 
   //////////////////////////////
+  /// Errors
+  //////////////////////////////
+
+  error ZeroValuation();
+
+  error SameValuation();
+
+  error TokenLocked();
+
+  error IncorrectCurrentValuation();
+
+  error GreaterOrEqualValuationRequired();
+
+  error SurplusValue();
+
+  error GreaterValuationRequired();
+
+  error AlreadyOwner();
+
+  //////////////////////////////
   /// Events
   //////////////////////////////
 
@@ -39,53 +59,44 @@ abstract contract Lease is ILease, Taxation {
     uint256 currentValuation_
   ) public payable override _tokenMinted(tokenId_) {
     // Prevent re-entrancy attack
-    require(!_locked[tokenId_], "Token is locked");
+    if (_locked[tokenId_]) revert TokenLocked();
 
     uint256 valuationPriorToTaxCollection = valuationOf(tokenId_);
 
     // Prevent front-run.
-    require(
-      valuationPriorToTaxCollection == currentValuation_,
-      "Current valuation is incorrect"
-    );
+    if (valuationPriorToTaxCollection != currentValuation_)
+      revert IncorrectCurrentValuation();
 
     // New valuation must be greater than zero, even if current valuation is zero, to ensure that
     // funds are available for deposit.
-    require(newValuation_ > 0, "New valuation cannot be zero");
+    if (newValuation_ == 0) revert ZeroValuation();
 
     // Buyer can self-assess the valuation higher the current valuation; this renders unnecessary a second gas payment
     // if Buyer wants to immediately self-assess the token at a higher valuation.
-    require(
-      newValuation_ >= valuationPriorToTaxCollection,
-      "New valuation must be >= current valuation"
-    );
+    if (newValuation_ < valuationPriorToTaxCollection)
+      revert GreaterOrEqualValuationRequired();
 
     bool senderIsBeneficiary = msg.sender == beneficiaryOf(tokenId_);
     // Current owner is a wallet address or the address of this contract
     // if the token is foreclosed or has never been purchased.
     address currentOwner = ownerOf(tokenId_);
 
-    if (senderIsBeneficiary) {
-      if (currentOwner == address(this)) {
-        // If token is owned by contract, beneficiary does not need to pay anything.
-        require(msg.value == 0, "Msg contains value");
-      } else {
+    if (
+      senderIsBeneficiary &&
+      (// If token is owned by contract, beneficiary does not need to pay anything.
+      (currentOwner == address(this) && msg.value > 0) ||
         // Beneficiary only needs to pay the current valuation,
         // doesn't need to put down a deposit.
-        require(msg.value == currentValuation_, "Msg contains surplus value");
-      }
-    } else {
-      // Value sent must be greater the amount being remitted to the current owner;
-      // surplus is necessary for deposit.
-      require(
-        msg.value > valuationPriorToTaxCollection,
-        "Message does not contain surplus value for deposit"
-      );
-    }
+        msg.value != currentValuation_)
+    ) revert SurplusValue();
+    // Value sent must be greater the amount being remitted to the current owner;
+    // surplus is necessary for deposit.
+    else if (msg.value <= valuationPriorToTaxCollection)
+      revert GreaterValuationRequired();
 
     // Owner will be seller or this contract if foreclosed.
     // Prevent an accidental re-purchase.
-    require(msg.sender != ownerOf(tokenId_), "Buyer is already owner");
+    if (msg.sender == currentOwner) revert AlreadyOwner();
 
     // After all security checks have occured, lock the token.
     _locked[tokenId_] = true;
@@ -152,8 +163,10 @@ abstract contract Lease is ILease, Taxation {
     _collectTax(tokenId_)
   {
     uint256 currentValuation = valuationOf(tokenId_);
-    require(newValuation_ > 0, "New valuation cannot be zero");
-    require(newValuation_ != currentValuation, "New valuation cannot be same");
+    // New valuation cannot be zero.
+    if (newValuation_ == 0) revert ZeroValuation();
+    // New valuation must be different
+    if (newValuation_ == currentValuation) revert SameValuation();
 
     _setValuation(tokenId_, newValuation_);
   }
