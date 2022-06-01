@@ -112,9 +112,6 @@ abstract contract Lease is ILease, Taxation {
 
     // Token is being purchased for the first time or out of foreclosure
     if (purchasedFromContract) {
-      // Deposit takes entire msg value
-      _setDeposit(tokenId_, msg.value);
-
       // If the token is being purchased for the first time or is being purchased
       // from foreclosure, last collection time is set to now so that the contract
       // does not incorrectly consider the taxable period to have begun prior to
@@ -123,6 +120,8 @@ abstract contract Lease is ILease, Taxation {
 
       // Note: no remittance occurs. Beneficiary receives no tax on a token that is currently
       // valued at nothing.
+
+      // Note: Deposit is handled below.
     } else {
       _remit(
         ownerAfterCollection,
