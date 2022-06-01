@@ -81,18 +81,20 @@ abstract contract Lease is ILease, Taxation {
     // if the token is foreclosed or has never been purchased.
     address currentOwner = ownerOf(tokenId_);
 
-    if (
-      senderIsBeneficiary &&
-      (// If token is owned by contract, beneficiary does not need to pay anything.
-      (currentOwner == address(this) && msg.value > 0) ||
+    if (senderIsBeneficiary) {
+      if (
+        // If token is owned by contract, beneficiary does not need to pay anything.
+        (currentOwner == address(this) && msg.value > 0) ||
         // Beneficiary only needs to pay the current valuation,
         // doesn't need to put down a deposit.
-        msg.value != currentValuation_)
-    ) revert SurplusValue();
-    // Value sent must be greater the amount being remitted to the current owner;
-    // surplus is necessary for deposit.
-    else if (msg.value <= valuationPriorToTaxCollection)
-      revert GreaterValuationRequired();
+        msg.value != currentValuation_
+      ) revert SurplusValue();
+    } else {
+      // Value sent must be greater the amount being remitted to the current owner;
+      // surplus is necessary for deposit.
+      if (msg.value <= valuationPriorToTaxCollection)
+        revert GreaterValuationRequired();
+    }
 
     // Owner will be seller or this contract if foreclosed.
     // Prevent an accidental re-purchase.
