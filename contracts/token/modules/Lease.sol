@@ -107,8 +107,9 @@ abstract contract Lease is ILease, Taxation {
     // deposit than they originally anticipated.
     collectTax(tokenId_);
 
-    address ownerAfterCollection = ownerOf(tokenId_);
-    bool purchasedFromContract = ownerAfterCollection == address(this);
+    // Tax collection may have transferred ownership.
+    address postTaxCollectionOwner = ownerOf(tokenId_);
+    bool purchasedFromContract = postTaxCollectionOwner == address(this);
 
     // Token is being purchased for the first time or out of foreclosure
     if (purchasedFromContract) {
@@ -124,7 +125,7 @@ abstract contract Lease is ILease, Taxation {
       // Note: Deposit is handled below.
     } else {
       _remit(
-        ownerAfterCollection,
+        postTaxCollectionOwner,
         // Owner receives their self-assessed valuation and the remainder of their deposit.
         currentValuation_ + depositOf(tokenId_),
         RemittanceTriggers.LeaseTakeover
@@ -146,7 +147,7 @@ abstract contract Lease is ILease, Taxation {
     // Set the new valuation
     _setValuation(tokenId_, newValuation_);
 
-    _transfer(ownerAfterCollection, msg.sender, tokenId_);
+    _transfer(postTaxCollectionOwner, msg.sender, tokenId_);
 
     emit LogLeaseTakeover(tokenId_, msg.sender, newValuation_);
 
