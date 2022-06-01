@@ -6,6 +6,7 @@ import "forge-std/Test.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 
 import {Lease} from "./Lease.sol";
+import {RemittanceTriggers} from "./Remittance.sol";
 
 /* solhint-disable func-name-mixedcase */
 /* solhint-disable ordering */
@@ -94,8 +95,126 @@ contract LeaseTest is Test, Lease, IERC721Receiver {
   }
 
   //////////////////////////////
+  /// Mixins
+  //////////////////////////////
+
+  /// @dev Success Expections that must be met by all of the
+  /// cases outlined below.
+  function pre_takeover_success_expectations(
+    uint256 tokenId_,
+    uint256 newValuation_
+  ) public {
+    // Logs Takeover
+    vm.expectEmit(true, true, true, true);
+    emit LogLeaseTakeover(tokenId_, msg.sender, newValuation_);
+  }
+
+  /// @dev Success Expections that must be met by all of the
+  /// cases outlined below.
+  function post_takeover_success_expectations(
+    uint256 tokenId_,
+    uint256 newValuation_
+  ) public {
+    //! TODO: collects tax -> Return to this with Taxation.t.sol
+
+    // Sets valuation
+    assertEq(valuationOf(tokenId_), newValuation_);
+
+    // Transfers
+    assertEq(ownerOf(tokenId_), msg.sender);
+
+    // Unlocked
+    assertEq(_locked[tokenId_], false);
+  }
+
+  //////////////////////////////
   /// Success Criteria
   //////////////////////////////
+
+  /// @dev Token is being purchased for the first time or out of foreclosure
+  function test__takeoverLease_fromContract(
+    uint256 tokenId_,
+    uint256 initialDeposit_,
+    uint256 initialValuation_,
+    address payable beneficiary_,
+    uint256 taxRate_,
+    uint256 collectionFrequency_
+  ) public {
+    // Setup: Mint to contract.
+    _mint_helper(
+      tokenId_,
+      address(this),
+      initialDeposit_,
+      initialValuation_,
+      beneficiary_,
+      taxRate_,
+      collectionFrequency_
+    );
+
+    uint256 newValuation = initialValuation_ + 2;
+    uint256 value = initialValuation_ + 1;
+
+    // Takeover
+    pre_takeover_success_expectations(tokenId_, newValuation);
+    _takeover(tokenId_, newValuation, initialValuation_, value);
+    post_takeover_success_expectations(tokenId_, newValuation);
+
+    // Last collection time is now
+    assertEq(lastCollectionTimeOf(tokenId_), block.timestamp);
+
+    // Deposit is entire msg value
+    assertEq(depositOf(tokenId_), value);
+  }
+
+  /// @dev Test should fail b/c no remittance
+  function testFail__takeoverLease_fromContract_doesNotRemit(
+    uint256 tokenId_,
+    uint256 initialDeposit_,
+    uint256 initialValuation_,
+    address payable beneficiary_,
+    uint256 taxRate_,
+    uint256 collectionFrequency_
+  ) public {
+    // Setup: Mint to contract.
+    _mint_helper(
+      tokenId_,
+      address(this),
+      initialDeposit_,
+      initialValuation_,
+      beneficiary_,
+      taxRate_,
+      collectionFrequency_
+    );
+
+    // Takeover
+    uint256 newValuation = initialValuation_ + 2;
+
+    // Set up an arbitrary emittance emission
+    vm.expectEmit(true, true, true, true);
+    emit LogRemittance(RemittanceTriggers.LeaseTakeover, msg.sender, 0);
+
+    _takeover(tokenId_, newValuation, initialValuation_, initialValuation_ + 1);
+  }
+
+  //! TODO
+  /// @dev Purchased from account & sender is not beneficiary
+  // function test__takeoverLease_fromAccount() public {
+  //   // Remits
+
+  //   // Deposit = msg.value - currentValuation
+
+  //   success_expectations();
+  // }
+
+  //! TODO
+  /// @dev Purchased from an account and sender is beneficiary
+  // function test__takeoverLease_senderBeneficiary() public {
+  //   // Remits
+
+  //   // No deposit
+
+  //   success_expectations();
+  // }
 
   // function test__takeoverLease_nonBeneficiary(
   //   uint256 tokenId_,
@@ -134,7 +253,7 @@ contract LeaseTest is Test, Lease, IERC721Receiver {
     selfAssess(0, 1000);
   }
 
-  //! TODO: Takeover first.
+  //! TODO: Return to this test once Taxation tests are migrated.
   //function test__selfAssess_collectsTax() public {}
 
   //////////////////////////////
