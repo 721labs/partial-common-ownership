@@ -19,7 +19,7 @@ contract RemittanceTest is EnhancedTest, Remittance {
     // Throw out sending to self
     vm.assume(recipient_ != address(this));
     // Throw out zero-address; tested separately.
-    vm.assume(recipient_ != address(0));
+    noZeroAddress(recipient_);
     // Throw out zero amount; tested separately.
     vm.assume(remittance_ > 0);
 
@@ -99,15 +99,25 @@ contract RemittanceTest is EnhancedTest, Remittance {
 
   /// @dev Fails if sending no funds
   function test__remit_amountZero(address recipient_) public {
-    vm.assume(recipient_ != address(0));
+    noZeroAddress(recipient_);
+    safeFuzzedAddress(recipient_);
+
     vm.expectRevert(AmountZero.selector);
     _remit(recipient_, 0, RemittanceTriggers.TaxCollection);
   }
 
-  function test__remit_insufficientBalance(address recipient_) public {
-    vm.assume(recipient_ != address(0));
-    vm.expectRevert(InsufficientBalance.selector);
+  function test__remit_fatalInsufficientBalance(address recipient_) public {
+    noZeroAddress(recipient_);
+    safeFuzzedAddress(recipient_);
+
+    vm.expectRevert(FatalInsufficientBalance.selector);
     _remit(recipient_, 1, RemittanceTriggers.TaxCollection);
+  }
+
+  function test__withdrawOutstandingRemittance_insufficientBalance() public {
+    outstandingRemittances[DEFAULT_TEST_SENDER] = 100;
+    vm.expectRevert(InsufficientBalance.selector);
+    withdrawOutstandingRemittance();
   }
 
   function test_withdrawOutstandingRemittance_noOutstandingBalance() public {

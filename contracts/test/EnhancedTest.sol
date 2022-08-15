@@ -5,6 +5,18 @@ pragma solidity 0.8.12;
 import {Test} from "forge-std/Test.sol";
 
 contract EnhancedTest is Test {
+  //////////////////////////////
+  /// Constants
+  //////////////////////////////
+
+  /// @dev Default address set in `foundry.toml`
+  address public constant DEFAULT_TEST_SENDER =
+    address(0x00a329c0648769A73afAc7F9381E08FB43dBEA72);
+
+  //////////////////////////////
+  /// Errors
+  //////////////////////////////
+
   error UnsupportedChain();
 
   //////////////////////////////
@@ -25,6 +37,11 @@ contract EnhancedTest is Test {
     noVM(who);
     noPrecompiles(who);
     noCreate2Deployer(who);
+  }
+
+  /// @dev Ensures zero address is not used.
+  function noZeroAddress(address who) internal {
+    vm.assume(who != address(0));
   }
 
   /// @dev Prevents fuzzer from using the Create2Deployer address.
