@@ -2,19 +2,22 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.12;
 
-import "forge-std/Test.sol";
-
+import {EnhancedTest} from "./../../test/EnhancedTest.sol";
 import {Remittance, RemittanceTriggers} from "./Remittance.sol";
 
 /* solhint-disable func-name-mixedcase */
 
-contract RemittanceTest is Test, Remittance {
+contract RemittanceTest is EnhancedTest, Remittance {
   //////////////////////////////
   /// Success Criteria
   //////////////////////////////
 
   /// @dev Sends payment successfully.
   function test__remit_sends(address recipient_, uint256 remittance_) public {
+    safeFuzzedAddress(recipient_);
+
+    // Throw out sending to self
+    vm.assume(recipient_ != address(this));
     // Throw out zero-address; tested separately.
     vm.assume(recipient_ != address(0));
     // Throw out zero amount; tested separately.
@@ -41,8 +44,7 @@ contract RemittanceTest is Test, Remittance {
 
   /// @dev Is unable to send payment and deposits funds into outstanding `outstandingRemittances.`
   function test__remit_holds() public {
-    // Attempting to remit to this contract will result in failure
-    address recipient = address(this);
+    address recipient = getUnsendableAddress();
 
     // Provide balance to send
     uint16 amount = 100;
@@ -89,7 +91,7 @@ contract RemittanceTest is Test, Remittance {
   //////////////////////////////
 
   /// @dev Fails if sending to zero address
-  function test__remit_addressZero(uint256 remittance_) public {
+  function test__remit_destinationZeroAddress(uint256 remittance_) public {
     vm.assume(remittance_ > 0);
     vm.expectRevert(DestinationZeroAddress.selector);
     _remit(address(0), remittance_, RemittanceTriggers.TaxCollection);
@@ -111,5 +113,11 @@ contract RemittanceTest is Test, Remittance {
   function test_withdrawOutstandingRemittance_noOutstandingBalance() public {
     vm.expectRevert(NoOutstandingBalance.selector);
     withdrawOutstandingRemittance();
+  }
+
+  function test__remit_destinationContractAddress() public {
+    vm.deal(address(this), 1); // provide balance to send
+    vm.expectRevert(DestinationContractAddress.selector);
+    _remit(address(this), 1, RemittanceTriggers.TaxCollection);
   }
 }

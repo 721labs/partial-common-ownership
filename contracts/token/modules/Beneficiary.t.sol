@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.12;
 
-import "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {Beneficiary} from "./Beneficiary.sol";
 
 /* solhint-disable func-name-mixedcase */

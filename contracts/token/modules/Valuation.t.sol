@@ -2,21 +2,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.12;
 
-import "ds-test/test.sol";
+import {Test} from "forge-std/Test.sol";
 import {Valuation} from "./Valuation.sol";
 
-interface CheatCodes {
-  function expectEmit(
-    bool checkTopic1,
-    bool checkTopic2,
-    bool checkTopic3,
-    bool checkData
-  ) external;
-}
+/* solhint-disable func-name-mixedcase */
 
-contract ValuationTest is DSTest, Valuation {
-  CheatCodes constant cheats = CheatCodes(HEVM_ADDRESS);
-
+contract ValuationTest is Test, Valuation {
   //////////////////////////////
   /// Success Criteria
   //////////////////////////////
@@ -24,7 +15,7 @@ contract ValuationTest is DSTest, Valuation {
   function test__setValuation(uint256 tokenId_, uint256 valuation_) public {
     // 1. Test that it emits.
     // Emits `LogBeneficiaryUpdated`
-    cheats.expectEmit(true, true, false, true);
+    vm.expectEmit(true, true, false, true);
 
     // Emit the expected event
     emit LogValuation(tokenId_, valuation_);
