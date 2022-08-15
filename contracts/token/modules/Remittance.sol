@@ -41,6 +41,8 @@ abstract contract Remittance is IRemittance {
 
   error InsufficientBalance();
 
+  error FatalInsufficientBalance();
+
   error NoOutstandingBalance();
 
   //////////////////////////////
@@ -109,7 +111,9 @@ abstract contract Remittance is IRemittance {
 
     // Warning: This state should never be reached.  It indicates the contract
     // is leaking funds somewhere.
-    if (address(this).balance < remittance_) revert InsufficientBalance();
+    if (address(this).balance < remittance_) {
+      revert FatalInsufficientBalance();
+    }
 
     if (recipient_ == address(this)) revert DestinationContractAddress();
 
