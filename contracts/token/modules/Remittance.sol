@@ -34,6 +34,9 @@ abstract contract Remittance is IRemittance {
 
   error DestinationZeroAddress();
 
+  /// @dev Remitances cannot be to this contract's address.
+  error DestinationContractAddress();
+
   error AmountZero();
 
   error InsufficientBalance();
@@ -108,9 +111,12 @@ abstract contract Remittance is IRemittance {
     // is leaking funds somewhere.
     if (address(this).balance < remittance_) revert InsufficientBalance();
 
+    if (recipient_ == address(this)) revert DestinationContractAddress();
+
     // If the remittance fails, hold funds for the seller to retrieve.
     // For example, if `payableReceipient` is a contract that reverts on receipt or
     // if the call runs out of gas.
+    // TODO: Consider migrating to call e.g. `payable(recipient_).call{value: remittance_}("")`
     if (payable(recipient_).send(remittance_)) {
       emit LogRemittance(trigger_, recipient_, remittance_);
       return true;
