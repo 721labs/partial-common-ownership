@@ -2,16 +2,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.12;
 
-import "forge-std/Test.sol";
+import {EnhancedTest} from "./../../test/EnhancedTest.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 
 import {Lease} from "./Lease.sol";
 import {RemittanceTriggers} from "./Remittance.sol";
 
+import "forge-std/console2.sol";
+
 /* solhint-disable func-name-mixedcase */
 /* solhint-disable ordering */
 
-contract LeaseTest is Test, Lease, IERC721Receiver {
+contract LeaseTest is EnhancedTest, Lease, IERC721Receiver {
   //////////////////////////////
   /// Lifecycle
   //////////////////////////////
@@ -22,15 +24,15 @@ contract LeaseTest is Test, Lease, IERC721Receiver {
     _safeMint(address(this), 1);
   }
 
-  function setUp() public {
-    // Reset locks
-    _locked[0] = false;
-    _locked[1] = false;
+  // function setUp() public {
+  //   // Reset locks
+  //   _locked[0] = false;
+  //   _locked[1] = false;
 
-    // Reset valuations
-    _setValuation(0, 0);
-    _setValuation(1, 0);
-  }
+  //   // Reset valuations
+  //   _setValuation(0, 0);
+  //   _setValuation(1, 0);
+  // }
 
   //////////////////////////////
   /// Helpers
@@ -59,8 +61,6 @@ contract LeaseTest is Test, Lease, IERC721Receiver {
     vm.assume(tokenId_ > 1);
     // 1000 >= valuation > 1
     vm.assume(initialValuation_ > 0);
-    //! Prevent higher valutions from overflowing.
-    vm.assume(initialValuation_ <= 1000);
     // 100 >= tax rate > 0
     vm.assume(taxRate_ > 0);
     vm.assume(taxRate_ <= 100);
@@ -77,6 +77,11 @@ contract LeaseTest is Test, Lease, IERC721Receiver {
     _setBeneficiary(tokenId_, beneficiary_);
     _setTaxRate(tokenId_, taxRate_);
     _setCollectionFrequency(tokenId_, collectionFrequency_);
+
+    // Provide contract with value equivalent to deposit.
+    if (initialLeasee_ != address(this)) {
+      vm.deal(address(this), initialDeposit_);
+    }
   }
 
   function _takeover(
@@ -85,8 +90,9 @@ contract LeaseTest is Test, Lease, IERC721Receiver {
     uint256 currentValuation_,
     uint256 value_
   ) internal {
-    // Ensure takeover call isn't relayed by contract
+    // Relay call with original sender
     vm.startPrank(msg.sender);
+
     this.takeoverLease{value: value_}(
       tokenId_,
       newValuation_,
@@ -94,141 +100,56 @@ contract LeaseTest is Test, Lease, IERC721Receiver {
     );
   }
 
-  //////////////////////////////
-  /// Mixins
-  //////////////////////////////
+  // //////////////////////////////
+  // /// Mixins
+  // //////////////////////////////
 
-  /// @dev Success Expections that must be met by all of the
-  /// cases outlined below.
-  function pre_takeover_success_expectations(
-    uint256 tokenId_,
-    uint256 newValuation_
-  ) public {
-    // Logs Takeover
-    vm.expectEmit(true, true, true, true);
-    emit LogLeaseTakeover(tokenId_, msg.sender, newValuation_);
-  }
+  // /// @dev Success Expections that must be met by all of the
+  // /// cases outlined below.
+  // function pre_takeover_success_expectations(
+  //   uint256 tokenId_,
+  //   uint256 newValuation_
+  // ) public {
+  //   // Logs Takeover
+  //   vm.expectEmit(true, true, true, true);
+  //   emit LogLeaseTakeover(tokenId_, msg.sender, newValuation_);
+  // }
 
-  /// @dev Success Expections that must be met by all of the
-  /// cases outlined below.
-  function post_takeover_success_expectations(
-    uint256 tokenId_,
-    uint256 newValuation_
-  ) public {
-    //! TODO: collects tax -> Return to this with Taxation.t.sol
+  // /// @dev Success Expections that must be met by all of the
+  // /// cases outlined below.
+  // function post_takeover_success_expectations(
+  //   uint256 tokenId_,
+  //   uint256 newValuation_
+  // ) public {
+  //   //! TODO: collects tax -> Return to this with Taxation.t.sol
 
-    // Sets valuation
-    assertEq(valuationOf(tokenId_), newValuation_);
+  //   // Sets valuation
+  //   assertEq(valuationOf(tokenId_), newValuation_);
 
-    // Transfers
-    assertEq(ownerOf(tokenId_), msg.sender);
+  //   // Transfers
+  //   assertEq(ownerOf(tokenId_), msg.sender);
 
-    // Unlocked
-    assertEq(_locked[tokenId_], false);
-  }
+  //   // Unlocked
+  //   assertEq(_locked[tokenId_], false);
+  // }
 
   //////////////////////////////
   /// Success Criteria
   //////////////////////////////
 
   /// @dev Token is being purchased for the first time or out of foreclosure
-  function test__takeoverLease_fromContract(
-    uint256 tokenId_,
-    uint256 initialDeposit_,
-    uint256 initialValuation_,
-    address payable beneficiary_,
-    uint256 taxRate_,
-    uint256 collectionFrequency_
-  ) public {
-    // Setup: Mint to contract.
-    _mint_helper(
-      tokenId_,
-      address(this),
-      initialDeposit_,
-      initialValuation_,
-      beneficiary_,
-      taxRate_,
-      collectionFrequency_
-    );
-
-    uint256 newValuation = initialValuation_ + 2;
-    uint256 value = initialValuation_ + 1;
-
-    // Takeover
-    pre_takeover_success_expectations(tokenId_, newValuation);
-    _takeover(tokenId_, newValuation, initialValuation_, value);
-    post_takeover_success_expectations(tokenId_, newValuation);
-
-    // Last collection time is now
-    assertEq(lastCollectionTimeOf(tokenId_), block.timestamp);
-
-    // Deposit is entire msg value
-    assertEq(depositOf(tokenId_), value);
-  }
-
-  /// @dev Test should fail b/c no remittance
-  function testFail__takeoverLease_fromContract_doesNotRemit(
-    uint256 tokenId_,
-    uint256 initialDeposit_,
-    uint256 initialValuation_,
-    address payable beneficiary_,
-    uint256 taxRate_,
-    uint256 collectionFrequency_
-  ) public {
-    // Setup: Mint to contract.
-    _mint_helper(
-      tokenId_,
-      address(this),
-      initialDeposit_,
-      initialValuation_,
-      beneficiary_,
-      taxRate_,
-      collectionFrequency_
-    );
-
-    // Takeover
-    uint256 newValuation = initialValuation_ + 2;
-
-    // Set up an arbitrary emittance emission
-    vm.expectEmit(true, true, true, true);
-    emit LogRemittance(RemittanceTriggers.LeaseTakeover, msg.sender, 0);
-
-    _takeover(tokenId_, newValuation, initialValuation_, initialValuation_ + 1);
-  }
-
-  //! TODO
-  /// @dev Purchased from account & sender is not beneficiary
-  // function test__takeoverLease_fromAccount() public {
-  //   // Remits
-
-  //   // Deposit = msg.value - currentValuation
-
-  //   success_expectations();
-  // }
-
-  //! TODO
-  /// @dev Purchased from an account and sender is beneficiary
-  // function test__takeoverLease_senderBeneficiary() public {
-  //   // Remits
-
-  //   // No deposit
-
-  //   success_expectations();
-  // }
-
-  // function test__takeoverLease_nonBeneficiary(
+  // function test__takeoverLease_fromContract(
   //   uint256 tokenId_,
-  //   address initialLeasee_,
   //   uint256 initialDeposit_,
   //   uint256 initialValuation_,
   //   address payable beneficiary_,
   //   uint256 taxRate_,
   //   uint256 collectionFrequency_
   // ) public {
-  //   // Mint token
+  //   // Setup: Mint to contract.
   //   _mint_helper(
   //     tokenId_,
-  //     initialLeasee_,
+  //     address(this),
   //     initialDeposit_,
   //     initialValuation_,
   //     beneficiary_,
@@ -236,22 +157,143 @@ contract LeaseTest is Test, Lease, IERC721Receiver {
   //     collectionFrequency_
   //   );
 
-  //   // Provide funds for takeover
-  //   vm.deal(msg.sender, initialValuation_ + 1000);
+  //   uint256 newValuation = initialValuation_ + 2;
+  //   uint256 value = initialValuation_ + 1;
 
-  //   // Takeover as non-beneficiary
-  //   this.takeoverLease{value: initialValuation_ + 100}(
-  //     tokenId_,
-  //     initialValuation_ + 10,
-  //     initialValuation_
-  //   );
+  //   // Takeover
+  //   pre_takeover_success_expectations(tokenId_, newValuation);
+  //   _takeover(tokenId_, newValuation, initialValuation_, value);
+  //   post_takeover_success_expectations(tokenId_, newValuation);
+
+  //   // Last collection time is now
+  //   assertEq(lastCollectionTimeOf(tokenId_), block.timestamp);
+
+  //   // Deposit is entire msg value
+  //   assertEq(depositOf(tokenId_), value);
   // }
 
-  function test__selfAssess_sets(uint256 valuation_) public {
-    // Avoid fail cases
-    vm.assume(valuation_ > 0);
-    selfAssess(0, 1000);
-  }
+  // /// @dev Test should fail b/c no remittance
+  // function testFail__takeoverLease_fromContract_doesNotRemit(
+  //   uint256 tokenId_,
+  //   uint256 initialDeposit_,
+  //   uint256 initialValuation_,
+  //   address payable beneficiary_,
+  //   uint256 taxRate_,
+  //   uint256 collectionFrequency_
+  // ) public {
+  //   // Setup: Mint to contract.
+  //   _mint_helper(
+  //     tokenId_,
+  //     address(this),
+  //     initialDeposit_,
+  //     initialValuation_,
+  //     beneficiary_,
+  //     taxRate_,
+  //     collectionFrequency_
+  //   );
+
+  //   // Takeover
+  //   uint256 newValuation = initialValuation_ + 2;
+
+  //   // Set up an arbitrary emittance emission
+  //   vm.expectEmit(true, true, true, true);
+  //   emit LogRemittance(RemittanceTriggers.LeaseTakeover, msg.sender, 0);
+
+  //   _takeover(tokenId_, newValuation, initialValuation_, initialValuation_ + 1);
+  // }
+
+  //! TODO – FatalInsufficientBalance should not be reached!
+  /// @dev Purchased from account & sender is not beneficiary
+  // function test__takeoverLease_fromAccount(
+  //   uint256 tokenId_,
+  //   address initialOwner_,
+  //   uint256 initialDeposit_,
+  //   uint256 initialValuation_,
+  //   address payable beneficiary_,
+  //   uint256 taxRate_,
+  //   uint256 collectionFrequency_
+  // ) public {
+  //   // Setup: Mint to contract.
+  //   _mint_helper(
+  //     tokenId_,
+  //     initialOwner_,
+  //     initialDeposit_,
+  //     initialValuation_,
+  //     beneficiary_,
+  //     taxRate_,
+  //     collectionFrequency_
+  //   );
+
+  //   // Expect: Remits
+  //   // vm.expectEmit(true, true, true, true);
+  //   // emit LogRemittance(
+  //   //   RemittanceTriggers.LeaseTakeover,
+  //   //   initialOwner_,
+  //   //   initialValuation_
+  //   // );
+
+  //   // Takeover
+
+  //   // Provide funds
+  //   vm.deal(msg.sender, initialValuation_ + 1000);
+
+  //   uint256 newValuation = initialValuation_ + 2;
+  //   uint256 value = initialValuation_ + 1;
+
+  //   pre_takeover_success_expectations(tokenId_, newValuation);
+  //   _takeover(tokenId_, newValuation, initialValuation_, value);
+  //   post_takeover_success_expectations(tokenId_, newValuation);
+
+  //   // Deposit = msg.value - currentValuation
+  //   assertEq(depositOf(tokenId_), 1);
+  // }
+
+  //! TODO
+  /// @dev Purchased from an account and sender is beneficiary
+  // function test__takeoverLease_senderBeneficiary(
+  //   uint256 tokenId_,
+  //   address initialOwner_,
+  //   uint256 initialDeposit_,
+  //   uint256 initialValuation_,
+  //   uint256 taxRate_,
+  //   uint256 collectionFrequency_
+  // ) public {
+  //   _mint_helper(
+  //     tokenId_,
+  //     initialOwner_,
+  //     initialDeposit_,
+  //     initialValuation_,
+  //     payable(msg.sender),
+  //     taxRate_,
+  //     collectionFrequency_
+  //   );
+
+  //   // console.log("Initial Valuation", initialValuation_);
+  //   // console.log("Balance after mint", address(this).balance);
+
+  //   // // Takeover
+
+  //   // // Provide funds
+  //   // vm.deal(msg.sender, initialValuation_ + 10000);
+
+  //   // uint256 newValuation = initialValuation_ + 1000;
+  //   // uint256 value = initialValuation_; // Beneficiary pays the current value
+
+  //   // pre_takeover_success_expectations(tokenId_, newValuation);
+  //   // _takeover(tokenId_, newValuation, initialValuation_, value);
+  //   // post_takeover_success_expectations(tokenId_, newValuation);
+
+  //   // // Remits
+
+  //   // // No deposit
+  //   // assertEq(depositOf(tokenId_), 0);
+  // }
+
+  // function test__selfAssess_sets(uint256 valuation_) public {
+  //   // Avoid fail cases
+  //   vm.assume(valuation_ > 0);
+  //   selfAssess(0, 1000);
+  // }
 
   //! TODO: Return to this test once Taxation tests are migrated.
   //function test__selfAssess_collectsTax() public {}
@@ -291,118 +333,107 @@ contract LeaseTest is Test, Lease, IERC721Receiver {
     takeoverLease(1, 299, 300);
   }
 
-  function test_takeoverLease_beneficiarySender_cannotContainValueIfOwnedByContract(
-    uint256 tokenId_,
-    uint256 initialDeposit_,
-    uint256 initialValuation_,
-    uint256 taxRate_,
-    uint256 collectionFrequency_
-  ) public {
+  /// @dev If sender is beneficiary and token is owned by contract,
+  /// sender does not need to pay anything.
+  function test_takeoverLease_surplusValue_ownedByContract() public {
+    uint256 tokenId = 999;
+    uint256 initialValuation = 1 ether;
+
     _mint_helper(
-      tokenId_,
+      tokenId,
       address(this),
-      initialDeposit_,
-      initialValuation_,
+      10 ether,
+      initialValuation,
       payable(msg.sender),
-      taxRate_,
-      collectionFrequency_
+      10,
+      365
     );
 
     vm.expectRevert(SurplusValue.selector);
 
     _takeover(
-      tokenId_,
-      initialValuation_ + 2,
-      initialValuation_,
-      initialValuation_ + 1
+      tokenId,
+      initialValuation + 2,
+      initialValuation,
+      initialValuation + 1
     );
   }
 
-  function test_takeoverLease_beneficiarySender_cannotContainSurplusValue(
-    uint256 tokenId_,
-    address initialLeasee_,
-    uint256 initialDeposit_,
-    uint256 initialValuation_,
-    uint256 taxRate_,
-    uint256 collectionFrequency_
-  ) public {
+  /// @dev If sender is beneficiary and token is not owned by contract,
+  /// sender only needs to send enough Wei to pay current leasor, and does
+  /// not need to put down a deposit.
+  function test_takeoverLease_surplusValue() public {
+    uint256 tokenId = 999;
+    uint256 initialValuation = 1 ether;
+
     _mint_helper(
-      tokenId_,
-      initialLeasee_,
-      initialDeposit_,
-      initialValuation_,
-      payable(msg.sender),
-      taxRate_,
-      collectionFrequency_
-    );
-
-    // Beneficiary should be sending exactly `initialValuation_`
-    vm.expectRevert(SurplusValue.selector);
-
-    _takeover(
-      tokenId_,
-      initialValuation_ + 2,
-      initialValuation_,
-      initialValuation_ + 1
-    );
-  }
-
-  function test__takeoverLease_nonBeneficiarySender_requiresSurplusValue(
-    uint256 tokenId_,
-    address initialLeasee_,
-    uint256 initialDeposit_,
-    uint256 initialValuation_,
-    address payable beneficiary_,
-    uint256 taxRate_,
-    uint256 collectionFrequency_
-  ) public {
-    _mint_helper(
-      tokenId_,
-      initialLeasee_,
-      initialDeposit_,
-      initialValuation_,
-      beneficiary_,
-      taxRate_,
-      collectionFrequency_
-    );
-
-    // Beneficiary should be sending exactly `initialValuation_`
-    vm.expectRevert(GreaterValuationRequired.selector);
-
-    _takeover(
-      tokenId_,
-      initialValuation_ + 1,
-      initialValuation_,
-      initialValuation_
-    );
-  }
-
-  function test_takeoverLease_buyerCannotBeOwner(
-    uint256 tokenId_,
-    uint256 initialDeposit_,
-    uint256 initialValuation_,
-    address payable beneficiary_,
-    uint256 taxRate_,
-    uint256 collectionFrequency_
-  ) public {
-    _mint_helper(
-      tokenId_,
+      tokenId,
       msg.sender,
-      initialDeposit_,
-      initialValuation_,
-      beneficiary_,
-      taxRate_,
-      collectionFrequency_
+      10 ether,
+      initialValuation,
+      payable(msg.sender),
+      10,
+      365
+    );
+
+    // Beneficiary should be sending exactly `initialValuation`
+    vm.expectRevert(SurplusValue.selector);
+
+    _takeover(
+      tokenId,
+      initialValuation + 2,
+      initialValuation,
+      initialValuation + 1
+    );
+  }
+
+  function test__takeoverLease_nonBeneficiarySender_surplusRequired(
+    address beneficiary_
+  ) public {
+    // Beneficiary should not be msg sender
+    vm.assume(beneficiary_ != msg.sender);
+
+    uint256 tokenId = 999;
+    uint256 initialValuation = 1 ether;
+
+    _mint_helper(
+      tokenId,
+      msg.sender,
+      10 ether,
+      initialValuation,
+      payable(beneficiary_),
+      10,
+      365
+    );
+
+    // Beneficiary should be sending exactly `initialValuation`
+    vm.expectRevert(SurplusRequired.selector);
+
+    _takeover(
+      tokenId,
+      initialValuation + 1,
+      initialValuation,
+      initialValuation
+    );
+  }
+
+  /// @dev Expect lease failure because takeover requested by current owner.
+  function test_takeoverLease_alreadyOwner() public {
+    uint256 tokenId = 999;
+    uint256 initialValuation = 1 ether;
+
+    _mint_helper(
+      tokenId,
+      msg.sender,
+      10 ether,
+      initialValuation,
+      payable(msg.sender),
+      10,
+      365
     );
 
     vm.expectRevert(AlreadyOwner.selector);
-
-    _takeover(
-      tokenId_,
-      initialValuation_ + 2,
-      initialValuation_,
-      initialValuation_ + 1
-    );
+    _takeover(tokenId, initialValuation + 1 ether, initialValuation, 1 ether);
   }
 
   function test__selfAssess_cannotSetZero() public {
@@ -419,7 +450,6 @@ contract LeaseTest is Test, Lease, IERC721Receiver {
     uint256 tokenId_,
     uint256 initialDeposit_,
     uint256 initialValuation_,
-    address payable beneficiary_,
     uint256 taxRate_,
     uint256 collectionFrequency_
   ) public {
@@ -428,7 +458,7 @@ contract LeaseTest is Test, Lease, IERC721Receiver {
       msg.sender,
       initialDeposit_,
       initialValuation_,
-      beneficiary_,
+      payable(msg.sender),
       taxRate_,
       collectionFrequency_
     );
