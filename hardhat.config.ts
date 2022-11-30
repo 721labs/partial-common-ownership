@@ -1,9 +1,13 @@
+// Native dependencies
+import fs from "fs";
+
 // Import Hardhat extensions
 import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-waffle";
 import "@nomiclabs/hardhat-web3";
 import "hardhat-gas-reporter";
 import "solidity-coverage";
+import "hardhat-preprocessor";
 
 // Dependencies
 import { subtask } from "hardhat/config";
@@ -30,6 +34,13 @@ subtask(TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS).setAction(
   }
 );
 
+// Load Forge dependency mapping
+const forgeRemapping = fs
+  .readFileSync("remappings.txt", "utf8")
+  .split("\n")
+  .filter(Boolean) // remove empty lines
+  .map((line) => line.trim().split("="));
+
 /**
  * @type import('hardhat/config').HardhatUserConfig
  */
@@ -46,10 +57,25 @@ export default {
       },
     },
   },
+  preprocess: {
+    eachLine: () => ({
+      transform: (line: string) => {
+        if (line.match(/^\s*import /i)) {
+          for (const [from, to] of forgeRemapping) {
+            if (line.includes(from)) {
+              line = line.replace(from, to);
+              break;
+            }
+          }
+        }
+        return line;
+      },
+    }),
+  },
   paths: {
     sources: "./contracts",
     tests: "./tests",
-    cache: "./cache",
+    cache: "./cache-hh",
     artifacts: "./artifacts",
   },
   mocha: {
