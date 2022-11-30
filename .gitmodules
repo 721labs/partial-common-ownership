@@ -4,4 +4,4 @@
 [submodule "lib/forge-std"]
 	path = lib/forge-std
 	url = https://github.com/foundry-rs/forge-std
-	branch = v0.1.0
+	branch = master
