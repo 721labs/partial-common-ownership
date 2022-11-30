@@ -9,9 +9,13 @@ jobs:
     name: "coverage"
     runs-on: ubuntu-latest
     needs: []
+    # SKIP: Is not compatible w/ Hardhat preprocessing configuration and resultantly will not remap Forge-installed dependencies.
+    if: False
     steps:
       - name: "Checkout Repo"
         uses: actions/checkout@master
+        with:
+          submodules: recursive
       - name: "Install Node"
         uses: actions/setup-node@v2
         with:
@@ -32,6 +36,8 @@ jobs:
     steps:
       - name: "Checkout Repo"
         uses: actions/checkout@master
+        with:
+          submodules: recursive
       - name: "Install Node"
         uses: actions/setup-node@v2
         with:
@@ -52,6 +58,8 @@ jobs:
     steps:
       - name: "Checkout Repo"
         uses: actions/checkout@master
+        with:
+          submodules: recursive
       - name: "Install Node"
         uses: actions/setup-node@v2
         with:

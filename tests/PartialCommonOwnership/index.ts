@@ -585,7 +585,7 @@ describe("PartialCommonOwnership.sol", async function () {
       context("when token not minted but required", async function () {
         it("#valuationOf()", async function () {
           await expect(contract.ownerOf(INVALID_TOKEN_ID)).to.be.revertedWith(
-            ERC721ErrorMessages.NONEXISTENT_TOKEN
+            ERC721ErrorMessages.OWNER_NONEXISTENT_TOKEN
           );
         });
         it("#depositOf()", async function () {

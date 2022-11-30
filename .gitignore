@@ -1,5 +1,6 @@
 # Foundry
 out
+cache
 
 # Typechain
 types
@@ -12,7 +13,7 @@ coverage.json
 .env
 
 # Hardhat files
-cache
+cache-hh
 artifacts
 bin
 

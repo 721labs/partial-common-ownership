@@ -140,7 +140,7 @@ async function unwrap(id: BigNumber, unwrappedTokenId: TOKENS): Promise<void> {
 
   // Verify that wrapped token is burned
   await expect(wrapperContract.ownerOf(id)).to.be.revertedWith(
-    ERC721ErrorMessages.NONEXISTENT_TOKEN
+    ERC721ErrorMessages.OWNER_NONEXISTENT_TOKEN
   );
 
   // Verify all state is destroyed
