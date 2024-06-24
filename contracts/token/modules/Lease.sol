@@ -15,6 +15,26 @@ abstract contract Lease is ILease, Taxation {
   mapping(uint256 => bool) internal _locked;
 
   //////////////////////////////
+  /// Errors
+  //////////////////////////////
+
+  error ZeroValuation();
+
+  error SameValuation();
+
+  error TokenLocked();
+
+  error IncorrectCurrentValuation();
+
+  error GreaterOrEqualValuationRequired();
+
+  error SurplusValue();
+
+  error GreaterValuationRequired();
+
+  error AlreadyOwner();
+
+  //////////////////////////////
   /// Events
   //////////////////////////////
 
@@ -39,26 +59,22 @@ abstract contract Lease is ILease, Taxation {
     uint256 currentValuation_
   ) public payable override _tokenMinted(tokenId_) {
     // Prevent re-entrancy attack
-    require(!_locked[tokenId_], "Token is locked");
+    if (_locked[tokenId_]) revert TokenLocked();
 
     uint256 valuationPriorToTaxCollection = valuationOf(tokenId_);
 
     // Prevent front-run.
-    require(
-      valuationPriorToTaxCollection == currentValuation_,
-      "Current valuation is incorrect"
-    );
+    if (valuationPriorToTaxCollection != currentValuation_)
+      revert IncorrectCurrentValuation();
 
     // New valuation must be greater than zero, even if current valuation is zero, to ensure that
     // funds are available for deposit.
-    require(newValuation_ > 0, "New valuation cannot be zero");
+    if (newValuation_ == 0) revert ZeroValuation();
 
     // Buyer can self-assess the valuation higher the current valuation; this renders unnecessary a second gas payment
     // if Buyer wants to immediately self-assess the token at a higher valuation.
-    require(
-      newValuation_ >= valuationPriorToTaxCollection,
-      "New valuation must be >= current valuation"
-    );
+    if (newValuation_ < valuationPriorToTaxCollection)
+      revert GreaterOrEqualValuationRequired();
 
     bool senderIsBeneficiary = msg.sender == beneficiaryOf(tokenId_);
     // Current owner is a wallet address or the address of this contract
@@ -66,26 +82,23 @@ abstract contract Lease is ILease, Taxation {
     address currentOwner = ownerOf(tokenId_);
 
     if (senderIsBeneficiary) {
-      if (currentOwner == address(this)) {
+      if (
         // If token is owned by contract, beneficiary does not need to pay anything.
-        require(msg.value == 0, "Msg contains value");
-      } else {
+        (currentOwner == address(this) && msg.value > 0) ||
         // Beneficiary only needs to pay the current valuation,
         // doesn't need to put down a deposit.
-        require(msg.value == currentValuation_, "Msg contains surplus value");
-      }
+        msg.value != currentValuation_
+      ) revert SurplusValue();
     } else {
       // Value sent must be greater the amount being remitted to the current owner;
       // surplus is necessary for deposit.
-      require(
-        msg.value > valuationPriorToTaxCollection,
-        "Message does not contain surplus value for deposit"
-      );
+      if (msg.value <= valuationPriorToTaxCollection)
+        revert GreaterValuationRequired();
     }
 
     // Owner will be seller or this contract if foreclosed.
     // Prevent an accidental re-purchase.
-    require(msg.sender != ownerOf(tokenId_), "Buyer is already owner");
+    if (msg.sender == currentOwner) revert AlreadyOwner();
 
     // After all security checks have occured, lock the token.
     _locked[tokenId_] = true;
@@ -96,14 +109,12 @@ abstract contract Lease is ILease, Taxation {
     // deposit than they originally anticipated.
     collectTax(tokenId_);
 
-    address ownerAfterCollection = ownerOf(tokenId_);
-    bool purchasedFromContract = ownerAfterCollection == address(this);
+    // Tax collection may have transferred ownership.
+    address postTaxCollectionOwner = ownerOf(tokenId_);
+    bool purchasedFromContract = postTaxCollectionOwner == address(this);
 
     // Token is being purchased for the first time or out of foreclosure
     if (purchasedFromContract) {
-      // Deposit takes entire msg value
-      _setDeposit(tokenId_, msg.value);
-
       // If the token is being purchased for the first time or is being purchased
       // from foreclosure, last collection time is set to now so that the contract
       // does not incorrectly consider the taxable period to have begun prior to
@@ -112,9 +123,11 @@ abstract contract Lease is ILease, Taxation {
 
       // Note: no remittance occurs. Beneficiary receives no tax on a token that is currently
       // valued at nothing.
+
+      // Note: Deposit is handled below.
     } else {
       _remit(
-        ownerAfterCollection,
+        postTaxCollectionOwner,
         // Owner receives their self-assessed valuation and the remainder of their deposit.
         currentValuation_ + depositOf(tokenId_),
         RemittanceTriggers.LeaseTakeover
@@ -136,7 +149,7 @@ abstract contract Lease is ILease, Taxation {
     // Set the new valuation
     _setValuation(tokenId_, newValuation_);
 
-    _transfer(ownerAfterCollection, msg.sender, tokenId_);
+    _transfer(postTaxCollectionOwner, msg.sender, tokenId_);
 
     emit LogLeaseTakeover(tokenId_, msg.sender, newValuation_);
 
@@ -152,8 +165,10 @@ abstract contract Lease is ILease, Taxation {
     _collectTax(tokenId_)
   {
     uint256 currentValuation = valuationOf(tokenId_);
-    require(newValuation_ > 0, "New valuation cannot be zero");
-    require(newValuation_ != currentValuation, "New valuation cannot be same");
+    // New valuation cannot be zero.
+    if (newValuation_ == 0) revert ZeroValuation();
+    // New valuation must be different
+    if (newValuation_ == currentValuation) revert SameValuation();
 
     _setValuation(tokenId_, newValuation_);
   }
