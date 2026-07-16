@@ -58,7 +58,7 @@
     "dotenv": "^10.0.0",
     "ethereum-waffle": "^3.4.0",
     "ethers": "^5.4.5",
-    "hardhat": "^2.12.2",
+    "hardhat": "2.28.6",
     "hardhat-gas-reporter": "^1.0.6",
     "hardhat-preprocessor": "^0.1.5",
     "prettier": "^2.3.2",
@@ -72,6 +72,7 @@
     "web3": "^1.5.2"
   },
   "dependencies": {},
+  "packageManager": "yarn@1.22.22",
   "resolutions": {
     "colors": "1.4.0"
   },

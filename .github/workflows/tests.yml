@@ -1,9 +1,14 @@
 name: "tests"
+
 on:
   workflow_dispatch:
   push:
     branches:
       - "*" # All branches
+
+permissions:
+  contents: read
+
 jobs:
   coverage:
     name: "coverage"
@@ -13,15 +18,15 @@ jobs:
     if: False
     steps:
       - name: "Checkout Repo"
-        uses: actions/checkout@master
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           submodules: recursive
       - name: "Install Node"
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: "16"
+          node-version: "24.18.0"
       - name: "Cache Dependencies"
-        uses: actions/cache@v2
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: "**/node_modules"
           key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
@@ -35,15 +40,15 @@ jobs:
     needs: []
     steps:
       - name: "Checkout Repo"
-        uses: actions/checkout@master
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           submodules: recursive
       - name: "Install Node"
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: "16"
+          node-version: "24.18.0"
       - name: "Cache Dependencies"
-        uses: actions/cache@v2
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: "**/node_modules"
           key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
@@ -57,15 +62,15 @@ jobs:
     needs: []
     steps:
       - name: "Checkout Repo"
-        uses: actions/checkout@master
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           submodules: recursive
       - name: "Install Node"
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: "16"
+          node-version: "24.18.0"
       - name: "Cache Dependencies"
-        uses: actions/cache@v2
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: "**/node_modules"
           key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
@@ -79,9 +84,13 @@ jobs:
     needs: []
     steps:
       - name: "Checkout Repo"
-        uses: actions/checkout@master
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           submodules: recursive
+      - name: "Install Node"
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "24.18.0"
       - name: "Install Foundry"
         uses: foundry-rs/foundry-toolchain@b00af27efadbc7b4ca8b82abbd903b17cc874d2a # v1.9.0
         with:
