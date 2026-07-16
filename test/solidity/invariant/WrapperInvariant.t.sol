@@ -3,10 +3,9 @@ pragma solidity 0.8.36;
 
 import {Test} from "forge-std/Test.sol";
 import {WrapperInvariantHandler} from "./helpers/WrapperInvariantHarness.sol";
-import {WrapperInvariantTargets} from "./helpers/WrapperInvariantTargets.sol";
 
 /// @dev Stateful Wrapper safety properties.
-contract WrapperInvariantTest is Test, WrapperInvariantTargets {
+contract WrapperInvariantTest is Test {
     uint256 private constant TOKEN_COUNT = 3;
 
     uint256 private constant OWNERS_SLOT = 0;

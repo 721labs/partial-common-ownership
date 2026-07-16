@@ -74,6 +74,37 @@ const STAGE_08_BYTECODE_PATH =
   /^\$\.contracts\.(?:contracts\/Wrapper\.sol:Wrapper|contracts\/token\/PartialCommonOwnership\.sol:PartialCommonOwnership)\.(?:creationBytecode|runtimeBytecode)\.(?:keccak256|metadataBytes|metadataStrippedKeccak256|metadataStrippedOpcodes|metadataStrippedSizeBytes|sizeBytes)$/;
 const STAGE_08_GAS_SNAPSHOT_PATH = /^\$\.gasSnapshot\.entries\[\d+\]$/;
 const STAGE_08_KEY_FLOW_GAS_PATH = path.join(ROOT, "gas", "key-flows.snap");
+const STAGE_08_EVIDENCE_SHA256 =
+  "8e80ae9a9af5c14a0ab57446a4254a300f8a494dd9d54cbf283bd9aeae95b530";
+const STAGE_08_LEGACY_GAS_ENTRIES = Object.freeze([
+  "BeneficiaryTest:testCannot_setBeneficiary_calledByNonBeneficiary(uint256,address) (runs: 256, μ: 249780, ~: 249780)",
+  "BeneficiaryTest:test__setBeneficiary(uint256,address) (runs: 256, μ: 29635, ~: 29635)",
+  "BeneficiaryTest:test_beneficiaryOf(uint256,address) (runs: 256, μ: 25312, ~: 25312)",
+  "BeneficiaryTest:test_beneficiaryOf_unsetTokens() (gas: 2559)",
+  "BeneficiaryTest:test_setBeneficiary(uint256,address) (runs: 256, μ: 26994, ~: 26994)",
+  "RemittanceTest:test__remit_amountZero(address) (runs: 256, μ: 417600, ~: 417600)",
+  "RemittanceTest:test__remit_destinationContractAddress() (gas: 417556)",
+  "RemittanceTest:test__remit_destinationZeroAddress(uint256) (runs: 256, μ: 417992, ~: 417992)",
+  "RemittanceTest:test__remit_holds() (gas: 92196)",
+  "RemittanceTest:test__remit_insufficientBalance(address) (runs: 256, μ: 417604, ~: 417604)",
+  "RemittanceTest:test__remit_sends(address,uint256) (runs: 256, μ: 52298, ~: 52298)",
+  "RemittanceTest:test_withdrawOutstandingRemittance(uint256) (runs: 256, μ: 29796, ~: 29809)",
+  "RemittanceTest:test_withdrawOutstandingRemittance_noOutstandingBalance() (gas: 417458)",
+  "ValuationTest:test__setValuation(uint256,uint256) (runs: 256, μ: 28928, ~: 29473)",
+  "ValuationTest:test_valuationOf(uint256,uint256) (runs: 256, μ: 24094, ~: 24639)",
+]);
+const STAGE_09_CANDIDATE = "stage-09-forge-std-1-16-2";
+const STAGE_09_OPCODE_EVIDENCE_PATH =
+  "compatibility/evidence/stage-09-forge-std-1-16-2.json";
+const STAGE_09_FORGE_STD_PATH = "lib/forge-std";
+const STAGE_09_FORGE_STD_PREVIOUS_COMMIT =
+  "8d93b5273ca94b1c50b055ffc0e1b8b0a3c03d78";
+const STAGE_09_FORGE_STD_COMMIT = "bf647bd6046f2f7da30d0c2bf435e5c76a780c1b";
+const STAGE_09_FORGE_STD_TAG = "v1.16.2";
+const STAGE_09_FORGE_STD_VERSION = "1.16.2";
+const STAGE_09_RELATIVE_GAS_PATHS = new Set([
+  0, 1, 2, 5, 6, 7, 8, 9, 10, 11, 12, 13,
+]);
 const PROJECT_REVERT_STRINGS_PATH = path.join(
   ROOT,
   "compatibility",
@@ -321,6 +352,12 @@ function validateStage08Candidate(baseline, candidate) {
   }
 }
 
+function validateStage09Candidate(baseline, candidate) {
+  validateStage08Candidate(baseline, candidate);
+  stage09ProductionEvidence(baseline, candidate);
+  stage09ForgeStdEvidence();
+}
+
 const REVIEW_POLICIES = Object.freeze({
   "stage-04-source-path-metadata-and-gas": Object.freeze({
     candidate: "stage-04-package-canonical-openzeppelin",
@@ -444,6 +481,49 @@ const REVIEW_POLICIES = Object.freeze({
       );
     },
     validateCandidate: validateStage08Candidate,
+  }),
+  "stage-09-forge-std-1-16-2": Object.freeze({
+    candidate: STAGE_09_CANDIDATE,
+    requiredOpcodeEvidence: Object.freeze({
+      mode: "stage-08-production-equality",
+      path: STAGE_09_OPCODE_EVIDENCE_PATH,
+      contracts: STAGE_08_PRODUCTION_CONTRACTS,
+    }),
+    requiredSafetyEvidence: Object.freeze({
+      path: "compatibility/evidence/stage-07-safety-artifacts.json",
+      sha256:
+        "0065814caec6e3044951f80c891c9948454e90138d016513ed07d0fcfb7c67d8",
+    }),
+    requiredStage08Evidence: Object.freeze({
+      path: STAGE_08_OPCODE_EVIDENCE_PATH,
+      sha256: STAGE_08_EVIDENCE_SHA256,
+    }),
+    requiredForgeStdEvidence: Object.freeze({
+      path: STAGE_09_FORGE_STD_PATH,
+      previousCommit: STAGE_09_FORGE_STD_PREVIOUS_COMMIT,
+      candidateCommit: STAGE_09_FORGE_STD_COMMIT,
+      tag: STAGE_09_FORGE_STD_TAG,
+      packageVersion: STAGE_09_FORGE_STD_VERSION,
+    }),
+    permits(reviewPath) {
+      const gasMatch = reviewPath.match(/^\$\.gasSnapshot\.entries\[(\d+)\]$/);
+      return (
+        reviewPath === "$.compiler.version" ||
+        reviewPath === "$.compiler.longVersion" ||
+        STAGE_08_BYTECODE_PATH.test(reviewPath) ||
+        (gasMatch && STAGE_09_RELATIVE_GAS_PATHS.has(Number(gasMatch[1]))) ||
+        reviewPath === "$.toolchain.forge[2]" ||
+        reviewPath === "$.tests.total" ||
+        STAGE_06_FORGE_TEST_PATH.test(reviewPath)
+      );
+    },
+    permitsProtectedPath(reviewPath) {
+      return (
+        reviewPath === "$.tests.total" ||
+        STAGE_06_FORGE_TEST_PATH.test(reviewPath)
+      );
+    },
+    validateCandidate: validateStage09Candidate,
   }),
 });
 
@@ -1461,6 +1541,24 @@ function reviewPolicy(review) {
       );
     }
   }
+  if (policy.requiredStage08Evidence) {
+    const required = policy.requiredStage08Evidence;
+    const supplied = review.stage08Evidence;
+    if (!supplied || !valuesEqual(supplied, required)) {
+      throw new Error(
+        `Compatibility review policy ${review.policy} requires exact inherited Stage 8 evidence ${required.path} at ${required.sha256}`
+      );
+    }
+  }
+  if (policy.requiredForgeStdEvidence) {
+    const required = policy.requiredForgeStdEvidence;
+    const supplied = review.forgeStdEvidence;
+    if (!supplied || !valuesEqual(supplied, required)) {
+      throw new Error(
+        `Compatibility review policy ${review.policy} requires forge-std ${required.tag} at ${required.candidateCommit} from ${required.previousCommit}`
+      );
+    }
+  }
   return policy;
 }
 
@@ -1598,6 +1696,108 @@ function stage08Review(baselineBytes, differences) {
       mode: "metadata-stripped-full-diff",
       path: STAGE_08_OPCODE_EVIDENCE_PATH,
       contracts: [...STAGE_08_PRODUCTION_CONTRACTS],
+    },
+    safetyEvidence: {
+      path: "compatibility/evidence/stage-07-safety-artifacts.json",
+      sha256:
+        "0065814caec6e3044951f80c891c9948454e90138d016513ed07d0fcfb7c67d8",
+    },
+  };
+}
+
+function stage09ExpectedReviewPaths() {
+  const paths = ["$.compiler.longVersion", "$.compiler.version"];
+  for (const qualifiedName of STAGE_08_PRODUCTION_CONTRACTS) {
+    for (const bytecodeKind of ["creationBytecode", "runtimeBytecode"]) {
+      for (const field of [
+        "keccak256",
+        "metadataStrippedKeccak256",
+        "metadataStrippedOpcodes",
+        "metadataStrippedSizeBytes",
+        "sizeBytes",
+      ]) {
+        paths.push(`$.contracts.${qualifiedName}.${bytecodeKind}.${field}`);
+      }
+    }
+  }
+  for (const index of [...STAGE_09_RELATIVE_GAS_PATHS].sort((a, b) => a - b)) {
+    paths.push(`$.gasSnapshot.entries[${index}]`);
+  }
+  paths.push(
+    "$.tests.forge.count",
+    "$.tests.forge.names.length",
+    "$.tests.total",
+    "$.toolchain.forge[2]"
+  );
+  return paths.sort();
+}
+
+function stage09ReviewReason(reviewPath) {
+  if (
+    /^\$\.compiler\.(?:version|longVersion)$/.test(reviewPath) ||
+    STAGE_08_BYTECODE_PATH.test(reviewPath)
+  ) {
+    return "This is the unchanged Stage 8 Solidity 0.8.36 compiler output; Stage 9 digest-binds the prior evidence and requires exact compiler, bytecode, opcode, hash, and size equality against it.";
+  }
+  if (STAGE_08_GAS_SNAPSHOT_PATH.test(reviewPath)) {
+    return "Relative to Stage 8, forge-std v1.16.2 changes only this legacy test-harness gas result; Stage 9 evidence records the exact prior and candidate values while production output remains unchanged and all 12 key flows remain within policy.";
+  }
+  if (reviewPath === "$.toolchain.forge[2]") {
+    return "Official Foundry 1.7.1 binaries share the pinned version and commit but embed platform-specific build timestamps; the manifest compares the stable version, commit, and build profile.";
+  }
+  if (
+    reviewPath === "$.tests.total" ||
+    STAGE_06_FORGE_TEST_PATH.test(reviewPath)
+  ) {
+    return "Stage 9 preserves the exact Stage 8 inventory: 89 Hardhat oracle tests, 104 mapped Forge behaviors, and 36 Forge safety tests.";
+  }
+  throw new Error(`Stage 9 has no review reason for ${reviewPath}`);
+}
+
+function stage09Review(baselineBytes, differences) {
+  const actualPaths = differences
+    .map(({ path: reviewPath }) => reviewPath)
+    .sort();
+  const expectedPaths = stage09ExpectedReviewPaths();
+  if (!valuesEqual(actualPaths, expectedPaths)) {
+    const pathDifferences = collectDifferences(
+      expectedPaths,
+      actualPaths,
+      "$.stage09ReviewPaths"
+    );
+    throw new Error(
+      `Stage 9 requires exactly ${
+        expectedPaths.length
+      } baseline differences:\n${pathDifferences
+        .slice(0, 20)
+        .map((difference) => `- ${formatDifference(difference)}`)
+        .join("\n")}`
+    );
+  }
+  return {
+    schemaVersion: 1,
+    candidate: STAGE_09_CANDIDATE,
+    policy: "stage-09-forge-std-1-16-2",
+    baselineSha256: sha256(baselineBytes),
+    allowedDifferences: differences.map((difference) => ({
+      ...difference,
+      reason: stage09ReviewReason(difference.path),
+    })),
+    opcodeEvidence: {
+      mode: "stage-08-production-equality",
+      path: STAGE_09_OPCODE_EVIDENCE_PATH,
+      contracts: [...STAGE_08_PRODUCTION_CONTRACTS],
+    },
+    stage08Evidence: {
+      path: STAGE_08_OPCODE_EVIDENCE_PATH,
+      sha256: STAGE_08_EVIDENCE_SHA256,
+    },
+    forgeStdEvidence: {
+      path: STAGE_09_FORGE_STD_PATH,
+      previousCommit: STAGE_09_FORGE_STD_PREVIOUS_COMMIT,
+      candidateCommit: STAGE_09_FORGE_STD_COMMIT,
+      tag: STAGE_09_FORGE_STD_TAG,
+      packageVersion: STAGE_09_FORGE_STD_VERSION,
     },
     safetyEvidence: {
       path: "compatibility/evidence/stage-07-safety-artifacts.json",
@@ -1826,13 +2026,356 @@ function stage08GasEvidence() {
   });
 }
 
+function stage08Evidence() {
+  if (!fs.existsSync(STAGE_08_OPCODE_EVIDENCE_PATH)) {
+    throw new Error(
+      "Stage 9 requires the checked-in Stage 8 compiler evidence"
+    );
+  }
+  const bytes = fs.readFileSync(STAGE_08_OPCODE_EVIDENCE_PATH);
+  const digest = sha256(bytes);
+  if (digest !== STAGE_08_EVIDENCE_SHA256) {
+    throw new Error(
+      `Stage 8 compiler evidence changed: expected ${STAGE_08_EVIDENCE_SHA256}, received ${digest}`
+    );
+  }
+  const evidence = JSON.parse(bytes);
+  if (
+    evidence.schemaVersion !== 1 ||
+    evidence.candidate !== "stage-08-solidity-0-8-36" ||
+    evidence.mode !== "metadata-stripped-full-diff"
+  ) {
+    throw new Error("Stage 8 compiler evidence has an invalid identity");
+  }
+  return evidence;
+}
+
+function stage09ProductionEvidence(baseline, candidate) {
+  const inherited = stage08Evidence();
+  const expectedCompiler = {
+    version: STAGE_08_COMPILER_VERSION,
+    longVersion: STAGE_08_COMPILER_LONG_VERSION,
+    settingsSha256: sha256(stableJson(baseline.compiler.settings)),
+  };
+  const candidateCompiler = {
+    version: candidate.compiler.version,
+    longVersion: candidate.compiler.longVersion,
+    settingsSha256: sha256(stableJson(candidate.compiler.settings)),
+  };
+  if (!valuesEqual(candidateCompiler, expectedCompiler)) {
+    throw new Error(
+      "Stage 9 compiler version or settings differ from the Stage 8 candidate"
+    );
+  }
+
+  const contracts = {};
+  for (const qualifiedName of STAGE_08_PRODUCTION_CONTRACTS) {
+    const inheritedContract = inherited.contracts[qualifiedName];
+    const candidateContract = candidate.contracts[qualifiedName];
+    if (!inheritedContract || !candidateContract) {
+      throw new Error(`Stage 9 production anchor is missing ${qualifiedName}`);
+    }
+    const bytecodes = {};
+    for (const bytecodeKind of ["creationBytecode", "runtimeBytecode"]) {
+      const inheritedBytecode = inheritedContract[bytecodeKind];
+      const candidateBytecode = candidateContract[bytecodeKind];
+      const expected = {
+        rawKeccak256: inheritedBytecode.rawBytecode.candidateKeccak256,
+        rawSizeBytes: inheritedBytecode.rawBytecode.candidateSizeBytes,
+        metadataBytes: inheritedBytecode.rawBytecode.candidateMetadataBytes,
+        metadataStrippedKeccak256:
+          inheritedBytecode.metadataStrippedBytecode.candidateKeccak256,
+        metadataStrippedSizeBytes:
+          inheritedBytecode.metadataStrippedBytecode.candidateSizeBytes,
+        metadataStrippedOpcodesSha256:
+          inheritedBytecode.metadataStrippedOpcodes.candidateSha256,
+      };
+      const actual = {
+        rawKeccak256: candidateBytecode.keccak256,
+        rawSizeBytes: candidateBytecode.sizeBytes,
+        metadataBytes: candidateBytecode.metadataBytes,
+        metadataStrippedKeccak256: candidateBytecode.metadataStrippedKeccak256,
+        metadataStrippedSizeBytes: candidateBytecode.metadataStrippedSizeBytes,
+        metadataStrippedOpcodesSha256: sha256(
+          candidateBytecode.metadataStrippedOpcodes
+        ),
+      };
+      if (!valuesEqual(actual, expected)) {
+        const differences = collectDifferences(
+          expected,
+          actual,
+          `$.stage08Production.${qualifiedName}.${bytecodeKind}`
+        );
+        throw new Error(
+          `Stage 9 production bytecode differs from Stage 8:\n${differences
+            .map((difference) => `- ${formatDifference(difference)}`)
+            .join("\n")}`
+        );
+      }
+      bytecodes[bytecodeKind] = { expected, candidate: actual, equal: true };
+    }
+
+    const runtimeSizeBytes = candidateContract.runtimeBytecode.sizeBytes;
+    if (runtimeSizeBytes > 24_576) {
+      throw new Error(
+        `${qualifiedName} exceeds the EIP-170 runtime size limit`
+      );
+    }
+    contracts[qualifiedName] = {
+      ...bytecodes,
+      eip170: {
+        limitBytes: 24_576,
+        stage08RuntimeSizeBytes:
+          inheritedContract.eip170.candidateRuntimeSizeBytes,
+        candidateRuntimeSizeBytes: runtimeSizeBytes,
+        equal:
+          inheritedContract.eip170.candidateRuntimeSizeBytes ===
+          runtimeSizeBytes,
+        candidateWithinLimit: true,
+      },
+    };
+    if (!contracts[qualifiedName].eip170.equal) {
+      throw new Error(`${qualifiedName} runtime size changed after Stage 8`);
+    }
+  }
+
+  return sorted({
+    inheritedEvidence: {
+      path: STAGE_08_OPCODE_EVIDENCE_PATH,
+      sha256: STAGE_08_EVIDENCE_SHA256,
+      candidate: inherited.candidate,
+    },
+    compiler: {
+      expected: expectedCompiler,
+      candidate: candidateCompiler,
+      equal: true,
+    },
+    contracts,
+  });
+}
+
+function validateStage09ForgeStdDetails(details) {
+  if (
+    details.candidateCommit !== STAGE_09_FORGE_STD_COMMIT ||
+    details.candidateTag !== STAGE_09_FORGE_STD_TAG ||
+    details.tagCommit !== STAGE_09_FORGE_STD_COMMIT ||
+    details.packageVersion !== STAGE_09_FORGE_STD_VERSION ||
+    !details.workingTreeClean ||
+    !details.previousIsAncestor ||
+    details.commitsAhead !== 421 ||
+    details.url !== "https://github.com/foundry-rs/forge-std"
+  ) {
+    throw new Error(
+      "forge-std does not match the clean, exact v1.16.2 Stage 9 dependency contract"
+    );
+  }
+}
+
+function stage09ForgeStdEvidence() {
+  const submodulePath = path.join(ROOT, STAGE_09_FORGE_STD_PATH);
+  if (!fs.existsSync(path.join(submodulePath, "package.json"))) {
+    throw new Error("Stage 9 requires an initialized forge-std submodule");
+  }
+  const git = (...args) =>
+    run("git", ["-C", STAGE_09_FORGE_STD_PATH, ...args]).stdout.trim();
+  const candidateCommit = git("rev-parse", "HEAD");
+  const candidateTag = git("describe", "--tags", "--exact-match", "HEAD");
+  const tagCommit = git("rev-parse", `refs/tags/${STAGE_09_FORGE_STD_TAG}^{}`);
+  const packageVersion = JSON.parse(
+    fs.readFileSync(path.join(submodulePath, "package.json"), "utf8")
+  ).version;
+  const workingTree = git("status", "--porcelain");
+  git("cat-file", "-e", `${STAGE_09_FORGE_STD_PREVIOUS_COMMIT}^{commit}`);
+  const ancestor = spawnSync(
+    "git",
+    [
+      "-C",
+      STAGE_09_FORGE_STD_PATH,
+      "merge-base",
+      "--is-ancestor",
+      STAGE_09_FORGE_STD_PREVIOUS_COMMIT,
+      STAGE_09_FORGE_STD_COMMIT,
+    ],
+    { cwd: ROOT, encoding: "utf8", env: process.env }
+  );
+  if (ancestor.error) throw ancestor.error;
+  const commitsAhead = Number(
+    git(
+      "rev-list",
+      "--count",
+      `${STAGE_09_FORGE_STD_PREVIOUS_COMMIT}..${STAGE_09_FORGE_STD_COMMIT}`
+    )
+  );
+  const submoduleUrl = run("git", [
+    "config",
+    "-f",
+    ".gitmodules",
+    "--get",
+    "submodule.lib/forge-std.url",
+  ]).stdout.trim();
+  const details = {
+    path: STAGE_09_FORGE_STD_PATH,
+    url: submoduleUrl,
+    previousCommit: STAGE_09_FORGE_STD_PREVIOUS_COMMIT,
+    candidateCommit,
+    candidateTag,
+    tagCommit,
+    packageVersion,
+    previousIsAncestor: ancestor.status === 0,
+    commitsAhead,
+    workingTreeClean: workingTree === "",
+  };
+  validateStage09ForgeStdDetails(details);
+  return sorted({
+    ...details,
+  });
+}
+
+function stage09LegacyGasEvidence(candidate) {
+  const candidateEntries = candidate.gasSnapshot.entries;
+  if (
+    candidate.gasSnapshot.fuzzSeed !== "0x721" ||
+    candidateEntries.length !== STAGE_08_LEGACY_GAS_ENTRIES.length
+  ) {
+    throw new Error("Stage 9 legacy gas inventory differs from Stage 8");
+  }
+  const changedIndices = [];
+  const changes = [];
+  for (let index = 0; index < candidateEntries.length; index += 1) {
+    const stage08Value = STAGE_08_LEGACY_GAS_ENTRIES[index];
+    const candidateValue = candidateEntries[index];
+    if (candidateValue !== stage08Value) {
+      changedIndices.push(index);
+      changes.push({
+        path: `$.gasSnapshot.entries[${index}]`,
+        stage08Value,
+        candidateValue,
+      });
+    }
+  }
+  const expectedIndices = [...STAGE_09_RELATIVE_GAS_PATHS].sort(
+    (left, right) => left - right
+  );
+  if (!valuesEqual(changedIndices, expectedIndices)) {
+    throw new Error(
+      `Stage 9 may change only legacy gas indices ${expectedIndices.join(
+        ", "
+      )}; received ${changedIndices.join(", ")}`
+    );
+  }
+  return sorted({
+    fuzzSeed: "0x721",
+    stage08EntriesSha256: sha256(stableJson(STAGE_08_LEGACY_GAS_ENTRIES)),
+    inventoryCount: candidateEntries.length,
+    unchangedCount: candidateEntries.length - changedIndices.length,
+    changedIndices,
+    changes,
+  });
+}
+
+function stage09KeyFlowGasEvidence(inherited, candidateGas) {
+  const inheritedEntries = new Map();
+  const candidateEntries = new Map();
+  for (const [group, entries] of Object.entries(inherited.gas.groups)) {
+    for (const entry of entries) {
+      inheritedEntries.set(entry.name, { group, gas: entry.candidateGas });
+    }
+  }
+  for (const [group, entries] of Object.entries(candidateGas.groups)) {
+    for (const entry of entries) {
+      candidateEntries.set(entry.name, {
+        group,
+        gas: entry.candidateGas,
+        withinLimit: entry.withinLimit,
+      });
+    }
+  }
+  if (
+    !valuesEqual(
+      [...inheritedEntries.keys()].sort(),
+      [...candidateEntries.keys()].sort()
+    )
+  ) {
+    throw new Error("Stage 9 key-flow gas inventory differs from Stage 8");
+  }
+  const comparisons = [...candidateEntries.keys()].sort().map((name) => {
+    const stage08 = inheritedEntries.get(name);
+    const current = candidateEntries.get(name);
+    if (stage08.group !== current.group || !current.withinLimit) {
+      throw new Error(`Stage 9 key-flow gas evidence is invalid for ${name}`);
+    }
+    return {
+      group: current.group,
+      name,
+      stage08Gas: stage08.gas,
+      candidateGas: current.gas,
+      deltaGas: current.gas - stage08.gas,
+      withinBaselineLimit: true,
+    };
+  });
+  return sorted({
+    baselinePolicy: candidateGas.policy,
+    baselinePath: candidateGas.baselinePath,
+    baselineSha256: candidateGas.baselineSha256,
+    fuzzSeed: candidateGas.fuzzSeed,
+    comparisons,
+  });
+}
+
+function stage09Evidence(review, baseline, candidate) {
+  const inherited = stage08Evidence();
+  const keyFlowGas = stage08GasEvidence();
+  return sorted({
+    schemaVersion: 1,
+    candidate: review.candidate,
+    baselineSha256: review.baselineSha256,
+    mode: review.opcodeEvidence.mode,
+    production: stage09ProductionEvidence(baseline, candidate),
+    forgeStd: stage09ForgeStdEvidence(),
+    legacyGasRelativeToStage08: stage09LegacyGasEvidence(candidate),
+    keyFlowGasRelativeToStage08: stage09KeyFlowGasEvidence(
+      inherited,
+      keyFlowGas
+    ),
+  });
+}
+
+function expectStage09Rejection(name, operation) {
+  try {
+    operation();
+  } catch (_error) {
+    return name;
+  }
+  throw new Error(`Stage 9 negative probe unexpectedly passed: ${name}`);
+}
+
+function stage09NegativeProbes(baseline, candidate) {
+  const forgeStd = stage09ForgeStdEvidence();
+  const wrongCommit = deepClone(forgeStd);
+  wrongCommit.candidateCommit = `0x${"00".repeat(32)}`;
+  const driftedCandidate = deepClone(candidate);
+  driftedCandidate.contracts[
+    "contracts/Wrapper.sol:Wrapper"
+  ].runtimeBytecode.keccak256 = `0x${"00".repeat(32)}`;
+  return [
+    expectStage09Rejection("wrong forge-std commit", () =>
+      validateStage09ForgeStdDetails(wrongCommit)
+    ),
+    expectStage09Rejection("Stage 8 production hash drift", () =>
+      stage09ProductionEvidence(baseline, driftedCandidate)
+    ),
+  ];
+}
+
 function reviewedOpcodeEvidence(review, baseline, candidate) {
   const configuration = review.opcodeEvidence;
   if (!configuration) return null;
   if (
-    !["metadata-stripped-equality", "metadata-stripped-full-diff"].includes(
-      configuration.mode
-    )
+    ![
+      "metadata-stripped-equality",
+      "metadata-stripped-full-diff",
+      "stage-08-production-equality",
+    ].includes(configuration.mode)
   ) {
     throw new Error(`Unsupported opcode evidence mode: ${configuration.mode}`);
   }
@@ -1841,6 +2384,9 @@ function reviewedOpcodeEvidence(review, baseline, candidate) {
     configuration.contracts.length === 0
   ) {
     throw new Error("Opcode evidence must list at least one contract");
+  }
+  if (configuration.mode === "stage-08-production-equality") {
+    return stage09Evidence(review, baseline, candidate);
   }
 
   const contracts = {};
@@ -2043,12 +2589,14 @@ async function main() {
       "check",
       "diff",
       "revert-strings",
+      "stage-09-negative-probes",
       "write-stage-08-review",
+      "write-stage-09-review",
       "write-evidence",
     ].includes(command)
   ) {
     console.error(
-      "Usage: node scripts/compatibility.js <capture|check|diff|revert-strings|write-stage-08-review|write-evidence>"
+      "Usage: node scripts/compatibility.js <capture|check|diff|revert-strings|stage-09-negative-probes|write-stage-08-review|write-stage-09-review|write-evidence>"
     );
     process.exitCode = 2;
     return;
@@ -2137,6 +2685,28 @@ async function main() {
         REVIEW_PATH
       )}`
     );
+    return;
+  }
+  if (command === "write-stage-09-review") {
+    const review = stage09Review(baselineBytes, differences);
+    validateReviewedDifferences(review, baselineBytes, differences);
+    const policy = reviewPolicy(review);
+    policy.validateCandidate(baseline, manifest);
+    validateSafetyEvidence(review);
+    fs.writeFileSync(REVIEW_PATH, stableJson(review));
+    console.log(
+      `Wrote ${
+        differences.length
+      } exact Stage 9 reviewed differences to ${path.relative(
+        ROOT,
+        REVIEW_PATH
+      )}`
+    );
+    return;
+  }
+  if (command === "stage-09-negative-probes") {
+    const probes = stage09NegativeProbes(baseline, manifest);
+    console.log(`Stage 9 negative probes passed: ${probes.join("; ")}`);
     return;
   }
   const review = readReviewedDifferences();

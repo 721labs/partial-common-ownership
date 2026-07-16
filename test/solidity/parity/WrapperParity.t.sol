@@ -2,14 +2,12 @@
 pragma solidity 0.8.36;
 
 import {Test} from "forge-std/Test.sol";
+import {Vm} from "forge-std/Vm.sol";
 import {TestNFT} from "../../../contracts/test/TestNFT.sol";
 import {TestWrapper} from "../../../contracts/test/TestWrapper.sol";
-import {VmRecordedLogs} from "../helpers/VmRecordedLogs.sol";
 
 /// @dev One-to-one deterministic ports of the 20 legacy Wrapper.ts scenarios.
 contract WrapperParityTest is Test {
-    VmRecordedLogs private constant VM_RECORDED_LOGS =
-        VmRecordedLogs(address(uint160(uint256(keccak256("hevm cheat code")))));
 
     uint256 private constant TOKEN_ONE = 1;
     uint256 private constant TOKEN_TWO = 2;
@@ -106,10 +104,10 @@ contract WrapperParityTest is Test {
 
         // A subsequent Hardhat transaction is mined one second later.
         vm.warp(block.timestamp + 1);
-        VM_RECORDED_LOGS.recordLogs();
+        vm.recordLogs();
         vm.prank(DEPLOYER);
         wrapper.unwrap(wrappedId);
-        VmRecordedLogs.Log[] memory entries = VM_RECORDED_LOGS.getRecordedLogs();
+        Vm.Log[] memory entries = vm.getRecordedLogs();
 
         _assertWrapperEventOrderForBeneficiaryUnwrap(entries, wrappedId, TOKEN_ONE, DEPLOYER);
         _assertUnwrappedState(wrappedId, TOKEN_ONE, DEPLOYER, wrappedBalanceBefore);
@@ -131,10 +129,10 @@ contract WrapperParityTest is Test {
         assertGt(taxDue, 0);
         assertLt(taxDue, NON_BENEFICIARY_DEPOSIT);
 
-        VM_RECORDED_LOGS.recordLogs();
+        vm.recordLogs();
         vm.prank(DEPLOYER);
         wrapper.unwrap(wrappedId);
-        VmRecordedLogs.Log[] memory entries = VM_RECORDED_LOGS.getRecordedLogs();
+        Vm.Log[] memory entries = vm.getRecordedLogs();
 
         uint256 returnedDeposit = NON_BENEFICIARY_DEPOSIT - taxDue;
         _assertWrapperEventOrderForTaxedUnwrap(entries, wrappedId, DEPLOYER, taxDue, returnedDeposit, TOKEN_ONE);
@@ -168,10 +166,10 @@ contract WrapperParityTest is Test {
         uint256 wrappedBalanceBefore = wrapper.balanceOf(ALICE);
         uint256 contractBalanceBefore = address(wrapper).balance;
 
-        VM_RECORDED_LOGS.recordLogs();
+        vm.recordLogs();
         vm.prank(DEPLOYER);
         wrapper.unwrap(wrappedId);
-        VmRecordedLogs.Log[] memory entries = VM_RECORDED_LOGS.getRecordedLogs();
+        Vm.Log[] memory entries = vm.getRecordedLogs();
 
         _assertWrapperEventOrderForForeclosingUnwrap(entries, wrappedId, ALICE, 2 ether, TOKEN_ONE);
         _assertUnwrappedState(wrappedId, TOKEN_ONE, ALICE, wrappedBalanceBefore);
@@ -276,10 +274,10 @@ contract WrapperParityTest is Test {
         uint256 wrappedBalanceBefore = wrapper.balanceOf(DEPLOYER);
 
         vm.warp(block.timestamp + 1);
-        VM_RECORDED_LOGS.recordLogs();
+        vm.recordLogs();
         vm.prank(DEPLOYER);
         wrapper.unwrap(wrappedId);
-        VmRecordedLogs.Log[] memory entries = VM_RECORDED_LOGS.getRecordedLogs();
+        Vm.Log[] memory entries = vm.getRecordedLogs();
         _assertWrapperEventOrderForBeneficiaryUnwrap(entries, wrappedId, TOKEN_ONE, DEPLOYER);
         _assertUnwrappedState(wrappedId, TOKEN_ONE, DEPLOYER, wrappedBalanceBefore);
 
@@ -334,13 +332,13 @@ contract WrapperParityTest is Test {
 
         vm.startPrank(DEPLOYER);
         testNFT.approve(address(wrapper), tokenId_);
-        VM_RECORDED_LOGS.recordLogs();
+        vm.recordLogs();
         wrapper.wrap{value: deposit}(
             address(testNFT), tokenId_, WRAP_VALUATION, payable(beneficiary_), TAX_RATE, COLLECTION_FREQUENCY_DAYS
         );
         vm.stopPrank();
 
-        VmRecordedLogs.Log[] memory entries = VM_RECORDED_LOGS.getRecordedLogs();
+        Vm.Log[] memory entries = vm.getRecordedLogs();
         _assertWrapperEventOrderForWrap(entries, tokenId_, wrappedId, beneficiary_);
 
         assertEq(testNFT.ownerOf(tokenId_), address(wrapper));
@@ -417,7 +415,7 @@ contract WrapperParityTest is Test {
     }
 
     function _assertWrapperEventOrderForWrap(
-        VmRecordedLogs.Log[] memory entries_,
+        Vm.Log[] memory entries_,
         uint256 underlyingId_,
         uint256 wrappedId_,
         address beneficiary_
@@ -433,7 +431,7 @@ contract WrapperParityTest is Test {
         expected[1] = LOG_VALUATION_SIGNATURE;
         expected[2] = LOG_BENEFICIARY_UPDATED_SIGNATURE;
         expected[3] = LOG_TOKEN_WRAPPED_SIGNATURE;
-        VmRecordedLogs.Log[] memory logs = _wrapperLogs(entries_);
+        Vm.Log[] memory logs = _wrapperLogs(entries_);
         _assertSignatures(logs, expected);
 
         _assertTransfer(logs[0], address(0), DEPLOYER, wrappedId_);
@@ -444,7 +442,7 @@ contract WrapperParityTest is Test {
     }
 
     function _assertWrapperEventOrderForBeneficiaryUnwrap(
-        VmRecordedLogs.Log[] memory entries_,
+        Vm.Log[] memory entries_,
         uint256 wrappedId_,
         uint256 underlyingId_,
         address underlyingOwner_
@@ -457,14 +455,14 @@ contract WrapperParityTest is Test {
         bytes32[] memory expected = new bytes32[](2);
         expected[0] = APPROVAL_SIGNATURE;
         expected[1] = TRANSFER_SIGNATURE;
-        VmRecordedLogs.Log[] memory logs = _wrapperLogs(entries_);
+        Vm.Log[] memory logs = _wrapperLogs(entries_);
         _assertSignatures(logs, expected);
         _assertApproval(logs[0], DEPLOYER, address(0), wrappedId_);
         _assertTransfer(logs[1], DEPLOYER, address(0), wrappedId_);
     }
 
     function _assertWrapperEventOrderForTaxedUnwrap(
-        VmRecordedLogs.Log[] memory entries_,
+        Vm.Log[] memory entries_,
         uint256 wrappedId_,
         address owner_,
         uint256 tax_,
@@ -487,7 +485,7 @@ contract WrapperParityTest is Test {
         expected[6] = LOG_FORECLOSURE_SIGNATURE;
         expected[7] = APPROVAL_SIGNATURE;
         expected[8] = TRANSFER_SIGNATURE;
-        VmRecordedLogs.Log[] memory logs = _wrapperLogs(entries_);
+        Vm.Log[] memory logs = _wrapperLogs(entries_);
         _assertSignatures(logs, expected);
 
         _assertCollection(logs[0], wrappedId_, tax_);
@@ -502,7 +500,7 @@ contract WrapperParityTest is Test {
     }
 
     function _assertWrapperEventOrderForForeclosingUnwrap(
-        VmRecordedLogs.Log[] memory entries_,
+        Vm.Log[] memory entries_,
         uint256 wrappedId_,
         address previousOwner_,
         uint256 collected_,
@@ -524,7 +522,7 @@ contract WrapperParityTest is Test {
         expected[6] = APPROVAL_SIGNATURE;
         expected[7] = TRANSFER_SIGNATURE;
 
-        VmRecordedLogs.Log[] memory logs = _wrapperLogs(entries_);
+        Vm.Log[] memory logs = _wrapperLogs(entries_);
         _assertSignatures(logs, expected);
         _assertCollection(logs[0], wrappedId_, collected_);
         _assertRemittance(logs[1], 3, DEPLOYER, collected_);
@@ -536,7 +534,7 @@ contract WrapperParityTest is Test {
         _assertTransfer(logs[7], address(wrapper), address(0), wrappedId_);
     }
 
-    function _assertApproval(VmRecordedLogs.Log memory entry_, address owner_, address approved_, uint256 tokenId_)
+    function _assertApproval(Vm.Log memory entry_, address owner_, address approved_, uint256 tokenId_)
         internal
     {
         assertEq(entry_.topics.length, 4);
@@ -547,7 +545,7 @@ contract WrapperParityTest is Test {
         assertEq(entry_.data.length, 0);
     }
 
-    function _assertTransfer(VmRecordedLogs.Log memory entry_, address from_, address to_, uint256 tokenId_) internal {
+    function _assertTransfer(Vm.Log memory entry_, address from_, address to_, uint256 tokenId_) internal {
         assertEq(entry_.topics.length, 4);
         assertEq(entry_.topics[0], TRANSFER_SIGNATURE);
         _assertIndexedAddress(entry_, 1, from_);
@@ -557,7 +555,7 @@ contract WrapperParityTest is Test {
     }
 
     function _assertTransferFromEmitter(
-        VmRecordedLogs.Log memory entry_,
+        Vm.Log memory entry_,
         address emitter_,
         address from_,
         address to_,
@@ -567,7 +565,7 @@ contract WrapperParityTest is Test {
         _assertTransfer(entry_, from_, to_, tokenId_);
     }
 
-    function _assertCollection(VmRecordedLogs.Log memory entry_, uint256 tokenId_, uint256 collected_) internal {
+    function _assertCollection(Vm.Log memory entry_, uint256 tokenId_, uint256 collected_) internal {
         assertEq(entry_.topics.length, 3);
         assertEq(entry_.topics[0], LOG_COLLECTION_SIGNATURE);
         _assertIndexedUint(entry_, 1, tokenId_);
@@ -575,7 +573,7 @@ contract WrapperParityTest is Test {
         assertEq(entry_.data.length, 0);
     }
 
-    function _assertValuation(VmRecordedLogs.Log memory entry_, uint256 tokenId_, uint256 valuation_) internal {
+    function _assertValuation(Vm.Log memory entry_, uint256 tokenId_, uint256 valuation_) internal {
         assertEq(entry_.topics.length, 3);
         assertEq(entry_.topics[0], LOG_VALUATION_SIGNATURE);
         _assertIndexedUint(entry_, 1, tokenId_);
@@ -583,7 +581,7 @@ contract WrapperParityTest is Test {
         assertEq(entry_.data.length, 0);
     }
 
-    function _assertForeclosure(VmRecordedLogs.Log memory entry_, uint256 tokenId_, address previousOwner_) internal {
+    function _assertForeclosure(Vm.Log memory entry_, uint256 tokenId_, address previousOwner_) internal {
         assertEq(entry_.topics.length, 3);
         assertEq(entry_.topics[0], LOG_FORECLOSURE_SIGNATURE);
         _assertIndexedUint(entry_, 1, tokenId_);
@@ -591,7 +589,7 @@ contract WrapperParityTest is Test {
         assertEq(entry_.data.length, 0);
     }
 
-    function _assertBeneficiary(VmRecordedLogs.Log memory entry_, uint256 tokenId_, address beneficiary_) internal {
+    function _assertBeneficiary(Vm.Log memory entry_, uint256 tokenId_, address beneficiary_) internal {
         assertEq(entry_.topics.length, 3);
         assertEq(entry_.topics[0], LOG_BENEFICIARY_UPDATED_SIGNATURE);
         _assertIndexedUint(entry_, 1, tokenId_);
@@ -599,7 +597,7 @@ contract WrapperParityTest is Test {
         assertEq(entry_.data.length, 0);
     }
 
-    function _assertRemittance(VmRecordedLogs.Log memory entry_, uint256 trigger_, address recipient_, uint256 amount_)
+    function _assertRemittance(Vm.Log memory entry_, uint256 trigger_, address recipient_, uint256 amount_)
         internal
     {
         assertEq(entry_.topics.length, 4);
@@ -610,17 +608,17 @@ contract WrapperParityTest is Test {
         assertEq(entry_.data.length, 0);
     }
 
-    function _wrapperLogs(VmRecordedLogs.Log[] memory entries_)
+    function _wrapperLogs(Vm.Log[] memory entries_)
         internal
         view
-        returns (VmRecordedLogs.Log[] memory logs)
+        returns (Vm.Log[] memory logs)
     {
         uint256 count;
         for (uint256 i = 0; i < entries_.length; i++) {
             if (entries_[i].emitter == address(wrapper)) count++;
         }
 
-        logs = new VmRecordedLogs.Log[](count);
+        logs = new Vm.Log[](count);
         uint256 outputIndex;
         for (uint256 i = 0; i < entries_.length; i++) {
             if (entries_[i].emitter == address(wrapper)) {
@@ -630,7 +628,7 @@ contract WrapperParityTest is Test {
         }
     }
 
-    function _assertSignatures(VmRecordedLogs.Log[] memory entries_, bytes32[] memory expected_) internal {
+    function _assertSignatures(Vm.Log[] memory entries_, bytes32[] memory expected_) internal {
         assertEq(entries_.length, expected_.length, "unexpected wrapper event count");
         for (uint256 i = 0; i < expected_.length; i++) {
             assertGt(entries_[i].topics.length, 0);
@@ -638,12 +636,12 @@ contract WrapperParityTest is Test {
         }
     }
 
-    function _assertIndexedAddress(VmRecordedLogs.Log memory entry_, uint256 topic_, address expected_) internal {
+    function _assertIndexedAddress(Vm.Log memory entry_, uint256 topic_, address expected_) internal {
         assertGt(entry_.topics.length, topic_);
         assertEq(entry_.topics[topic_], bytes32(uint256(uint160(expected_))));
     }
 
-    function _assertIndexedUint(VmRecordedLogs.Log memory entry_, uint256 topic_, uint256 expected_) internal {
+    function _assertIndexedUint(Vm.Log memory entry_, uint256 topic_, uint256 expected_) internal {
         assertGt(entry_.topics.length, topic_);
         assertEq(entry_.topics[topic_], bytes32(expected_));
     }

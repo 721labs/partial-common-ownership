@@ -4,7 +4,6 @@ pragma solidity 0.8.36;
 import {Test} from "forge-std/Test.sol";
 import {TestPCOToken} from "../../../contracts/test/TestPCOToken.sol";
 import {Remittance} from "../../../contracts/token/modules/Remittance.sol";
-import {PCOInvariantTargets} from "./PCOInvariantTargets.sol";
 
 /// @dev A stateful actor that can deterministically reject `send`, then accept
 /// the one-time outstanding-remittance withdrawal. The assembly path keeps the
@@ -534,7 +533,7 @@ contract PCOInvariantHandler is Test {
     }
 }
 
-contract PCOInvariantTest is Test, PCOInvariantTargets {
+contract PCOInvariantTest is Test {
     uint256 private constant TOKEN_COUNT = 3;
     uint256 private constant START_TIME = 1_700_000_000;
 

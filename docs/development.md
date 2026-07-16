@@ -51,8 +51,9 @@ OpenZeppelin 5 upgrade. Test and fixture pragmas are pinned to exact 0.8.36.
 
 The compiler warning gates perform forced builds and require the complete,
 exact reviewed warning inventories from both compiler entry points. Hardhat
-currently emits 10 Solidity warnings and Forge emits 28, including warnings
-from tests and dependencies and test-contract code-size warnings. Forge lint
+currently emits 10 Solidity warnings and Forge emits 65, including warnings
+from tests and dependencies, mutability suggestions, and test-contract
+code-size warnings. Forge lint
 diagnostics are captured separately from the compiler JSON and are not counted
 as Solidity compiler warnings.
 
@@ -121,10 +122,10 @@ When tests are run, it calculates the average gas usage of frequently used metho
 The Solidity compiler reports unused parameters because the ERC721 transfer
 methods are overridden to ensure purchasing and foreclosure remain the only
 transfer paths. It also reports the deliberately deferred `send`/`transfer`
-deprecations, upstream OpenZeppelin and forge-std assembly annotations, a
-test-only unchecked call, and expected oversized test harnesses. These warnings
-are reviewed by the exact complete allowlist above; they must not be ignored
-globally.
+deprecations, upstream OpenZeppelin assembly annotations, compiler mutability
+suggestions, a test-only unchecked call, and expected oversized test harnesses.
+These warnings are reviewed by the exact complete allowlist above; they must
+not be ignored globally.
 
 ## Modules
 

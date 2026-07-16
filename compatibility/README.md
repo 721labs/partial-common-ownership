@@ -53,6 +53,26 @@ node scripts/compatibility.js write-evidence
 node scripts/compatibility.js check
 ```
 
+Stage 9 upgrades only the forge-std submodule and test helpers. Its named
+`stage-09-forge-std-1-16-2` policy binds the previous
+`8d93b5273ca94b1c50b055ffc0e1b8b0a3c03d78` pin and the exact `v1.16.2`
+commit `bf647bd6046f2f7da30d0c2bf435e5c76a780c1b`, verifies the tag and package
+version from a clean submodule, and digest-binds the Stage 8 compiler evidence.
+Production compiler settings, bytecode, opcode hashes, sizes, and EIP-170
+results must equal the Stage 8 candidate exactly. The Stage 9 evidence records
+the only permitted relative changes—the legacy test-harness gas entries—and
+rechecks all 12 PCO and Wrapper key flows against the existing gas policy.
+The compatibility CI job uses a full-history recursive checkout so the pinned
+forge-std tag and ancestry checks are reproducible rather than inferred from a
+shallow clone.
+Reproduce it with the pinned toolchains:
+
+```console
+node scripts/compatibility.js write-stage-09-review
+node scripts/compatibility.js write-evidence
+node scripts/compatibility.js check
+```
+
 The original baseline predated explicit revert-literal extraction.
 `project-revert-strings.json` is a SHA-256-bound supplement derived from the
 unchanged production sources at the recorded baseline commit. It binds all 35

@@ -3,16 +3,14 @@
 pragma solidity 0.8.36;
 
 import {EnhancedTest} from "../../contracts/test/EnhancedTest.sol";
+import {Vm} from "forge-std/Vm.sol";
 import {Remittance, RemittanceTriggers} from "../../contracts/token/modules/Remittance.sol";
 import {RejectEther} from "./helpers/RejectEther.sol";
 import {RemittanceHarness} from "./helpers/RemittanceHarness.sol";
-import {VmRecordedLogs} from "./helpers/VmRecordedLogs.sol";
 
 /* solhint-disable func-name-mixedcase */
 
 contract RemittanceTest is EnhancedTest, Remittance {
-  VmRecordedLogs private constant VM_RECORDED_LOGS =
-    VmRecordedLogs(address(uint160(uint256(keccak256("hevm cheat code")))));
 
   bytes32 private constant LOG_REMITTANCE_SIGNATURE =
     keccak256("LogRemittance(uint8,address,uint256)");
@@ -41,7 +39,7 @@ contract RemittanceTest is EnhancedTest, Remittance {
     RemittanceTriggers trigger = RemittanceTriggers.TaxCollection;
 
     // Record logs so the nested Ether send cannot consume an `expectEmit`.
-    VM_RECORDED_LOGS.recordLogs();
+    vm.recordLogs();
     bool success = _remit(recipient_, remittance_, trigger);
     _assertRemittanceLog(address(this), trigger, recipient_, remittance_);
 
@@ -82,7 +80,7 @@ contract RemittanceTest is EnhancedTest, Remittance {
     outstandingRemittances[msg.sender] = balance_;
 
     // Record logs so the nested Ether transfer cannot consume an `expectEmit`.
-    VM_RECORDED_LOGS.recordLogs();
+    vm.recordLogs();
     withdrawOutstandingRemittance();
     _assertRemittanceLog(
       address(this),
@@ -147,7 +145,7 @@ contract RemittanceTest is EnhancedTest, Remittance {
     address recipient_,
     uint256 amount_
   ) internal {
-    VmRecordedLogs.Log[] memory entries = VM_RECORDED_LOGS.getRecordedLogs();
+    Vm.Log[] memory entries = vm.getRecordedLogs();
     uint256 matchingLogs;
 
     for (uint256 i = 0; i < entries.length; i++) {

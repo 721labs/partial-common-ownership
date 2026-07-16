@@ -2,16 +2,14 @@
 pragma solidity 0.8.36;
 
 import {Test} from "forge-std/Test.sol";
+import {Vm} from "forge-std/Vm.sol";
 import {TestPCOToken} from "../../../contracts/test/TestPCOToken.sol";
-import {VmRecordedLogs} from "../helpers/VmRecordedLogs.sol";
 
 /* solhint-disable func-name-mixedcase */
 
 /// @notice Deterministic Forge ports of the 31 mutation scenarios in the
 /// legacy `tests/PartialCommonOwnership/index.ts` Hardhat oracle.
 contract PCOMutationParityTest is Test {
-    VmRecordedLogs private constant VM_RECORDED_LOGS =
-        VmRecordedLogs(address(uint160(uint256(keccak256("hevm cheat code")))));
 
     uint256 private constant START_TIME = 1_700_000_000;
     uint256 private constant INVALID_TOKEN_ID = 999;
@@ -111,12 +109,12 @@ contract PCOMutationParityTest is Test {
         uint256 aliceBalanceBefore = alice.balance;
         uint256 contractTokensBefore = token.balanceOf(address(token));
 
-        VM_RECORDED_LOGS.recordLogs();
+        vm.recordLogs();
         vm.expectRevert(_error("ERC721: query for nonexistent token"));
         vm.prank(alice);
         token.takeoverLease{value: ETH1}(INVALID_TOKEN_ID, ETH1, ETH1);
 
-        VmRecordedLogs.Log[] memory logs = VM_RECORDED_LOGS.getRecordedLogs();
+        Vm.Log[] memory logs = vm.getRecordedLogs();
         assertEq(logs.length, 0);
         assertEq(address(token).balance, contractBalanceBefore);
         assertEq(alice.balance, aliceBalanceBefore);
@@ -281,10 +279,10 @@ contract PCOMutationParityTest is Test {
         uint256 beneficiaryBalanceBefore = beneficiary.balance;
         uint256 due = _taxDue(TOKEN_ONE, ETH1, block.timestamp - token.lastCollectionTimeOf(TOKEN_ONE));
 
-        VM_RECORDED_LOGS.recordLogs();
+        vm.recordLogs();
         vm.prank(alice);
         token.deposit{value: ETH1}(TOKEN_ONE);
-        VmRecordedLogs.Log[] memory logs = VM_RECORDED_LOGS.getRecordedLogs();
+        Vm.Log[] memory logs = vm.getRecordedLogs();
 
         assertEq(logs.length, 2);
         _assertCollection(logs[0], TOKEN_ONE, due);
@@ -357,10 +355,10 @@ contract PCOMutationParityTest is Test {
         uint256 beneficiaryBalanceBefore = beneficiary.balance;
         uint256 due = _taxDue(TOKEN_ONE, ETH1, block.timestamp - token.lastCollectionTimeOf(TOKEN_ONE));
 
-        VM_RECORDED_LOGS.recordLogs();
+        vm.recordLogs();
         vm.prank(alice);
         token.withdrawDeposit(TOKEN_ONE, ETH1);
-        VmRecordedLogs.Log[] memory logs = VM_RECORDED_LOGS.getRecordedLogs();
+        Vm.Log[] memory logs = vm.getRecordedLogs();
 
         assertEq(logs.length, 3);
         _assertCollection(logs[0], TOKEN_ONE, due);
@@ -385,12 +383,12 @@ contract PCOMutationParityTest is Test {
     function test_exit_fails_nonOwner_legacyCallsWithdrawDeposit() public {
         TokenState memory beforeState = _state(TOKEN_ONE, alice);
 
-        VM_RECORDED_LOGS.recordLogs();
+        vm.recordLogs();
         vm.expectRevert(_error("ERC721: caller is not owner nor approved"));
         vm.prank(alice);
         token.withdrawDeposit(TOKEN_ONE, 10);
 
-        VmRecordedLogs.Log[] memory logs = VM_RECORDED_LOGS.getRecordedLogs();
+        Vm.Log[] memory logs = vm.getRecordedLogs();
         assertEq(logs.length, 0);
         _assertStateUnchanged(TOKEN_ONE, alice, beforeState);
     }
@@ -406,10 +404,10 @@ contract PCOMutationParityTest is Test {
         uint256 due = _taxDue(TOKEN_ONE, ETH1, block.timestamp - token.lastCollectionTimeOf(TOKEN_ONE));
         uint256 returnedDeposit = depositBefore - due;
 
-        VM_RECORDED_LOGS.recordLogs();
+        vm.recordLogs();
         vm.prank(alice);
         token.exit(TOKEN_ONE);
-        VmRecordedLogs.Log[] memory logs = VM_RECORDED_LOGS.getRecordedLogs();
+        Vm.Log[] memory logs = vm.getRecordedLogs();
 
         assertEq(logs.length, 7);
         _assertCollection(logs[0], TOKEN_ONE, due);
@@ -450,10 +448,10 @@ contract PCOMutationParityTest is Test {
         uint256 buyerTokensBefore = token.balanceOf(buyer);
         uint256 contractTokensBefore = token.balanceOf(address(token));
 
-        VM_RECORDED_LOGS.recordLogs();
+        vm.recordLogs();
         vm.prank(buyer);
         token.takeoverLease{value: value}(tokenId, newValuation, 0);
-        VmRecordedLogs.Log[] memory logs = VM_RECORDED_LOGS.getRecordedLogs();
+        Vm.Log[] memory logs = vm.getRecordedLogs();
 
         assertEq(logs.length, 4);
         _assertValuation(logs[0], tokenId, newValuation);
@@ -502,10 +500,10 @@ contract PCOMutationParityTest is Test {
         context.contractTokensBefore = token.balanceOf(address(token));
 
         assertTrue(context.due > 0);
-        VM_RECORDED_LOGS.recordLogs();
+        vm.recordLogs();
         vm.prank(buyer);
         token.takeoverLease{value: value}(tokenId, newValuation, currentValuation);
-        VmRecordedLogs.Log[] memory logs = VM_RECORDED_LOGS.getRecordedLogs();
+        Vm.Log[] memory logs = vm.getRecordedLogs();
 
         assertEq(logs.length, 7);
         _assertCollection(logs[0], tokenId, context.due);
@@ -561,10 +559,10 @@ contract PCOMutationParityTest is Test {
         assertTrue(token.foreclosed(tokenId));
         assertTrue(context.seller != buyer);
 
-        VM_RECORDED_LOGS.recordLogs();
+        vm.recordLogs();
         vm.prank(buyer);
         token.takeoverLease{value: value}(tokenId, newValuation, currentValuation);
-        VmRecordedLogs.Log[] memory logs = VM_RECORDED_LOGS.getRecordedLogs();
+        Vm.Log[] memory logs = vm.getRecordedLogs();
 
         assertEq(logs.length, 10);
         _assertCollection(logs[0], tokenId, context.depositBefore);
@@ -608,9 +606,9 @@ contract PCOMutationParityTest is Test {
         uint256 ownerTokensBefore = token.balanceOf(expectedOwner);
 
         assertTrue(token.foreclosed(tokenId));
-        VM_RECORDED_LOGS.recordLogs();
+        vm.recordLogs();
         token.collectTax(tokenId);
-        VmRecordedLogs.Log[] memory logs = VM_RECORDED_LOGS.getRecordedLogs();
+        Vm.Log[] memory logs = vm.getRecordedLogs();
 
         assertEq(logs.length, 6);
         _assertCollection(logs[0], tokenId, depositBefore);
@@ -641,10 +639,10 @@ contract PCOMutationParityTest is Test {
         uint256 ownerBalanceBefore = owner.balance;
         uint256 beneficiaryBalanceBefore = beneficiary.balance;
 
-        VM_RECORDED_LOGS.recordLogs();
+        vm.recordLogs();
         vm.prank(owner);
         token.selfAssess(tokenId, newValuation);
-        VmRecordedLogs.Log[] memory logs = VM_RECORDED_LOGS.getRecordedLogs();
+        Vm.Log[] memory logs = vm.getRecordedLogs();
 
         assertEq(logs.length, 3);
         _assertCollection(logs[0], tokenId, due);
@@ -676,12 +674,12 @@ contract PCOMutationParityTest is Test {
     ) internal {
         TokenState memory beforeState = _state(tokenId, caller);
 
-        VM_RECORDED_LOGS.recordLogs();
+        vm.recordLogs();
         vm.expectRevert(_error(reason));
         vm.prank(caller);
         token.takeoverLease{value: value}(tokenId, newValuation, currentValuation);
 
-        VmRecordedLogs.Log[] memory logs = VM_RECORDED_LOGS.getRecordedLogs();
+        Vm.Log[] memory logs = vm.getRecordedLogs();
         assertEq(logs.length, 0);
         _assertStateUnchanged(tokenId, caller, beforeState);
     }
@@ -689,12 +687,12 @@ contract PCOMutationParityTest is Test {
     function _expectDepositRevert(address caller, uint256 tokenId, uint256 value, string memory reason) internal {
         TokenState memory beforeState = _state(tokenId, caller);
 
-        VM_RECORDED_LOGS.recordLogs();
+        vm.recordLogs();
         vm.expectRevert(_error(reason));
         vm.prank(caller);
         token.deposit{value: value}(tokenId);
 
-        VmRecordedLogs.Log[] memory logs = VM_RECORDED_LOGS.getRecordedLogs();
+        Vm.Log[] memory logs = vm.getRecordedLogs();
         assertEq(logs.length, 0);
         _assertStateUnchanged(tokenId, caller, beforeState);
     }
@@ -707,7 +705,7 @@ contract PCOMutationParityTest is Test {
         uint256 tokenId,
         address caller,
         TokenState memory beforeState,
-        VmRecordedLogs.Log[] memory logs
+        Vm.Log[] memory logs
     ) internal {
         if (
             caller == beforeState.owner && beforeState.valuation > 0 && block.timestamp > beforeState.lastCollectionTime
@@ -728,12 +726,12 @@ contract PCOMutationParityTest is Test {
     {
         TokenState memory beforeState = _state(tokenId, caller);
 
-        VM_RECORDED_LOGS.recordLogs();
+        vm.recordLogs();
         vm.expectRevert(_error(reason));
         vm.prank(caller);
         token.selfAssess(tokenId, newValuation);
 
-        VmRecordedLogs.Log[] memory logs = VM_RECORDED_LOGS.getRecordedLogs();
+        Vm.Log[] memory logs = vm.getRecordedLogs();
         _assertRolledBackCollectionLogs(tokenId, caller, beforeState, logs);
         _assertStateUnchanged(tokenId, caller, beforeState);
     }
@@ -741,12 +739,12 @@ contract PCOMutationParityTest is Test {
     function _expectWithdrawRevert(address caller, uint256 tokenId, uint256 amount, string memory reason) internal {
         TokenState memory beforeState = _state(tokenId, caller);
 
-        VM_RECORDED_LOGS.recordLogs();
+        vm.recordLogs();
         vm.expectRevert(_error(reason));
         vm.prank(caller);
         token.withdrawDeposit(tokenId, amount);
 
-        VmRecordedLogs.Log[] memory logs = VM_RECORDED_LOGS.getRecordedLogs();
+        Vm.Log[] memory logs = vm.getRecordedLogs();
         _assertRolledBackCollectionLogs(tokenId, caller, beforeState, logs);
         _assertStateUnchanged(tokenId, caller, beforeState);
     }
@@ -799,7 +797,7 @@ contract PCOMutationParityTest is Test {
         return abi.encodeWithSignature("Error(string)", reason);
     }
 
-    function _assertApproval(VmRecordedLogs.Log memory entry, address owner, address approved, uint256 tokenId)
+    function _assertApproval(Vm.Log memory entry, address owner, address approved, uint256 tokenId)
         internal
     {
         _assertLogHeader(entry, APPROVAL_SIGNATURE, 4);
@@ -808,14 +806,14 @@ contract PCOMutationParityTest is Test {
         assertEq(entry.topics[3], bytes32(tokenId));
     }
 
-    function _assertTransfer(VmRecordedLogs.Log memory entry, address from, address to, uint256 tokenId) internal {
+    function _assertTransfer(Vm.Log memory entry, address from, address to, uint256 tokenId) internal {
         _assertLogHeader(entry, TRANSFER_SIGNATURE, 4);
         assertEq(entry.topics[1], _addressTopic(from));
         assertEq(entry.topics[2], _addressTopic(to));
         assertEq(entry.topics[3], bytes32(tokenId));
     }
 
-    function _assertLeaseTakeover(VmRecordedLogs.Log memory entry, uint256 tokenId, address owner, uint256 newValuation)
+    function _assertLeaseTakeover(Vm.Log memory entry, uint256 tokenId, address owner, uint256 newValuation)
         internal
     {
         _assertLogHeader(entry, LEASE_TAKEOVER_SIGNATURE, 4);
@@ -824,19 +822,19 @@ contract PCOMutationParityTest is Test {
         assertEq(entry.topics[3], bytes32(newValuation));
     }
 
-    function _assertForeclosure(VmRecordedLogs.Log memory entry, uint256 tokenId, address previousOwner) internal {
+    function _assertForeclosure(Vm.Log memory entry, uint256 tokenId, address previousOwner) internal {
         _assertLogHeader(entry, FORECLOSURE_SIGNATURE, 3);
         assertEq(entry.topics[1], bytes32(tokenId));
         assertEq(entry.topics[2], _addressTopic(previousOwner));
     }
 
-    function _assertCollection(VmRecordedLogs.Log memory entry, uint256 tokenId, uint256 collected) internal {
+    function _assertCollection(Vm.Log memory entry, uint256 tokenId, uint256 collected) internal {
         _assertLogHeader(entry, COLLECTION_SIGNATURE, 3);
         assertEq(entry.topics[1], bytes32(tokenId));
         assertEq(entry.topics[2], bytes32(collected));
     }
 
-    function _assertRemittance(VmRecordedLogs.Log memory entry, uint256 trigger, address recipient, uint256 amount)
+    function _assertRemittance(Vm.Log memory entry, uint256 trigger, address recipient, uint256 amount)
         internal
     {
         _assertLogHeader(entry, REMITTANCE_SIGNATURE, 4);
@@ -845,13 +843,13 @@ contract PCOMutationParityTest is Test {
         assertEq(entry.topics[3], bytes32(amount));
     }
 
-    function _assertValuation(VmRecordedLogs.Log memory entry, uint256 tokenId, uint256 valuation) internal {
+    function _assertValuation(Vm.Log memory entry, uint256 tokenId, uint256 valuation) internal {
         _assertLogHeader(entry, VALUATION_SIGNATURE, 3);
         assertEq(entry.topics[1], bytes32(tokenId));
         assertEq(entry.topics[2], bytes32(valuation));
     }
 
-    function _assertLogHeader(VmRecordedLogs.Log memory entry, bytes32 signature, uint256 topicCount) internal {
+    function _assertLogHeader(Vm.Log memory entry, bytes32 signature, uint256 topicCount) internal {
         assertEq(entry.emitter, address(token));
         assertEq(entry.topics.length, topicCount);
         assertEq(entry.topics[0], signature);
