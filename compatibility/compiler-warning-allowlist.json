@@ -191,7 +191,7 @@
       "contracts/test/EnhancedTest.sol": "8f0f905bceafb2003604984b4b2cfc8fef7a3e63b832bfbe36e848b01712bb08",
       "test/solidity/Beneficiary.t.sol": "c0c7f46108b2fb29a39461a87babf51801ea4de23fdb0b9949117b954d2cad93",
       "test/solidity/Remittance.t.sol": "62978e34b5a3f6c6326bd3ae48281c4b1c65caeb87264f384c64b0578850a427",
-      "test/solidity/fuzz/WrapperFuzz.t.sol": "73964e0384af509bcbcb967573be85a8606cca06972fc9e20ba3d9ef2e3750a9",
+      "test/solidity/fuzz/WrapperFuzz.t.sol": "76e10b5e1ab71d8c7c8ff9296bea55fa4894d362263f66fa1a1d93d9d14a371b",
       "test/solidity/invariant/PCOInvariant.t.sol": "a2d9f3200eb7d9393f4fca860b3a5fca3c8ee4d0452e97b4ed914226c2da2bee",
       "test/solidity/invariant/WrapperInvariant.t.sol": "d4fe7664cdaaf5568fced3e4d58d3f8fb0741713326b476d3c697c5f6a53ba29",
       "test/solidity/parity/PCOMutationParity.t.sol": "e12b937960d4ab8d5cc3320f7750494c8d6f7263f6b2ffab6e2af3364c9087cc",
@@ -311,15 +311,15 @@
       {
         "code": "2018",
         "source": "test/solidity/fuzz/WrapperFuzz.t.sol",
-        "start": 2337,
-        "end": 2612,
+        "start": 2683,
+        "end": 2958,
         "message": "Function state mutability can be restricted to view"
       },
       {
         "code": "2018",
         "source": "test/solidity/fuzz/WrapperFuzz.t.sol",
-        "start": 15924,
-        "end": 17200,
+        "start": 18771,
+        "end": 20047,
         "message": "Function state mutability can be restricted to view"
       },
       {
@@ -586,35 +586,35 @@
         "source": "test/solidity/fuzz/PCOFuzzLease.t.sol",
         "start": 361,
         "end": 13654,
-        "message": "Contract code size is 57281 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
+        "message": "Contract code size is 57523 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
       },
       {
         "code": "5574",
         "source": "test/solidity/fuzz/PCOFuzzRemittanceERC721.t.sol",
         "start": 418,
         "end": 10082,
-        "message": "Contract code size is 56369 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
+        "message": "Contract code size is 56611 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
       },
       {
         "code": "5574",
         "source": "test/solidity/fuzz/PCOFuzzTax.t.sol",
         "start": 375,
         "end": 5865,
-        "message": "Contract code size is 43727 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
+        "message": "Contract code size is 43969 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
       },
       {
         "code": "5574",
         "source": "test/solidity/fuzz/WrapperFuzz.t.sol",
         "start": 952,
-        "end": 17826,
-        "message": "Contract code size is 65286 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
+        "end": 20673,
+        "message": "Contract code size is 70415 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
       },
       {
         "code": "5574",
         "source": "test/solidity/invariant/PCODeferredRegression.t.sol",
         "start": 610,
         "end": 3080,
-        "message": "Contract code size is 35052 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
+        "message": "Contract code size is 35294 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
       },
       {
         "code": "5574",
@@ -628,35 +628,35 @@
         "source": "test/solidity/invariant/PCOInvariant.t.sol",
         "start": 21827,
         "end": 28161,
-        "message": "Contract code size is 78646 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
+        "message": "Contract code size is 78888 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
       },
       {
         "code": "5574",
         "source": "test/solidity/invariant/WrapperInvariant.t.sol",
         "start": 223,
         "end": 10136,
-        "message": "Contract code size is 80017 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
+        "message": "Contract code size is 80135 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
       },
       {
         "code": "5574",
         "source": "test/solidity/parity/PCOMutationParity.t.sol",
         "start": 391,
         "end": 38392,
-        "message": "Contract code size is 88448 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
+        "message": "Contract code size is 88690 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
       },
       {
         "code": "5574",
         "source": "test/solidity/parity/PCOReadTaxParity.t.sol",
         "start": 510,
         "end": 31954,
-        "message": "Contract code size is 74973 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
+        "message": "Contract code size is 75215 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
       },
       {
         "code": "5574",
         "source": "test/solidity/parity/WrapperParity.t.sol",
         "start": 345,
         "end": 28783,
-        "message": "Contract code size is 79785 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
+        "message": "Contract code size is 79903 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
       }
     ]
   }

@@ -102,9 +102,106 @@ const STAGE_09_FORGE_STD_PREVIOUS_COMMIT =
 const STAGE_09_FORGE_STD_COMMIT = "bf647bd6046f2f7da30d0c2bf435e5c76a780c1b";
 const STAGE_09_FORGE_STD_TAG = "v1.16.2";
 const STAGE_09_FORGE_STD_VERSION = "1.16.2";
+const STAGE_09_EVIDENCE_SHA256 =
+  "af78d4af44966d9155737e909a1fbce30cee17e21c927a273d0a3aff972dee54";
 const STAGE_09_RELATIVE_GAS_PATHS = new Set([
   0, 1, 2, 5, 6, 7, 8, 9, 10, 11, 12, 13,
 ]);
+const SECURITY_01_CANDIDATE = "security-01-erc721-post-hook-owner-recheck";
+const SECURITY_01_POLICY = "security-01-erc721-post-hook-owner-recheck";
+const SECURITY_01_EVIDENCE_PATH =
+  "compatibility/evidence/security-01-erc721-post-hook-owner-recheck.json";
+const SECURITY_01_BASE_COMMIT = "4b42e69201df9d9d541954ae2c077e39434bc711";
+const SECURITY_01_ERC721_SOURCE = "contracts/token/modules/ERC721.sol";
+const SECURITY_01_ERC721_BASE_SHA256 =
+  "c2debc745b27c3043604ac968a5dc429de115574bae6d6b8901f5151480b7925";
+const SECURITY_01_ERC721_CANDIDATE_SHA256 =
+  "afbe4a4fc6ec42e8d515fc517524c825f5a4cb9a4d954a8f2e0f9bb306caede7";
+const SECURITY_01_REGRESSION_SOURCE = "test/solidity/fuzz/WrapperFuzz.t.sol";
+const SECURITY_01_REGRESSION_SOURCE_SHA256 =
+  "76e10b5e1ab71d8c7c8ff9296bea55fa4894d362263f66fa1a1d93d9d14a371b";
+const SECURITY_01_REGRESSION_TEST =
+  "test/solidity/fuzz/WrapperFuzz.t.sol:WrapperFuzzTest:test_regression_deferredDelinquentTransferContinuesAfterNestedForeclosure";
+const SECURITY_01_REVERT_VALUE = "ERC721: transfer from incorrect owner";
+const SECURITY_01_HARDHAT_COUNT = 89;
+const SECURITY_01_HARDHAT_NAMES_SHA256 =
+  "861cda9b6fe70b931fd4c049c2e75585fd53a2ba502a3f89a70980a520f9a3ce";
+const SECURITY_01_FORGE_COUNT = 140;
+const SECURITY_01_FORGE_NAMES_SHA256 =
+  "09b141a8c69c4522288cfdbf67373661052764ab019c865ea850dc5eb645f173";
+const SECURITY_01_PARITY_FILES = Object.freeze({
+  "compatibility/parity-map.json":
+    "72f66deac5693d553a681afa755856cc87f2d52d4b109938862ba731da9443b4",
+  "compatibility/parity/cohort-0-existing-forge.json":
+    "3384ae9039fad21bb7800d61f181bd4ca6b68a8e1e8525815c3cc8ecd434df69",
+  "compatibility/parity/cohort-1-pco-read-tax.json":
+    "632c07354ab5f4e0d71290e2631da59bacad8cc3c0bc1d22cc129674098891fc",
+  "compatibility/parity/cohort-2-pco-mutations.json":
+    "47b93d5ecd3734b09533c8af0c514274ad4ff3c90185a6724364060bf5eef5c1",
+  "compatibility/parity/cohort-3-wrapper.json":
+    "4932bd7dd4da1cf55b2723e98cbe865737c9e735528ad70f05f8de85c2baecca",
+  "compatibility/safety-test-inventory.json":
+    "52f7c77b9ebec5093ad484f6695e46194b3ed0b9e737943946843e4f19c4d83a",
+});
+const SECURITY_01_CONFIG_FILES = Object.freeze({
+  ".gitmodules":
+    "f7a36b9847ca53567350f90b53c943ff1dbc74bf4fdf63e44a1c2a661977ee80",
+  ".nvmrc": "8f9258d5e9da5443c42966a661aee09292b49d1c64e718dcc5f72976500bac48",
+  ".prettierrc":
+    "945e4acc046f6d8f283c15c4278a8057da0c079d9b41ad5cb4dc9a90ff367308",
+  ".solhint.json":
+    "03ea2d2c0e470e33b1a5647ca0bbe087bf6a5f672af368270b4e31c2a81b1508",
+  "compatibility/hardhat.capture.config.ts":
+    "4c59c6f6b3a58ac52039732bf7467bed38281b8c13e52f8657d26058e91c2e42",
+  "compatibility/hardhat.reporter.js":
+    "7310d6f2fafa336097c7ef260394272bc60571fb837325af0d4c5ddc756f0e9b",
+  "compatibility/compiler-warning-allowlist.json":
+    "1c094e82427028224a3c6ac353616e722c103c6020a52f9df90f5c0bb4452315",
+  "foundry.toml":
+    "15356b92e608367cc58458371448d51172a39ebc03fe461cd6fe77b21b3584a4",
+  "hardhat.config.d.ts":
+    "c6c3a72314c52b1127b70fa3ca8989602349fdffddbe906bd26bf05d4c45a58f",
+  "hardhat.config.ts":
+    "e49a971942946f32b59f52020445f727ef17c4bbb6434be3ce42e446619838a4",
+  "package.json":
+    "e0c7032655e11f96e5c81c5ad38a4035351f4e1b179cdaa9b0bc7a24051ae401",
+  "pnpm-lock.yaml":
+    "8b2a9145f7a11b591fa70e8196673ee895d828dc991541ffa792461bcc864c43",
+  "pnpm-workspace.yaml":
+    "807a021b3d4ff32c08e5fe5c9996bb41ecd2a26f4708f0f530ecf29c124ad4da",
+  "remappings.txt":
+    "ff6af4f5f016d740713659bae831093a516370283d19a66bc5f2c43147772b42",
+  "slither.config.json":
+    "cb2e3107f3f00d822eea68f92ab56b03b8efac79870017fbc94702232299add1",
+  "tsconfig.json":
+    "b7fba44234a569bfceaafd92e81f27fc3de945a2050e1a031a5401b36f2f3dc3",
+});
+const SECURITY_01_COMPILER_SOURCE_COUNT = 28;
+const SECURITY_01_COMPILER_SOURCE_NAMES_SHA256 =
+  "e86bca0a6260d6b06d7cbd21a978888007b3564a8dcc5e64df44791dd0eb9599";
+const SECURITY_01_COMPILER_BASE_CLOSURE_SHA256 =
+  "a9823354dbcc80b56b846d25578ad355b01803277b719c103e5c1947a4e07da9";
+const SECURITY_01_COMPILER_CANDIDATE_CLOSURE_SHA256 =
+  "0edeaddcec7f1a80e324033d44906ba1a6011083f0c9017c06e1988952b994a0";
+const SECURITY_01_BEHAVIOR_EVIDENCE = Object.freeze({
+  sourcePath: SECURITY_01_REGRESSION_SOURCE,
+  sourceSha256: SECURITY_01_REGRESSION_SOURCE_SHA256,
+  test: SECURITY_01_REGRESSION_TEST,
+  inventoryChange: "none",
+  callerCases: Object.freeze([
+    "owner",
+    "token-approved caller",
+    "approved-for-all operator",
+  ]),
+  transferOverloads: Object.freeze([
+    "transferFrom(address,address,uint256)",
+    "safeTransferFrom(address,address,uint256)",
+    "safeTransferFrom(address,address,uint256,bytes)",
+  ]),
+  expectedRevert: `Error(string): ${SECURITY_01_REVERT_VALUE}`,
+  expectedOutcome:
+    "The stale outer transfer reverts after nested foreclosure and the complete transaction rolls back.",
+});
 const PROJECT_REVERT_STRINGS_PATH = path.join(
   ROOT,
   "compatibility",
@@ -358,6 +455,114 @@ function validateStage09Candidate(baseline, candidate) {
   stage09ForgeStdEvidence();
 }
 
+function fileDigestEvidence(expectedFiles) {
+  return sorted(
+    Object.fromEntries(
+      Object.keys(expectedFiles).map((relativePath) => {
+        const absolutePath = path.join(ROOT, relativePath);
+        if (!fs.existsSync(absolutePath)) {
+          throw new Error(
+            `Required provenance file is missing: ${relativePath}`
+          );
+        }
+        return [relativePath, sha256(fs.readFileSync(absolutePath))];
+      })
+    )
+  );
+}
+
+function validateExactFileDigests(actual, expected, label) {
+  if (!valuesEqual(actual, expected)) {
+    const differences = collectDifferences(expected, actual, `$.${label}`);
+    throw new Error(
+      `${label} provenance changed:\n${differences
+        .slice(0, 20)
+        .map((difference) => `- ${formatDifference(difference)}`)
+        .join("\n")}`
+    );
+  }
+}
+
+function security01ParityEvidence() {
+  const files = fileDigestEvidence(SECURITY_01_PARITY_FILES);
+  validateExactFileDigests(files, SECURITY_01_PARITY_FILES, "parityFiles");
+  return files;
+}
+
+function validateSecurity01Inventory(candidate) {
+  const hardhatNamesSha256 = sha256(stableJson(candidate.tests.hardhat.names));
+  const forgeNamesSha256 = sha256(stableJson(candidate.tests.forge.names));
+  if (
+    candidate.tests.hardhat.count !== SECURITY_01_HARDHAT_COUNT ||
+    candidate.tests.hardhat.names.length !== SECURITY_01_HARDHAT_COUNT ||
+    hardhatNamesSha256 !== SECURITY_01_HARDHAT_NAMES_SHA256 ||
+    candidate.tests.forge.count !== SECURITY_01_FORGE_COUNT ||
+    candidate.tests.forge.names.length !== SECURITY_01_FORGE_COUNT ||
+    forgeNamesSha256 !== SECURITY_01_FORGE_NAMES_SHA256 ||
+    candidate.tests.total !==
+      SECURITY_01_HARDHAT_COUNT + SECURITY_01_FORGE_COUNT
+  ) {
+    throw new Error(
+      "Security 01 must preserve the exact digest-bound Stage 9 Hardhat and Forge inventories"
+    );
+  }
+  security01ParityEvidence();
+  return sorted({
+    hardhat: {
+      count: candidate.tests.hardhat.count,
+      namesSha256: hardhatNamesSha256,
+    },
+    forge: {
+      count: candidate.tests.forge.count,
+      namesSha256: forgeNamesSha256,
+    },
+    total: candidate.tests.total,
+  });
+}
+
+function validateSecurity01HardFields(baseline, candidate) {
+  for (const qualifiedName of Object.keys(baseline.contracts)) {
+    const baselineContract = baseline.contracts[qualifiedName];
+    const candidateContract = candidate.contracts[qualifiedName];
+    for (const field of [
+      "abi",
+      "functions",
+      "events",
+      "errors",
+      "storageLayout",
+    ]) {
+      if (!valuesEqual(candidateContract?.[field], baselineContract[field])) {
+        throw new Error(
+          `Security 01 must preserve ${qualifiedName} ${field} exactly`
+        );
+      }
+    }
+  }
+  for (const field of ["interfaces", "enums", "erc165"]) {
+    if (!valuesEqual(candidate[field], baseline[field])) {
+      throw new Error(`Security 01 must preserve ${field} exactly`);
+    }
+  }
+  if (!valuesEqual(candidate.compiler.settings, baseline.compiler.settings)) {
+    throw new Error("Security 01 must preserve compiler settings exactly");
+  }
+}
+
+function validateSecurity01Candidate(baseline, candidate) {
+  validateSecurity01Inventory(candidate);
+  validateStage08Candidate(baseline, candidate);
+  stage09ForgeStdEvidence();
+  security01SourceEvidence();
+  security01BehaviorEvidence(candidate);
+
+  validateSecurity01RevertBinding(
+    protectedProjectRevertStrings(),
+    candidate.projectRevertStrings
+  );
+
+  validateSecurity01HardFields(baseline, candidate);
+}
+
 const REVIEW_POLICIES = Object.freeze({
   "stage-04-source-path-metadata-and-gas": Object.freeze({
     candidate: "stage-04-package-canonical-openzeppelin",
@@ -524,6 +729,38 @@ const REVIEW_POLICIES = Object.freeze({
       );
     },
     validateCandidate: validateStage09Candidate,
+  }),
+  [SECURITY_01_POLICY]: Object.freeze({
+    candidate: SECURITY_01_CANDIDATE,
+    requiredOpcodeEvidence: Object.freeze({
+      mode: "security-01-stage-09-relative-full-diff",
+      path: SECURITY_01_EVIDENCE_PATH,
+      contracts: STAGE_08_PRODUCTION_CONTRACTS,
+    }),
+    requiredSafetyEvidence: Object.freeze({
+      path: "compatibility/evidence/stage-07-safety-artifacts.json",
+      sha256:
+        "0065814caec6e3044951f80c891c9948454e90138d016513ed07d0fcfb7c67d8",
+    }),
+    requiredStage09Evidence: Object.freeze({
+      path: STAGE_09_OPCODE_EVIDENCE_PATH,
+      sha256: STAGE_09_EVIDENCE_SHA256,
+    }),
+    requiredBehaviorEvidence: SECURITY_01_BEHAVIOR_EVIDENCE,
+    permits(reviewPath) {
+      return (
+        STAGE_08_BYTECODE_PATH.test(reviewPath) ||
+        STAGE_08_GAS_SNAPSHOT_PATH.test(reviewPath) ||
+        /^\$\.projectRevertStrings(?:\.|\[|$)/.test(reviewPath)
+      );
+    },
+    permitsProtectedPath(reviewPath, protectedDomain) {
+      return (
+        protectedDomain === "project-owned revert strings" &&
+        /^\$\.projectRevertStrings(?:\.|\[|$)/.test(reviewPath)
+      );
+    },
+    validateCandidate: validateSecurity01Candidate,
   }),
 });
 
@@ -710,6 +947,240 @@ function protectedProjectRevertStrings() {
     throw new Error("Project revert-string baseline has an invalid schema");
   }
   return baseline.entries;
+}
+
+function security01ProjectRevertStrings(baselineEntries) {
+  const entries = deepClone(baselineEntries);
+  const zeroAddressIndex = entries.findIndex(
+    (entry) =>
+      entry.source === SECURITY_01_ERC721_SOURCE &&
+      entry.contract === "ERC721" &&
+      entry.callable === "_transfer(address,address,uint256)" &&
+      entry.callKind === "require" &&
+      entry.ordinal === 1 &&
+      entry.value === "ERC721: transfer to the zero address"
+  );
+  const ownerEntry = entries[zeroAddressIndex - 1];
+  if (
+    zeroAddressIndex < 1 ||
+    ownerEntry.source !== SECURITY_01_ERC721_SOURCE ||
+    ownerEntry.contract !== "ERC721" ||
+    ownerEntry.callable !== "_transfer(address,address,uint256)" ||
+    ownerEntry.callKind !== "require" ||
+    ownerEntry.ordinal !== 0 ||
+    ownerEntry.value !== SECURITY_01_REVERT_VALUE
+  ) {
+    throw new Error(
+      "Security 01 could not locate the exact protected ERC721 transfer reverts"
+    );
+  }
+  entries.splice(zeroAddressIndex + 1, 0, {
+    source: SECURITY_01_ERC721_SOURCE,
+    contract: "ERC721",
+    callable: "_transfer(address,address,uint256)",
+    callKind: "require",
+    ordinal: 2,
+    value: SECURITY_01_REVERT_VALUE,
+  });
+  return entries;
+}
+
+function validateSecurity01RevertBinding(baselineEntries, candidateEntries) {
+  const expected = security01ProjectRevertStrings(baselineEntries);
+  if (!valuesEqual(candidateEntries, expected)) {
+    throw new Error(
+      "Security 01 permits exactly one duplicate ERC721 incorrect-owner revert callsite"
+    );
+  }
+}
+
+function validateSecurity01ChangedPaths(changedPaths) {
+  const unexpected = changedPaths.filter(
+    (relativePath) =>
+      relativePath !== SECURITY_01_ERC721_SOURCE &&
+      relativePath !== "scripts/compatibility.js" &&
+      !relativePath.startsWith("compatibility/") &&
+      !relativePath.startsWith("docs/") &&
+      !relativePath.startsWith("test/")
+  );
+  if (unexpected.length > 0) {
+    throw new Error(
+      `Security 01 contains unauthorized repository changes: ${unexpected.join(
+        ", "
+      )}`
+    );
+  }
+}
+
+function security01ChangedPaths() {
+  const changed = new Set(
+    run("git", ["diff", "--name-only", SECURITY_01_BASE_COMMIT])
+      .stdout.split(/\r?\n/)
+      .filter(Boolean)
+  );
+  for (const line of run("git", ["status", "--porcelain"]).stdout.split(
+    /\r?\n/
+  )) {
+    if (!line) continue;
+    const relativePath = line.slice(3).split(" -> ").pop();
+    if (relativePath) changed.add(relativePath);
+  }
+  const paths = [...changed].sort();
+  validateSecurity01ChangedPaths(paths);
+  return paths;
+}
+
+function validateSecurity01ConfigEvidence(files) {
+  validateExactFileDigests(files, SECURITY_01_CONFIG_FILES, "configFiles");
+}
+
+function security01ConfigEvidence() {
+  const files = fileDigestEvidence(SECURITY_01_CONFIG_FILES);
+  validateSecurity01ConfigEvidence(files);
+  return files;
+}
+
+function validateSecurity01CompilerSourceEvidence(evidence) {
+  if (
+    evidence.sourceCount !== SECURITY_01_COMPILER_SOURCE_COUNT ||
+    evidence.sourceNamesSha256 !== SECURITY_01_COMPILER_SOURCE_NAMES_SHA256 ||
+    evidence.stage09ClosureSha256 !==
+      SECURITY_01_COMPILER_BASE_CLOSURE_SHA256 ||
+    evidence.candidateClosureSha256 !==
+      SECURITY_01_COMPILER_CANDIDATE_CLOSURE_SHA256 ||
+    evidence.changedSource !== SECURITY_01_ERC721_SOURCE ||
+    evidence.stage09ChangedSourceSha256 !== SECURITY_01_ERC721_BASE_SHA256 ||
+    evidence.candidateChangedSourceSha256 !==
+      SECURITY_01_ERC721_CANDIDATE_SHA256
+  ) {
+    throw new Error(
+      "Security 01 compiler source closure differs from the exact Stage 9 closure plus ERC721 recheck"
+    );
+  }
+}
+
+function security01CompilerSourceEvidence() {
+  const buildInfo = findBuildInfo();
+  const sourceHashes = sorted(
+    Object.fromEntries(
+      Object.entries(buildInfo.input.sources).map(([source, description]) => {
+        if (typeof description.content !== "string") {
+          throw new Error(`Compiler source is missing content: ${source}`);
+        }
+        return [source, sha256(description.content)];
+      })
+    )
+  );
+  const stage09Hashes = { ...sourceHashes };
+  if (
+    sourceHashes[SECURITY_01_ERC721_SOURCE] !==
+    SECURITY_01_ERC721_CANDIDATE_SHA256
+  ) {
+    throw new Error(
+      "Security 01 compiler input does not contain its ERC721 patch"
+    );
+  }
+  stage09Hashes[SECURITY_01_ERC721_SOURCE] = SECURITY_01_ERC721_BASE_SHA256;
+  const evidence = sorted({
+    sourceCount: Object.keys(sourceHashes).length,
+    sourceNamesSha256: sha256(stableJson(Object.keys(sourceHashes).sort())),
+    stage09ClosureSha256: sha256(stableJson(stage09Hashes)),
+    candidateClosureSha256: sha256(stableJson(sourceHashes)),
+    changedSource: SECURITY_01_ERC721_SOURCE,
+    stage09ChangedSourceSha256: SECURITY_01_ERC721_BASE_SHA256,
+    candidateChangedSourceSha256: SECURITY_01_ERC721_CANDIDATE_SHA256,
+  });
+  validateSecurity01CompilerSourceEvidence(evidence);
+  return evidence;
+}
+
+function security01SourceEvidence() {
+  const baseSource = run("git", [
+    "show",
+    `${SECURITY_01_BASE_COMMIT}:${SECURITY_01_ERC721_SOURCE}`,
+  ]).stdout;
+  if (sha256(baseSource) !== SECURITY_01_ERC721_BASE_SHA256) {
+    throw new Error("Security 01 ERC721 source anchor has changed");
+  }
+  const hook = "    _beforeTokenTransfer(from, to, tokenId);\n\n";
+  const occurrences = baseSource.split(hook).length - 1;
+  if (occurrences !== 1) {
+    throw new Error("Security 01 requires one exact ERC721 transfer hook");
+  }
+  const recheck = [
+    "    // The hook may have transferred the token. Revalidate ownership before",
+    "    // applying this transfer's balance and ownership changes.",
+    "    require(",
+    "      ERC721.ownerOf(tokenId) == from,",
+    `      "${SECURITY_01_REVERT_VALUE}"`,
+    "    );",
+    "",
+    "",
+  ].join("\n");
+  const expectedCandidate = baseSource.replace(hook, `${hook}${recheck}`);
+  const candidatePath = path.join(ROOT, SECURITY_01_ERC721_SOURCE);
+  const candidateSource = fs.readFileSync(candidatePath, "utf8");
+  if (
+    candidateSource !== expectedCandidate ||
+    sha256(candidateSource) !== SECURITY_01_ERC721_CANDIDATE_SHA256
+  ) {
+    throw new Error(
+      "Security 01 permits only the exact post-hook ERC721 owner recheck"
+    );
+  }
+
+  return sorted({
+    baseCommit: SECURITY_01_BASE_COMMIT,
+    sourcePath: SECURITY_01_ERC721_SOURCE,
+    baseSha256: SECURITY_01_ERC721_BASE_SHA256,
+    candidateSha256: SECURITY_01_ERC721_CANDIDATE_SHA256,
+    exactChange:
+      "Duplicate the existing incorrect-owner require immediately after _beforeTokenTransfer and before approval or ownership effects.",
+    changedPaths: security01ChangedPaths(),
+    configFiles: security01ConfigEvidence(),
+    compilerSources: security01CompilerSourceEvidence(),
+  });
+}
+
+function security01BehaviorEvidence(candidate) {
+  const sourcePath = path.join(ROOT, SECURITY_01_REGRESSION_SOURCE);
+  const sourceBytes = fs.readFileSync(sourcePath);
+  if (sha256(sourceBytes) !== SECURITY_01_REGRESSION_SOURCE_SHA256) {
+    throw new Error("Security 01 regression evidence source has changed");
+  }
+  const source = sourceBytes.toString("utf8");
+  const requiredFragments = [
+    "function test_regression_deferredDelinquentTransferContinuesAfterNestedForeclosure()",
+    "for (uint256 callerMode = 0; callerMode < 3; callerMode++)",
+    "for (uint256 transferMode = 0; transferMode < 3; transferMode++)",
+    `"${SECURITY_01_REVERT_VALUE}"`,
+    "assertEq(wrapper.ownerOf(firstWrappedId), ALICE);",
+    "assertEq(wrapper.balanceOf(address(wrapper)), 0);",
+    "assertEq(wrapper.outstandingRemittances(BOB), before_.beneficiaryRemittance);",
+    "assertEq(address(wrapper).balance, before_.wrapperEth);",
+  ];
+  for (const fragment of requiredFragments) {
+    if (!source.includes(fragment)) {
+      throw new Error(
+        `Security 01 regression evidence is missing: ${fragment}`
+      );
+    }
+  }
+  const occurrences = candidate.tests.forge.names.filter(
+    (name) => name === SECURITY_01_REGRESSION_TEST
+  ).length;
+  if (occurrences !== 1) {
+    throw new Error(
+      "Security 01 must preserve exactly one executed legacy regression identifier"
+    );
+  }
+  return sorted(SECURITY_01_BEHAVIOR_EVIDENCE);
+}
+
+function validateSecurity01BehaviorBinding(evidence) {
+  if (!valuesEqual(evidence, SECURITY_01_BEHAVIOR_EVIDENCE)) {
+    throw new Error("Security 01 behavior evidence binding is stale");
+  }
 }
 
 function findBuildInfo() {
@@ -1550,6 +2021,24 @@ function reviewPolicy(review) {
       );
     }
   }
+  if (policy.requiredStage09Evidence) {
+    const required = policy.requiredStage09Evidence;
+    const supplied = review.stage09Evidence;
+    if (!supplied || !valuesEqual(supplied, required)) {
+      throw new Error(
+        `Compatibility review policy ${review.policy} requires exact inherited Stage 9 evidence ${required.path} at ${required.sha256}`
+      );
+    }
+  }
+  if (policy.requiredBehaviorEvidence) {
+    const supplied = review.behaviorEvidence;
+    if (!supplied) {
+      throw new Error(
+        `Compatibility review policy ${review.policy} requires exact Security 01 behavior evidence`
+      );
+    }
+    validateSecurity01BehaviorBinding(supplied);
+  }
   if (policy.requiredForgeStdEvidence) {
     const required = policy.requiredForgeStdEvidence;
     const supplied = review.forgeStdEvidence;
@@ -1807,6 +2296,53 @@ function stage09Review(baselineBytes, differences) {
   };
 }
 
+function security01ReviewReason(reviewPath) {
+  if (/^\$\.compiler\.(?:version|longVersion)$/.test(reviewPath)) {
+    return "Security 01 inherits the exact Solidity 0.8.36 compiler identity from the green Stage 9 checkpoint; compiler settings remain hard-equal to the immutable baseline.";
+  }
+  if (STAGE_08_BYTECODE_PATH.test(reviewPath)) {
+    return "The authorized post-hook owner recheck changes compiler-generated production bytecode. Security 01 records complete Stage-9-relative opcode diffs, hashes, sizes, EIP-170 checks, and source-patch provenance.";
+  }
+  if (STAGE_08_GAS_SNAPSHOT_PATH.test(reviewPath)) {
+    return "The authorized production recheck changes deployment and transfer-path gas. Security 01 records exact Stage-9-relative legacy gas entries and enforces the existing 12-flow max(3%, 2,000 gas) policy.";
+  }
+  if (reviewPath === "$.toolchain.forge[2]") {
+    return "Official Foundry 1.7.1 binaries share the pinned version and commit but embed platform-specific build timestamps; the manifest compares the stable version, commit, and build profile.";
+  }
+  if (/^\$\.projectRevertStrings(?:\.|\[|$)/.test(reviewPath)) {
+    return "Security 01 duplicates the existing incorrect-owner Error(string) callsite after _beforeTokenTransfer. The protected value, callable, call kind, and all other revert callsites remain exact.";
+  }
+  throw new Error(`Security 01 has no review reason for ${reviewPath}`);
+}
+
+function security01Review(baselineBytes, differences) {
+  return {
+    schemaVersion: 1,
+    candidate: SECURITY_01_CANDIDATE,
+    policy: SECURITY_01_POLICY,
+    baselineSha256: sha256(baselineBytes),
+    allowedDifferences: differences.map((difference) => ({
+      ...difference,
+      reason: security01ReviewReason(difference.path),
+    })),
+    opcodeEvidence: {
+      mode: "security-01-stage-09-relative-full-diff",
+      path: SECURITY_01_EVIDENCE_PATH,
+      contracts: [...STAGE_08_PRODUCTION_CONTRACTS],
+    },
+    stage09Evidence: {
+      path: STAGE_09_OPCODE_EVIDENCE_PATH,
+      sha256: STAGE_09_EVIDENCE_SHA256,
+    },
+    behaviorEvidence: SECURITY_01_BEHAVIOR_EVIDENCE,
+    safetyEvidence: {
+      path: "compatibility/evidence/stage-07-safety-artifacts.json",
+      sha256:
+        "0065814caec6e3044951f80c891c9948454e90138d016513ed07d0fcfb7c67d8",
+    },
+  };
+}
+
 function opcodeInstructions(opcodes) {
   if (!opcodes) return [];
   const words = opcodes.split(" ");
@@ -2048,6 +2584,90 @@ function stage08Evidence() {
     throw new Error("Stage 8 compiler evidence has an invalid identity");
   }
   return evidence;
+}
+
+function stage09EvidenceAnchor() {
+  if (!fs.existsSync(STAGE_09_OPCODE_EVIDENCE_PATH)) {
+    throw new Error(
+      "Security 01 requires the checked-in Stage 9 forge-std evidence"
+    );
+  }
+  const bytes = fs.readFileSync(STAGE_09_OPCODE_EVIDENCE_PATH);
+  const digest = sha256(bytes);
+  if (digest !== STAGE_09_EVIDENCE_SHA256) {
+    throw new Error(
+      `Stage 9 evidence changed: expected ${STAGE_09_EVIDENCE_SHA256}, received ${digest}`
+    );
+  }
+  const evidence = JSON.parse(bytes);
+  if (
+    evidence.schemaVersion !== 1 ||
+    evidence.candidate !== STAGE_09_CANDIDATE ||
+    evidence.mode !== "stage-08-production-equality"
+  ) {
+    throw new Error("Stage 9 evidence has an invalid identity");
+  }
+  return evidence;
+}
+
+function applyUnifiedOpcodeDiff(baselineOpcodes, diff) {
+  if (!diff) return baselineOpcodes;
+  const baseline = opcodeInstructions(baselineOpcodes);
+  const result = [];
+  const lines = diff.replace(/\n$/, "").split("\n");
+  let cursor = 0;
+  let lineIndex = 0;
+
+  while (lineIndex < lines.length) {
+    const header = lines[lineIndex].match(
+      /^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/
+    );
+    if (!header) {
+      throw new Error(
+        `Invalid checked-in opcode diff header: ${lines[lineIndex]}`
+      );
+    }
+    const oldStart = Number(header[1]) - 1;
+    const oldCount = header[2] === undefined ? 1 : Number(header[2]);
+    const newCount = header[4] === undefined ? 1 : Number(header[4]);
+    if (oldStart < cursor) {
+      throw new Error("Checked-in opcode diff hunks overlap");
+    }
+    result.push(...baseline.slice(cursor, oldStart));
+    cursor = oldStart;
+    lineIndex += 1;
+    let consumedOld = 0;
+    let producedNew = 0;
+
+    while (lineIndex < lines.length && !lines[lineIndex].startsWith("@@ ")) {
+      const line = lines[lineIndex];
+      const marker = line[0];
+      const instruction = line.slice(1);
+      if (marker === " " || marker === "-") {
+        if (baseline[cursor] !== instruction) {
+          throw new Error(
+            `Checked-in opcode diff context mismatch at instruction ${cursor}`
+          );
+        }
+        cursor += 1;
+        consumedOld += 1;
+      }
+      if (marker === " " || marker === "+") {
+        result.push(instruction);
+        producedNew += 1;
+      }
+      if (![" ", "-", "+"].includes(marker)) {
+        throw new Error(`Invalid checked-in opcode diff line: ${line}`);
+      }
+      lineIndex += 1;
+    }
+    if (consumedOld !== oldCount || producedNew !== newCount) {
+      throw new Error("Checked-in opcode diff hunk counts are inconsistent");
+    }
+  }
+
+  result.push(...baseline.slice(cursor));
+  return result.join(" ");
 }
 
 function stage09ProductionEvidence(baseline, candidate) {
@@ -2340,6 +2960,391 @@ function stage09Evidence(review, baseline, candidate) {
   });
 }
 
+function stage09LegacyGasEntries(inherited) {
+  const previousEntries = [...STAGE_08_LEGACY_GAS_ENTRIES];
+  const inheritedGas = inherited.legacyGasRelativeToStage08;
+  if (
+    inheritedGas.fuzzSeed !== "0x721" ||
+    inheritedGas.inventoryCount !== previousEntries.length
+  ) {
+    throw new Error("Security 01 inherited an invalid Stage 9 gas inventory");
+  }
+  for (const change of inheritedGas.changes) {
+    const match = change.path.match(/^\$\.gasSnapshot\.entries\[(\d+)\]$/);
+    if (!match) throw new Error(`Invalid Stage 9 gas path: ${change.path}`);
+    const index = Number(match[1]);
+    if (previousEntries[index] !== change.stage08Value) {
+      throw new Error(`Stage 9 gas anchor mismatch at index ${index}`);
+    }
+    previousEntries[index] = change.candidateValue;
+  }
+  return previousEntries;
+}
+
+function security01LegacyGasEvidence(candidate, inherited) {
+  const previousEntries = stage09LegacyGasEntries(inherited);
+
+  const candidateEntries = candidate.gasSnapshot.entries;
+  if (
+    candidate.gasSnapshot.fuzzSeed !== "0x721" ||
+    candidateEntries.length !== previousEntries.length
+  ) {
+    throw new Error("Security 01 must preserve the legacy gas inventory");
+  }
+  const changes = [];
+  for (let index = 0; index < previousEntries.length; index += 1) {
+    if (previousEntries[index] !== candidateEntries[index]) {
+      changes.push({
+        path: `$.gasSnapshot.entries[${index}]`,
+        stage09Value: previousEntries[index],
+        candidateValue: candidateEntries[index],
+      });
+    }
+  }
+  return sorted({
+    fuzzSeed: "0x721",
+    inventoryCount: previousEntries.length,
+    stage09EntriesSha256: sha256(stableJson(previousEntries)),
+    candidateEntriesSha256: sha256(stableJson(candidateEntries)),
+    changedIndices: changes.map(({ path: reviewPath }) =>
+      Number(reviewPath.match(/\[(\d+)\]/)[1])
+    ),
+    changes,
+  });
+}
+
+function security01KeyFlowGasEvidence(inherited, candidateGas) {
+  const previous = new Map(
+    inherited.keyFlowGasRelativeToStage08.comparisons.map((entry) => [
+      entry.name,
+      entry,
+    ])
+  );
+  const current = new Map();
+  for (const [group, entries] of Object.entries(candidateGas.groups)) {
+    for (const entry of entries) current.set(entry.name, { group, ...entry });
+  }
+  if (!valuesEqual([...previous.keys()].sort(), [...current.keys()].sort())) {
+    throw new Error("Security 01 must preserve the 12 key-flow gas inventory");
+  }
+  const comparisons = [...previous.keys()].sort().map((name) => {
+    const stage09 = previous.get(name);
+    const candidate = current.get(name);
+    if (stage09.group !== candidate.group || !candidate.withinLimit) {
+      throw new Error(`Security 01 gas evidence is invalid for ${name}`);
+    }
+    return {
+      group: candidate.group,
+      name,
+      stage09Gas: stage09.candidateGas,
+      candidateGas: candidate.candidateGas,
+      deltaGas: candidate.candidateGas - stage09.candidateGas,
+      baselineGas: candidate.baselineGas,
+      maximumGas: candidate.maximumGas,
+      withinBaselineLimit: true,
+    };
+  });
+  return sorted({
+    baselinePath: candidateGas.baselinePath,
+    baselineSha256: candidateGas.baselineSha256,
+    baselinePolicy: candidateGas.policy,
+    fuzzSeed: candidateGas.fuzzSeed,
+    comparisons,
+  });
+}
+
+function security01RevertEvidence(baseline, candidate) {
+  const expected = security01ProjectRevertStrings(
+    baseline.projectRevertStrings
+  );
+  if (!valuesEqual(candidate.projectRevertStrings, expected)) {
+    throw new Error("Security 01 revert-callsite evidence does not match");
+  }
+  const addedCallsite = expected.find(
+    (entry) =>
+      entry.source === SECURITY_01_ERC721_SOURCE &&
+      entry.callable === "_transfer(address,address,uint256)" &&
+      entry.ordinal === 2
+  );
+  const unchanged = expected.filter((entry) => entry !== addedCallsite);
+  if (!valuesEqual(unchanged, baseline.projectRevertStrings)) {
+    throw new Error(
+      "Security 01 changed a protected revert besides its duplicate"
+    );
+  }
+  return sorted({
+    baselineCount: baseline.projectRevertStrings.length,
+    candidateCount: candidate.projectRevertStrings.length,
+    unchangedCallsitesSha256: sha256(stableJson(unchanged)),
+    addedCallsite,
+  });
+}
+
+function security01HardCompatibilityEvidence(baseline, candidate) {
+  const inventory = validateSecurity01Inventory(candidate);
+  const contracts = {};
+  for (const qualifiedName of Object.keys(baseline.contracts).sort()) {
+    const fields = {};
+    for (const field of [
+      "abi",
+      "functions",
+      "events",
+      "errors",
+      "storageLayout",
+    ]) {
+      const expected = baseline.contracts[qualifiedName][field];
+      const actual = candidate.contracts[qualifiedName][field];
+      if (!valuesEqual(actual, expected)) {
+        throw new Error(
+          `Security 01 hard field changed: ${qualifiedName} ${field}`
+        );
+      }
+      fields[field] = {
+        equal: true,
+        sha256: sha256(stableJson(actual)),
+      };
+    }
+    contracts[qualifiedName] = fields;
+  }
+  const globalFields = {};
+  for (const field of ["interfaces", "enums", "erc165"]) {
+    if (!valuesEqual(candidate[field], baseline[field])) {
+      throw new Error(`Security 01 hard field changed: ${field}`);
+    }
+    globalFields[field] = {
+      equal: true,
+      sha256: sha256(stableJson(candidate[field])),
+    };
+  }
+  if (!valuesEqual(candidate.compiler.settings, baseline.compiler.settings)) {
+    throw new Error("Security 01 compiler settings changed");
+  }
+  return sorted({
+    contracts,
+    ...globalFields,
+    compilerSettings: {
+      equal: true,
+      sha256: sha256(stableJson(candidate.compiler.settings)),
+    },
+    behaviorTestInventory: { ...inventory, unchangedFromStage09: true },
+    parityFiles: security01ParityEvidence(),
+  });
+}
+
+function security01ProductionEvidence(baseline, candidate, inherited) {
+  const stage08 = stage08Evidence();
+  const contracts = {};
+  for (const qualifiedName of STAGE_08_PRODUCTION_CONTRACTS) {
+    const stage08Contract = stage08.contracts[qualifiedName];
+    const stage09Contract = inherited.production.contracts[qualifiedName];
+    const candidateContract = candidate.contracts[qualifiedName];
+    if (!stage08Contract || !stage09Contract || !candidateContract) {
+      throw new Error(
+        `Security 01 production anchor is missing ${qualifiedName}`
+      );
+    }
+    const bytecodes = {};
+    for (const bytecodeKind of ["creationBytecode", "runtimeBytecode"]) {
+      const baselineBytecode = baseline.contracts[qualifiedName][bytecodeKind];
+      const stage08Bytecode = stage08Contract[bytecodeKind];
+      const stage09Bytecode = stage09Contract[bytecodeKind].candidate;
+      const candidateBytecode = candidateContract[bytecodeKind];
+      const stage09Opcodes = applyUnifiedOpcodeDiff(
+        baselineBytecode.metadataStrippedOpcodes,
+        stage08Bytecode.metadataStrippedOpcodes.fullDiff.hunks
+      );
+      if (
+        sha256(stage09Opcodes) !==
+          stage08Bytecode.metadataStrippedOpcodes.candidateSha256 ||
+        sha256(stage09Opcodes) !== stage09Bytecode.metadataStrippedOpcodesSha256
+      ) {
+        throw new Error(
+          `Security 01 could not reconstruct Stage 9 ${qualifiedName} ${bytecodeKind}`
+        );
+      }
+      const expectedStage09 = {
+        rawKeccak256: stage08Bytecode.rawBytecode.candidateKeccak256,
+        rawSizeBytes: stage08Bytecode.rawBytecode.candidateSizeBytes,
+        metadataBytes: stage08Bytecode.rawBytecode.candidateMetadataBytes,
+        metadataStrippedKeccak256:
+          stage08Bytecode.metadataStrippedBytecode.candidateKeccak256,
+        metadataStrippedSizeBytes:
+          stage08Bytecode.metadataStrippedBytecode.candidateSizeBytes,
+        metadataStrippedOpcodesSha256:
+          stage08Bytecode.metadataStrippedOpcodes.candidateSha256,
+      };
+      if (!valuesEqual(stage09Bytecode, expectedStage09)) {
+        throw new Error(
+          `Security 01 Stage 9 bytecode anchor is inconsistent for ${qualifiedName} ${bytecodeKind}`
+        );
+      }
+
+      const candidateOpcodes = candidateBytecode.metadataStrippedOpcodes;
+      const opcodesEqual = stage09Opcodes === candidateOpcodes;
+      if (opcodesEqual) {
+        throw new Error(
+          `Security 01 expected an opcode change for ${qualifiedName} ${bytecodeKind}`
+        );
+      }
+      bytecodes[bytecodeKind] = {
+        rawBytecode: {
+          stage09Keccak256: stage09Bytecode.rawKeccak256,
+          candidateKeccak256: candidateBytecode.keccak256,
+          stage09SizeBytes: stage09Bytecode.rawSizeBytes,
+          candidateSizeBytes: candidateBytecode.sizeBytes,
+          sizeDeltaBytes:
+            candidateBytecode.sizeBytes - stage09Bytecode.rawSizeBytes,
+          stage09MetadataBytes: stage09Bytecode.metadataBytes,
+          candidateMetadataBytes: candidateBytecode.metadataBytes,
+        },
+        metadataStrippedBytecode: {
+          stage09Keccak256: stage09Bytecode.metadataStrippedKeccak256,
+          candidateKeccak256: candidateBytecode.metadataStrippedKeccak256,
+          stage09SizeBytes: stage09Bytecode.metadataStrippedSizeBytes,
+          candidateSizeBytes: candidateBytecode.metadataStrippedSizeBytes,
+          sizeDeltaBytes:
+            candidateBytecode.metadataStrippedSizeBytes -
+            stage09Bytecode.metadataStrippedSizeBytes,
+        },
+        metadataStrippedOpcodes: {
+          stage09Sha256: sha256(stage09Opcodes),
+          candidateSha256: sha256(candidateOpcodes),
+          equal: false,
+          fullDiff: unifiedOpcodeDiff(stage09Opcodes, candidateOpcodes),
+        },
+      };
+    }
+
+    const stage09RuntimeSize =
+      stage09Contract.runtimeBytecode.candidate.rawSizeBytes;
+    const candidateRuntimeSize = candidateContract.runtimeBytecode.sizeBytes;
+    if (candidateRuntimeSize > 24_576) {
+      throw new Error(`${qualifiedName} exceeds the EIP-170 size limit`);
+    }
+    contracts[qualifiedName] = {
+      ...bytecodes,
+      eip170: {
+        limitBytes: 24_576,
+        stage09RuntimeSizeBytes: stage09RuntimeSize,
+        candidateRuntimeSizeBytes: candidateRuntimeSize,
+        sizeDeltaBytes: candidateRuntimeSize - stage09RuntimeSize,
+        stage09WithinLimit: stage09RuntimeSize <= 24_576,
+        candidateWithinLimit: true,
+      },
+    };
+  }
+
+  const expectedCompiler = inherited.production.compiler.candidate;
+  const candidateCompiler = {
+    version: candidate.compiler.version,
+    longVersion: candidate.compiler.longVersion,
+    settingsSha256: sha256(stableJson(candidate.compiler.settings)),
+  };
+  if (!valuesEqual(candidateCompiler, expectedCompiler)) {
+    throw new Error("Security 01 compiler differs from Stage 9");
+  }
+  return sorted({ compiler: candidateCompiler, contracts });
+}
+
+function security01Evidence(review, baseline, candidate) {
+  const inherited = stage09EvidenceAnchor();
+  const keyFlowGas = stage08GasEvidence();
+  return sorted({
+    schemaVersion: 1,
+    candidate: review.candidate,
+    baselineSha256: review.baselineSha256,
+    mode: review.opcodeEvidence.mode,
+    inheritedStage09Evidence: {
+      path: STAGE_09_OPCODE_EVIDENCE_PATH,
+      sha256: STAGE_09_EVIDENCE_SHA256,
+    },
+    sourcePatch: security01SourceEvidence(),
+    intentionalBehaviorChange: security01BehaviorEvidence(candidate),
+    revertCallsite: security01RevertEvidence(baseline, candidate),
+    hardCompatibility: security01HardCompatibilityEvidence(baseline, candidate),
+    productionRelativeToStage09: security01ProductionEvidence(
+      baseline,
+      candidate,
+      inherited
+    ),
+    legacyGasRelativeToStage09: security01LegacyGasEvidence(
+      candidate,
+      inherited
+    ),
+    keyFlowGasRelativeToStage09: security01KeyFlowGasEvidence(
+      inherited,
+      keyFlowGas
+    ),
+  });
+}
+
+function security01ComparisonBaseline(baseline, candidate) {
+  validateSecurity01Inventory(candidate);
+  security01SourceEvidence();
+  validateStage08Candidate(baseline, candidate);
+  const comparison = deepClone(baseline);
+  const stage08 = stage08Evidence();
+  const inherited = stage09EvidenceAnchor();
+
+  const stage09Compiler = inherited.production.compiler.candidate;
+  if (
+    stage09Compiler.version !== STAGE_08_COMPILER_VERSION ||
+    stage09Compiler.longVersion !== STAGE_08_COMPILER_LONG_VERSION ||
+    stage09Compiler.settingsSha256 !==
+      sha256(stableJson(baseline.compiler.settings))
+  ) {
+    throw new Error("Security 01 inherited an invalid Stage 9 compiler anchor");
+  }
+  comparison.compiler.version = stage09Compiler.version;
+  comparison.compiler.longVersion = stage09Compiler.longVersion;
+
+  for (const qualifiedName of STAGE_08_PRODUCTION_CONTRACTS) {
+    for (const bytecodeKind of ["creationBytecode", "runtimeBytecode"]) {
+      const stage08Bytecode = stage08.contracts[qualifiedName][bytecodeKind];
+      const stage09Bytecode =
+        inherited.production.contracts[qualifiedName][bytecodeKind].candidate;
+      const baselineBytecode = baseline.contracts[qualifiedName][bytecodeKind];
+      const reconstructedOpcodes = applyUnifiedOpcodeDiff(
+        baselineBytecode.metadataStrippedOpcodes,
+        stage08Bytecode.metadataStrippedOpcodes.fullDiff.hunks
+      );
+      if (
+        sha256(reconstructedOpcodes) !==
+        stage09Bytecode.metadataStrippedOpcodesSha256
+      ) {
+        throw new Error(
+          `Security 01 Stage 9 opcode reconstruction failed for ${qualifiedName} ${bytecodeKind}`
+        );
+      }
+      Object.assign(comparison.contracts[qualifiedName][bytecodeKind], {
+        keccak256: stage09Bytecode.rawKeccak256,
+        sizeBytes: stage09Bytecode.rawSizeBytes,
+        metadataBytes: stage09Bytecode.metadataBytes,
+        metadataStrippedKeccak256: stage09Bytecode.metadataStrippedKeccak256,
+        metadataStrippedSizeBytes: stage09Bytecode.metadataStrippedSizeBytes,
+        metadataStrippedOpcodes: reconstructedOpcodes,
+      });
+    }
+  }
+
+  comparison.gasSnapshot.entries = stage09LegacyGasEntries(inherited);
+  comparison.tests = deepClone(candidate.tests);
+  const expectedToolchain = deepClone(baseline.toolchain);
+  if (
+    !Array.isArray(expectedToolchain.forge) ||
+    !Array.isArray(candidate.toolchain.forge) ||
+    expectedToolchain.forge.length !== candidate.toolchain.forge.length
+  ) {
+    throw new Error("Security 01 inherited an invalid Forge identity");
+  }
+  expectedToolchain.forge[2] = candidate.toolchain.forge[2];
+  if (!valuesEqual(candidate.toolchain, expectedToolchain)) {
+    throw new Error("Security 01 must preserve the pinned Forge identity");
+  }
+  comparison.toolchain = expectedToolchain;
+  return comparison;
+}
+
 function expectStage09Rejection(name, operation) {
   try {
     operation();
@@ -2367,6 +3372,142 @@ function stage09NegativeProbes(baseline, candidate) {
   ];
 }
 
+function expectSecurity01Rejection(name, operation) {
+  try {
+    operation();
+  } catch (_error) {
+    return name;
+  }
+  throw new Error(`Security 01 negative probe unexpectedly passed: ${name}`);
+}
+
+function security01NegativeProbes(baseline, candidate, review) {
+  const probes = [];
+
+  const countDrift = deepClone(candidate);
+  countDrift.tests.forge.count += 1;
+  probes.push(
+    expectSecurity01Rejection("Forge inventory count drift", () =>
+      validateSecurity01Inventory(countDrift)
+    )
+  );
+
+  const nameDrift = deepClone(candidate);
+  nameDrift.tests.forge.names[0] = `${nameDrift.tests.forge.names[0]}_drift`;
+  probes.push(
+    expectSecurity01Rejection("Forge inventory name hash drift", () =>
+      validateSecurity01Inventory(nameDrift)
+    )
+  );
+
+  const hardhatNameDrift = deepClone(candidate);
+  hardhatNameDrift.tests.hardhat.names[0] = `${hardhatNameDrift.tests.hardhat.names[0]} drift`;
+  probes.push(
+    expectSecurity01Rejection("Hardhat inventory name hash drift", () =>
+      validateSecurity01Inventory(hardhatNameDrift)
+    )
+  );
+
+  const parityDrift = deepClone(SECURITY_01_PARITY_FILES);
+  parityDrift["compatibility/parity-map.json"] = "0".repeat(64);
+  probes.push(
+    expectSecurity01Rejection("parity map digest drift", () =>
+      validateExactFileDigests(
+        parityDrift,
+        SECURITY_01_PARITY_FILES,
+        "parityFiles"
+      )
+    )
+  );
+
+  probes.push(
+    expectSecurity01Rejection("extra production source drift", () =>
+      validateSecurity01ChangedPaths([
+        SECURITY_01_ERC721_SOURCE,
+        "contracts/token/modules/Lease.sol",
+      ])
+    )
+  );
+  probes.push(
+    expectSecurity01Rejection("dependency manifest drift", () =>
+      validateSecurity01ChangedPaths([
+        SECURITY_01_ERC721_SOURCE,
+        "package.json",
+      ])
+    )
+  );
+  probes.push(
+    expectSecurity01Rejection("compiler config drift", () =>
+      validateSecurity01ChangedPaths([
+        SECURITY_01_ERC721_SOURCE,
+        "foundry.toml",
+      ])
+    )
+  );
+
+  const configDrift = security01ConfigEvidence();
+  configDrift["pnpm-lock.yaml"] = "0".repeat(64);
+  probes.push(
+    expectSecurity01Rejection("dependency lock digest drift", () =>
+      validateSecurity01ConfigEvidence(configDrift)
+    )
+  );
+
+  const compilerSourceDrift = security01CompilerSourceEvidence();
+  compilerSourceDrift.candidateClosureSha256 = "0".repeat(64);
+  probes.push(
+    expectSecurity01Rejection("compiler source closure drift", () =>
+      validateSecurity01CompilerSourceEvidence(compilerSourceDrift)
+    )
+  );
+
+  const revertDrift = deepClone(candidate.projectRevertStrings);
+  revertDrift.find((entry) => entry.ordinal === 2).value =
+    "ERC721: drifted owner error";
+  probes.push(
+    expectSecurity01Rejection("revert callsite drift", () =>
+      validateSecurity01RevertBinding(
+        baseline.projectRevertStrings,
+        revertDrift
+      )
+    )
+  );
+
+  const behaviorDrift = deepClone(SECURITY_01_BEHAVIOR_EVIDENCE);
+  behaviorDrift.sourceSha256 = "0".repeat(64);
+  probes.push(
+    expectSecurity01Rejection("stale behavior source hash", () =>
+      validateSecurity01BehaviorBinding(behaviorDrift)
+    )
+  );
+
+  const hardFieldDrift = deepClone(candidate);
+  hardFieldDrift.contracts["contracts/Wrapper.sol:Wrapper"].abi.push({
+    type: "function",
+    name: "drift",
+    inputs: [],
+    outputs: [],
+    stateMutability: "view",
+  });
+  probes.push(
+    expectSecurity01Rejection("hard ABI field drift", () =>
+      validateSecurity01HardFields(baseline, hardFieldDrift)
+    )
+  );
+
+  const evidencePath = opcodeEvidencePath(review);
+  const opcodeEvidence = JSON.parse(fs.readFileSync(evidencePath, "utf8"));
+  const staleOpcodeEvidence = deepClone(opcodeEvidence);
+  staleOpcodeEvidence.sourcePatch.candidateSha256 = "0".repeat(64);
+  probes.push(
+    expectSecurity01Rejection("stale opcode evidence", () =>
+      validateExactOpcodeEvidence(staleOpcodeEvidence, opcodeEvidence)
+    )
+  );
+
+  return probes;
+}
+
 function reviewedOpcodeEvidence(review, baseline, candidate) {
   const configuration = review.opcodeEvidence;
   if (!configuration) return null;
@@ -2375,6 +3516,7 @@ function reviewedOpcodeEvidence(review, baseline, candidate) {
       "metadata-stripped-equality",
       "metadata-stripped-full-diff",
       "stage-08-production-equality",
+      "security-01-stage-09-relative-full-diff",
     ].includes(configuration.mode)
   ) {
     throw new Error(`Unsupported opcode evidence mode: ${configuration.mode}`);
@@ -2387,6 +3529,9 @@ function reviewedOpcodeEvidence(review, baseline, candidate) {
   }
   if (configuration.mode === "stage-08-production-equality") {
     return stage09Evidence(review, baseline, candidate);
+  }
+  if (configuration.mode === "security-01-stage-09-relative-full-diff") {
+    return security01Evidence(review, baseline, candidate);
   }
 
   const contracts = {};
@@ -2526,14 +3671,7 @@ function writeOpcodeEvidence(review, baseline, candidate) {
   return evidencePath;
 }
 
-function validateOpcodeEvidence(review, baseline, candidate) {
-  const evidence = reviewedOpcodeEvidence(review, baseline, candidate);
-  if (!evidence) return;
-  const evidencePath = opcodeEvidencePath(review);
-  if (!fs.existsSync(evidencePath)) {
-    throw new Error(`Checked-in opcode evidence is missing: ${evidencePath}`);
-  }
-  const checkedInEvidence = JSON.parse(fs.readFileSync(evidencePath, "utf8"));
+function validateExactOpcodeEvidence(checkedInEvidence, evidence) {
   if (!valuesEqual(checkedInEvidence, evidence)) {
     const evidenceDifferences = collectDifferences(checkedInEvidence, evidence);
     throw new Error(
@@ -2543,6 +3681,17 @@ function validateOpcodeEvidence(review, baseline, candidate) {
         .join("\n")}`
     );
   }
+}
+
+function validateOpcodeEvidence(review, baseline, candidate) {
+  const evidence = reviewedOpcodeEvidence(review, baseline, candidate);
+  if (!evidence) return;
+  const evidencePath = opcodeEvidencePath(review);
+  if (!fs.existsSync(evidencePath)) {
+    throw new Error(`Checked-in opcode evidence is missing: ${evidencePath}`);
+  }
+  const checkedInEvidence = JSON.parse(fs.readFileSync(evidencePath, "utf8"));
+  validateExactOpcodeEvidence(checkedInEvidence, evidence);
 }
 
 function validateSafetyEvidence(review) {
@@ -2581,6 +3730,26 @@ function validateSafetyEvidence(review) {
   }
 }
 
+function expectedProjectRevertStrings(command, protectedRevertStrings) {
+  const securityCandidate = security01ProjectRevertStrings(
+    protectedRevertStrings
+  );
+  if (command === "write-security-01-review") return securityCandidate;
+  if (command === "diff") {
+    return { baseline: protectedRevertStrings, securityCandidate };
+  }
+  if (
+    ["check", "write-evidence", "security-01-negative-probes"].includes(
+      command
+    ) &&
+    fs.existsSync(REVIEW_PATH)
+  ) {
+    const review = readReviewedDifferences();
+    if (review.policy === SECURITY_01_POLICY) return securityCandidate;
+  }
+  return protectedRevertStrings;
+}
+
 async function main() {
   const command = process.argv[2];
   if (
@@ -2590,13 +3759,15 @@ async function main() {
       "diff",
       "revert-strings",
       "stage-09-negative-probes",
+      "security-01-negative-probes",
       "write-stage-08-review",
       "write-stage-09-review",
+      "write-security-01-review",
       "write-evidence",
     ].includes(command)
   ) {
     console.error(
-      "Usage: node scripts/compatibility.js <capture|check|diff|revert-strings|stage-09-negative-probes|write-stage-08-review|write-stage-09-review|write-evidence>"
+      "Usage: node scripts/compatibility.js <capture|check|diff|revert-strings|stage-09-negative-probes|security-01-negative-probes|write-stage-08-review|write-stage-09-review|write-security-01-review|write-evidence>"
     );
     process.exitCode = 2;
     return;
@@ -2620,9 +3791,21 @@ async function main() {
     return;
   }
   const protectedRevertStrings = protectedProjectRevertStrings();
-  if (!valuesEqual(manifest.projectRevertStrings, protectedRevertStrings)) {
+  const expectedReverts = expectedProjectRevertStrings(
+    command,
+    protectedRevertStrings
+  );
+  const revertStringsMatch =
+    command === "diff"
+      ? valuesEqual(manifest.projectRevertStrings, expectedReverts.baseline) ||
+        valuesEqual(
+          manifest.projectRevertStrings,
+          expectedReverts.securityCandidate
+        )
+      : valuesEqual(manifest.projectRevertStrings, expectedReverts);
+  if (!revertStringsMatch) {
     const revertDifferences = collectDifferences(
-      protectedRevertStrings,
+      command === "diff" ? expectedReverts.baseline : expectedReverts,
       manifest.projectRevertStrings,
       "$.projectRevertStrings"
     );
@@ -2659,7 +3842,17 @@ async function main() {
     );
   }
   baseline.projectRevertStrings = protectedRevertStrings;
-  const differences = collectDifferences(baseline, manifest);
+  const securityReviewActive =
+    command === "write-security-01-review" ||
+    (["check", "write-evidence", "security-01-negative-probes"].includes(
+      command
+    ) &&
+      fs.existsSync(REVIEW_PATH) &&
+      readReviewedDifferences().policy === SECURITY_01_POLICY);
+  const comparisonBaseline = securityReviewActive
+    ? security01ComparisonBaseline(baseline, manifest)
+    : baseline;
+  const differences = collectDifferences(comparisonBaseline, manifest);
   if (command === "diff") {
     console.log(
       stableJson({
@@ -2704,9 +3897,41 @@ async function main() {
     );
     return;
   }
+  if (command === "write-security-01-review") {
+    const review = security01Review(baselineBytes, differences);
+    validateReviewedDifferences(review, baselineBytes, differences);
+    const policy = reviewPolicy(review);
+    policy.validateCandidate(baseline, manifest);
+    validateSafetyEvidence(review);
+    fs.writeFileSync(REVIEW_PATH, stableJson(review));
+    console.log(
+      `Wrote ${
+        differences.length
+      } exact Security 01 reviewed differences to ${path.relative(
+        ROOT,
+        REVIEW_PATH
+      )}`
+    );
+    return;
+  }
   if (command === "stage-09-negative-probes") {
     const probes = stage09NegativeProbes(baseline, manifest);
     console.log(`Stage 9 negative probes passed: ${probes.join("; ")}`);
+    return;
+  }
+  if (command === "security-01-negative-probes") {
+    const review = readReviewedDifferences();
+    if (!review || review.policy !== SECURITY_01_POLICY) {
+      throw new Error(
+        "Security 01 negative probes require the exact Security 01 review"
+      );
+    }
+    validateReviewedDifferences(review, baselineBytes, differences);
+    const policy = reviewPolicy(review);
+    policy.validateCandidate(baseline, manifest);
+    validateSafetyEvidence(review);
+    const probes = security01NegativeProbes(baseline, manifest, review);
+    console.log(`Security 01 negative probes passed: ${probes.join("; ")}`);
     return;
   }
   const review = readReviewedDifferences();

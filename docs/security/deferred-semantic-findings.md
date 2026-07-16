@@ -1,11 +1,11 @@
 # Deferred semantic findings
 
 The Stage 7 stateful safety work exposed the following pre-existing contract
-behaviors. They were not introduced by the dependency modernization, and this
-stage intentionally does not change them because the compatibility policy
-forbids an ERC721 semantic rewrite. Each behavior has a deterministic
-regression test so later dependency changes cannot hide or accidentally alter
-it.
+behaviors. They were not introduced by the dependency modernization and were
+initially frozen because the compatibility policy forbade an unreviewed ERC721
+semantic rewrite. The separately authorized security-remediation sequence now
+corrects them in independently reviewable changes while retaining the original
+finding, regression identifier, and versioned compatibility evidence.
 
 ## Nested foreclosure during an ERC721 transfer
 
@@ -20,6 +20,14 @@ valuation increase makes the transfer hook immediately foreclose.
 
 Evidence:
 `test/solidity/fuzz/WrapperFuzz.t.sol:test_regression_deferredDelinquentTransferContinuesAfterNestedForeclosure`.
+
+Status: remediated by Security 01. `_transfer` now revalidates ownership after
+the hook and before changing approvals, balances, or ownership. If tax
+collection performs a nested foreclosure, the stale outer transfer reverts
+with the existing incorrect-owner payload and the entire transaction rolls
+back. The historical regression identifier is retained, but its assertions now
+cover complete rollback across all three authorization modes and all three
+ERC721 transfer entry points.
 
 ## Taxable ownership after a long beneficiary-owned period
 
@@ -61,7 +69,9 @@ The [Slither 0.11.5 triage](./slither-0.11.5-triage.md) additionally records
 the confirmed callback-before-initialization risk in `_safeMint`, which is not
 dismissed as a false positive.
 
-Stage 10 must include these behaviors in its custom-ERC721-versus-OpenZeppelin 5
-security comparison. Any semantic correction requires a separately authorized
-project with its own compatibility, migration, and deployment analysis; it is
-not part of this dependency upgrade.
+Stage 10 must include the historical findings and their remediation status in
+its custom-ERC721-versus-OpenZeppelin 5 security comparison. Security 01 fixes
+the nested-foreclosure transfer corruption. The remaining sections and the
+callback-before-initialization finding stay open until their corresponding
+authorized security PRs pass the same compatibility, migration, and deployment
+review.
