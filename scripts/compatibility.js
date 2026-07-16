@@ -331,7 +331,6 @@ const REVIEW_POLICIES = Object.freeze({
       return (
         STAGE_05_RAW_BYTECODE_HASH_PATHS.has(reviewPath) ||
         reviewPath === "$.gasSnapshot.entries[11]" ||
-        reviewPath === "$.toolchain.forge[2]" ||
         reviewPath === "$.tests.total" ||
         STAGE_06_FORGE_TEST_PATH.test(reviewPath)
       );
@@ -362,6 +361,7 @@ const REVIEW_POLICIES = Object.freeze({
       return (
         STAGE_05_RAW_BYTECODE_HASH_PATHS.has(reviewPath) ||
         reviewPath === "$.gasSnapshot.entries[11]" ||
+        reviewPath === "$.toolchain.forge[2]" ||
         reviewPath === "$.tests.total" ||
         STAGE_06_FORGE_TEST_PATH.test(reviewPath)
       );
