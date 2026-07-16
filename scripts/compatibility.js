@@ -331,6 +331,7 @@ const REVIEW_POLICIES = Object.freeze({
       return (
         STAGE_05_RAW_BYTECODE_HASH_PATHS.has(reviewPath) ||
         reviewPath === "$.gasSnapshot.entries[11]" ||
+        reviewPath === "$.toolchain.forge[2]" ||
         reviewPath === "$.tests.total" ||
         STAGE_06_FORGE_TEST_PATH.test(reviewPath)
       );
@@ -1050,6 +1051,17 @@ function compilerSettings(buildInfo, input) {
   };
 }
 
+function forgeVersionSummary() {
+  return run(FORGE_BIN, ["--version"])
+    .stdout.trim()
+    .split(/\r?\n/)
+    .map((line) =>
+      line.startsWith("Build Timestamp:")
+        ? "Build Timestamp: <platform-specific>"
+        : line
+    );
+}
+
 async function generateManifest() {
   run(hardhatBinary(), ["compile", "--force"]);
   const buildInfo = findBuildInfo();
@@ -1071,7 +1083,7 @@ async function generateManifest() {
     schemaVersion: 1,
     baselineSourceCommit: "ca72ca7f13dd0a2103d592b39a4fcaa749e9045f",
     toolchain: {
-      forge: run(FORGE_BIN, ["--version"]).stdout.trim().split(/\r?\n/),
+      forge: forgeVersionSummary(),
     },
     compiler: compilerSettings(buildInfo, compilerInput),
     contracts,

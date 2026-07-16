@@ -35,6 +35,12 @@
       "reason": "The fixed-seed snapshot is one gas lower in mean and median; production opcodes and behavior remain unchanged."
     },
     {
+      "path": "$.toolchain.forge[2]",
+      "baselineValue": "Build Timestamp: 2026-05-08T07:54:31.470926000Z (1778226871)",
+      "candidateValue": "Build Timestamp: <platform-specific>",
+      "reason": "Official Foundry 1.7.1 binaries share the pinned version and commit but embed platform-specific build timestamps; the manifest retains and compares the stable version, commit, and build profile."
+    },
+    {
       "path": "$.tests.forge.count",
       "baselineValue": 15,
       "candidateValue": 140,

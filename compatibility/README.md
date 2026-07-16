@@ -20,6 +20,10 @@ opcodes and a deterministic gas snapshot. It also executes and records all 89
 Hardhat tests and all 15 Forge tests and probes the actual ERC165 responses of
 both concrete contracts.
 
+Foundry's version and commit remain exact compatibility fields. Its official
+macOS and Linux binaries embed different build timestamps for the same release,
+so only that timestamp line is normalized; the build profile is still compared.
+
 The `diff` command prints every exact baseline-to-candidate difference without
 changing the baseline. Reviewed dependency, compiler, and test-expansion stages
 must use a named policy and checked-in evidence. Stage 6's intentional Forge
