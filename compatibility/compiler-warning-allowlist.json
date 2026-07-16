@@ -184,22 +184,23 @@
     "sourceSha256": {
       "node_modules/@openzeppelin/contracts/utils/Address.sol": "8b85a2463eda119c2f42c34fa3d942b61aee65df381f48ed436fe8edb3a7d602",
       "node_modules/@openzeppelin/contracts/utils/Strings.sol": "cb2df477077a5963ab50a52768cb74ec6f32177177a78611ddbbe2c07e2d36de",
-      "lib/forge-std/src/console.sol": "f8fa05526f70fa83e8c42b0cdd64760169444a98b32fd40fe6a31f8f4c846cd0",
-      "lib/forge-std/src/Test.sol": "a1f9140381686b82fd8dda03f75ec2b8c9553a37f4657d6d14c796530399e432",
       "node_modules/@openzeppelin/contracts/token/ERC721/ERC721.sol": "7af3ff063370acb5e1f1a2aab125ceca457cd1fa60ff8afa37aabc366349d286",
       "contracts/token/modules/Remittance.sol": "082eb1351b8c02bb8b84188c999b7dd9e422ca7ff5001d4eabf652b66c4ae3c0",
       "contracts/test/Blocker.sol": "aca41aa8d3aac9a0470992486b2332ebe60fef1f68733ea1796eb928a11192e9",
       "contracts/Wrapper.sol": "60e71c963513d7878d080c1460892304667eea8ff31d1bab4f1bda99b5436ce4",
+      "contracts/test/EnhancedTest.sol": "8f0f905bceafb2003604984b4b2cfc8fef7a3e63b832bfbe36e848b01712bb08",
+      "test/solidity/Beneficiary.t.sol": "c0c7f46108b2fb29a39461a87babf51801ea4de23fdb0b9949117b954d2cad93",
+      "test/solidity/Remittance.t.sol": "62978e34b5a3f6c6326bd3ae48281c4b1c65caeb87264f384c64b0578850a427",
+      "test/solidity/fuzz/WrapperFuzz.t.sol": "73964e0384af509bcbcb967573be85a8606cca06972fc9e20ba3d9ef2e3750a9",
+      "test/solidity/invariant/PCOInvariant.t.sol": "a2d9f3200eb7d9393f4fca860b3a5fca3c8ee4d0452e97b4ed914226c2da2bee",
+      "test/solidity/invariant/WrapperInvariant.t.sol": "d4fe7664cdaaf5568fced3e4d58d3f8fb0741713326b476d3c697c5f6a53ba29",
+      "test/solidity/parity/PCOMutationParity.t.sol": "e12b937960d4ab8d5cc3320f7750494c8d6f7263f6b2ffab6e2af3364c9087cc",
+      "test/solidity/parity/PCOReadTaxParity.t.sol": "3e743560bff1f62eb359fcadfbca9b87022a9b6eb68c1c73d27e8051f3fbc8a8",
+      "test/solidity/parity/WrapperParity.t.sol": "1ccd07d240c70efe39e773c27619b25ca380ef26e9492baab51d48c22bab13bf",
       "test/solidity/fuzz/PCOFuzzLease.t.sol": "8135adf07e89a0a763b3448fa6caf73e624cdd24b6faf24496c50994e3d7a584",
       "test/solidity/fuzz/PCOFuzzRemittanceERC721.t.sol": "5b24cbeec13c3be3474de73337e776fc841f77cda3f61309984a314fbdd71e23",
       "test/solidity/fuzz/PCOFuzzTax.t.sol": "9636f544cc77cae0923ba670047f7fd0134cc51772bb7e9a1109cb54defe21f6",
-      "test/solidity/fuzz/WrapperFuzz.t.sol": "73964e0384af509bcbcb967573be85a8606cca06972fc9e20ba3d9ef2e3750a9",
-      "test/solidity/invariant/PCODeferredRegression.t.sol": "32f01832c1db5bd409a19d76add6b3381f268fc32e60a01773624b31b60d4f20",
-      "test/solidity/invariant/PCOInvariant.t.sol": "37c00e7c4a1be2cdbda032670d14b28b07d1d78409b6963cc6dd5f0c042cef9e",
-      "test/solidity/invariant/WrapperInvariant.t.sol": "16e5ca3dd038acdcc66e44a2a90124da602c5c2c0d293ad8a5a5ed6e50705ba9",
-      "test/solidity/parity/PCOMutationParity.t.sol": "40defd4df576dbfe435feeeceaaf5e9c4925f170e50c83ca8b64d0f39e8dac70",
-      "test/solidity/parity/PCOReadTaxParity.t.sol": "100fa6631bb32cdf3289bdf4f79996f775336647e6a04b0d0da5ffc7bcdc2f2c",
-      "test/solidity/parity/WrapperParity.t.sol": "c2de1d81e3bee43c47ca794fccca04fcc0e9bacd965b2cf93e88f5e9b3663da8"
+      "test/solidity/invariant/PCODeferredRegression.t.sol": "32f01832c1db5bd409a19d76add6b3381f268fc32e60a01773624b31b60d4f20"
     },
     "warnings": [
       {
@@ -221,55 +222,6 @@
         "source": "node_modules/@openzeppelin/contracts/utils/Strings.sol",
         "start": 925,
         "end": 1018,
-        "message": "Natspec memory-safe-assembly special comment for inline assembly is deprecated and scheduled for removal. Use the memory-safe block annotation instead."
-      },
-      {
-        "code": "2424",
-        "source": "lib/forge-std/src/console.sol",
-        "start": 392,
-        "end": 551,
-        "message": "Natspec memory-safe-assembly special comment for inline assembly is deprecated and scheduled for removal. Use the memory-safe block annotation instead."
-      },
-      {
-        "code": "2424",
-        "source": "lib/forge-std/src/Test.sol",
-        "start": 5863,
-        "end": 5951,
-        "message": "Natspec memory-safe-assembly special comment for inline assembly is deprecated and scheduled for removal. Use the memory-safe block annotation instead."
-      },
-      {
-        "code": "2424",
-        "source": "lib/forge-std/src/Test.sol",
-        "start": 6283,
-        "end": 6371,
-        "message": "Natspec memory-safe-assembly special comment for inline assembly is deprecated and scheduled for removal. Use the memory-safe block annotation instead."
-      },
-      {
-        "code": "2424",
-        "source": "lib/forge-std/src/Test.sol",
-        "start": 6804,
-        "end": 6894,
-        "message": "Natspec memory-safe-assembly special comment for inline assembly is deprecated and scheduled for removal. Use the memory-safe block annotation instead."
-      },
-      {
-        "code": "2424",
-        "source": "lib/forge-std/src/Test.sol",
-        "start": 7247,
-        "end": 7337,
-        "message": "Natspec memory-safe-assembly special comment for inline assembly is deprecated and scheduled for removal. Use the memory-safe block annotation instead."
-      },
-      {
-        "code": "2424",
-        "source": "lib/forge-std/src/Test.sol",
-        "start": 22359,
-        "end": 22402,
-        "message": "Natspec memory-safe-assembly special comment for inline assembly is deprecated and scheduled for removal. Use the memory-safe block annotation instead."
-      },
-      {
-        "code": "2424",
-        "source": "lib/forge-std/src/Test.sol",
-        "start": 25152,
-        "end": 25236,
         "message": "Natspec memory-safe-assembly special comment for inline assembly is deprecated and scheduled for removal. Use the memory-safe block annotation instead."
       },
       {
@@ -322,81 +274,389 @@
         "message": "Unused function parameter. Remove or comment out the variable name to silence this warning."
       },
       {
+        "code": "2018",
+        "source": "contracts/test/EnhancedTest.sol",
+        "start": 735,
+        "end": 864,
+        "message": "Function state mutability can be restricted to pure"
+      },
+      {
+        "code": "2018",
+        "source": "contracts/test/EnhancedTest.sol",
+        "start": 979,
+        "end": 1055,
+        "message": "Function state mutability can be restricted to pure"
+      },
+      {
+        "code": "2018",
+        "source": "contracts/test/EnhancedTest.sol",
+        "start": 1370,
+        "end": 2046,
+        "message": "Function state mutability can be restricted to pure"
+      },
+      {
+        "code": "2018",
+        "source": "test/solidity/Beneficiary.t.sol",
+        "start": 1719,
+        "end": 1817,
+        "message": "Function state mutability can be restricted to view"
+      },
+      {
+        "code": "2018",
+        "source": "test/solidity/Remittance.t.sol",
+        "start": 4826,
+        "end": 5629,
+        "message": "Function state mutability can be restricted to view"
+      },
+      {
+        "code": "2018",
+        "source": "test/solidity/fuzz/WrapperFuzz.t.sol",
+        "start": 2337,
+        "end": 2612,
+        "message": "Function state mutability can be restricted to view"
+      },
+      {
+        "code": "2018",
+        "source": "test/solidity/fuzz/WrapperFuzz.t.sol",
+        "start": 15924,
+        "end": 17200,
+        "message": "Function state mutability can be restricted to view"
+      },
+      {
+        "code": "2018",
+        "source": "test/solidity/invariant/PCOInvariant.t.sol",
+        "start": 24586,
+        "end": 24774,
+        "message": "Function state mutability can be restricted to view"
+      },
+      {
+        "code": "2018",
+        "source": "test/solidity/invariant/PCOInvariant.t.sol",
+        "start": 24940,
+        "end": 25603,
+        "message": "Function state mutability can be restricted to view"
+      },
+      {
+        "code": "2018",
+        "source": "test/solidity/invariant/PCOInvariant.t.sol",
+        "start": 25768,
+        "end": 26298,
+        "message": "Function state mutability can be restricted to view"
+      },
+      {
+        "code": "2018",
+        "source": "test/solidity/invariant/PCOInvariant.t.sol",
+        "start": 26304,
+        "end": 26486,
+        "message": "Function state mutability can be restricted to view"
+      },
+      {
+        "code": "2018",
+        "source": "test/solidity/invariant/PCOInvariant.t.sol",
+        "start": 26653,
+        "end": 27079,
+        "message": "Function state mutability can be restricted to view"
+      },
+      {
+        "code": "2018",
+        "source": "test/solidity/invariant/PCOInvariant.t.sol",
+        "start": 27085,
+        "end": 27204,
+        "message": "Function state mutability can be restricted to view"
+      },
+      {
+        "code": "2018",
+        "source": "test/solidity/invariant/PCOInvariant.t.sol",
+        "start": 27210,
+        "end": 27331,
+        "message": "Function state mutability can be restricted to view"
+      },
+      {
+        "code": "2018",
+        "source": "test/solidity/invariant/PCOInvariant.t.sol",
+        "start": 27337,
+        "end": 28159,
+        "message": "Function state mutability can be restricted to view"
+      },
+      {
+        "code": "2018",
+        "source": "test/solidity/invariant/WrapperInvariant.t.sol",
+        "start": 1542,
+        "end": 2585,
+        "message": "Function state mutability can be restricted to view"
+      },
+      {
+        "code": "2018",
+        "source": "test/solidity/invariant/WrapperInvariant.t.sol",
+        "start": 2591,
+        "end": 3946,
+        "message": "Function state mutability can be restricted to view"
+      },
+      {
+        "code": "2018",
+        "source": "test/solidity/invariant/WrapperInvariant.t.sol",
+        "start": 3952,
+        "end": 5558,
+        "message": "Function state mutability can be restricted to view"
+      },
+      {
+        "code": "2018",
+        "source": "test/solidity/invariant/WrapperInvariant.t.sol",
+        "start": 5564,
+        "end": 6181,
+        "message": "Function state mutability can be restricted to view"
+      },
+      {
+        "code": "2018",
+        "source": "test/solidity/invariant/WrapperInvariant.t.sol",
+        "start": 6556,
+        "end": 7114,
+        "message": "Function state mutability can be restricted to view"
+      },
+      {
+        "code": "2018",
+        "source": "test/solidity/invariant/WrapperInvariant.t.sol",
+        "start": 7120,
+        "end": 7576,
+        "message": "Function state mutability can be restricted to view"
+      },
+      {
+        "code": "2018",
+        "source": "test/solidity/invariant/WrapperInvariant.t.sol",
+        "start": 7582,
+        "end": 8225,
+        "message": "Function state mutability can be restricted to view"
+      },
+      {
+        "code": "2018",
+        "source": "test/solidity/invariant/WrapperInvariant.t.sol",
+        "start": 8231,
+        "end": 8584,
+        "message": "Function state mutability can be restricted to view"
+      },
+      {
+        "code": "2018",
+        "source": "test/solidity/invariant/WrapperInvariant.t.sol",
+        "start": 8590,
+        "end": 9278,
+        "message": "Function state mutability can be restricted to view"
+      },
+      {
+        "code": "2018",
+        "source": "test/solidity/parity/PCOMutationParity.t.sol",
+        "start": 34157,
+        "end": 35299,
+        "message": "Function state mutability can be restricted to view"
+      },
+      {
+        "code": "2018",
+        "source": "test/solidity/parity/PCOMutationParity.t.sol",
+        "start": 37970,
+        "end": 38258,
+        "message": "Function state mutability can be restricted to view"
+      },
+      {
+        "code": "2018",
+        "source": "test/solidity/parity/PCOReadTaxParity.t.sol",
+        "start": 2786,
+        "end": 3093,
+        "message": "Function state mutability can be restricted to view"
+      },
+      {
+        "code": "2018",
+        "source": "test/solidity/parity/PCOReadTaxParity.t.sol",
+        "start": 3099,
+        "end": 3362,
+        "message": "Function state mutability can be restricted to view"
+      },
+      {
+        "code": "2018",
+        "source": "test/solidity/parity/PCOReadTaxParity.t.sol",
+        "start": 3368,
+        "end": 3628,
+        "message": "Function state mutability can be restricted to view"
+      },
+      {
+        "code": "2018",
+        "source": "test/solidity/parity/PCOReadTaxParity.t.sol",
+        "start": 3634,
+        "end": 3906,
+        "message": "Function state mutability can be restricted to view"
+      },
+      {
+        "code": "2018",
+        "source": "test/solidity/parity/PCOReadTaxParity.t.sol",
+        "start": 8800,
+        "end": 9060,
+        "message": "Function state mutability can be restricted to view"
+      },
+      {
+        "code": "2018",
+        "source": "test/solidity/parity/PCOReadTaxParity.t.sol",
+        "start": 10445,
+        "end": 10703,
+        "message": "Function state mutability can be restricted to view"
+      },
+      {
+        "code": "2018",
+        "source": "test/solidity/parity/PCOReadTaxParity.t.sol",
+        "start": 11323,
+        "end": 11532,
+        "message": "Function state mutability can be restricted to view"
+      },
+      {
+        "code": "2018",
+        "source": "test/solidity/parity/PCOReadTaxParity.t.sol",
+        "start": 28815,
+        "end": 29084,
+        "message": "Function state mutability can be restricted to pure"
+      },
+      {
+        "code": "2018",
+        "source": "test/solidity/parity/PCOReadTaxParity.t.sol",
+        "start": 30881,
+        "end": 31307,
+        "message": "Function state mutability can be restricted to view"
+      },
+      {
+        "code": "2018",
+        "source": "test/solidity/parity/PCOReadTaxParity.t.sol",
+        "start": 31313,
+        "end": 31814,
+        "message": "Function state mutability can be restricted to view"
+      },
+      {
+        "code": "2018",
+        "source": "test/solidity/parity/WrapperParity.t.sol",
+        "start": 13862,
+        "end": 14439,
+        "message": "Function state mutability can be restricted to view"
+      },
+      {
+        "code": "2018",
+        "source": "test/solidity/parity/WrapperParity.t.sol",
+        "start": 14445,
+        "end": 14718,
+        "message": "Function state mutability can be restricted to view"
+      },
+      {
+        "code": "2018",
+        "source": "test/solidity/parity/WrapperParity.t.sol",
+        "start": 17846,
+        "end": 18306,
+        "message": "Function state mutability can be restricted to view"
+      },
+      {
+        "code": "2018",
+        "source": "test/solidity/parity/WrapperParity.t.sol",
+        "start": 18312,
+        "end": 18686,
+        "message": "Function state mutability can be restricted to view"
+      },
+      {
+        "code": "2018",
+        "source": "test/solidity/parity/WrapperParity.t.sol",
+        "start": 26901,
+        "end": 27363,
+        "message": "Function state mutability can be restricted to pure"
+      },
+      {
+        "code": "2018",
+        "source": "test/solidity/parity/WrapperParity.t.sol",
+        "start": 27943,
+        "end": 28328,
+        "message": "Function state mutability can be restricted to pure"
+      },
+      {
+        "code": "2018",
+        "source": "test/solidity/parity/WrapperParity.t.sol",
+        "start": 28334,
+        "end": 28565,
+        "message": "Function state mutability can be restricted to pure"
+      },
+      {
+        "code": "2018",
+        "source": "test/solidity/parity/WrapperParity.t.sol",
+        "start": 28571,
+        "end": 28781,
+        "message": "Function state mutability can be restricted to pure"
+      },
+      {
         "code": "5574",
         "source": "test/solidity/fuzz/PCOFuzzLease.t.sol",
         "start": 361,
         "end": 13654,
-        "message": "Contract code size is 54499 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
+        "message": "Contract code size is 57281 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
       },
       {
         "code": "5574",
         "source": "test/solidity/fuzz/PCOFuzzRemittanceERC721.t.sol",
         "start": 418,
         "end": 10082,
-        "message": "Contract code size is 54042 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
+        "message": "Contract code size is 56369 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
       },
       {
         "code": "5574",
         "source": "test/solidity/fuzz/PCOFuzzTax.t.sol",
         "start": 375,
         "end": 5865,
-        "message": "Contract code size is 41344 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
+        "message": "Contract code size is 43727 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
       },
       {
         "code": "5574",
         "source": "test/solidity/fuzz/WrapperFuzz.t.sol",
         "start": 952,
         "end": 17826,
-        "message": "Contract code size is 64128 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
+        "message": "Contract code size is 65286 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
       },
       {
         "code": "5574",
         "source": "test/solidity/invariant/PCODeferredRegression.t.sol",
         "start": 610,
         "end": 3080,
-        "message": "Contract code size is 32095 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
+        "message": "Contract code size is 35052 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
       },
       {
         "code": "5574",
         "source": "test/solidity/invariant/PCOInvariant.t.sol",
-        "start": 1183,
-        "end": 21888,
-        "message": "Contract code size is 29100 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
+        "start": 1120,
+        "end": 21825,
+        "message": "Contract code size is 33132 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
       },
       {
         "code": "5574",
         "source": "test/solidity/invariant/PCOInvariant.t.sol",
-        "start": 21890,
-        "end": 28245,
-        "message": "Contract code size is 74690 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
+        "start": 21827,
+        "end": 28161,
+        "message": "Contract code size is 78646 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
       },
       {
         "code": "5574",
         "source": "test/solidity/invariant/WrapperInvariant.t.sol",
-        "start": 302,
-        "end": 10240,
-        "message": "Contract code size is 81352 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
+        "start": 223,
+        "end": 10136,
+        "message": "Contract code size is 80017 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
       },
       {
         "code": "5574",
         "source": "test/solidity/parity/PCOMutationParity.t.sol",
-        "start": 416,
-        "end": 39221,
-        "message": "Contract code size is 86964 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
+        "start": 391,
+        "end": 38392,
+        "message": "Contract code size is 88448 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
       },
       {
         "code": "5574",
         "source": "test/solidity/parity/PCOReadTaxParity.t.sol",
-        "start": 535,
-        "end": 32423,
-        "message": "Contract code size is 73599 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
+        "start": 510,
+        "end": 31954,
+        "message": "Contract code size is 74973 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
       },
       {
         "code": "5574",
         "source": "test/solidity/parity/WrapperParity.t.sol",
-        "start": 370,
-        "end": 29408,
-        "message": "Contract code size is 79593 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
+        "start": 345,
+        "end": 28783,
+        "message": "Contract code size is 79785 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
       }
     ]
   }

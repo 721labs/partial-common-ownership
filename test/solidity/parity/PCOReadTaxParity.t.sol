@@ -2,9 +2,9 @@
 pragma solidity 0.8.36;
 
 import {Test} from "forge-std/Test.sol";
+import {Vm} from "forge-std/Vm.sol";
 import {TestPCOToken} from "../../../contracts/test/TestPCOToken.sol";
 import {RemittanceTriggers} from "../../../contracts/token/modules/Remittance.sol";
-import {VmRecordedLogs} from "../helpers/VmRecordedLogs.sol";
 
 /* solhint-disable func-name-mixedcase */
 
@@ -28,8 +28,6 @@ contract PCOReadTaxParityTest is Test {
         uint256 expectedDeposit;
     }
 
-    VmRecordedLogs private constant VM_RECORDED_LOGS =
-        VmRecordedLogs(address(uint160(uint256(keccak256("hevm cheat code")))));
 
     uint256 private constant START_TIME = 1_700_000_000;
     uint256 private constant INVALID_TOKEN_ID = 999;
@@ -169,9 +167,9 @@ contract PCOReadTaxParityTest is Test {
         uint256 beneficiaryBalance = beneficiary.balance;
 
         vm.warp(block.timestamp + 1);
-        VM_RECORDED_LOGS.recordLogs();
+        vm.recordLogs();
         token.collectTax(TOKEN_ONE);
-        VmRecordedLogs.Log[] memory logs = VM_RECORDED_LOGS.getRecordedLogs();
+        Vm.Log[] memory logs = vm.getRecordedLogs();
 
         assertEq(logs.length, 0, "beneficiary collection emitted a log");
         assertEq(token.ownerOf(TOKEN_ONE), beneficiary);
@@ -461,7 +459,7 @@ contract PCOReadTaxParityTest is Test {
         vm.warp(block.timestamp + 1);
         uint256 due = _taxDue(tokenId_, ETH1, block.timestamp - lastCollectionBefore);
 
-        VM_RECORDED_LOGS.recordLogs();
+        vm.recordLogs();
         vm.startPrank(alice);
         if (method_ == 0) {
             token.transferFrom(alice, bob, tokenId_);
@@ -471,7 +469,7 @@ contract PCOReadTaxParityTest is Test {
             token.safeTransferFrom(alice, bob, tokenId_, hex"72");
         }
         vm.stopPrank();
-        VmRecordedLogs.Log[] memory logs = VM_RECORDED_LOGS.getRecordedLogs();
+        Vm.Log[] memory logs = vm.getRecordedLogs();
 
         assertEq(logs.length, 4, "friendly transfer event count");
         _assertCollectionLog(logs[0], tokenId_, due);
@@ -519,10 +517,10 @@ contract PCOReadTaxParityTest is Test {
             before_.collected = before_.foreclosedBefore || due >= before_.depositBefore ? before_.depositBefore : due;
         }
 
-        VM_RECORDED_LOGS.recordLogs();
+        vm.recordLogs();
         vm.prank(buyer_);
         token.takeoverLease{value: value_}(tokenId_, newValuation_, currentValuation_);
-        VmRecordedLogs.Log[] memory logs = VM_RECORDED_LOGS.getRecordedLogs();
+        Vm.Log[] memory logs = vm.getRecordedLogs();
 
         bool purchasedFromContract = before_.contractOwnedBefore || before_.foreclosedBefore;
         if (!purchasedFromContract) {
@@ -603,9 +601,9 @@ contract PCOReadTaxParityTest is Test {
         assertGt(due, 0);
         assertLt(due, depositBefore);
 
-        VM_RECORDED_LOGS.recordLogs();
+        vm.recordLogs();
         token.collectTax(tokenId_);
-        VmRecordedLogs.Log[] memory logs = VM_RECORDED_LOGS.getRecordedLogs();
+        Vm.Log[] memory logs = vm.getRecordedLogs();
 
         assertEq(logs.length, 2, "tax collection event count");
         _assertCollectionLog(logs[0], tokenId_, due);
@@ -640,9 +638,9 @@ contract PCOReadTaxParityTest is Test {
 
         assertTrue(token.foreclosed(tokenId_));
 
-        VM_RECORDED_LOGS.recordLogs();
+        vm.recordLogs();
         token.collectTax(tokenId_);
-        VmRecordedLogs.Log[] memory logs = VM_RECORDED_LOGS.getRecordedLogs();
+        Vm.Log[] memory logs = vm.getRecordedLogs();
 
         assertEq(logs.length, 6, "foreclosure collection event count");
         _assertCollectionLog(logs[0], tokenId_, depositBefore);
@@ -678,7 +676,7 @@ contract PCOReadTaxParityTest is Test {
         }
     }
 
-    function _assertApprovalLog(VmRecordedLogs.Log memory log_, address owner_, address approved_, uint256 tokenId_)
+    function _assertApprovalLog(Vm.Log memory log_, address owner_, address approved_, uint256 tokenId_)
         internal
     {
         _assertFourTopicLog(
@@ -686,20 +684,20 @@ contract PCOReadTaxParityTest is Test {
         );
     }
 
-    function _assertTransferLog(VmRecordedLogs.Log memory log_, address from_, address to_, uint256 tokenId_) internal {
+    function _assertTransferLog(Vm.Log memory log_, address from_, address to_, uint256 tokenId_) internal {
         _assertFourTopicLog(log_, TRANSFER_SIGNATURE, _addressTopic(from_), _addressTopic(to_), bytes32(tokenId_));
     }
 
-    function _assertCollectionLog(VmRecordedLogs.Log memory log_, uint256 tokenId_, uint256 collected_) internal {
+    function _assertCollectionLog(Vm.Log memory log_, uint256 tokenId_, uint256 collected_) internal {
         _assertThreeTopicLog(log_, COLLECTION_SIGNATURE, bytes32(tokenId_), bytes32(collected_));
     }
 
-    function _assertForeclosureLog(VmRecordedLogs.Log memory log_, uint256 tokenId_, address previousOwner_) internal {
+    function _assertForeclosureLog(Vm.Log memory log_, uint256 tokenId_, address previousOwner_) internal {
         _assertThreeTopicLog(log_, FORECLOSURE_SIGNATURE, bytes32(tokenId_), _addressTopic(previousOwner_));
     }
 
     function _assertLeaseTakeoverLog(
-        VmRecordedLogs.Log memory log_,
+        Vm.Log memory log_,
         uint256 tokenId_,
         address owner_,
         uint256 valuation_
@@ -710,7 +708,7 @@ contract PCOReadTaxParityTest is Test {
     }
 
     function _assertRemittanceLog(
-        VmRecordedLogs.Log memory log_,
+        Vm.Log memory log_,
         RemittanceTriggers trigger_,
         address recipient_,
         uint256 amount_
@@ -720,12 +718,12 @@ contract PCOReadTaxParityTest is Test {
         );
     }
 
-    function _assertValuationLog(VmRecordedLogs.Log memory log_, uint256 tokenId_, uint256 valuation_) internal {
+    function _assertValuationLog(Vm.Log memory log_, uint256 tokenId_, uint256 valuation_) internal {
         _assertThreeTopicLog(log_, VALUATION_SIGNATURE, bytes32(tokenId_), bytes32(valuation_));
     }
 
     function _assertThreeTopicLog(
-        VmRecordedLogs.Log memory log_,
+        Vm.Log memory log_,
         bytes32 signature_,
         bytes32 topicOne_,
         bytes32 topicTwo_
@@ -739,7 +737,7 @@ contract PCOReadTaxParityTest is Test {
     }
 
     function _assertFourTopicLog(
-        VmRecordedLogs.Log memory log_,
+        Vm.Log memory log_,
         bytes32 signature_,
         bytes32 topicOne_,
         bytes32 topicTwo_,
