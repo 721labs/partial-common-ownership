@@ -1,13 +1,22 @@
-// contracts/token/modules/Remittance.t.sol
+// test/solidity/Remittance.t.sol
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.12;
 
-import {EnhancedTest} from "./../../test/EnhancedTest.sol";
-import {Remittance, RemittanceTriggers} from "./Remittance.sol";
+import {EnhancedTest} from "../../contracts/test/EnhancedTest.sol";
+import {Remittance, RemittanceTriggers} from "../../contracts/token/modules/Remittance.sol";
+import {RejectEther} from "./helpers/RejectEther.sol";
+import {RemittanceHarness} from "./helpers/RemittanceHarness.sol";
+import {VmRecordedLogs} from "./helpers/VmRecordedLogs.sol";
 
 /* solhint-disable func-name-mixedcase */
 
 contract RemittanceTest is EnhancedTest, Remittance {
+  VmRecordedLogs private constant VM_RECORDED_LOGS =
+    VmRecordedLogs(address(uint160(uint256(keccak256("hevm cheat code")))));
+
+  bytes32 private constant LOG_REMITTANCE_SIGNATURE =
+    keccak256("LogRemittance(uint8,address,uint256)");
+
   //////////////////////////////
   /// Success Criteria
   //////////////////////////////
@@ -31,11 +40,10 @@ contract RemittanceTest is EnhancedTest, Remittance {
 
     RemittanceTriggers trigger = RemittanceTriggers.TaxCollection;
 
-    // Check for emittance
-    vm.expectEmit(true, true, true, true);
-    emit LogRemittance(trigger, recipient_, remittance_);
-
+    // Record logs so the nested Ether send cannot consume an `expectEmit`.
+    VM_RECORDED_LOGS.recordLogs();
     bool success = _remit(recipient_, remittance_, trigger);
+    _assertRemittanceLog(address(this), trigger, recipient_, remittance_);
 
     assertEq(success, true);
     assertEq(outstandingRemittances[recipient_], 0);
@@ -44,7 +52,7 @@ contract RemittanceTest is EnhancedTest, Remittance {
 
   /// @dev Is unable to send payment and deposits funds into outstanding `outstandingRemittances.`
   function test__remit_holds() public {
-    address recipient = getUnsendableAddress();
+    address recipient = address(new RejectEther());
 
     // Provide balance to send
     uint16 amount = 100;
@@ -73,15 +81,16 @@ contract RemittanceTest is EnhancedTest, Remittance {
     vm.deal(address(this), balance_);
     outstandingRemittances[msg.sender] = balance_;
 
-    // Expect successful emittance
-    vm.expectEmit(true, true, true, true);
-    emit LogRemittance(
+    // Record logs so the nested Ether transfer cannot consume an `expectEmit`.
+    VM_RECORDED_LOGS.recordLogs();
+    withdrawOutstandingRemittance();
+    _assertRemittanceLog(
+      address(this),
       RemittanceTriggers.OutstandingRemittance,
       msg.sender,
       balance_
     );
 
-    withdrawOutstandingRemittance();
     assertEq(outstandingRemittances[msg.sender], 0);
     assertEq(address(msg.sender).balance, balance_);
   }
@@ -93,31 +102,68 @@ contract RemittanceTest is EnhancedTest, Remittance {
   /// @dev Fails if sending to zero address
   function test__remit_destinationZeroAddress(uint256 remittance_) public {
     vm.assume(remittance_ > 0);
+    RemittanceHarness harness = new RemittanceHarness();
+    vm.deal(address(harness), remittance_);
+
     vm.expectRevert(DestinationZeroAddress.selector);
-    _remit(address(0), remittance_, RemittanceTriggers.TaxCollection);
+    harness.remit(address(0), remittance_, RemittanceTriggers.TaxCollection);
   }
 
   /// @dev Fails if sending no funds
   function test__remit_amountZero(address recipient_) public {
     vm.assume(recipient_ != address(0));
+    RemittanceHarness harness = new RemittanceHarness();
+
     vm.expectRevert(AmountZero.selector);
-    _remit(recipient_, 0, RemittanceTriggers.TaxCollection);
+    harness.remit(recipient_, 0, RemittanceTriggers.TaxCollection);
   }
 
   function test__remit_insufficientBalance(address recipient_) public {
     vm.assume(recipient_ != address(0));
+    RemittanceHarness harness = new RemittanceHarness();
+
     vm.expectRevert(InsufficientBalance.selector);
-    _remit(recipient_, 1, RemittanceTriggers.TaxCollection);
+    harness.remit(recipient_, 1, RemittanceTriggers.TaxCollection);
   }
 
   function test_withdrawOutstandingRemittance_noOutstandingBalance() public {
+    RemittanceHarness harness = new RemittanceHarness();
+
     vm.expectRevert(NoOutstandingBalance.selector);
-    withdrawOutstandingRemittance();
+    harness.withdrawOutstandingRemittance();
   }
 
   function test__remit_destinationContractAddress() public {
-    vm.deal(address(this), 1); // provide balance to send
+    RemittanceHarness harness = new RemittanceHarness();
+    vm.deal(address(harness), 1); // provide balance to send
+
     vm.expectRevert(DestinationContractAddress.selector);
-    _remit(address(this), 1, RemittanceTriggers.TaxCollection);
+    harness.remit(address(harness), 1, RemittanceTriggers.TaxCollection);
+  }
+
+  function _assertRemittanceLog(
+    address emitter_,
+    RemittanceTriggers trigger_,
+    address recipient_,
+    uint256 amount_
+  ) internal {
+    VmRecordedLogs.Log[] memory entries = VM_RECORDED_LOGS.getRecordedLogs();
+    uint256 matchingLogs;
+
+    for (uint256 i = 0; i < entries.length; i++) {
+      if (
+        entries[i].emitter == emitter_ &&
+        entries[i].topics.length == 4 &&
+        entries[i].topics[0] == LOG_REMITTANCE_SIGNATURE
+      ) {
+        matchingLogs++;
+        assertEq(entries[i].topics[1], bytes32(uint256(trigger_)));
+        assertEq(entries[i].topics[2], bytes32(uint256(uint160(recipient_))));
+        assertEq(entries[i].topics[3], bytes32(amount_));
+        assertEq(entries[i].data.length, 0);
+      }
+    }
+
+    assertEq(matchingLogs, 1, "expected exactly one LogRemittance event");
   }
 }

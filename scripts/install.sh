@@ -23,7 +23,7 @@ case $SHELL in
   ;;
 esac
 
-foundryup
+foundryup --install 1.7.1
 
 echo "\n3. Verifying Installation"
 forge --version

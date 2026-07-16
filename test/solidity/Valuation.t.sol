@@ -1,9 +1,9 @@
-// contracts/token/modules/Valuation.t.sol
+// test/solidity/Valuation.t.sol
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.12;
 
 import {Test} from "forge-std/Test.sol";
-import {Valuation} from "./Valuation.sol";
+import {Valuation} from "../../contracts/token/modules/Valuation.sol";
 
 /* solhint-disable func-name-mixedcase */
 

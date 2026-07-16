@@ -50,10 +50,22 @@ export default {
   solidity: {
     version: "0.8.12",
     settings: {
+      evmVersion: "london",
       optimizer: {
         // Dev: Turn on for production compilations
         enabled: false,
         runs: 200,
+      },
+      viaIR: false,
+      metadata: {
+        bytecodeHash: "ipfs",
+        useLiteralContent: false,
+      },
+      // Hardhat adds its standard artifact outputs to this selection.
+      outputSelection: {
+        "*": {
+          "*": ["storageLayout"],
+        },
       },
     },
   },
