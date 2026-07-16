@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "candidate": "stage-11-foundry-first-cutover",
+  "stage10Checkpoint": "14720718787046af58be50c110be40c18f5b1364",
+  "historicalHardhat": {
+    "count": 89,
+    "namesSha256": "861cda9b6fe70b931fd4c049c2e75585fd53a2ba502a3f89a70980a520f9a3ce"
+  },
+  "activeHardhat": {
+    "count": 3,
+    "names": [
+      "Hardhat interoperability smokes acquires, collects tax, and exits with ordered events and conserved balances",
+      "Hardhat interoperability smokes approves, wraps, takes over, and unwraps with custody and metadata cleanup",
+      "Hardhat interoperability smokes deploys and reads deterministic PCO configuration"
+    ],
+    "sourcePath": "tests/Interoperability.smoke.ts",
+    "sourceSha256": "7fe9df8fca7273886e8eb8cbe96cd8053a9d4061c4034cb46a34831b59ae065a"
+  },
+  "forge": {
+    "count": 140,
+    "namesSha256": "09b141a8c69c4522288cfdbf67373661052764ab019c865ea850dc5eb645f173"
+  },
+  "parity": {
+    "mappedBehaviorCount": 104,
+    "safetyCount": 36,
+    "files": {
+      "compatibility/parity-map.json": "72f66deac5693d553a681afa755856cc87f2d52d4b109938862ba731da9443b4",
+      "compatibility/parity/cohort-0-existing-forge.json": "3384ae9039fad21bb7800d61f181bd4ca6b68a8e1e8525815c3cc8ecd434df69",
+      "compatibility/parity/cohort-1-pco-read-tax.json": "632c07354ab5f4e0d71290e2631da59bacad8cc3c0bc1d22cc129674098891fc",
+      "compatibility/parity/cohort-2-pco-mutations.json": "47b93d5ecd3734b09533c8af0c514274ad4ff3c90185a6724364060bf5eef5c1",
+      "compatibility/parity/cohort-3-wrapper.json": "4932bd7dd4da1cf55b2723e98cbe865737c9e735528ad70f05f8de85c2baecca",
+      "compatibility/safety-test-inventory.json": "52f7c77b9ebec5093ad484f6695e46194b3ed0b9e737943946843e4f19c4d83a"
+    }
+  },
+  "deletedLegacyFiles": {
+    "tests/PartialCommonOwnership/index.ts": "729d6297377a6be11ebb122a8413a27985da990c108e70522512c70d98e7c134",
+    "tests/Wrapper.ts": "35377ba00ea68479a517bcfe3873552a13e07563a040091c3b436345111b6a1c"
+  }
+}

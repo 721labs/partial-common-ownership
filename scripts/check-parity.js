@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 const fs = require("fs");
+const crypto = require("crypto");
 const path = require("path");
 const { spawnSync } = require("child_process");
 
@@ -13,6 +14,37 @@ const SAFETY_INVENTORY_PATH = path.join(
   "safety-test-inventory.json"
 );
 const FORGE_BIN = process.env.FORGE_BIN || "forge";
+const STAGE_11_INVENTORY_PATH = path.join(
+  ROOT,
+  "compatibility",
+  "stage-11-hardhat-smoke-inventory.json"
+);
+const STAGE_11_CANDIDATE = "stage-11-foundry-first-cutover";
+const STAGE_11_BASE_COMMIT = "14720718787046af58be50c110be40c18f5b1364";
+const STAGE_11_HARDHAT_NAMES_SHA256 =
+  "861cda9b6fe70b931fd4c049c2e75585fd53a2ba502a3f89a70980a520f9a3ce";
+const STAGE_11_FORGE_NAMES_SHA256 =
+  "09b141a8c69c4522288cfdbf67373661052764ab019c865ea850dc5eb645f173";
+const STAGE_11_DELETED_LEGACY_FILES = Object.freeze({
+  "tests/PartialCommonOwnership/index.ts":
+    "729d6297377a6be11ebb122a8413a27985da990c108e70522512c70d98e7c134",
+  "tests/Wrapper.ts":
+    "35377ba00ea68479a517bcfe3873552a13e07563a040091c3b436345111b6a1c",
+});
+const STAGE_11_PARITY_FILES = Object.freeze({
+  "compatibility/parity-map.json":
+    "72f66deac5693d553a681afa755856cc87f2d52d4b109938862ba731da9443b4",
+  "compatibility/parity/cohort-0-existing-forge.json":
+    "3384ae9039fad21bb7800d61f181bd4ca6b68a8e1e8525815c3cc8ecd434df69",
+  "compatibility/parity/cohort-1-pco-read-tax.json":
+    "632c07354ab5f4e0d71290e2631da59bacad8cc3c0bc1d22cc129674098891fc",
+  "compatibility/parity/cohort-2-pco-mutations.json":
+    "47b93d5ecd3734b09533c8af0c514274ad4ff3c90185a6724364060bf5eef5c1",
+  "compatibility/parity/cohort-3-wrapper.json":
+    "4932bd7dd4da1cf55b2723e98cbe865737c9e735528ad70f05f8de85c2baecca",
+  "compatibility/safety-test-inventory.json":
+    "52f7c77b9ebec5093ad484f6695e46194b3ed0b9e737943946843e4f19c4d83a",
+});
 
 function fail(message) {
   throw new Error(message);
@@ -20,6 +52,92 @@ function fail(message) {
 
 function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
+}
+
+function sha256(value) {
+  return crypto.createHash("sha256").update(value).digest("hex");
+}
+
+function stableJson(value) {
+  return `${JSON.stringify(value, null, 2)}\n`;
+}
+
+function stage11Inventory(baseline) {
+  if (!fs.existsSync(STAGE_11_INVENTORY_PATH)) {
+    fail("Missing checked-in Stage 11 Hardhat smoke inventory");
+  }
+  const inventory = readJson(STAGE_11_INVENTORY_PATH);
+  if (
+    inventory.schemaVersion !== 1 ||
+    inventory.candidate !== STAGE_11_CANDIDATE ||
+    inventory.stage10Checkpoint !== STAGE_11_BASE_COMMIT ||
+    inventory.historicalHardhat?.count !== 89 ||
+    inventory.historicalHardhat?.namesSha256 !==
+      STAGE_11_HARDHAT_NAMES_SHA256 ||
+    inventory.activeHardhat?.count !== 3 ||
+    !Array.isArray(inventory.activeHardhat?.names) ||
+    inventory.activeHardhat.names.length !== 3 ||
+    inventory.activeHardhat.sourcePath !== "tests/Interoperability.smoke.ts" ||
+    inventory.forge?.count !== 140 ||
+    inventory.forge?.namesSha256 !== STAGE_11_FORGE_NAMES_SHA256 ||
+    inventory.parity?.mappedBehaviorCount !== 104 ||
+    inventory.parity?.safetyCount !== 36 ||
+    JSON.stringify(inventory.parity?.files) !==
+      JSON.stringify(STAGE_11_PARITY_FILES) ||
+    JSON.stringify(inventory.deletedLegacyFiles) !==
+      JSON.stringify(STAGE_11_DELETED_LEGACY_FILES)
+  ) {
+    fail("Stage 11 Hardhat smoke inventory has an invalid schema");
+  }
+  const names = sorted(inventory.activeHardhat.names);
+  if (
+    duplicateValues(names).length > 0 ||
+    JSON.stringify(names) !== JSON.stringify(inventory.activeHardhat.names)
+  ) {
+    fail(
+      "Stage 11 Hardhat smoke names must be exactly three unique sorted IDs"
+    );
+  }
+  const smokePath = resolveUnder(
+    inventory.activeHardhat.sourcePath,
+    "tests",
+    "Stage 11 Hardhat smoke source"
+  );
+  if (!fs.existsSync(smokePath))
+    fail("Stage 11 Hardhat smoke source is missing");
+  if (
+    sha256(fs.readFileSync(smokePath)) !== inventory.activeHardhat.sourceSha256
+  ) {
+    fail("Stage 11 Hardhat smoke source digest changed");
+  }
+  if (
+    baseline.tests.hardhat.count !== 89 ||
+    baseline.tests.hardhat.names.length !== 89 ||
+    sha256(stableJson(baseline.tests.hardhat.names)) !==
+      STAGE_11_HARDHAT_NAMES_SHA256
+  ) {
+    fail("Historical 89-Hardhat baseline provenance changed");
+  }
+  for (const [relativePath, expectedSha256] of Object.entries(
+    STAGE_11_DELETED_LEGACY_FILES
+  )) {
+    if (fs.existsSync(path.join(ROOT, relativePath))) {
+      fail(`Retired legacy behavior source still exists: ${relativePath}`);
+    }
+    if (inventory.deletedLegacyFiles[relativePath] !== expectedSha256) {
+      fail(`Historical legacy behavior source anchor changed: ${relativePath}`);
+    }
+  }
+  for (const [relativePath, expectedSha256] of Object.entries(
+    STAGE_11_PARITY_FILES
+  )) {
+    if (
+      sha256(fs.readFileSync(path.join(ROOT, relativePath))) !== expectedSha256
+    ) {
+      fail(`Frozen parity/safety provenance changed: ${relativePath}`);
+    }
+  }
+  return inventory;
 }
 
 function resolveUnder(relativePath, rootDirectory, label) {
@@ -184,6 +302,7 @@ function safetyForgeTests() {
 function main() {
   const map = readJson(MAP_PATH);
   const baseline = readJson(BASELINE_PATH);
+  const stage11 = stage11Inventory(baseline);
   if (map.schemaVersion !== 1) fail("Unsupported parity-map schema");
   if (!Array.isArray(map.fragments) || map.fragments.length === 0) {
     fail("Parity map must list its cohort fragments");
@@ -259,8 +378,17 @@ function main() {
       "test/solidity",
       "Mapped Forge file"
     );
-    if (!fs.existsSync(legacyPath)) {
-      fail(`Mapped legacy file does not exist: ${entry.legacyFile}`);
+    if (entry.legacySuite === "hardhat") {
+      if (!(entry.legacyFile in STAGE_11_DELETED_LEGACY_FILES)) {
+        fail(
+          `Mapped historical Hardhat source is not an approved Stage 11 retirement: ${entry.legacyFile}`
+        );
+      }
+      if (fs.existsSync(legacyPath)) {
+        fail(`Retired mapped Hardhat source still exists: ${entry.legacyFile}`);
+      }
+    } else if (!fs.existsSync(legacyPath)) {
+      fail(`Mapped baseline Forge file does not exist: ${entry.legacyFile}`);
     }
     if (!fs.existsSync(forgePath)) {
       fail(`Mapped Forge file does not exist: ${entry.forgeFile}`);
@@ -350,6 +478,15 @@ function main() {
     allForgeTargets,
     executedForgeTests
   );
+  if (
+    discoveredForgeTests.length !== stage11.forge.count ||
+    sha256(stableJson([...discoveredForgeTests].sort())) !==
+      stage11.forge.namesSha256 ||
+    sha256(stableJson([...executedForgeTests].sort())) !==
+      stage11.forge.namesSha256
+  ) {
+    fail("Stage 11 active 140-Forge inventory digest changed");
+  }
 
   console.log(
     `Safety inventory passed: ${hardhatEntries.length} Hardhat + ${forgeLegacyEntries.length} baseline Forge scenarios map one-to-one to ${forgeTargets.length} behavior tests, plus ${safetyTargets.length} successful safety tests.`

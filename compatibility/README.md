@@ -235,6 +235,39 @@ node scripts/compatibility.js check
 node scripts/compatibility.js stage-10-negative-probes
 ```
 
+Stage 11 uses the named `stage-11-foundry-first-cutover` policy. It anchors the
+merged Stage 10 commit `14720718787046af58be50c110be40c18f5b1364`, together
+with the exact Stage 10 evidence and review digests, and reconstructs that
+checkpoint's production bytecode, metadata-stripped opcodes, sizes, compiler
+identity, 15-entry legacy gas inventory, and 12 key-flow gas results before
+comparison.
+
+The cutover deletes only `tests/PartialCommonOwnership/index.ts` and
+`tests/Wrapper.ts`, whose Stage 10 contents remain SHA-256-bound historical
+provenance. The immutable 89-name Hardhat oracle and 104-entry parity map are
+not rewritten. All 104 mapped behavior tests and 36 safety tests remain active
+in Forge with the exact 140-name digest. Hardhat's active inventory becomes
+exactly three digest-bound interoperability smokes covering configuration,
+PCO acquire/collect/exit accounting and event decoding, and Wrapper
+approve/wrap/takeover/unwrap custody and cleanup.
+
+No production source, dependency, lockfile, compiler input, public interface,
+storage layout, revert callsite, bytecode, opcode, size, or gas value may
+change in this stage. The source gate binds the smoke, runner and parity policy,
+package scripts, CI workflow, and development documentation. The compatibility
+job uses full Git history to prove the Stage 10 checkpoint and retired-source
+digests; the normal Forge parity job remains safe in a shallow checkout.
+
+Reproduce the Stage 11 review, evidence, gate, and adversarial policy probes
+with:
+
+```console
+node scripts/compatibility.js write-stage-11-review
+node scripts/compatibility.js write-evidence
+node scripts/compatibility.js check
+node scripts/compatibility.js stage-11-negative-probes
+```
+
 The original baseline predated explicit revert-literal extraction.
 `project-revert-strings.json` is a SHA-256-bound supplement derived from the
 unchanged production sources at the recorded baseline commit. It binds all 35
