@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 1,
+  "candidate": "stage-05-openzeppelin-4-9-6",
+  "baselineSha256": "4ec069e1cdb046198456b1db9179522b604d8dab062838c79e4cf8aa1e9df55c",
+  "mode": "metadata-stripped-equality",
+  "contracts": {
+    "contracts/Wrapper.sol:Wrapper": {
+      "creationBytecode": {
+        "rawKeccak256": {
+          "baseline": "0x416c8a2c12a674cac0f472442830a4f0cc581e118bd7c079846886d91764d03a",
+          "candidate": "0xb5b7c8f622fd56db73f2afc48389ee3681bc1135f6436c9c730e606e6aae0a4e",
+          "changed": true
+        },
+        "metadataStrippedKeccak256": {
+          "baseline": "0x84629a1d952a89bf833987a3afbcb7ef729ea067994a4798e2b083cc35f3a4dd",
+          "candidate": "0x84629a1d952a89bf833987a3afbcb7ef729ea067994a4798e2b083cc35f3a4dd",
+          "equal": true
+        },
+        "metadataStrippedSizeBytes": {
+          "baseline": 21964,
+          "candidate": 21964,
+          "equal": true
+        },
+        "metadataStrippedOpcodes": {
+          "baselineSha256": "43e3e531d71c6643b1af58cc02dd1e2a28f70bb94eaab0438ba3b2b394dabc25",
+          "candidateSha256": "43e3e531d71c6643b1af58cc02dd1e2a28f70bb94eaab0438ba3b2b394dabc25",
+          "equal": true,
+          "diff": []
+        }
+      },
+      "runtimeBytecode": {
+        "rawKeccak256": {
+          "baseline": "0x96b05a8bcf117adb28ff88a6321d29eb0170ad45f1a58525c6f7e09876d96a0a",
+          "candidate": "0xd783e7a5deb3422621582ff2f12dcc7bef28820036032967b56ff1b89c16a51c",
+          "changed": true
+        },
+        "metadataStrippedKeccak256": {
+          "baseline": "0x7abb1c8490e30458c1bddf3280a3408bcc9dfd498abdb2735b7c5f8080b6cd8e",
+          "candidate": "0x7abb1c8490e30458c1bddf3280a3408bcc9dfd498abdb2735b7c5f8080b6cd8e",
+          "equal": true
+        },
+        "metadataStrippedSizeBytes": {
+          "baseline": 21931,
+          "candidate": 21931,
+          "equal": true
+        },
+        "metadataStrippedOpcodes": {
+          "baselineSha256": "4c36f6aed0574adcc6e2e73c24be7b5fc90ae1b9be490dc05ffe237a9adcce19",
+          "candidateSha256": "4c36f6aed0574adcc6e2e73c24be7b5fc90ae1b9be490dc05ffe237a9adcce19",
+          "equal": true,
+          "diff": []
+        }
+      },
+      "eip170": {
+        "limitBytes": 24576,
+        "baselineRuntimeSizeBytes": 21984,
+        "candidateRuntimeSizeBytes": 21984,
+        "baselineWithinLimit": true,
+        "candidateWithinLimit": true
+      }
+    },
+    "contracts/token/PartialCommonOwnership.sol:PartialCommonOwnership": {
+      "creationBytecode": {
+        "rawKeccak256": {
+          "baseline": "0x3814717bd105739a08051b8e27479b2ec7e8ccea70b28449262e91560577fb8d",
+          "candidate": "0xdc1bd8afbd139c7a99e27c9e213b4b0f326d2835eb24fb279bffe9786ff1a19c",
+          "changed": true
+        },
+        "metadataStrippedKeccak256": {
+          "baseline": "0x0e8a161965fd0cdde6ec436cc8a556a715f2aee602bb51f147c157daf357c6fe",
+          "candidate": "0x0e8a161965fd0cdde6ec436cc8a556a715f2aee602bb51f147c157daf357c6fe",
+          "equal": true
+        },
+        "metadataStrippedSizeBytes": {
+          "baseline": 16071,
+          "candidate": 16071,
+          "equal": true
+        },
+        "metadataStrippedOpcodes": {
+          "baselineSha256": "01442210ea172bbd50dacfd035ad307bd52678a342f2180f97321d38a812267b",
+          "candidateSha256": "01442210ea172bbd50dacfd035ad307bd52678a342f2180f97321d38a812267b",
+          "equal": true,
+          "diff": []
+        }
+      },
+      "runtimeBytecode": {
+        "rawKeccak256": {
+          "baseline": "0x27fe492cdb1f8b86839558deec3186ee0998b501dbdc5960d01bfd71a0baf735",
+          "candidate": "0x47947e7d863d2448739b0e934d9c426cb53ddd1ede5815e6abbf948501b8ef3b",
+          "changed": true
+        },
+        "metadataStrippedKeccak256": {
+          "baseline": "0xa8d6f6cb7f7a3e72b471fdf442f01a16177aaa4c305d2e00a149fad04ab9d957",
+          "candidate": "0xa8d6f6cb7f7a3e72b471fdf442f01a16177aaa4c305d2e00a149fad04ab9d957",
+          "equal": true
+        },
+        "metadataStrippedSizeBytes": {
+          "baseline": 16039,
+          "candidate": 16039,
+          "equal": true
+        },
+        "metadataStrippedOpcodes": {
+          "baselineSha256": "a203f4e92cf30f0856473a7530df35bc9fa45a7a6e936000630a26fd82a0508e",
+          "candidateSha256": "a203f4e92cf30f0856473a7530df35bc9fa45a7a6e936000630a26fd82a0508e",
+          "equal": true,
+          "diff": []
+        }
+      },
+      "eip170": {
+        "limitBytes": 24576,
+        "baselineRuntimeSizeBytes": 16092,
+        "candidateRuntimeSizeBytes": 16092,
+        "baselineWithinLimit": true,
+        "candidateWithinLimit": true
+      }
+    }
+  }
+}

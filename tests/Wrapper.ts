@@ -387,30 +387,88 @@ describe("Wrapper.sol", async function () {
       });
 
       it("when non-owner tries to wrap", async function () {
+        const tokenId = TOKENS.ONE;
+        const wrappedId = wrappedTokenId(testNFTContract.address, tokenId);
+        const nftOwnerBefore = await testNFTContract.ownerOf(tokenId);
+        const nftOwnerBalanceBefore = await testNFTContract.balanceOf(
+          nftOwnerBefore
+        );
+        const wrapperEtherBalanceBefore = await provider.getBalance(
+          wrapperContract.address
+        );
+        const aliceWrappedBalanceBefore = await wrapperContract.balanceOf(
+          alice.address
+        );
+
         await expect(
           alice.contract.wrap(
             testNFTContract.address,
-            TOKENS.ONE,
+            tokenId,
             wrapValuation,
             deployer.address,
             taxConfig.taxRate,
             taxConfig.collectionFrequency,
             { value: ETH1 }
           )
-        ).to.be.revertedWith(ERC721ErrorMessages.NOT_APPROVED);
+        ).to.be.reverted;
+
+        expect(await testNFTContract.ownerOf(tokenId)).to.equal(nftOwnerBefore);
+        expect(await testNFTContract.balanceOf(nftOwnerBefore)).to.equal(
+          nftOwnerBalanceBefore
+        );
+        expect(await provider.getBalance(wrapperContract.address)).to.equal(
+          wrapperEtherBalanceBefore
+        );
+        expect(await wrapperContract.balanceOf(alice.address)).to.equal(
+          aliceWrappedBalanceBefore
+        );
+        await expect(wrapperContract.ownerOf(wrappedId)).to.be.revertedWith(
+          ERC721ErrorMessages.OWNER_NONEXISTENT_TOKEN
+        );
       });
 
       it("if owner has not approved wrapper", async function () {
+        const tokenId = TOKENS.ONE;
+        const wrappedId = wrappedTokenId(testNFTContract.address, tokenId);
+        const nftOwnerBefore = await testNFTContract.ownerOf(tokenId);
+        const nftOwnerBalanceBefore = await testNFTContract.balanceOf(
+          nftOwnerBefore
+        );
+        const wrapperEtherBalanceBefore = await provider.getBalance(
+          wrapperContract.address
+        );
+        const deployerWrappedBalanceBefore = await wrapperContract.balanceOf(
+          deployer.address
+        );
+        const approvalBefore = await testNFTContract.getApproved(tokenId);
+
         await expect(
           deployer.contract.wrap(
             testNFTContract.address,
-            TOKENS.ONE,
+            tokenId,
             wrapValuation,
             deployer.address,
             taxConfig.taxRate,
             taxConfig.collectionFrequency
           )
-        ).to.be.revertedWith(ERC721ErrorMessages.NOT_APPROVED);
+        ).to.be.reverted;
+
+        expect(await testNFTContract.ownerOf(tokenId)).to.equal(nftOwnerBefore);
+        expect(await testNFTContract.balanceOf(nftOwnerBefore)).to.equal(
+          nftOwnerBalanceBefore
+        );
+        expect(await testNFTContract.getApproved(tokenId)).to.equal(
+          approvalBefore
+        );
+        expect(await provider.getBalance(wrapperContract.address)).to.equal(
+          wrapperEtherBalanceBefore
+        );
+        expect(await wrapperContract.balanceOf(deployer.address)).to.equal(
+          deployerWrappedBalanceBefore
+        );
+        await expect(wrapperContract.ownerOf(wrappedId)).to.be.revertedWith(
+          ERC721ErrorMessages.OWNER_NONEXISTENT_TOKEN
+        );
       });
 
       it("if operator is beneficiary and included deposit", async function () {
