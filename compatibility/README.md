@@ -193,6 +193,48 @@ node scripts/compatibility.js check
 node scripts/compatibility.js security-04-negative-probes
 ```
 
+Stage 10 upgrades only `@openzeppelin/contracts` to exact 5.6.1 and raises the
+13 shipped production pragmas to `^0.8.20` while keeping the Solidity compiler
+and every compiler setting pinned to 0.8.36. Its named
+`stage-10-openzeppelin-5-6-1-security-04-relative-full-diff` policy anchors the
+merged Security 04 squash commit
+`face4310d072b062487f988dad8796a027cf1bae`, together with the exact Security 04
+evidence and review digests, and reconstructs that checkpoint's production
+opcodes and gas entries before comparison.
+
+The policy hard-binds the package manifest, pnpm lock and registry integrity,
+all shipped pragmas, the complete Hardhat compiler-input closure, the smaller
+production OpenZeppelin import closure, package-consumer script, migrated
+`TestNFT` fixture, receiver regression source, warning allowlist, and security
+documentation. Production may import only the OpenZeppelin interfaces,
+`Context`, and ERC165 support already required by the custom ERC721. Importing
+or inheriting OpenZeppelin's ERC721, or retaining `Address` or `Strings`, is a
+blocking mismatch. The project ERC721's sole production semantic transform is
+the behavior-equivalent replacement of `to.isContract()` with
+`to.code.length > 0`.
+
+ABI, function and error selectors, argument names and mutability, events and
+indexed fields, storage, interfaces, enum ordinals, ERC165 answers, all
+Security 04 project-owned revert callsites and payloads, compiler settings, and
+the exact 89 Hardhat plus 140 Forge identifiers remain hard equal. The retained
+receiver regression now deterministically covers an EOA, a valid receiver,
+incorrect return data, non-empty and empty receiver reverts, and construction-
+time zero code length without renaming the test. Only exact Security-04-relative
+compiler/dependency bytecode, opcode, size, and gas consequences are reviewable.
+The evidence contains complete opcode diffs for `Wrapper` and standalone
+`PartialCommonOwnership`, EIP-170 validation, the 15-entry legacy gas inventory,
+and all 12 key-flow comparisons.
+
+Reproduce the Stage 10 review, evidence, gate, and adversarial policy probes
+with:
+
+```console
+node scripts/compatibility.js write-stage-10-review
+node scripts/compatibility.js write-evidence
+node scripts/compatibility.js check
+node scripts/compatibility.js stage-10-negative-probes
+```
+
 The original baseline predated explicit revert-literal extraction.
 `project-revert-strings.json` is a SHA-256-bound supplement derived from the
 unchanged production sources at the recorded baseline commit. It binds all 35

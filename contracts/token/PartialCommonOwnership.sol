@@ -1,6 +1,6 @@
 // contracts/token/PartialCommonOwnership.sol
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.20;
 
 import {ERC721} from "./modules/ERC721.sol";
 import {Lease} from "./modules/Lease.sol";

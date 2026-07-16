@@ -3,15 +3,35 @@ pragma solidity 0.8.36;
 
 import {Test} from "forge-std/Test.sol";
 import {Vm} from "forge-std/Vm.sol";
+import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
+import {IERC721Metadata} from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {TestNFT} from "../../../contracts/test/TestNFT.sol";
 import {TestWrapper} from "../../../contracts/test/TestWrapper.sol";
 import {Remittance} from "../../../contracts/token/modules/Remittance.sol";
 
 contract WrapperFuzzValidReceiver is IERC721Receiver {
+    address public tokenCaller;
+    address public operator;
+    address public from;
+    uint256 public tokenId;
+    bytes32 public dataHash;
+    uint256 public callbackCount;
+
     receive() external payable {}
 
-    function onERC721Received(address, address, uint256, bytes calldata) external pure override returns (bytes4) {
+    function onERC721Received(address operator_, address from_, uint256 tokenId_, bytes calldata data_)
+        external
+        override
+        returns (bytes4)
+    {
+        tokenCaller = msg.sender;
+        operator = operator_;
+        from = from_;
+        tokenId = tokenId_;
+        dataHash = keccak256(data_);
+        callbackCount++;
         return IERC721Receiver.onERC721Received.selector;
     }
 }
@@ -22,9 +42,64 @@ contract WrapperFuzzWrongReceiver is IERC721Receiver {
     }
 }
 
+contract WrapperFuzzRevertingReceiver is IERC721Receiver {
+    error ReceiverRejected();
+
+    bool private immutable _withoutPayload;
+
+    constructor(bool withoutPayload_) {
+        _withoutPayload = withoutPayload_;
+    }
+
+    function onERC721Received(address, address, uint256, bytes calldata) external view override returns (bytes4) {
+        if (_withoutPayload) {
+            assembly ("memory-safe") {
+                revert(0, 0)
+            }
+        }
+        revert ReceiverRejected();
+    }
+}
+
+contract WrapperFuzzConstructionReceiver is IERC721Receiver {
+    TestNFT public immutable token;
+    uint256 public immutable constructionCodeLength;
+
+    address public tokenCaller;
+    address public operator;
+    address public from;
+    uint256 public tokenId;
+    bytes32 public dataHash;
+    uint256 public callbackCount;
+
+    constructor() {
+        constructionCodeLength = address(this).code.length;
+        token = new TestNFT();
+    }
+
+    function safeTransferToSelf(uint256 tokenId_, bytes calldata data_) external {
+        token.safeTransferFrom(address(this), address(this), tokenId_, data_);
+    }
+
+    function onERC721Received(address operator_, address from_, uint256 tokenId_, bytes calldata data_)
+        external
+        override
+        returns (bytes4)
+    {
+        require(msg.sender == address(token), "Construction receiver: wrong token");
+        tokenCaller = msg.sender;
+        operator = operator_;
+        from = from_;
+        tokenId = tokenId_;
+        dataHash = keccak256(data_);
+        callbackCount++;
+        return IERC721Receiver.onERC721Received.selector;
+    }
+}
+
 /// @dev Bounded Wrapper fuzzing keeps arithmetic beneath overflow thresholds
 /// while covering every input field and the beneficiary/operator role split.
-contract WrapperFuzzTest is Test {
+contract WrapperFuzzTest is Test, IERC721Receiver {
     struct DelinquentTransferSnapshot {
         address approval;
         bool operatorApproval;
@@ -105,6 +180,10 @@ contract WrapperFuzzTest is Test {
 
     TestNFT private underlying;
     TestWrapper private wrapper;
+
+    function onERC721Received(address, address, uint256, bytes calldata) external pure override returns (bytes4) {
+        return IERC721Receiver.onERC721Received.selector;
+    }
 
     function setUp() public {
         vm.warp(TEST_TIMESTAMP);
@@ -246,11 +325,33 @@ contract WrapperFuzzTest is Test {
         assertEq(vm.load(address(wrapper), _mappingSlot(wrappedId, LOCKED_SLOT)), bytes32(0));
     }
 
-    function testFuzz_wrappedSafeTransferHonorsReceiverAndPreservesStateOnRejection(
-        uint256 tokenSeed_,
-        bool validReceiver_
-    ) public {
-        uint256 tokenId = _tokenId(tokenSeed_);
+    /// @dev The retained inventory identifier now deterministically exercises
+    /// every code-length and receiver-result branch in the project ERC721.
+    function testFuzz_wrappedSafeTransferHonorsReceiverAndPreservesStateOnRejection() public {
+        _assertTestNFTCompatibilitySurface();
+        _assertWrappedSafeTransfer(true);
+
+        _resetWrapperFixtures();
+        _assertWrappedSafeTransfer(false);
+
+        _assertSafeTransferToEOA();
+        _assertSafeTransferToValidReceiver();
+        _assertRejectedSafeTransfer(
+            address(new WrapperFuzzWrongReceiver()), _error("ERC721: transfer to non ERC721Receiver implementer")
+        );
+        _assertRejectedSafeTransfer(
+            address(new WrapperFuzzRevertingReceiver(false)),
+            abi.encodeWithSelector(WrapperFuzzRevertingReceiver.ReceiverRejected.selector)
+        );
+        _assertRejectedSafeTransfer(
+            address(new WrapperFuzzRevertingReceiver(true)),
+            _error("ERC721: transfer to non ERC721Receiver implementer")
+        );
+        _assertConstructionTimeCodeLengthBehavior();
+    }
+
+    function _assertWrappedSafeTransfer(bool validReceiver_) private {
+        uint256 tokenId = 1;
         // Keep a non-zero deposit so moving the token away from its beneficiary
         // remains solvent when the transfer hook collects tax.
         uint256 wrappedId = _wrapAsAlice(tokenId, 1 ether, BOB, 1, MAX_FREQUENCY_DAYS, MAX_DEPOSIT);
@@ -258,10 +359,13 @@ contract WrapperFuzzTest is Test {
             validReceiver_ ? address(new WrapperFuzzValidReceiver()) : address(new WrapperFuzzWrongReceiver());
 
         vm.prank(ALICE);
-        (bool success,) = address(wrapper)
+        (bool success, bytes memory returnData) = address(wrapper)
             .call(abi.encodeWithSignature("safeTransferFrom(address,address,uint256)", ALICE, receiver, wrappedId));
 
         assertEq(success, validReceiver_);
+        if (!validReceiver_) {
+            assertEq(returnData, _error("ERC721: transfer to non ERC721Receiver implementer"));
+        }
         assertEq(wrapper.ownerOf(wrappedId), validReceiver_ ? receiver : ALICE);
         assertEq(underlying.ownerOf(tokenId), address(wrapper));
 
@@ -270,6 +374,120 @@ contract WrapperFuzzTest is Test {
 
         assertEq(underlying.ownerOf(tokenId), validReceiver_ ? receiver : ALICE);
         _assertBurnedAndCleared(wrappedId);
+    }
+
+    function _assertTestNFTCompatibilitySurface() private {
+        TestNFT token = new TestNFT();
+
+        assertEq(token.name(), "Test NFT");
+        assertEq(token.symbol(), "tNFT");
+        assertEq(token.tokenURI(1), "721.dev/1");
+        assertTrue(token.supportsInterface(type(IERC165).interfaceId));
+        assertTrue(token.supportsInterface(type(IERC721).interfaceId));
+        assertTrue(token.supportsInterface(type(IERC721Metadata).interfaceId));
+        assertFalse(token.supportsInterface(0xffffffff));
+
+        vm.expectRevert(bytes("ERC721: invalid token ID"));
+        token.ownerOf(4);
+        vm.expectRevert(bytes("ERC721: invalid token ID"));
+        token.getApproved(4);
+        vm.expectRevert(bytes("ERC721: invalid token ID"));
+        token.tokenURI(4);
+
+        vm.expectRevert(bytes("ERC721: approval to current owner"));
+        token.approve(address(this), 1);
+        vm.expectRevert(bytes("ERC721: approve caller is not token owner or approved for all"));
+        vm.prank(ALICE);
+        token.approve(BOB, 1);
+        vm.expectRevert(bytes("ERC721: caller is not token owner or approved"));
+        vm.prank(ALICE);
+        token.transferFrom(address(this), ALICE, 1);
+    }
+
+    function _assertSafeTransferToEOA() private {
+        TestNFT token = new TestNFT();
+        assertEq(ALICE.code.length, 0);
+
+        token.approve(BOB, 1);
+        vm.recordLogs();
+        token.safeTransferFrom(address(this), ALICE, 1);
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+
+        assertEq(logs.length, 1);
+        assertEq(logs[0].emitter, address(token));
+        assertEq(logs[0].topics[0], TRANSFER_SIGNATURE);
+        assertEq(logs[0].topics[1], _addressTopic(address(this)));
+        assertEq(logs[0].topics[2], _addressTopic(ALICE));
+        assertEq(logs[0].topics[3], bytes32(uint256(1)));
+        assertEq(token.ownerOf(1), ALICE);
+        assertEq(token.balanceOf(address(this)), 2);
+        assertEq(token.balanceOf(ALICE), 1);
+        assertEq(token.getApproved(1), address(0));
+    }
+
+    function _assertSafeTransferToValidReceiver() private {
+        TestNFT token = new TestNFT();
+        WrapperFuzzValidReceiver receiver = new WrapperFuzzValidReceiver();
+        bytes memory data = hex"0721c0de";
+
+        token.approve(BOB, 1);
+        token.safeTransferFrom(address(this), address(receiver), 1, data);
+
+        assertEq(token.ownerOf(1), address(receiver));
+        assertEq(token.balanceOf(address(this)), 2);
+        assertEq(token.balanceOf(address(receiver)), 1);
+        assertEq(token.getApproved(1), address(0));
+        assertEq(receiver.callbackCount(), 1);
+        assertEq(receiver.tokenCaller(), address(token));
+        assertEq(receiver.operator(), address(this));
+        assertEq(receiver.from(), address(this));
+        assertEq(receiver.tokenId(), 1);
+        assertEq(receiver.dataHash(), keccak256(data));
+    }
+
+    function _assertRejectedSafeTransfer(address receiver_, bytes memory expectedRevert_) private {
+        TestNFT token = new TestNFT();
+        bytes memory data = hex"0721dead";
+
+        token.approve(BOB, 1);
+        (bool success, bytes memory returnData) = address(token)
+            .call(
+                abi.encodeWithSignature(
+                    "safeTransferFrom(address,address,uint256,bytes)", address(this), receiver_, 1, data
+                )
+            );
+
+        assertFalse(success);
+        assertEq(returnData, expectedRevert_);
+        assertEq(token.ownerOf(1), address(this));
+        assertEq(token.balanceOf(address(this)), 3);
+        assertEq(token.balanceOf(receiver_), 0);
+        assertEq(token.getApproved(1), BOB);
+    }
+
+    function _assertConstructionTimeCodeLengthBehavior() private {
+        WrapperFuzzConstructionReceiver receiver = new WrapperFuzzConstructionReceiver();
+        TestNFT token = receiver.token();
+        bytes memory data = hex"0721beef";
+
+        assertEq(receiver.constructionCodeLength(), 0);
+        assertGt(address(receiver).code.length, 0);
+        assertEq(receiver.callbackCount(), 0);
+        assertEq(token.balanceOf(address(receiver)), 3);
+        assertEq(token.ownerOf(1), address(receiver));
+        assertEq(token.ownerOf(2), address(receiver));
+        assertEq(token.ownerOf(3), address(receiver));
+
+        receiver.safeTransferToSelf(1, data);
+
+        assertEq(receiver.callbackCount(), 1);
+        assertEq(receiver.tokenCaller(), address(token));
+        assertEq(receiver.operator(), address(receiver));
+        assertEq(receiver.from(), address(receiver));
+        assertEq(receiver.tokenId(), 1);
+        assertEq(receiver.dataHash(), keccak256(data));
+        assertEq(token.ownerOf(1), address(receiver));
+        assertEq(token.balanceOf(address(receiver)), 3);
     }
 
     function testFuzz_unwrapAfterElapsedTaxNeverLeaksDepositOrLeavesTheTakeoverLock(

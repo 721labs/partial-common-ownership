@@ -136,9 +136,10 @@ security correction, while public ABI and storage remain unchanged.
 
 ## Disposition
 
-Stage 10 must include the historical findings and their remediation status in
-its custom-ERC721-versus-OpenZeppelin 5 security comparison. Security 01 fixes
-the nested-foreclosure transfer corruption, Security 02 fixes the
+The Stage 10
+[custom-ERC721-versus-OpenZeppelin 5.6.1 comparison](custom-erc721-vs-openzeppelin-5.6.1.md)
+records these historical findings and their remediation status. Security 01
+fixes the nested-foreclosure transfer corruption, Security 02 fixes the
 callback-before-initialization finding, and Security 03 fixes post-collection
 authorization plus takeover payment classification. Security 04 fixes
 self-destination unwrap custody and metadata loss. The beneficiary exemption

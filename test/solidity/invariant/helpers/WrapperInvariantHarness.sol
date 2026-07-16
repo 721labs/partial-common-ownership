@@ -2,8 +2,9 @@
 pragma solidity 0.8.36;
 
 import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
-import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import {IERC721Metadata} from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 import {TestWrapper} from "../../../../contracts/test/TestWrapper.sol";
+import {ERC721} from "../../../../contracts/token/modules/ERC721.sol";
 import {Remittance} from "../../../../contracts/token/modules/Remittance.sol";
 
 interface WrapperInvariantVm {
@@ -60,14 +61,55 @@ contract WrapperRejectingActor is WrapperInvariantActorBase {
 }
 
 contract WrapperInvariantNFT is ERC721 {
-    constructor(address ownerOne_, address ownerTwo_, address ownerThree_) ERC721("Invariant NFT", "iNFT") {
+    string private _fixtureName;
+    string private _fixtureSymbol;
+
+    constructor(address ownerOne_, address ownerTwo_, address ownerThree_) {
+        _fixtureName = "Invariant NFT";
+        _fixtureSymbol = "iNFT";
         _safeMint(ownerOne_, 1);
         _safeMint(ownerTwo_, 2);
         _safeMint(ownerThree_, 3);
     }
 
-    function _baseURI() internal pure override returns (string memory) {
+    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
+        return interfaceId == type(IERC721Metadata).interfaceId || super.supportsInterface(interfaceId);
+    }
+
+    function name() public view returns (string memory) {
+        return _fixtureName;
+    }
+
+    function symbol() public view returns (string memory) {
+        return _fixtureSymbol;
+    }
+
+    function tokenURI(uint256 tokenId_) public view returns (string memory) {
+        require(_exists(tokenId_), "ERC721: invalid token ID");
+        return string(abi.encodePacked(_baseURI(), _toString(tokenId_)));
+    }
+
+    function _baseURI() internal pure returns (string memory) {
         return "invariant/";
+    }
+
+    function _toString(uint256 value_) private pure returns (string memory) {
+        if (value_ == 0) return "0";
+
+        uint256 digits;
+        uint256 remaining = value_;
+        while (remaining != 0) {
+            digits++;
+            remaining /= 10;
+        }
+
+        bytes memory buffer = new bytes(digits);
+        while (value_ != 0) {
+            digits -= 1;
+            buffer[digits] = bytes1(uint8(48 + (value_ % 10)));
+            value_ /= 10;
+        }
+        return string(buffer);
     }
 }
 
