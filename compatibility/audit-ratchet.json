@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "capturedWith": "pnpm 11.13.1",
+  "counts": {
+    "info": 0,
+    "low": 26,
+    "moderate": 43,
+    "high": 59,
+    "critical": 10
+  },
+  "policy": {
+    "high": 59,
+    "critical": 10
+  }
+}

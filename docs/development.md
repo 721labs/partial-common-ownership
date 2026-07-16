@@ -2,8 +2,25 @@
 
 ## Installation
 
+Development is pinned to Node 24.18.0 and pnpm 11.13.1. The Node version is a
+repository development requirement, not a consumer-facing package engine
+restriction.
+
+The bootstrap script installs the version in `.nvmrc`, activates the exact pnpm
+release through Corepack, performs a frozen dependency install, and installs
+Foundry 1.7.1:
+
 ```console
 $ ./scripts/install.sh
+```
+
+For an existing checkout, the equivalent dependency commands are:
+
+```console
+$ nvm use
+$ corepack enable pnpm
+$ corepack install --global pnpm@11.13.1
+$ pnpm install --frozen-lockfile
 ```
 
 ## Gas

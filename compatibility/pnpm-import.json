@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "commit": "bf3ecf186105123cc0dfa55ed86c078ca6c3e7c7",
+    "lockfile": "yarn.lock",
+    "sha256": "d6994961c0e3e976c20e75ae95ad939902dd8110c67575ea4748c23a0fb02bdd"
+  },
+  "target": {
+    "packageManager": "pnpm@11.13.1",
+    "lockfile": "pnpm-lock.yaml",
+    "sha256": "0c45a9654eef830d2b274664914440b1938ee4c36f22c3e9ddd8b0895ad1faea"
+  },
+  "directDependencies": {
+    "count": 31,
+    "allVersionsPresentInSourceLock": true,
+    "addedForExplicitResolution": {
+      "@ethersproject/abi": {
+        "version": "5.6.0",
+        "reason": "TypeChain peer"
+      },
+      "@ethersproject/contracts": {
+        "version": "5.6.0",
+        "reason": "direct test import"
+      },
+      "@ethersproject/providers": {
+        "version": "5.6.2",
+        "reason": "TypeChain peer"
+      }
+    }
+  },
+  "expectedRepresentationChanges": {
+    "bundledByLegacyGanacheTarballs": [
+      "execa@1.0.0",
+      "invert-kv@2.0.0",
+      "keccak@3.0.1",
+      "lcid@2.0.0",
+      "map-age-cleaner@0.1.3",
+      "mem@4.3.0",
+      "mimic-fn@2.1.0",
+      "npm-run-path@2.0.2",
+      "os-locale@3.1.0",
+      "p-defer@1.0.0",
+      "p-is-promise@2.1.0",
+      "strip-eof@1.0.0",
+      "yargs@13.2.4"
+    ],
+    "addedByPnpmCompatibilityDatabase": [
+      "@types/keyv@3.1.4",
+      "@types/responselike@1.0.3"
+    ]
+  },
+  "temporaryLegacyExceptions": {
+    "transitiveExoticSource": "ethereumjs-abi@ee3994657fa7a427238e6ba92a84d0b529bbcde0",
+    "removeWith": "Waffle and Ganache removal in Stage 12"
+  },
+  "validation": {
+    "hardhat": "89/89",
+    "forge": "15/15",
+    "compatibilityManifest": "equal",
+    "typecheck": "passed",
+    "solhint": "passed"
+  }
+}
