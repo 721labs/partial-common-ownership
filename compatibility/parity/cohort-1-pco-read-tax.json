@@ -1,0 +1,312 @@
+{
+  "schemaVersion": 1,
+  "legacySuite": "hardhat",
+  "cohort": "cohort-1-pco-read-tax",
+  "expectedCount": 38,
+  "entries": [
+    {
+      "legacyId": "hardhat-pco-read-001",
+      "legacyFile": "tests/PartialCommonOwnership/index.ts",
+      "legacyTitle": "PartialCommonOwnership.sol TestPCOToken construction mints three tokens",
+      "forgeFile": "test/solidity/parity/PCOReadTaxParity.t.sol",
+      "forgeContract": "PCOReadTaxParityTest",
+      "forgeTest": "test_parity_001_construction_mintsThreeTokens"
+    },
+    {
+      "legacyId": "hardhat-pco-read-002",
+      "legacyFile": "tests/PartialCommonOwnership/index.ts",
+      "legacyTitle": "PartialCommonOwnership.sol TestPCOToken construction sets beneficiaries",
+      "forgeFile": "test/solidity/parity/PCOReadTaxParity.t.sol",
+      "forgeContract": "PCOReadTaxParityTest",
+      "forgeTest": "test_parity_002_construction_setsBeneficiaries"
+    },
+    {
+      "legacyId": "hardhat-pco-read-003",
+      "legacyFile": "tests/PartialCommonOwnership/index.ts",
+      "legacyTitle": "PartialCommonOwnership.sol TestPCOToken construction sets tax rate",
+      "forgeFile": "test/solidity/parity/PCOReadTaxParity.t.sol",
+      "forgeContract": "PCOReadTaxParityTest",
+      "forgeTest": "test_parity_003_construction_setsTaxRate"
+    },
+    {
+      "legacyId": "hardhat-pco-read-004",
+      "legacyFile": "tests/PartialCommonOwnership/index.ts",
+      "legacyTitle": "PartialCommonOwnership.sol TestPCOToken construction sets tax period",
+      "forgeFile": "test/solidity/parity/PCOReadTaxParity.t.sol",
+      "forgeContract": "PCOReadTaxParityTest",
+      "forgeTest": "test_parity_004_construction_setsTaxPeriod"
+    },
+    {
+      "legacyId": "hardhat-pco-read-005",
+      "legacyFile": "tests/PartialCommonOwnership/index.ts",
+      "legacyTitle": "PartialCommonOwnership.sol 'Friendly' Transfers #transferFrom()",
+      "forgeFile": "test/solidity/parity/PCOReadTaxParity.t.sol",
+      "forgeContract": "PCOReadTaxParityTest",
+      "forgeTest": "test_parity_005_friendlyTransfer_transferFrom"
+    },
+    {
+      "legacyId": "hardhat-pco-read-006",
+      "legacyFile": "tests/PartialCommonOwnership/index.ts",
+      "legacyTitle": "PartialCommonOwnership.sol 'Friendly' Transfers #safeTransferFrom(address,address,uint256)",
+      "forgeFile": "test/solidity/parity/PCOReadTaxParity.t.sol",
+      "forgeContract": "PCOReadTaxParityTest",
+      "forgeTest": "test_parity_006_friendlyTransfer_safeTransferFrom"
+    },
+    {
+      "legacyId": "hardhat-pco-read-007",
+      "legacyFile": "tests/PartialCommonOwnership/index.ts",
+      "legacyTitle": "PartialCommonOwnership.sol 'Friendly' Transfers #safeTransferFrom(address,address,uint256,bytes)",
+      "forgeFile": "test/solidity/parity/PCOReadTaxParity.t.sol",
+      "forgeContract": "PCOReadTaxParityTest",
+      "forgeTest": "test_parity_007_friendlyTransfer_safeTransferFromWithBytes"
+    },
+    {
+      "legacyId": "hardhat-pco-read-008",
+      "legacyFile": "tests/PartialCommonOwnership/index.ts",
+      "legacyTitle": "PartialCommonOwnership.sol #onlyOwner() fails when required but signer is not owner #deposit()",
+      "forgeFile": "test/solidity/parity/PCOReadTaxParity.t.sol",
+      "forgeContract": "PCOReadTaxParityTest",
+      "forgeTest": "test_parity_008_onlyOwner_deposit_revertsForNonOwner"
+    },
+    {
+      "legacyId": "hardhat-pco-read-009",
+      "legacyFile": "tests/PartialCommonOwnership/index.ts",
+      "legacyTitle": "PartialCommonOwnership.sol #onlyOwner() fails when required but signer is not owner #selfAssess()",
+      "forgeFile": "test/solidity/parity/PCOReadTaxParity.t.sol",
+      "forgeContract": "PCOReadTaxParityTest",
+      "forgeTest": "test_parity_009_onlyOwner_selfAssess_revertsForNonOwner"
+    },
+    {
+      "legacyId": "hardhat-pco-read-010",
+      "legacyFile": "tests/PartialCommonOwnership/index.ts",
+      "legacyTitle": "PartialCommonOwnership.sol #onlyOwner() fails when required but signer is not owner #withdrawDeposit()",
+      "forgeFile": "test/solidity/parity/PCOReadTaxParity.t.sol",
+      "forgeContract": "PCOReadTaxParityTest",
+      "forgeTest": "test_parity_010_onlyOwner_withdrawDeposit_revertsForNonOwner"
+    },
+    {
+      "legacyId": "hardhat-pco-read-011",
+      "legacyFile": "tests/PartialCommonOwnership/index.ts",
+      "legacyTitle": "PartialCommonOwnership.sol #onlyOwner() fails when required but signer is not owner #exit()",
+      "forgeFile": "test/solidity/parity/PCOReadTaxParity.t.sol",
+      "forgeContract": "PCOReadTaxParityTest",
+      "forgeTest": "test_parity_011_onlyOwner_exit_revertsForNonOwner"
+    },
+    {
+      "legacyId": "hardhat-pco-read-012",
+      "legacyFile": "tests/PartialCommonOwnership/index.ts",
+      "legacyTitle": "PartialCommonOwnership.sol #collectTax() succeeds no tax collected if token is owned by its beneficiary",
+      "forgeFile": "test/solidity/parity/PCOReadTaxParity.t.sol",
+      "forgeContract": "PCOReadTaxParityTest",
+      "forgeTest": "test_parity_012_collectTax_beneficiaryOwnedCollectsNothing"
+    },
+    {
+      "legacyId": "hardhat-pco-read-013",
+      "legacyFile": "tests/PartialCommonOwnership/index.ts",
+      "legacyTitle": "PartialCommonOwnership.sol #collectTax() succeeds collects after 10m",
+      "forgeFile": "test/solidity/parity/PCOReadTaxParity.t.sol",
+      "forgeContract": "PCOReadTaxParityTest",
+      "forgeTest": "test_parity_013_collectTax_collectsAfterTenMinutes"
+    },
+    {
+      "legacyId": "hardhat-pco-read-014",
+      "legacyFile": "tests/PartialCommonOwnership/index.ts",
+      "legacyTitle": "PartialCommonOwnership.sol #collectTax() succeeds collects after 10m and subsequently after 10m",
+      "forgeFile": "test/solidity/parity/PCOReadTaxParity.t.sol",
+      "forgeContract": "PCOReadTaxParityTest",
+      "forgeTest": "test_parity_014_collectTax_collectsTwiceAfterTenMinutes"
+    },
+    {
+      "legacyId": "hardhat-pco-read-015",
+      "legacyFile": "tests/PartialCommonOwnership/index.ts",
+      "legacyTitle": "PartialCommonOwnership.sol #tokenMinted() fails when token not minted but required #valuationOf()",
+      "forgeFile": "test/solidity/parity/PCOReadTaxParity.t.sol",
+      "forgeContract": "PCOReadTaxParityTest",
+      "forgeTest": "test_parity_015_tokenMinted_valuationOfGuard"
+    },
+    {
+      "legacyId": "hardhat-pco-read-016",
+      "legacyFile": "tests/PartialCommonOwnership/index.ts",
+      "legacyTitle": "PartialCommonOwnership.sol #tokenMinted() fails when token not minted but required #depositOf()",
+      "forgeFile": "test/solidity/parity/PCOReadTaxParity.t.sol",
+      "forgeContract": "PCOReadTaxParityTest",
+      "forgeTest": "test_parity_016_tokenMinted_depositOfGuard"
+    },
+    {
+      "legacyId": "hardhat-pco-read-017",
+      "legacyFile": "tests/PartialCommonOwnership/index.ts",
+      "legacyTitle": "PartialCommonOwnership.sol #tokenMinted() fails when token not minted but required #takeoverLease()",
+      "forgeFile": "test/solidity/parity/PCOReadTaxParity.t.sol",
+      "forgeContract": "PCOReadTaxParityTest",
+      "forgeTest": "test_parity_017_tokenMinted_takeoverLeaseGuard"
+    },
+    {
+      "legacyId": "hardhat-pco-read-018",
+      "legacyFile": "tests/PartialCommonOwnership/index.ts",
+      "legacyTitle": "PartialCommonOwnership.sol #tokenMinted() fails when token not minted but required #taxOwedSince()",
+      "forgeFile": "test/solidity/parity/PCOReadTaxParity.t.sol",
+      "forgeContract": "PCOReadTaxParityTest",
+      "forgeTest": "test_parity_018_tokenMinted_taxOwedSinceGuard"
+    },
+    {
+      "legacyId": "hardhat-pco-read-019",
+      "legacyFile": "tests/PartialCommonOwnership/index.ts",
+      "legacyTitle": "PartialCommonOwnership.sol #taxRateOf() succeeds returning expected tax rate",
+      "forgeFile": "test/solidity/parity/PCOReadTaxParity.t.sol",
+      "forgeContract": "PCOReadTaxParityTest",
+      "forgeTest": "test_parity_019_taxRateOf_returnsExpectedRate"
+    },
+    {
+      "legacyId": "hardhat-pco-read-020",
+      "legacyFile": "tests/PartialCommonOwnership/index.ts",
+      "legacyTitle": "PartialCommonOwnership.sol #depositOf() succeeds returning expected deposit [ETH0]",
+      "forgeFile": "test/solidity/parity/PCOReadTaxParity.t.sol",
+      "forgeContract": "PCOReadTaxParityTest",
+      "forgeTest": "test_parity_020_depositOf_returnsExpectedZeroDeposit"
+    },
+    {
+      "legacyId": "hardhat-pco-read-021",
+      "legacyFile": "tests/PartialCommonOwnership/index.ts",
+      "legacyTitle": "PartialCommonOwnership.sol #taxOwed() succeeds Returns correct taxation after 1 day",
+      "forgeFile": "test/solidity/parity/PCOReadTaxParity.t.sol",
+      "forgeContract": "PCOReadTaxParityTest",
+      "forgeTest": "test_parity_021_taxOwed_afterOneDayTitle"
+    },
+    {
+      "legacyId": "hardhat-pco-read-022",
+      "legacyFile": "tests/PartialCommonOwnership/index.ts",
+      "legacyTitle": "PartialCommonOwnership.sol #taxOwed() succeeds no tax owed if token is owned by its beneficiary",
+      "forgeFile": "test/solidity/parity/PCOReadTaxParity.t.sol",
+      "forgeContract": "PCOReadTaxParityTest",
+      "forgeTest": "test_parity_022_taxOwed_beneficiaryOwnedOwesNothing"
+    },
+    {
+      "legacyId": "hardhat-pco-read-023",
+      "legacyFile": "tests/PartialCommonOwnership/index.ts",
+      "legacyTitle": "PartialCommonOwnership.sol #taxOwed() Returns correct taxation after 1 year",
+      "forgeFile": "test/solidity/parity/PCOReadTaxParity.t.sol",
+      "forgeContract": "PCOReadTaxParityTest",
+      "forgeTest": "test_parity_023_taxOwed_afterOneYearTitle"
+    },
+    {
+      "legacyId": "hardhat-pco-read-024",
+      "legacyFile": "tests/PartialCommonOwnership/index.ts",
+      "legacyTitle": "PartialCommonOwnership.sol #taxOwed() Returns correct taxation after 2 years",
+      "forgeFile": "test/solidity/parity/PCOReadTaxParity.t.sol",
+      "forgeContract": "PCOReadTaxParityTest",
+      "forgeTest": "test_parity_024_taxOwed_afterTwoYearsTitle"
+    },
+    {
+      "legacyId": "hardhat-pco-read-025",
+      "legacyFile": "tests/PartialCommonOwnership/index.ts",
+      "legacyTitle": "PartialCommonOwnership.sol #taxOwedSince() succeeds Returns zero if no purchase",
+      "forgeFile": "test/solidity/parity/PCOReadTaxParity.t.sol",
+      "forgeContract": "PCOReadTaxParityTest",
+      "forgeTest": "test_parity_025_taxOwedSince_zeroWithoutPurchase"
+    },
+    {
+      "legacyId": "hardhat-pco-read-026",
+      "legacyFile": "tests/PartialCommonOwnership/index.ts",
+      "legacyTitle": "PartialCommonOwnership.sol #taxOwedSince() succeeds Returns correct amount",
+      "forgeFile": "test/solidity/parity/PCOReadTaxParity.t.sol",
+      "forgeContract": "PCOReadTaxParityTest",
+      "forgeTest": "test_parity_026_taxOwedSince_returnsCorrectAmount"
+    },
+    {
+      "legacyId": "hardhat-pco-read-027",
+      "legacyFile": "tests/PartialCommonOwnership/index.ts",
+      "legacyTitle": "PartialCommonOwnership.sol #taxCollectedSinceLastTransferOf() succeeds returning correct amount if never transferred",
+      "forgeFile": "test/solidity/parity/PCOReadTaxParity.t.sol",
+      "forgeContract": "PCOReadTaxParityTest",
+      "forgeTest": "test_parity_027_taxSinceTransfer_zeroIfNeverTransferred"
+    },
+    {
+      "legacyId": "hardhat-pco-read-028",
+      "legacyFile": "tests/PartialCommonOwnership/index.ts",
+      "legacyTitle": "PartialCommonOwnership.sol #taxCollectedSinceLastTransferOf() succeeds returning correct amount after initial purchase",
+      "forgeFile": "test/solidity/parity/PCOReadTaxParity.t.sol",
+      "forgeContract": "PCOReadTaxParityTest",
+      "forgeTest": "test_parity_028_taxSinceTransfer_afterInitialPurchase"
+    },
+    {
+      "legacyId": "hardhat-pco-read-029",
+      "legacyFile": "tests/PartialCommonOwnership/index.ts",
+      "legacyTitle": "PartialCommonOwnership.sol #taxCollectedSinceLastTransferOf() succeeds returning correct amount after 1 secondary-purchase",
+      "forgeFile": "test/solidity/parity/PCOReadTaxParity.t.sol",
+      "forgeContract": "PCOReadTaxParityTest",
+      "forgeTest": "test_parity_029_taxSinceTransfer_afterSecondaryPurchase"
+    },
+    {
+      "legacyId": "hardhat-pco-read-030",
+      "legacyFile": "tests/PartialCommonOwnership/index.ts",
+      "legacyTitle": "PartialCommonOwnership.sol #taxCollectedSinceLastTransferOf() succeeds returning correct amount when foreclosed",
+      "forgeFile": "test/solidity/parity/PCOReadTaxParity.t.sol",
+      "forgeContract": "PCOReadTaxParityTest",
+      "forgeTest": "test_parity_030_taxSinceTransfer_zeroWhenForeclosed"
+    },
+    {
+      "legacyId": "hardhat-pco-read-031",
+      "legacyFile": "tests/PartialCommonOwnership/index.ts",
+      "legacyTitle": "PartialCommonOwnership.sol #taxCollectedSinceLastTransferOf() succeeds returning correct amount after purchase from foreclosure",
+      "forgeFile": "test/solidity/parity/PCOReadTaxParity.t.sol",
+      "forgeContract": "PCOReadTaxParityTest",
+      "forgeTest": "test_parity_031_taxSinceTransfer_afterPurchaseFromForeclosure"
+    },
+    {
+      "legacyId": "hardhat-pco-read-032",
+      "legacyFile": "tests/PartialCommonOwnership/index.ts",
+      "legacyTitle": "PartialCommonOwnership.sol #foreclosed() succeeds true positive",
+      "forgeFile": "test/solidity/parity/PCOReadTaxParity.t.sol",
+      "forgeContract": "PCOReadTaxParityTest",
+      "forgeTest": "test_parity_032_foreclosed_truePositive"
+    },
+    {
+      "legacyId": "hardhat-pco-read-033",
+      "legacyFile": "tests/PartialCommonOwnership/index.ts",
+      "legacyTitle": "PartialCommonOwnership.sol #foreclosed() succeeds true negative",
+      "forgeFile": "test/solidity/parity/PCOReadTaxParity.t.sol",
+      "forgeContract": "PCOReadTaxParityTest",
+      "forgeTest": "test_parity_033_foreclosed_trueNegative"
+    },
+    {
+      "legacyId": "hardhat-pco-read-034",
+      "legacyFile": "tests/PartialCommonOwnership/index.ts",
+      "legacyTitle": "PartialCommonOwnership.sol #withdrawableDeposit() succeeds Returns zero when owed >= deposit",
+      "forgeFile": "test/solidity/parity/PCOReadTaxParity.t.sol",
+      "forgeContract": "PCOReadTaxParityTest",
+      "forgeTest": "test_parity_034_withdrawableDeposit_zeroWhenOwedExceedsDeposit"
+    },
+    {
+      "legacyId": "hardhat-pco-read-035",
+      "legacyFile": "tests/PartialCommonOwnership/index.ts",
+      "legacyTitle": "PartialCommonOwnership.sol #withdrawableDeposit() succeeds Returns (deposit - owed) when owed < deposit",
+      "forgeFile": "test/solidity/parity/PCOReadTaxParity.t.sol",
+      "forgeContract": "PCOReadTaxParityTest",
+      "forgeTest": "test_parity_035_withdrawableDeposit_returnsDepositLessOwed"
+    },
+    {
+      "legacyId": "hardhat-pco-read-036",
+      "legacyFile": "tests/PartialCommonOwnership/index.ts",
+      "legacyTitle": "PartialCommonOwnership.sol #foreclosureTime() succeeds consistently returns within +/- 1s",
+      "forgeFile": "test/solidity/parity/PCOReadTaxParity.t.sol",
+      "forgeContract": "PCOReadTaxParityTest",
+      "forgeTest": "test_parity_036_foreclosureTime_consistentWithinOneSecondTitle"
+    },
+    {
+      "legacyId": "hardhat-pco-read-037",
+      "legacyFile": "tests/PartialCommonOwnership/index.ts",
+      "legacyTitle": "PartialCommonOwnership.sol #foreclosureTime() succeeds time is 10m into the future",
+      "forgeFile": "test/solidity/parity/PCOReadTaxParity.t.sol",
+      "forgeContract": "PCOReadTaxParityTest",
+      "forgeTest": "test_parity_037_foreclosureTime_tenMinutesInFuture"
+    },
+    {
+      "legacyId": "hardhat-pco-read-038",
+      "legacyFile": "tests/PartialCommonOwnership/index.ts",
+      "legacyTitle": "PartialCommonOwnership.sol #foreclosureTime() succeeds returns backdated time if foreclosed",
+      "forgeFile": "test/solidity/parity/PCOReadTaxParity.t.sol",
+      "forgeContract": "PCOReadTaxParityTest",
+      "forgeTest": "test_parity_038_foreclosureTime_returnsBackdatedTime"
+    }
+  ]
+}
