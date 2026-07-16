@@ -12,8 +12,8 @@ importers:
   .:
     dependencies:
       '@openzeppelin/contracts':
-        specifier: 4.9.6
-        version: 4.9.6
+        specifier: 5.6.1
+        version: 5.6.1
     devDependencies:
       '@ethersproject/abi':
         specifier: 5.6.0
@@ -437,8 +437,8 @@ packages:
   '@openzeppelin/contract-loader@0.6.3':
     resolution: {integrity: sha512-cOFIjBjwbGgZhDZsitNgJl0Ye1rd5yu/Yx5LMgeq3u0ZYzldm4uObzHDFq4gjDdoypvyORjjJa3BlFA7eAnVIg==}
 
-  '@openzeppelin/contracts@4.9.6':
-    resolution: {integrity: sha512-xSmezSupL+y9VkHZJGDoCBpmnB2ogM13ccaYDWqJTfS3dbuHkgjuwDFUmaFauBCboQMGB/S5UqUl2y54X99BmA==}
+  '@openzeppelin/contracts@5.6.1':
+    resolution: {integrity: sha512-Ly6SlsVJ3mj+b18W3R8gNufB7dTICT105fJhodGAGgyC2oqnBAhqSiNDJ8V8DLY05cCz81GLI0CU5vNYA1EC/w==}
 
   '@openzeppelin/test-helpers@0.5.15':
     resolution: {integrity: sha512-10fS0kyOjc/UObo9iEWPNbC6MCeiQ7z97LDOJBj68g+AAs5pIGEI2h3V6G9TYTIq8VxOdwMQbfjKrx7Y3YZJtA==}
@@ -5911,7 +5911,7 @@ snapshots:
       find-up: 4.1.0
       fs-extra: 8.1.0
 
-  '@openzeppelin/contracts@4.9.6': {}
+  '@openzeppelin/contracts@5.6.1': {}
 
   '@openzeppelin/test-helpers@0.5.15(bn.js@4.12.0)(bufferutil@4.0.6)(supports-color@8.1.1)(utf-8-validate@5.0.9)':
     dependencies:

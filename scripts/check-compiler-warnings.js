@@ -82,11 +82,11 @@ function verifyPragmas() {
 
   for (const file of productionFiles) {
     const constraint = pragmaConstraint(file);
-    if (constraint !== "^0.8.12") {
+    if (constraint !== "^0.8.20") {
       throw new Error(
         `${repositoryPath(
           file
-        )} must retain the compatible production pragma ^0.8.12; received ${constraint}.`
+        )} must use the compatible production pragma ^0.8.20; received ${constraint}.`
       );
     }
   }

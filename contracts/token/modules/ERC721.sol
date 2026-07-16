@@ -1,20 +1,15 @@
 // contracts/token/modules/ERC721
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 
 /// @dev Re-implementation of OpenZeppelin's ERC721, removing IERC721Metadata
 /// compatability.
 abstract contract ERC721 is Context, ERC165, IERC721 {
-  using Address for address;
-  using Strings for uint256;
-
   //////////////////////////////
   /// State
   //////////////////////////////
@@ -478,7 +473,7 @@ abstract contract ERC721 is Context, ERC165, IERC721 {
     uint256 tokenId,
     bytes memory _data
   ) internal returns (bool) {
-    if (to.isContract()) {
+    if (to.code.length > 0) {
       try
         IERC721Receiver(to).onERC721Received(_msgSender(), from, tokenId, _data)
       returns (bytes4 retval) {

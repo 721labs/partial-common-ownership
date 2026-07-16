@@ -10,6 +10,9 @@ const PNPM_VERSION = "11.13.1";
 const HARDHAT_VERSION = "2.28.6";
 const FOUNDRY_VERSION = "1.7.1";
 const SOLC_VERSION = "0.8.36";
+const OPENZEPPELIN_VERSION = "5.6.1";
+const PRODUCTION_PRAGMA = "^0.8.20";
+const PRODUCTION_SOURCE_COUNT = 13;
 
 const pnpm =
   process.env.PNPM_BIN || (process.platform === "win32" ? "pnpm.cmd" : "pnpm");
@@ -90,6 +93,15 @@ function listFiles(root, filter = () => true) {
 
 function projectRelative(file) {
   return path.relative(PROJECT_ROOT, file).split(path.sep).join("/");
+}
+
+function solidityPragma(file) {
+  const source = fs.readFileSync(file, "utf8");
+  const match = source.match(/^\s*pragma\s+solidity\s+([^;]+);/m);
+  if (!match) {
+    throw new Error(`Packed Solidity source has no pragma: ${file}`);
+  }
+  return match[1].trim();
 }
 
 function expectedPackageFiles() {
@@ -175,11 +187,28 @@ function inspectTarball(tarball, extractionDirectory) {
   fs.mkdirSync(extractionDirectory, { recursive: true });
   run("tar", ["-xzf", tarball, "-C", extractionDirectory]);
 
+  const packedRoot = path.join(extractionDirectory, "package");
+  const productionSources = actual.filter(
+    (file) =>
+      file === "contracts/Wrapper.sol" ||
+      /^contracts\/token\/.+\.sol$/.test(file)
+  );
+  if (productionSources.length !== PRODUCTION_SOURCE_COUNT) {
+    throw new Error(
+      `Packed package must contain exactly ${PRODUCTION_SOURCE_COUNT} production Solidity sources; found ${productionSources.length}.`
+    );
+  }
+  for (const source of productionSources) {
+    const pragma = solidityPragma(path.join(packedRoot, source));
+    if (pragma !== PRODUCTION_PRAGMA) {
+      throw new Error(
+        `Packed production source ${source} must use pragma ${PRODUCTION_PRAGMA}; received ${pragma}.`
+      );
+    }
+  }
+
   const packedManifest = JSON.parse(
-    fs.readFileSync(
-      path.join(extractionDirectory, "package", "package.json"),
-      "utf8"
-    )
+    fs.readFileSync(path.join(packedRoot, "package.json"), "utf8")
   );
   if (packedManifest.name !== PACKAGE_NAME) {
     throw new Error(
@@ -201,21 +230,36 @@ function inspectTarball(tarball, extractionDirectory) {
   const openZeppelinVersion =
     packedManifest.dependencies &&
     packedManifest.dependencies["@openzeppelin/contracts"];
-  if (!/^\d+\.\d+\.\d+$/.test(openZeppelinVersion || "")) {
+  if (openZeppelinVersion !== OPENZEPPELIN_VERSION) {
     throw new Error(
-      "@openzeppelin/contracts must be an exact regular dependency in the packed package."
+      `@openzeppelin/contracts must be the exact regular dependency ${OPENZEPPELIN_VERSION} in the packed package; received ${
+        openZeppelinVersion || "<missing>"
+      }.`
     );
   }
-  if (
-    packedManifest.devDependencies &&
-    packedManifest.devDependencies["@openzeppelin/contracts"]
-  ) {
+  const duplicateDependencySections = [
+    "devDependencies",
+    "peerDependencies",
+    "optionalDependencies",
+  ].filter(
+    (section) =>
+      packedManifest[section] &&
+      packedManifest[section]["@openzeppelin/contracts"]
+  );
+  if (duplicateDependencySections.length) {
     throw new Error(
-      "@openzeppelin/contracts must have one canonical declaration, not a devDependency duplicate."
+      `@openzeppelin/contracts must have one canonical declaration, not duplicates in ${duplicateDependencySections.join(
+        ", "
+      )}.`
     );
   }
 
-  return { fileCount: actual.length, openZeppelinVersion };
+  return {
+    fileCount: actual.length,
+    openZeppelinVersion,
+    productionSourceCount: productionSources.length,
+    productionPragma: PRODUCTION_PRAGMA,
+  };
 }
 
 function consumerSource() {
@@ -462,7 +506,7 @@ function main() {
     buildForgeConsumer(path.join(temporaryRoot, "forge-consumer"), tarball);
 
     console.log(
-      `Package gate passed: ${packageResult.fileCount} allowlisted files, OpenZeppelin ${packageResult.openZeppelinVersion}, Hardhat ${HARDHAT_VERSION}, and Forge ${FOUNDRY_VERSION}.`
+      `Package gate passed: ${packageResult.fileCount} allowlisted files, ${packageResult.productionSourceCount} production sources at ${packageResult.productionPragma}, OpenZeppelin ${packageResult.openZeppelinVersion}, Hardhat ${HARDHAT_VERSION}, and Forge ${FOUNDRY_VERSION}.`
     );
   } catch (error) {
     if (process.env.KEEP_PACKAGE_TEST_TEMP === "1") {

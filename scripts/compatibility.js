@@ -617,6 +617,198 @@ const SECURITY_04_COMPILER_CANDIDATE_CLOSURE_SHA256 =
   "1c174ffca1bd590e4dff0842a22f38ef6c7b07a8bdb2443c9e132446df50022e";
 const SECURITY_04_WRAPPER_BYTECODE_PATH =
   /^\$\.contracts\.contracts\/Wrapper\.sol:Wrapper\.(?:creationBytecode|runtimeBytecode)\.(?:keccak256|metadataBytes|metadataStrippedKeccak256|metadataStrippedOpcodes|metadataStrippedSizeBytes|sizeBytes)$/;
+const STAGE_10_CANDIDATE = "stage-10-openzeppelin-5-6-1";
+const STAGE_10_POLICY =
+  "stage-10-openzeppelin-5-6-1-security-04-relative-full-diff";
+const STAGE_10_EVIDENCE_PATH =
+  "compatibility/evidence/stage-10-openzeppelin-5-6-1.json";
+const STAGE_10_BASE_COMMIT = "face4310d072b062487f988dad8796a027cf1bae";
+const STAGE_10_SECURITY_04_EVIDENCE_SHA256 =
+  "4e31e694ffe950d906b37a86186c2f2978b80ea9bf8a8d3425f92d815a95ccac";
+const STAGE_10_SECURITY_04_REVIEW_SHA256 =
+  "2c924c1b8f3f6c4818b0866099adc7a2e6e7d3c4349a36341764332cb4c6ed3f";
+const STAGE_10_CHECKPOINT_BINDING = Object.freeze({
+  commit: STAGE_10_BASE_COMMIT,
+  evidence: Object.freeze({
+    path: SECURITY_04_EVIDENCE_PATH,
+    sha256: STAGE_10_SECURITY_04_EVIDENCE_SHA256,
+  }),
+  review: Object.freeze({
+    path: "compatibility/reviewed-differences.json",
+    sha256: STAGE_10_SECURITY_04_REVIEW_SHA256,
+  }),
+});
+const STAGE_10_OPENZEPPELIN_VERSION = "5.6.1";
+const STAGE_10_OPENZEPPELIN_INTEGRITY =
+  "sha512-Ly6SlsVJ3mj+b18W3R8gNufB7dTICT105fJhodGAGgyC2oqnBAhqSiNDJ8V8DLY05cCz81GLI0CU5vNYA1EC/w==";
+const STAGE_10_PRODUCTION_PRAGMA = "^0.8.20";
+const STAGE_10_PRODUCTION_SOURCES = Object.freeze([
+  "contracts/Wrapper.sol",
+  "contracts/token/PartialCommonOwnership.sol",
+  "contracts/token/modules/Beneficiary.sol",
+  "contracts/token/modules/ERC721.sol",
+  "contracts/token/modules/Lease.sol",
+  "contracts/token/modules/Remittance.sol",
+  "contracts/token/modules/Taxation.sol",
+  "contracts/token/modules/Valuation.sol",
+  "contracts/token/modules/interfaces/IBeneficiary.sol",
+  "contracts/token/modules/interfaces/ILease.sol",
+  "contracts/token/modules/interfaces/IRemittance.sol",
+  "contracts/token/modules/interfaces/ITaxation.sol",
+  "contracts/token/modules/interfaces/IValuation.sol",
+]);
+const STAGE_10_ERC721_SOURCE = "contracts/token/modules/ERC721.sol";
+const STAGE_10_RECEIVER_INVENTORY_PATH =
+  "compatibility/stage-10-receiver-test-inventory.json";
+const STAGE_10_EXPECTED_PRODUCTION_OPENZEPPELIN_IMPORTS = Object.freeze([
+  "@openzeppelin/contracts/token/ERC721/IERC721.sol",
+  "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol",
+  "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol",
+  "@openzeppelin/contracts/utils/Context.sol",
+  "@openzeppelin/contracts/utils/introspection/ERC165.sol",
+  "@openzeppelin/contracts/utils/introspection/IERC165.sol",
+]);
+// Candidate-specific provenance values are intentionally frozen only after the
+// production, receiver, packaging, and security-document work is complete.
+// The Stage 10 generator refuses to proceed while any placeholder remains.
+const STAGE_10_COMPILER_SOURCE_COUNT = 24;
+const STAGE_10_COMPILER_SOURCE_NAMES_SHA256 =
+  "c2b32297ccca42832b645845a77dc45bc2991141c7d7e2bc1244125c595dc805";
+const STAGE_10_COMPILER_CLOSURE_SHA256 =
+  "38d2428df3ed7472afb28ad76273ea14ed05c89bbfcc165a9540378b9ca317df";
+const STAGE_10_SECURITY_04_COMPILER_SOURCE_NAMES = Object.freeze([
+  "@openzeppelin/contracts/token/ERC721/ERC721.sol",
+  "@openzeppelin/contracts/token/ERC721/IERC721.sol",
+  "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol",
+  "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol",
+  "@openzeppelin/contracts/utils/Address.sol",
+  "@openzeppelin/contracts/utils/Context.sol",
+  "@openzeppelin/contracts/utils/Strings.sol",
+  "@openzeppelin/contracts/utils/introspection/ERC165.sol",
+  "@openzeppelin/contracts/utils/introspection/IERC165.sol",
+  "@openzeppelin/contracts/utils/math/Math.sol",
+  "@openzeppelin/contracts/utils/math/SignedMath.sol",
+  "contracts/Wrapper.sol",
+  "contracts/test/Blocker.sol",
+  "contracts/test/PCOInitializationReceiver.sol",
+  "contracts/test/TestNFT.sol",
+  "contracts/test/TestPCOToken.sol",
+  "contracts/test/TestWrapper.sol",
+  "contracts/token/PartialCommonOwnership.sol",
+  "contracts/token/modules/Beneficiary.sol",
+  "contracts/token/modules/ERC721.sol",
+  "contracts/token/modules/Lease.sol",
+  "contracts/token/modules/Remittance.sol",
+  "contracts/token/modules/Taxation.sol",
+  "contracts/token/modules/Valuation.sol",
+  "contracts/token/modules/interfaces/IBeneficiary.sol",
+  "contracts/token/modules/interfaces/ILease.sol",
+  "contracts/token/modules/interfaces/IRemittance.sol",
+  "contracts/token/modules/interfaces/ITaxation.sol",
+  "contracts/token/modules/interfaces/IValuation.sol",
+]);
+const STAGE_10_COMPILER_ADDED_SOURCES = Object.freeze([]);
+const STAGE_10_COMPILER_REMOVED_SOURCES = Object.freeze([
+  "@openzeppelin/contracts/token/ERC721/ERC721.sol",
+  "@openzeppelin/contracts/utils/Address.sol",
+  "@openzeppelin/contracts/utils/Strings.sol",
+  "@openzeppelin/contracts/utils/math/Math.sol",
+  "@openzeppelin/contracts/utils/math/SignedMath.sol",
+]);
+const STAGE_10_BOUND_FILES = Object.freeze({
+  "compatibility/README.md":
+    "84412fc6493eac9d92873f538237d65869a76d3ca684737fc913bfc7a05731c2",
+  "compatibility/compiler-warning-allowlist.json":
+    "0ad1d055e0192a115d0c27c9bd5c6f606705ac1b441ba0f6537c8604d3d15d10",
+  "compatibility/stage-10-receiver-test-inventory.json":
+    "c4613826a275d50f4fe0e8ba0f9973e1640bc390d325e9c6790a554f9fa391be",
+  "contracts/Wrapper.sol":
+    "4d8766bd7baa0a1bd2b021c0de27a04c59219d86fd0c907973e7873e5b069915",
+  "contracts/test/TestNFT.sol":
+    "110fadbf1c0d3052ebd517512596e62d63085137c3c81261271f9da65997c0b6",
+  "contracts/token/PartialCommonOwnership.sol":
+    "5429da466a15811ce0196b99b710f247b3d6392c81cce2b84cab5ab83129c825",
+  "contracts/token/modules/Beneficiary.sol":
+    "91e507656ebd6ec2d5ae5dfe2fe24ba0e30cea87b3deb14dd5e6140479e61500",
+  "contracts/token/modules/ERC721.sol":
+    "7bcb9d453294af951005305c25003c0754643c1c53cb3f310436b31931192e1b",
+  "contracts/token/modules/Lease.sol":
+    "269ec676c2a8bdd8148b0e2ce8743da676c220109583df569f95673bfaaac34f",
+  "contracts/token/modules/Remittance.sol":
+    "3b9c9c0efea65e5256c7faad8061342b9764f58d5676550088b587d46d73bcc6",
+  "contracts/token/modules/Taxation.sol":
+    "72aa02e63d76e28e6f04e29ea49e81a764f2211955e032a907fe0a7e524b0027",
+  "contracts/token/modules/Valuation.sol":
+    "10b3450c7a2bc9c0b1f12f774c34abd70338480f908dc77d448d0de425adca02",
+  "contracts/token/modules/interfaces/IBeneficiary.sol":
+    "b65dfa02ee1a1a6d89694323bc5b621f6c5504d8d1ab640a9ae03189fb3dceff",
+  "contracts/token/modules/interfaces/ILease.sol":
+    "6373d8ce3d99fca346278de04dfedaaefc46ed7b4e4812b1b8737a03abbccfa1",
+  "contracts/token/modules/interfaces/IRemittance.sol":
+    "aec91c493f5b6482d97a55031a559ba8084e93c6112e49742dadc1c91af987eb",
+  "contracts/token/modules/interfaces/ITaxation.sol":
+    "78b7663a40929bfd7afc0c4315abf6365287fd17ca9986479c963aedfb28de42",
+  "contracts/token/modules/interfaces/IValuation.sol":
+    "d7fd7c28b9a78a1e194b20f7e1a1c8c0b13b47df237f1c7defa95e45f6201e06",
+  "docs/development.md":
+    "e7b3530c87cc303843b28bd02d9151bbc74d8c411a40e799337e8342310de1d3",
+  "docs/security/custom-erc721-vs-openzeppelin-5.6.1.md":
+    "8408dc4e8380371b434db443381efc9ea4c37380633b825ed8b60ba6328b53b0",
+  "docs/security/deferred-semantic-findings.md":
+    "cd77fbe31de319fefc825f6865615d8a9be00226acdc75db3dcf7f0925b4381f",
+  "docs/security/slither-0.11.5-triage.md":
+    "f5f85f7b8d403310a2fdd2e67c5ebf5f805b66ebec5dd2ed6f68a054eabe5448",
+  "package.json":
+    "725271913cf42b7ff0cf8f28f2b90d6830860f3e023e70f0e7a5cc8a6be7b1eb",
+  "pnpm-lock.yaml":
+    "b3074d21c3e9db6fe5361ddf43d03ed1ea4aaef8f28b9e47fd92c04baf2367ff",
+  "scripts/check-compiler-warnings.js":
+    "77960e50ce80beff59853c663d0d7b6c8b043eef1bae905d21d3d1648d3e7098",
+  "scripts/test-package.js":
+    "2198d75e1ff351cc0cc3b20b66aec18ea3c08416b9886d22aed4d55531080ce7",
+  "test/solidity/fuzz/WrapperFuzz.t.sol":
+    "ecd22eec5c14af50f0837f45b8ec72714729bf449645d82752ab430b7b4a8795",
+  "test/solidity/invariant/helpers/WrapperInvariantHarness.sol":
+    "b01897c621a8c0357956361db01384039b3d97982ee8399d0d4ace36a07ca0ed",
+});
+const STAGE_10_CORE_CHANGED_PATHS = Object.freeze([
+  "compatibility/README.md",
+  "compatibility/compiler-warning-allowlist.json",
+  "compatibility/stage-10-receiver-test-inventory.json",
+  "contracts/Wrapper.sol",
+  "contracts/test/TestNFT.sol",
+  "contracts/token/PartialCommonOwnership.sol",
+  "contracts/token/modules/Beneficiary.sol",
+  "contracts/token/modules/ERC721.sol",
+  "contracts/token/modules/Lease.sol",
+  "contracts/token/modules/Remittance.sol",
+  "contracts/token/modules/Taxation.sol",
+  "contracts/token/modules/Valuation.sol",
+  "contracts/token/modules/interfaces/IBeneficiary.sol",
+  "contracts/token/modules/interfaces/ILease.sol",
+  "contracts/token/modules/interfaces/IRemittance.sol",
+  "contracts/token/modules/interfaces/ITaxation.sol",
+  "contracts/token/modules/interfaces/IValuation.sol",
+  "docs/development.md",
+  "docs/security/custom-erc721-vs-openzeppelin-5.6.1.md",
+  "docs/security/deferred-semantic-findings.md",
+  "docs/security/slither-0.11.5-triage.md",
+  "package.json",
+  "pnpm-lock.yaml",
+  "scripts/check-compiler-warnings.js",
+  "scripts/compatibility.js",
+  "scripts/test-package.js",
+  "test/solidity/fuzz/WrapperFuzz.t.sol",
+  "test/solidity/invariant/helpers/WrapperInvariantHarness.sol",
+]);
+const STAGE_10_FINAL_CHANGED_PATHS = Object.freeze(
+  [
+    ...STAGE_10_CORE_CHANGED_PATHS,
+    STAGE_10_EVIDENCE_PATH,
+    "compatibility/reviewed-differences.json",
+  ].sort()
+);
+const STAGE_10_BYTECODE_PATH = STAGE_08_BYTECODE_PATH;
 const PROJECT_REVERT_STRINGS_PATH = path.join(
   ROOT,
   "compatibility",
@@ -1070,6 +1262,32 @@ function validateSecurity04Candidate(baseline, candidate) {
   validateSecurity04PCOEquality(baseline, candidate, checkpoint);
 }
 
+function validateStage10Candidate(baseline, candidate) {
+  stage10CheckpointAnchor();
+  stage09ForgeStdEvidence();
+  stage10SourceEvidence(candidate);
+  stage10ReceiverInventory(candidate);
+  if (
+    candidate.compiler.version !== STAGE_08_COMPILER_VERSION ||
+    candidate.compiler.longVersion !== STAGE_08_COMPILER_LONG_VERSION ||
+    !valuesEqual(candidate.compiler.settings, baseline.compiler.settings)
+  ) {
+    throw new Error(
+      "Stage 10 must preserve exact Solidity 0.8.36 and every compiler setting"
+    );
+  }
+  validateSecurity01HardFields(baseline, candidate);
+  const expectedReverts = security04ProjectRevertStrings(
+    baseline.projectRevertStrings
+  );
+  if (!valuesEqual(candidate.projectRevertStrings, expectedReverts)) {
+    throw new Error(
+      "Stage 10 must preserve every Security 04 project-owned revert payload, callsite, and ordering"
+    );
+  }
+  stage10ProductionEvidence(baseline, candidate, stage10CheckpointAnchor());
+}
+
 const REVIEW_POLICIES = Object.freeze({
   "stage-04-source-path-metadata-and-gas": Object.freeze({
     candidate: "stage-04-package-canonical-openzeppelin",
@@ -1348,6 +1566,28 @@ const REVIEW_POLICIES = Object.freeze({
       );
     },
     validateCandidate: validateSecurity04Candidate,
+  }),
+  [STAGE_10_POLICY]: Object.freeze({
+    candidate: STAGE_10_CANDIDATE,
+    requiredOpcodeEvidence: Object.freeze({
+      mode: "stage-10-security-04-relative-full-diff",
+      path: STAGE_10_EVIDENCE_PATH,
+      contracts: STAGE_08_PRODUCTION_CONTRACTS,
+    }),
+    requiredSafetyEvidence: Object.freeze({
+      path: "compatibility/evidence/stage-07-safety-artifacts.json",
+      sha256:
+        "0065814caec6e3044951f80c891c9948454e90138d016513ed07d0fcfb7c67d8",
+    }),
+    requiredSecurity04Checkpoint: STAGE_10_CHECKPOINT_BINDING,
+    requiresStage10ReceiverEvidence: true,
+    permits(reviewPath) {
+      return (
+        STAGE_10_BYTECODE_PATH.test(reviewPath) ||
+        STAGE_08_GAS_SNAPSHOT_PATH.test(reviewPath)
+      );
+    },
+    validateCandidate: validateStage10Candidate,
   }),
 });
 
@@ -2093,6 +2333,415 @@ function security04SourceEvidence() {
     boundFiles: security04BoundFileEvidence(),
     configFiles: security04ConfigEvidence(),
     compilerSources: security04CompilerSourceEvidence(),
+  });
+}
+
+function validateStage10FrozenConstants() {
+  if (
+    STAGE_10_COMPILER_SOURCE_COUNT <= 0 ||
+    STAGE_10_COMPILER_SOURCE_NAMES_SHA256 === "TO_BE_FROZEN" ||
+    STAGE_10_COMPILER_CLOSURE_SHA256 === "TO_BE_FROZEN" ||
+    STAGE_10_SECURITY_04_COMPILER_SOURCE_NAMES.length !==
+      SECURITY_04_COMPILER_SOURCE_COUNT ||
+    Object.keys(STAGE_10_BOUND_FILES).length === 0 ||
+    STAGE_10_CORE_CHANGED_PATHS.length === 0 ||
+    STAGE_10_FINAL_CHANGED_PATHS.length === 0
+  ) {
+    throw new Error(
+      "Stage 10 candidate provenance has not been frozen after the implementation settled"
+    );
+  }
+}
+
+function validateStage10ChangedPaths(actual) {
+  validateStage10FrozenConstants();
+  const permittedStates = [
+    STAGE_10_CORE_CHANGED_PATHS,
+    [...STAGE_10_CORE_CHANGED_PATHS, "compatibility/reviewed-differences.json"],
+    STAGE_10_FINAL_CHANGED_PATHS,
+  ].map((paths) => [...new Set(paths)].sort());
+  const normalized = [...new Set(actual)].sort();
+  if (!permittedStates.some((expected) => valuesEqual(normalized, expected))) {
+    const differences = collectDifferences(
+      STAGE_10_FINAL_CHANGED_PATHS,
+      normalized,
+      "$.stage10ChangedPaths"
+    );
+    throw new Error(
+      `Stage 10 repository changes differ from its exact core/review/evidence states:\n${differences
+        .slice(0, 30)
+        .map((difference) => `- ${formatDifference(difference)}`)
+        .join("\n")}`
+    );
+  }
+  return [...STAGE_10_FINAL_CHANGED_PATHS];
+}
+
+function stage10BoundFileEvidence() {
+  validateStage10FrozenConstants();
+  const files = fileDigestEvidence(STAGE_10_BOUND_FILES);
+  validateExactFileDigests(files, STAGE_10_BOUND_FILES, "stage10Files");
+  return files;
+}
+
+function stage10DependencyEvidence() {
+  const packagePath = path.join(ROOT, "package.json");
+  const lockPath = path.join(ROOT, "pnpm-lock.yaml");
+  const installedPackagePath = path.join(
+    ROOT,
+    "node_modules",
+    "@openzeppelin",
+    "contracts",
+    "package.json"
+  );
+  const packageJson = JSON.parse(fs.readFileSync(packagePath, "utf8"));
+  const lock = fs.readFileSync(lockPath, "utf8");
+  const installedPackage = JSON.parse(
+    fs.readFileSync(installedPackagePath, "utf8")
+  );
+  if (
+    packageJson.dependencies?.["@openzeppelin/contracts"] !==
+      STAGE_10_OPENZEPPELIN_VERSION ||
+    installedPackage.version !== STAGE_10_OPENZEPPELIN_VERSION
+  ) {
+    throw new Error(
+      `Stage 10 requires exact @openzeppelin/contracts ${STAGE_10_OPENZEPPELIN_VERSION} in package.json and node_modules`
+    );
+  }
+  const escapedVersion = STAGE_10_OPENZEPPELIN_VERSION.replace(
+    /[.*+?^${}()|[\]\\]/g,
+    "\\$&"
+  );
+  const escapedIntegrity = STAGE_10_OPENZEPPELIN_INTEGRITY.replace(
+    /[.*+?^${}()|[\]\\]/g,
+    "\\$&"
+  );
+  const importerPattern = new RegExp(
+    "'@openzeppelin/contracts':\\n\\s+specifier: " +
+      escapedVersion +
+      "\\n\\s+version: " +
+      escapedVersion
+  );
+  const packagePattern = new RegExp(
+    "'@openzeppelin/contracts@" +
+      escapedVersion +
+      "':\\n\\s+resolution: \\{integrity: " +
+      escapedIntegrity +
+      "\\}"
+  );
+  const snapshotPattern = new RegExp(
+    "'@openzeppelin/contracts@" + escapedVersion + "': \\{\\}"
+  );
+  if (
+    !importerPattern.test(lock) ||
+    !packagePattern.test(lock) ||
+    !snapshotPattern.test(lock) ||
+    /@openzeppelin\/contracts@4\.9\.6/.test(lock)
+  ) {
+    throw new Error(
+      "Stage 10 pnpm lock does not contain the exact OpenZeppelin 5.6.1 importer, integrity, and snapshot"
+    );
+  }
+  return sorted({
+    name: "@openzeppelin/contracts",
+    previousVersion: "4.9.6",
+    candidateVersion: STAGE_10_OPENZEPPELIN_VERSION,
+    registryIntegrity: STAGE_10_OPENZEPPELIN_INTEGRITY,
+    packageJsonSha256: sha256(fs.readFileSync(packagePath)),
+    lockfileSha256: sha256(fs.readFileSync(lockPath)),
+    installedPackageJsonSha256: sha256(fs.readFileSync(installedPackagePath)),
+  });
+}
+
+function stage10ProductionPragmaEvidence() {
+  const sources = {};
+  for (const relativePath of STAGE_10_PRODUCTION_SOURCES) {
+    const source = fs.readFileSync(path.join(ROOT, relativePath), "utf8");
+    const pragmas = source.match(/^pragma solidity [^;]+;/gm) || [];
+    if (
+      pragmas.length !== 1 ||
+      pragmas[0] !== `pragma solidity ${STAGE_10_PRODUCTION_PRAGMA};`
+    ) {
+      throw new Error(
+        `Stage 10 shipped source must use exactly ${STAGE_10_PRODUCTION_PRAGMA}: ${relativePath}`
+      );
+    }
+    sources[relativePath] = {
+      pragma: STAGE_10_PRODUCTION_PRAGMA,
+      sha256: sha256(source),
+    };
+  }
+  const erc721 = fs.readFileSync(
+    path.join(ROOT, STAGE_10_ERC721_SOURCE),
+    "utf8"
+  );
+  const codeLengthOccurrences =
+    erc721.match(/if \(to\.code\.length > 0\) \{/g)?.length || 0;
+  if (
+    codeLengthOccurrences !== 1 ||
+    /\.isContract\s*\(/.test(erc721) ||
+    /@openzeppelin\/contracts\/utils\/(?:Address|Strings)\.sol/.test(erc721) ||
+    /using\s+(?:Address|Strings)\s+for/.test(erc721)
+  ) {
+    throw new Error(
+      "Stage 10 ERC721 must use one to.code.length receiver branch and no Address/Strings import or using declaration"
+    );
+  }
+  return sorted({
+    requiredPragma: STAGE_10_PRODUCTION_PRAGMA,
+    sources,
+    receiverDetection: {
+      sourcePath: STAGE_10_ERC721_SOURCE,
+      expression: "to.code.length > 0",
+      occurrences: codeLengthOccurrences,
+      addressImport: false,
+      stringsImport: false,
+      inheritedOpenZeppelinERC721: false,
+    },
+  });
+}
+
+function solidityImports(source) {
+  const imports = [];
+  const pattern = /import\s+(?:[^"']*?\s+from\s+)?["']([^"']+)["']\s*;/g;
+  let match;
+  while ((match = pattern.exec(source)) !== null) imports.push(match[1]);
+  return imports;
+}
+
+function resolveCompilerImport(fromSource, importPath, sourceHashes) {
+  const resolved = importPath.startsWith(".")
+    ? path.posix.normalize(
+        path.posix.join(path.posix.dirname(fromSource), importPath)
+      )
+    : importPath;
+  if (!Object.prototype.hasOwnProperty.call(sourceHashes, resolved)) {
+    throw new Error(
+      `Stage 10 compiler closure cannot resolve ${importPath} from ${fromSource}`
+    );
+  }
+  return resolved;
+}
+
+function stage10ProductionImportClosure(sourceHashes) {
+  const pending = [...STAGE_10_PRODUCTION_SOURCES];
+  const visited = new Set();
+  const buildInfo = findBuildInfo();
+  while (pending.length > 0) {
+    const sourceName = pending.pop();
+    if (visited.has(sourceName)) continue;
+    const source = buildInfo.input.sources[sourceName]?.content;
+    if (typeof source !== "string") {
+      throw new Error(
+        `Stage 10 production import source is absent from compiler input: ${sourceName}`
+      );
+    }
+    visited.add(sourceName);
+    for (const imported of solidityImports(source)) {
+      pending.push(resolveCompilerImport(sourceName, imported, sourceHashes));
+    }
+  }
+  const names = [...visited].sort();
+  const openzeppelin = names.filter((name) =>
+    name.startsWith("@openzeppelin/contracts/")
+  );
+  if (
+    !valuesEqual(
+      openzeppelin,
+      [...STAGE_10_EXPECTED_PRODUCTION_OPENZEPPELIN_IMPORTS].sort()
+    ) ||
+    openzeppelin.some((name) =>
+      /\/ERC721\.sol$|\/Address\.sol$|\/Strings\.sol$/.test(name)
+    )
+  ) {
+    throw new Error(
+      `Stage 10 production OpenZeppelin import closure changed: ${openzeppelin.join(
+        ", "
+      )}`
+    );
+  }
+  return sorted({
+    names,
+    namesSha256: sha256(stableJson(names)),
+    sourceHashes: Object.fromEntries(
+      names.map((name) => [name, sourceHashes[name]])
+    ),
+    openzeppelin,
+  });
+}
+
+function stage10CompilerSourceEvidence() {
+  validateStage10FrozenConstants();
+  const sourceHashes = compilerSourceHashes();
+  const names = Object.keys(sourceHashes).sort();
+  const addedSources = names.filter(
+    (name) => !STAGE_10_SECURITY_04_COMPILER_SOURCE_NAMES.includes(name)
+  );
+  const removedSources = STAGE_10_SECURITY_04_COMPILER_SOURCE_NAMES.filter(
+    (name) => !names.includes(name)
+  );
+  if (
+    !valuesEqual(addedSources, [...STAGE_10_COMPILER_ADDED_SOURCES]) ||
+    !valuesEqual(removedSources, [...STAGE_10_COMPILER_REMOVED_SOURCES])
+  ) {
+    throw new Error(
+      "Stage 10 compiler source additions/removals differ from the exact Security 04 to OpenZeppelin 5.6.1 closure change"
+    );
+  }
+  const projectSourceChanges = names
+    .filter((name) => name.startsWith("contracts/"))
+    .map((sourcePath) => {
+      let security04Sha256 = null;
+      const result = spawnSync(
+        "git",
+        ["show", `${STAGE_10_BASE_COMMIT}:${sourcePath}`],
+        {
+          cwd: ROOT,
+          encoding: "utf8",
+          env: process.env,
+          maxBuffer: 16 * 1024 * 1024,
+        }
+      );
+      if (result.status === 0) security04Sha256 = sha256(result.stdout);
+      if (result.error) throw result.error;
+      return {
+        path: sourcePath,
+        security04Sha256,
+        candidateSha256: sourceHashes[sourcePath],
+        changed: security04Sha256 !== sourceHashes[sourcePath],
+      };
+    })
+    .filter((entry) => entry.changed);
+  const evidence = sorted({
+    sourceCount: names.length,
+    sourceNames: names,
+    sourceNamesSha256: sha256(stableJson(names)),
+    candidateClosureSha256: sha256(stableJson(sourceHashes)),
+    security04SourceCount: STAGE_10_SECURITY_04_COMPILER_SOURCE_NAMES.length,
+    security04SourceNamesSha256: sha256(
+      stableJson(STAGE_10_SECURITY_04_COMPILER_SOURCE_NAMES)
+    ),
+    security04ClosureSha256: SECURITY_04_COMPILER_CANDIDATE_CLOSURE_SHA256,
+    addedSources,
+    removedSources,
+    changedProjectSources: projectSourceChanges,
+    completeSourceHashes: sourceHashes,
+    productionImportClosure: stage10ProductionImportClosure(sourceHashes),
+  });
+  if (
+    evidence.sourceCount !== STAGE_10_COMPILER_SOURCE_COUNT ||
+    evidence.sourceNamesSha256 !== STAGE_10_COMPILER_SOURCE_NAMES_SHA256 ||
+    evidence.candidateClosureSha256 !== STAGE_10_COMPILER_CLOSURE_SHA256
+  ) {
+    throw new Error(
+      "Stage 10 Hardhat compiler-input closure differs from its exact frozen OpenZeppelin 5.6.1 closure"
+    );
+  }
+  return evidence;
+}
+
+function stage10ReceiverInventory(candidate) {
+  const inventoryPath = path.join(ROOT, STAGE_10_RECEIVER_INVENTORY_PATH);
+  const inventory = JSON.parse(fs.readFileSync(inventoryPath, "utf8"));
+  if (
+    inventory.schemaVersion !== 1 ||
+    inventory.candidate !== STAGE_10_CANDIDATE ||
+    !Array.isArray(inventory.names) ||
+    !Array.isArray(inventory.cases) ||
+    inventory.names.length !== inventory.expectedTestCount ||
+    inventory.cases.length !== inventory.expectedCaseCount ||
+    inventory.expectedTestCount !== 1 ||
+    inventory.expectedCaseCount !== 5 ||
+    inventory.inventoryChange !== "none"
+  ) {
+    throw new Error("Stage 10 receiver inventory has an invalid schema");
+  }
+  const names = [...new Set(inventory.names)].sort();
+  if (
+    names.length !== inventory.names.length ||
+    !valuesEqual(names, [...inventory.names].sort())
+  ) {
+    throw new Error(
+      "Stage 10 receiver inventory must contain one unique retained test name"
+    );
+  }
+  const sourceNames = [...new Set(names.map((name) => name.split(":")[0]))];
+  if (sourceNames.length !== 1 || sourceNames[0] !== inventory.sourcePath) {
+    throw new Error(
+      "Stage 10 receiver tests must remain in their one owned source"
+    );
+  }
+  const sourceBytes = fs.readFileSync(path.join(ROOT, inventory.sourcePath));
+  const sourceSha256 = sha256(sourceBytes);
+  if (sourceSha256 !== inventory.sourceSha256) {
+    throw new Error("Stage 10 receiver test source digest changed");
+  }
+  const candidateForgeNames = candidate.tests.forge.names;
+  if (
+    !names.every((name) => candidateForgeNames.includes(name)) ||
+    candidateForgeNames.length !== SECURITY_01_FORGE_COUNT ||
+    sha256(stableJson(candidateForgeNames)) !==
+      SECURITY_01_FORGE_NAMES_SHA256 ||
+    candidate.tests.forge.count !== SECURITY_01_FORGE_COUNT ||
+    candidate.tests.hardhat.count !== SECURITY_01_HARDHAT_COUNT ||
+    sha256(stableJson(candidate.tests.hardhat.names)) !==
+      SECURITY_01_HARDHAT_NAMES_SHA256 ||
+    candidate.tests.total !==
+      SECURITY_01_HARDHAT_COUNT + SECURITY_01_FORGE_COUNT
+  ) {
+    throw new Error(
+      "Stage 10 must retain all 89 Hardhat and 140 Forge identifiers while strengthening the reviewed receiver test"
+    );
+  }
+  return sorted({
+    path: STAGE_10_RECEIVER_INVENTORY_PATH,
+    sha256: sha256(fs.readFileSync(inventoryPath)),
+    sourcePath: inventory.sourcePath,
+    sourceSha256,
+    names,
+    cases: inventory.cases,
+    retainedHardhat: {
+      count: SECURITY_01_HARDHAT_COUNT,
+      namesSha256: SECURITY_01_HARDHAT_NAMES_SHA256,
+    },
+    retainedForge: {
+      count: SECURITY_01_FORGE_COUNT,
+      namesSha256: SECURITY_01_FORGE_NAMES_SHA256,
+    },
+    candidateForgeCount: candidate.tests.forge.count,
+    inventoryChange: "none",
+  });
+}
+
+function stage10ReceiverReviewEvidence() {
+  const inventoryPath = path.join(ROOT, STAGE_10_RECEIVER_INVENTORY_PATH);
+  const inventoryBytes = fs.readFileSync(inventoryPath);
+  const inventory = JSON.parse(inventoryBytes);
+  const sourceBytes = fs.readFileSync(path.join(ROOT, inventory.sourcePath));
+  return sorted({
+    path: STAGE_10_RECEIVER_INVENTORY_PATH,
+    sha256: sha256(inventoryBytes),
+    sourcePath: inventory.sourcePath,
+    sourceSha256: sha256(sourceBytes),
+    names: inventory.names,
+  });
+}
+
+function stage10SourceEvidence(candidate) {
+  stage10CheckpointAnchor();
+  return sorted({
+    checkpoint: STAGE_10_CHECKPOINT_BINDING,
+    changedPaths: validateStage10ChangedPaths(
+      repositoryChangedPaths(STAGE_10_BASE_COMMIT)
+    ),
+    boundFiles: stage10BoundFileEvidence(),
+    dependency: stage10DependencyEvidence(),
+    productionPragmas: stage10ProductionPragmaEvidence(),
+    compilerSources: stage10CompilerSourceEvidence(),
+    receiverTests: stage10ReceiverInventory(candidate),
+    compatibilityRunnerSha256: sha256(
+      fs.readFileSync(path.join(ROOT, "scripts", "compatibility.js"))
+    ),
   });
 }
 
@@ -3777,6 +4426,25 @@ function reviewPolicy(review) {
       );
     }
   }
+  if (policy.requiredSecurity04Checkpoint) {
+    const supplied = review.security04Checkpoint;
+    if (
+      !supplied ||
+      !valuesEqual(supplied, policy.requiredSecurity04Checkpoint)
+    ) {
+      throw new Error(
+        `Compatibility review policy ${review.policy} requires the exact Security 04 checkpoint`
+      );
+    }
+  }
+  if (policy.requiresStage10ReceiverEvidence) {
+    const expected = stage10ReceiverReviewEvidence();
+    if (!valuesEqual(review.receiverEvidence, expected)) {
+      throw new Error(
+        `Compatibility review policy ${review.policy} requires the exact Stage 10 receiver inventory and source evidence`
+      );
+    }
+  }
   if (policy.requiredForgeStdEvidence) {
     const required = policy.requiredForgeStdEvidence;
     const supplied = review.forgeStdEvidence;
@@ -4184,6 +4852,42 @@ function security04Review(baselineBytes, differences) {
     },
     security03Checkpoint: SECURITY_04_CHECKPOINT_BINDING,
     behaviorEvidence: SECURITY_04_BEHAVIOR_EVIDENCE,
+    safetyEvidence: {
+      path: "compatibility/evidence/stage-07-safety-artifacts.json",
+      sha256:
+        "0065814caec6e3044951f80c891c9948454e90138d016513ed07d0fcfb7c67d8",
+    },
+  };
+}
+
+function stage10ReviewReason(reviewPath) {
+  if (STAGE_10_BYTECODE_PATH.test(reviewPath)) {
+    return "OpenZeppelin 5.6.1, the shipped ^0.8.20 pragmas, and the behavior-equivalent code.length receiver check change compiler-generated production bytecode. Stage 10 records complete Security-04-relative opcode diffs, raw and normalized hashes and sizes, exact source-closure provenance, and EIP-170 validation.";
+  }
+  if (STAGE_08_GAS_SNAPSHOT_PATH.test(reviewPath)) {
+    return "The exact OpenZeppelin 5.6.1 dependency/source closure changes this deterministic gas result. Stage 10 records the exact Security-04-relative legacy entry and rechecks all 12 key flows against max(3%, 2,000 gas).";
+  }
+  throw new Error(`Stage 10 has no review reason for ${reviewPath}`);
+}
+
+function stage10Review(baselineBytes, differences, candidate) {
+  stage10ReceiverInventory(candidate);
+  return {
+    schemaVersion: 1,
+    candidate: STAGE_10_CANDIDATE,
+    policy: STAGE_10_POLICY,
+    baselineSha256: sha256(baselineBytes),
+    allowedDifferences: differences.map((difference) => ({
+      ...difference,
+      reason: stage10ReviewReason(difference.path),
+    })),
+    opcodeEvidence: {
+      mode: "stage-10-security-04-relative-full-diff",
+      path: STAGE_10_EVIDENCE_PATH,
+      contracts: [...STAGE_08_PRODUCTION_CONTRACTS],
+    },
+    security04Checkpoint: STAGE_10_CHECKPOINT_BINDING,
+    receiverEvidence: stage10ReceiverReviewEvidence(),
     safetyEvidence: {
       path: "compatibility/evidence/stage-07-safety-artifacts.json",
       sha256:
@@ -4700,6 +5404,62 @@ function validateSecurity03CheckpointBinding(checkpoint) {
   }
 }
 
+function stage10CheckpointAnchor() {
+  run("git", ["merge-base", "--is-ancestor", STAGE_10_BASE_COMMIT, "HEAD"]);
+  const evidenceBytes = Buffer.from(
+    run("git", ["show", `${STAGE_10_BASE_COMMIT}:${SECURITY_04_EVIDENCE_PATH}`])
+      .stdout
+  );
+  const evidenceSha256 = sha256(evidenceBytes);
+  if (evidenceSha256 !== STAGE_10_SECURITY_04_EVIDENCE_SHA256) {
+    throw new Error(
+      `Stage 10 Security 04 checkpoint evidence changed: expected ${STAGE_10_SECURITY_04_EVIDENCE_SHA256}, received ${evidenceSha256}`
+    );
+  }
+  const evidence = JSON.parse(evidenceBytes);
+  if (
+    evidence.schemaVersion !== 1 ||
+    evidence.candidate !== SECURITY_04_CANDIDATE ||
+    evidence.mode !== "security-04-security-03-relative-wrapper-only"
+  ) {
+    throw new Error("Stage 10 Security 04 evidence has an invalid identity");
+  }
+  const reviewBytes = Buffer.from(
+    run("git", [
+      "show",
+      `${STAGE_10_BASE_COMMIT}:compatibility/reviewed-differences.json`,
+    ]).stdout
+  );
+  const reviewSha256 = sha256(reviewBytes);
+  if (reviewSha256 !== STAGE_10_SECURITY_04_REVIEW_SHA256) {
+    throw new Error(
+      `Stage 10 Security 04 checkpoint review changed: expected ${STAGE_10_SECURITY_04_REVIEW_SHA256}, received ${reviewSha256}`
+    );
+  }
+  const review = JSON.parse(reviewBytes);
+  if (
+    review.schemaVersion !== 1 ||
+    review.candidate !== SECURITY_04_CANDIDATE ||
+    review.policy !== SECURITY_04_POLICY ||
+    review.opcodeEvidence?.path !== SECURITY_04_EVIDENCE_PATH
+  ) {
+    throw new Error("Stage 10 Security 04 review has an invalid identity");
+  }
+  return {
+    commit: STAGE_10_BASE_COMMIT,
+    evidence: {
+      path: SECURITY_04_EVIDENCE_PATH,
+      sha256: evidenceSha256,
+      value: evidence,
+    },
+    review: {
+      path: "compatibility/reviewed-differences.json",
+      sha256: reviewSha256,
+      value: review,
+    },
+  };
+}
+
 function applyUnifiedOpcodeDiff(baselineOpcodes, diff) {
   if (!diff) return baselineOpcodes;
   const baseline = opcodeInstructions(baselineOpcodes);
@@ -4961,6 +5721,112 @@ function security03CheckpointLegacyGasEntries(checkpoint) {
   }
   if (sha256(stableJson(previousEntries)) !== evidence.candidateEntriesSha256) {
     throw new Error("Security 03 legacy gas checkpoint digest changed");
+  }
+  return previousEntries;
+}
+
+function security04CheckpointOpcodes(
+  baseline,
+  qualifiedName,
+  bytecodeKind,
+  checkpoint
+) {
+  const security03 = security03CheckpointAnchor();
+  const security03Opcodes = security03CheckpointOpcodes(
+    baseline,
+    qualifiedName,
+    bytecodeKind,
+    security03
+  );
+  const checkpointContract =
+    checkpoint.evidence.value.productionRelativeToSecurity03.contracts[
+      qualifiedName
+    ];
+  if (!checkpointContract) {
+    throw new Error(
+      `Stage 10 Security 04 checkpoint is missing ${qualifiedName}`
+    );
+  }
+  if (qualifiedName === "contracts/Wrapper.sol:Wrapper") {
+    const bytecode = checkpointContract[bytecodeKind];
+    if (
+      sha256(security03Opcodes) !==
+      bytecode.metadataStrippedOpcodes.security03Sha256
+    ) {
+      throw new Error(
+        `Stage 10 could not reconstruct Security 03 ${qualifiedName} ${bytecodeKind}`
+      );
+    }
+    const result = applyUnifiedOpcodeDiff(
+      security03Opcodes,
+      bytecode.metadataStrippedOpcodes.fullDiff.hunks
+    );
+    if (sha256(result) !== bytecode.metadataStrippedOpcodes.candidateSha256) {
+      throw new Error(
+        `Stage 10 could not reconstruct Security 04 ${qualifiedName} ${bytecodeKind}`
+      );
+    }
+    return result;
+  }
+  const expected = checkpointContract[bytecodeKind].candidate;
+  if (
+    !checkpointContract[bytecodeKind].equal ||
+    sha256(security03Opcodes) !== expected.metadataStrippedOpcodesSha256
+  ) {
+    throw new Error(
+      `Stage 10 Security 04 PCO ${bytecodeKind} equality anchor changed`
+    );
+  }
+  return security03Opcodes;
+}
+
+function security04CheckpointBytecode(checkpoint, qualifiedName, bytecodeKind) {
+  const checkpointContract =
+    checkpoint.evidence.value.productionRelativeToSecurity03.contracts[
+      qualifiedName
+    ];
+  if (qualifiedName === "contracts/Wrapper.sol:Wrapper") {
+    const bytecode = checkpointContract[bytecodeKind];
+    return {
+      rawKeccak256: bytecode.rawBytecode.candidateKeccak256,
+      rawSizeBytes: bytecode.rawBytecode.candidateSizeBytes,
+      metadataBytes: bytecode.rawBytecode.candidateMetadataBytes,
+      metadataStrippedKeccak256:
+        bytecode.metadataStrippedBytecode.candidateKeccak256,
+      metadataStrippedSizeBytes:
+        bytecode.metadataStrippedBytecode.candidateSizeBytes,
+      metadataStrippedOpcodesSha256:
+        bytecode.metadataStrippedOpcodes.candidateSha256,
+    };
+  }
+  return checkpointContract[bytecodeKind].candidate;
+}
+
+function security04CheckpointLegacyGasEntries(checkpoint) {
+  const previousEntries = security03CheckpointLegacyGasEntries(
+    security03CheckpointAnchor()
+  );
+  const evidence = checkpoint.evidence.value.legacyGasRelativeToSecurity03;
+  if (
+    evidence.fuzzSeed !== "0x721" ||
+    evidence.inventoryCount !== previousEntries.length ||
+    sha256(stableJson(previousEntries)) !== evidence.security03EntriesSha256
+  ) {
+    throw new Error(
+      "Stage 10 Security 04 checkpoint has an invalid legacy gas inventory"
+    );
+  }
+  for (const change of evidence.changes) {
+    const match = change.path.match(/^\$\.gasSnapshot\.entries\[(\d+)\]$/);
+    if (!match) throw new Error(`Invalid Security 04 gas path: ${change.path}`);
+    const index = Number(match[1]);
+    if (previousEntries[index] !== change.security03Value) {
+      throw new Error(`Security 04 gas anchor mismatch at index ${index}`);
+    }
+    previousEntries[index] = change.candidateValue;
+  }
+  if (sha256(stableJson(previousEntries)) !== evidence.candidateEntriesSha256) {
+    throw new Error("Stage 10 Security 04 legacy gas digest changed");
   }
   return previousEntries;
 }
@@ -6399,6 +7265,280 @@ function security04Evidence(review, baseline, candidate) {
   });
 }
 
+function stage10HardCompatibilityEvidence(baseline, candidate) {
+  const receiver = stage10ReceiverInventory(candidate);
+  const contracts = {};
+  for (const qualifiedName of Object.keys(baseline.contracts).sort()) {
+    const fields = {};
+    for (const field of [
+      "abi",
+      "functions",
+      "events",
+      "errors",
+      "storageLayout",
+    ]) {
+      const expected = baseline.contracts[qualifiedName][field];
+      const actual = candidate.contracts[qualifiedName]?.[field];
+      if (!valuesEqual(actual, expected)) {
+        throw new Error(
+          `Stage 10 hard compatibility changed: ${qualifiedName} ${field}`
+        );
+      }
+      fields[field] = { equal: true, sha256: sha256(stableJson(actual)) };
+    }
+    contracts[qualifiedName] = fields;
+  }
+  const globals = {};
+  for (const field of ["interfaces", "enums", "erc165"]) {
+    if (!valuesEqual(candidate[field], baseline[field])) {
+      throw new Error(`Stage 10 hard compatibility changed: ${field}`);
+    }
+    globals[field] = {
+      equal: true,
+      sha256: sha256(stableJson(candidate[field])),
+    };
+  }
+  if (!valuesEqual(candidate.compiler.settings, baseline.compiler.settings)) {
+    throw new Error("Stage 10 compiler settings changed");
+  }
+  return sorted({
+    contracts,
+    ...globals,
+    compiler: {
+      version: candidate.compiler.version,
+      longVersion: candidate.compiler.longVersion,
+      settingsEqual: true,
+      settingsSha256: sha256(stableJson(candidate.compiler.settings)),
+    },
+    behaviorTestInventory: {
+      hardhat: receiver.retainedHardhat,
+      retainedForge: receiver.retainedForge,
+      strengthenedReceiverTests: receiver.names,
+      receiverCases: receiver.cases,
+      inventoryChange: "none",
+      candidateForgeCount: receiver.candidateForgeCount,
+      total: candidate.tests.total,
+    },
+    parityFiles: security01ParityEvidence(),
+  });
+}
+
+function stage10RevertEvidence(baseline, candidate) {
+  const expected = security04ProjectRevertStrings(
+    baseline.projectRevertStrings
+  );
+  if (!valuesEqual(candidate.projectRevertStrings, expected)) {
+    throw new Error("Stage 10 project-owned revert evidence changed");
+  }
+  return sorted({
+    security04Count: expected.length,
+    candidateCount: candidate.projectRevertStrings.length,
+    equal: true,
+    sha256: sha256(stableJson(candidate.projectRevertStrings)),
+  });
+}
+
+function stage10ProductionEvidence(baseline, candidate, checkpoint) {
+  const contracts = {};
+  for (const qualifiedName of STAGE_08_PRODUCTION_CONTRACTS) {
+    const candidateContract = candidate.contracts[qualifiedName];
+    if (!candidateContract) {
+      throw new Error(`Stage 10 production output is missing ${qualifiedName}`);
+    }
+    const bytecodes = {};
+    for (const bytecodeKind of ["creationBytecode", "runtimeBytecode"]) {
+      const security04Bytecode = security04CheckpointBytecode(
+        checkpoint,
+        qualifiedName,
+        bytecodeKind
+      );
+      const security04Opcodes = security04CheckpointOpcodes(
+        baseline,
+        qualifiedName,
+        bytecodeKind,
+        checkpoint
+      );
+      if (
+        sha256(security04Opcodes) !==
+        security04Bytecode.metadataStrippedOpcodesSha256
+      ) {
+        throw new Error(
+          `Stage 10 Security 04 bytecode anchor changed for ${qualifiedName} ${bytecodeKind}`
+        );
+      }
+      const candidateBytecode = candidateContract[bytecodeKind];
+      const opcodesEqual =
+        security04Opcodes === candidateBytecode.metadataStrippedOpcodes;
+      if (opcodesEqual) {
+        throw new Error(
+          `Stage 10 expected an OpenZeppelin 5.6.1 opcode consequence for ${qualifiedName} ${bytecodeKind}`
+        );
+      }
+      bytecodes[bytecodeKind] = {
+        rawBytecode: {
+          security04Keccak256: security04Bytecode.rawKeccak256,
+          candidateKeccak256: candidateBytecode.keccak256,
+          security04SizeBytes: security04Bytecode.rawSizeBytes,
+          candidateSizeBytes: candidateBytecode.sizeBytes,
+          sizeDeltaBytes:
+            candidateBytecode.sizeBytes - security04Bytecode.rawSizeBytes,
+          security04MetadataBytes: security04Bytecode.metadataBytes,
+          candidateMetadataBytes: candidateBytecode.metadataBytes,
+        },
+        metadataStrippedBytecode: {
+          security04Keccak256: security04Bytecode.metadataStrippedKeccak256,
+          candidateKeccak256: candidateBytecode.metadataStrippedKeccak256,
+          security04SizeBytes: security04Bytecode.metadataStrippedSizeBytes,
+          candidateSizeBytes: candidateBytecode.metadataStrippedSizeBytes,
+          sizeDeltaBytes:
+            candidateBytecode.metadataStrippedSizeBytes -
+            security04Bytecode.metadataStrippedSizeBytes,
+        },
+        metadataStrippedOpcodes: {
+          security04Sha256: sha256(security04Opcodes),
+          candidateSha256: sha256(candidateBytecode.metadataStrippedOpcodes),
+          equal: false,
+          fullDiff: unifiedOpcodeDiff(
+            security04Opcodes,
+            candidateBytecode.metadataStrippedOpcodes
+          ),
+        },
+      };
+    }
+    const security04Runtime = security04CheckpointBytecode(
+      checkpoint,
+      qualifiedName,
+      "runtimeBytecode"
+    );
+    const candidateRuntimeSize = candidateContract.runtimeBytecode.sizeBytes;
+    if (candidateRuntimeSize > 24_576) {
+      throw new Error(`${qualifiedName} exceeds the EIP-170 size limit`);
+    }
+    contracts[qualifiedName] = {
+      ...bytecodes,
+      eip170: {
+        limitBytes: 24_576,
+        security04RuntimeSizeBytes: security04Runtime.rawSizeBytes,
+        candidateRuntimeSizeBytes: candidateRuntimeSize,
+        sizeDeltaBytes: candidateRuntimeSize - security04Runtime.rawSizeBytes,
+        security04WithinLimit: security04Runtime.rawSizeBytes <= 24_576,
+        candidateWithinLimit: true,
+      },
+    };
+  }
+  return sorted({
+    compiler: {
+      version: candidate.compiler.version,
+      longVersion: candidate.compiler.longVersion,
+      settingsSha256: sha256(stableJson(candidate.compiler.settings)),
+    },
+    contracts,
+  });
+}
+
+function stage10LegacyGasEvidence(candidate, checkpoint) {
+  const previousEntries = security04CheckpointLegacyGasEntries(checkpoint);
+  const candidateEntries = candidate.gasSnapshot.entries;
+  if (
+    candidate.gasSnapshot.fuzzSeed !== "0x721" ||
+    candidateEntries.length !== previousEntries.length
+  ) {
+    throw new Error("Stage 10 must preserve the legacy gas inventory");
+  }
+  const changes = [];
+  for (let index = 0; index < previousEntries.length; index += 1) {
+    if (previousEntries[index] !== candidateEntries[index]) {
+      changes.push({
+        path: `$.gasSnapshot.entries[${index}]`,
+        security04Value: previousEntries[index],
+        candidateValue: candidateEntries[index],
+      });
+    }
+  }
+  return sorted({
+    fuzzSeed: "0x721",
+    inventoryCount: previousEntries.length,
+    security04EntriesSha256: sha256(stableJson(previousEntries)),
+    candidateEntriesSha256: sha256(stableJson(candidateEntries)),
+    changedIndices: changes.map(({ path: reviewPath }) =>
+      Number(reviewPath.match(/\[(\d+)\]/)[1])
+    ),
+    changes,
+  });
+}
+
+function stage10KeyFlowGasEvidence(checkpoint, candidateGas) {
+  const previous = new Map(
+    checkpoint.evidence.value.keyFlowGasRelativeToSecurity03.comparisons.map(
+      (entry) => [entry.name, entry]
+    )
+  );
+  const current = new Map();
+  for (const [group, entries] of Object.entries(candidateGas.groups)) {
+    for (const entry of entries) current.set(entry.name, { group, ...entry });
+  }
+  if (!valuesEqual([...previous.keys()].sort(), [...current.keys()].sort())) {
+    throw new Error("Stage 10 must preserve the 12 key-flow gas inventory");
+  }
+  const comparisons = [...previous.keys()].sort().map((name) => {
+    const security04 = previous.get(name);
+    const candidateEntry = current.get(name);
+    if (
+      security04.group !== candidateEntry.group ||
+      security04.baselineGas !== candidateEntry.baselineGas ||
+      security04.maximumGas !== candidateEntry.maximumGas ||
+      !candidateEntry.withinLimit
+    ) {
+      throw new Error(`Stage 10 gas evidence is invalid for ${name}`);
+    }
+    return {
+      group: candidateEntry.group,
+      name,
+      security04Gas: security04.candidateGas,
+      candidateGas: candidateEntry.candidateGas,
+      deltaGas: candidateEntry.candidateGas - security04.candidateGas,
+      baselineGas: candidateEntry.baselineGas,
+      maximumGas: candidateEntry.maximumGas,
+      withinBaselineLimit: true,
+    };
+  });
+  return sorted({
+    baselinePath: candidateGas.baselinePath,
+    baselineSha256: candidateGas.baselineSha256,
+    baselinePolicy: candidateGas.policy,
+    fuzzSeed: candidateGas.fuzzSeed,
+    comparisons,
+  });
+}
+
+function stage10Evidence(review, baseline, candidate) {
+  const checkpoint = stage10CheckpointAnchor();
+  return sorted({
+    schemaVersion: 1,
+    candidate: review.candidate,
+    baselineSha256: review.baselineSha256,
+    mode: review.opcodeEvidence.mode,
+    inheritedSecurity04Checkpoint: STAGE_10_CHECKPOINT_BINDING,
+    sourceAndPackage: stage10SourceEvidence(candidate),
+    receiverCompatibility: stage10ReceiverInventory(candidate),
+    revertCallsites: stage10RevertEvidence(baseline, candidate),
+    hardCompatibility: stage10HardCompatibilityEvidence(baseline, candidate),
+    productionRelativeToSecurity04: stage10ProductionEvidence(
+      baseline,
+      candidate,
+      checkpoint
+    ),
+    legacyGasRelativeToSecurity04: stage10LegacyGasEvidence(
+      candidate,
+      checkpoint
+    ),
+    keyFlowGasRelativeToSecurity04: stage10KeyFlowGasEvidence(
+      checkpoint,
+      stage08GasEvidence()
+    ),
+  });
+}
+
 function security01ComparisonBaseline(baseline, candidate) {
   validateSecurity01Inventory(candidate);
   security01SourceEvidence();
@@ -6606,6 +7746,50 @@ function security04ComparisonBaseline(baseline, candidate) {
   expectedToolchain.forge[2] = candidate.toolchain.forge[2];
   if (!valuesEqual(candidate.toolchain, expectedToolchain)) {
     throw new Error("Security 04 must preserve the pinned Forge identity");
+  }
+  comparison.toolchain = expectedToolchain;
+  return comparison;
+}
+
+function stage10ComparisonBaseline(baseline, candidate) {
+  stage10ReceiverInventory(candidate);
+  stage10SourceEvidence(candidate);
+  const checkpoint = stage10CheckpointAnchor();
+  const comparison = deepClone(baseline);
+  comparison.compiler.version = STAGE_08_COMPILER_VERSION;
+  comparison.compiler.longVersion = STAGE_08_COMPILER_LONG_VERSION;
+  for (const qualifiedName of STAGE_08_PRODUCTION_CONTRACTS) {
+    for (const bytecodeKind of ["creationBytecode", "runtimeBytecode"]) {
+      const bytecode = security04CheckpointBytecode(
+        checkpoint,
+        qualifiedName,
+        bytecodeKind
+      );
+      Object.assign(comparison.contracts[qualifiedName][bytecodeKind], {
+        keccak256: bytecode.rawKeccak256,
+        sizeBytes: bytecode.rawSizeBytes,
+        metadataBytes: bytecode.metadataBytes,
+        metadataStrippedKeccak256: bytecode.metadataStrippedKeccak256,
+        metadataStrippedSizeBytes: bytecode.metadataStrippedSizeBytes,
+        metadataStrippedOpcodes: security04CheckpointOpcodes(
+          baseline,
+          qualifiedName,
+          bytecodeKind,
+          checkpoint
+        ),
+      });
+    }
+  }
+  comparison.gasSnapshot.entries =
+    security04CheckpointLegacyGasEntries(checkpoint);
+  comparison.projectRevertStrings = security04ProjectRevertStrings(
+    baseline.projectRevertStrings
+  );
+  comparison.tests = deepClone(candidate.tests);
+  const expectedToolchain = deepClone(baseline.toolchain);
+  expectedToolchain.forge[2] = candidate.toolchain.forge[2];
+  if (!valuesEqual(candidate.toolchain, expectedToolchain)) {
+    throw new Error("Stage 10 must preserve the pinned Forge identity");
   }
   comparison.toolchain = expectedToolchain;
   return comparison;
@@ -7494,6 +8678,204 @@ function security04NegativeProbes(baseline, candidate, review) {
   return probes;
 }
 
+function expectStage10Rejection(name, operation) {
+  try {
+    operation();
+  } catch (_error) {
+    return name;
+  }
+  throw new Error(`Stage 10 negative probe unexpectedly passed: ${name}`);
+}
+
+function stage10NegativeProbes(baseline, candidate, review) {
+  const probes = [];
+  const reject = (name, operation) => {
+    probes.push(expectStage10Rejection(name, operation));
+  };
+  const rejectCandidate = (name, mutate) => {
+    const drift = deepClone(candidate);
+    mutate(drift);
+    reject(name, () => validateStage10Candidate(baseline, drift));
+  };
+
+  const checkpointReview = deepClone(review);
+  checkpointReview.security04Checkpoint.commit = "0".repeat(40);
+  reject("Security 04 checkpoint commit drift", () =>
+    reviewPolicy(checkpointReview)
+  );
+  const checkpointEvidence = deepClone(review);
+  checkpointEvidence.security04Checkpoint.evidence.sha256 = "0".repeat(64);
+  reject("Security 04 checkpoint evidence drift", () =>
+    reviewPolicy(checkpointEvidence)
+  );
+  const checkpointReviewHash = deepClone(review);
+  checkpointReviewHash.security04Checkpoint.review.sha256 = "0".repeat(64);
+  reject("Security 04 checkpoint review drift", () =>
+    reviewPolicy(checkpointReviewHash)
+  );
+  const receiverReview = deepClone(review);
+  receiverReview.receiverEvidence.sourceSha256 = "0".repeat(64);
+  reject("receiver review evidence drift", () => reviewPolicy(receiverReview));
+
+  rejectCandidate("Hardhat count drift", (drift) => {
+    drift.tests.hardhat.count -= 1;
+  });
+  rejectCandidate("Hardhat identifier drift", (drift) => {
+    drift.tests.hardhat.names[0] += " drift";
+  });
+  rejectCandidate("retained Forge identifier removal", (drift) => {
+    const receiverNames = new Set(stage10ReceiverReviewEvidence().names);
+    const index = drift.tests.forge.names.findIndex(
+      (name) => !receiverNames.has(name)
+    );
+    drift.tests.forge.names.splice(index, 1);
+    drift.tests.forge.count -= 1;
+    drift.tests.total -= 1;
+  });
+  rejectCandidate("unreviewed Forge identifier addition", (drift) => {
+    drift.tests.forge.names.push(
+      "test/solidity/fuzz/Unexpected.t.sol:X:test_x"
+    );
+    drift.tests.forge.names.sort();
+    drift.tests.forge.count += 1;
+    drift.tests.total += 1;
+  });
+  rejectCandidate("compiler version drift", (drift) => {
+    drift.compiler.version = "0.8.35";
+  });
+  rejectCandidate("compiler settings drift", (drift) => {
+    drift.compiler.settings.optimizer.enabled = true;
+  });
+  rejectCandidate("ABI drift", (drift) => {
+    drift.contracts["contracts/Wrapper.sol:Wrapper"].abi.pop();
+  });
+  rejectCandidate("function selector drift", (drift) => {
+    drift.contracts["contracts/Wrapper.sol:Wrapper"].functions[0].selector =
+      "0x00000000";
+  });
+  rejectCandidate("event drift", (drift) => {
+    drift.contracts["contracts/Wrapper.sol:Wrapper"].events.pop();
+  });
+  rejectCandidate("custom error drift", (drift) => {
+    drift.contracts["contracts/Wrapper.sol:Wrapper"].errors.pop();
+  });
+  rejectCandidate("storage layout drift", (drift) => {
+    drift.contracts[
+      "contracts/Wrapper.sol:Wrapper"
+    ].storageLayout.storage[0].slot = "999";
+  });
+  rejectCandidate("interface drift", (drift) => {
+    drift.interfaces[Object.keys(drift.interfaces)[0]].interfaceId =
+      "0x00000000";
+  });
+  rejectCandidate("enum ordinal drift", (drift) => {
+    drift.enums[0].members[0].ordinal = 999;
+  });
+  rejectCandidate("ERC165 drift", (drift) => {
+    drift.erc165.probes.Wrapper[0].supported =
+      !drift.erc165.probes.Wrapper[0].supported;
+  });
+  rejectCandidate("project revert drift", (drift) => {
+    drift.projectRevertStrings[0].value += " drift";
+  });
+
+  const bytecodeDrift = deepClone(candidate);
+  bytecodeDrift.contracts[
+    "contracts/Wrapper.sol:Wrapper"
+  ].runtimeBytecode.keccak256 = `0x${"00".repeat(32)}`;
+  reject("unreviewed bytecode value drift", () => {
+    const differences = collectDifferences(
+      stage10ComparisonBaseline(baseline, bytecodeDrift),
+      bytecodeDrift
+    );
+    validateReviewedDifferences(
+      review,
+      fs.readFileSync(BASELINE_PATH),
+      differences
+    );
+  });
+  const gasDrift = deepClone(candidate);
+  gasDrift.gasSnapshot.entries[0] += " drift";
+  reject("unreviewed gas value drift", () => {
+    const differences = collectDifferences(
+      stage10ComparisonBaseline(baseline, gasDrift),
+      gasDrift
+    );
+    validateReviewedDifferences(
+      review,
+      fs.readFileSync(BASELINE_PATH),
+      differences
+    );
+  });
+  const protectedAllowance = deepClone(review);
+  protectedAllowance.allowedDifferences.push({
+    path: "$.contracts.contracts/Wrapper.sol:Wrapper.abi[0]",
+    baselineValue: null,
+    candidateValue: null,
+    reason: "probe",
+  });
+  reject("protected ABI waiver", () =>
+    validateReviewedDifferences(
+      protectedAllowance,
+      fs.readFileSync(BASELINE_PATH),
+      collectDifferences(
+        stage10ComparisonBaseline(baseline, candidate),
+        candidate
+      )
+    )
+  );
+
+  const boundFiles = stage10BoundFileEvidence();
+  const boundFileDrift = deepClone(boundFiles);
+  boundFileDrift[Object.keys(boundFileDrift)[0]] = "0".repeat(64);
+  reject("bound file digest drift", () =>
+    validateExactFileDigests(
+      boundFileDrift,
+      STAGE_10_BOUND_FILES,
+      "stage10Files"
+    )
+  );
+  const compilerClosure = stage10CompilerSourceEvidence();
+  const compilerClosureDrift = deepClone(compilerClosure);
+  compilerClosureDrift.candidateClosureSha256 = "0".repeat(64);
+  reject("compiler source closure drift", () => {
+    if (!valuesEqual(compilerClosureDrift, compilerClosure)) {
+      throw new Error("compiler closure mismatch");
+    }
+  });
+  const dependency = stage10DependencyEvidence();
+  const dependencyDrift = deepClone(dependency);
+  dependencyDrift.candidateVersion = "5.6.0";
+  reject("dependency version drift", () => {
+    if (!valuesEqual(dependencyDrift, dependency)) {
+      throw new Error("dependency mismatch");
+    }
+  });
+  const importClosure = deepClone(
+    compilerClosure.productionImportClosure.openzeppelin
+  );
+  importClosure.push("@openzeppelin/contracts/token/ERC721/ERC721.sol");
+  reject("OpenZeppelin ERC721 import", () => {
+    if (
+      !valuesEqual(
+        importClosure,
+        [...STAGE_10_EXPECTED_PRODUCTION_OPENZEPPELIN_IMPORTS].sort()
+      )
+    ) {
+      throw new Error("production import closure mismatch");
+    }
+  });
+
+  const evidencePath = opcodeEvidencePath(review);
+  const checkedInEvidence = JSON.parse(fs.readFileSync(evidencePath, "utf8"));
+  const staleEvidence = deepClone(checkedInEvidence);
+  staleEvidence.sourceAndPackage.dependency.candidateVersion = "5.6.0";
+  reject("stale Stage 10 evidence", () =>
+    validateExactOpcodeEvidence(staleEvidence, checkedInEvidence)
+  );
+  return probes;
+}
+
 function reviewedOpcodeEvidence(review, baseline, candidate) {
   const configuration = review.opcodeEvidence;
   if (!configuration) return null;
@@ -7506,6 +8888,7 @@ function reviewedOpcodeEvidence(review, baseline, candidate) {
       "security-02-security-01-relative-full-diff",
       "security-03-security-02-relative-full-diff",
       "security-04-security-03-relative-wrapper-only",
+      "stage-10-security-04-relative-full-diff",
     ].includes(configuration.mode)
   ) {
     throw new Error(`Unsupported opcode evidence mode: ${configuration.mode}`);
@@ -7530,6 +8913,9 @@ function reviewedOpcodeEvidence(review, baseline, candidate) {
   }
   if (configuration.mode === "security-04-security-03-relative-wrapper-only") {
     return security04Evidence(review, baseline, candidate);
+  }
+  if (configuration.mode === "stage-10-security-04-relative-full-diff") {
+    return stage10Evidence(review, baseline, candidate);
   }
 
   const contracts = {};
@@ -7745,6 +9131,7 @@ function expectedProjectRevertStrings(command, protectedRevertStrings) {
   if (command === "write-security-02-review") return security02Candidate;
   if (command === "write-security-03-review") return security03Candidate;
   if (command === "write-security-04-review") return security04Candidate;
+  if (command === "write-stage-10-review") return security04Candidate;
   if (command === "diff") {
     return {
       baseline: protectedRevertStrings,
@@ -7762,6 +9149,7 @@ function expectedProjectRevertStrings(command, protectedRevertStrings) {
       "security-02-negative-probes",
       "security-03-negative-probes",
       "security-04-negative-probes",
+      "stage-10-negative-probes",
     ].includes(command) &&
     fs.existsSync(REVIEW_PATH)
   ) {
@@ -7770,6 +9158,7 @@ function expectedProjectRevertStrings(command, protectedRevertStrings) {
     if (review.policy === SECURITY_02_POLICY) return security02Candidate;
     if (review.policy === SECURITY_03_POLICY) return security03Candidate;
     if (review.policy === SECURITY_04_POLICY) return security04Candidate;
+    if (review.policy === STAGE_10_POLICY) return security04Candidate;
   }
   return protectedRevertStrings;
 }
@@ -7787,17 +9176,19 @@ async function main() {
       "security-02-negative-probes",
       "security-03-negative-probes",
       "security-04-negative-probes",
+      "stage-10-negative-probes",
       "write-stage-08-review",
       "write-stage-09-review",
       "write-security-01-review",
       "write-security-02-review",
       "write-security-03-review",
       "write-security-04-review",
+      "write-stage-10-review",
       "write-evidence",
     ].includes(command)
   ) {
     console.error(
-      "Usage: node scripts/compatibility.js <capture|check|diff|revert-strings|stage-09-negative-probes|security-01-negative-probes|security-02-negative-probes|security-03-negative-probes|security-04-negative-probes|write-stage-08-review|write-stage-09-review|write-security-01-review|write-security-02-review|write-security-03-review|write-security-04-review|write-evidence>"
+      "Usage: node scripts/compatibility.js <capture|check|diff|revert-strings|stage-09-negative-probes|security-01-negative-probes|security-02-negative-probes|security-03-negative-probes|security-04-negative-probes|stage-10-negative-probes|write-stage-08-review|write-stage-09-review|write-security-01-review|write-security-02-review|write-security-03-review|write-security-04-review|write-stage-10-review|write-evidence>"
     );
     process.exitCode = 2;
     return;
@@ -7880,6 +9271,7 @@ async function main() {
     "security-02-negative-probes",
     "security-03-negative-probes",
     "security-04-negative-probes",
+    "stage-10-negative-probes",
   ].includes(command);
   const security01ReviewActive =
     command === "write-security-01-review" ||
@@ -7893,7 +9285,12 @@ async function main() {
   const security04ReviewActive =
     command === "write-security-04-review" ||
     (inheritedReviewCommand && existingReview?.policy === SECURITY_04_POLICY);
-  const comparisonBaseline = security04ReviewActive
+  const stage10ReviewActive =
+    command === "write-stage-10-review" ||
+    (inheritedReviewCommand && existingReview?.policy === STAGE_10_POLICY);
+  const comparisonBaseline = stage10ReviewActive
+    ? stage10ComparisonBaseline(baseline, manifest)
+    : security04ReviewActive
     ? security04ComparisonBaseline(baseline, manifest)
     : security03ReviewActive
     ? security03ComparisonBaseline(baseline, manifest)
@@ -8015,6 +9412,23 @@ async function main() {
     );
     return;
   }
+  if (command === "write-stage-10-review") {
+    const review = stage10Review(baselineBytes, differences, manifest);
+    validateReviewedDifferences(review, baselineBytes, differences);
+    const policy = reviewPolicy(review);
+    policy.validateCandidate(baseline, manifest);
+    validateSafetyEvidence(review);
+    fs.writeFileSync(REVIEW_PATH, stableJson(review));
+    console.log(
+      `Wrote ${
+        differences.length
+      } exact Stage 10 reviewed differences to ${path.relative(
+        ROOT,
+        REVIEW_PATH
+      )}`
+    );
+    return;
+  }
   if (command === "stage-09-negative-probes") {
     const probes = stage09NegativeProbes(baseline, manifest);
     console.log(`Stage 9 negative probes passed: ${probes.join("; ")}`);
@@ -8078,6 +9492,22 @@ async function main() {
     validateSafetyEvidence(review);
     const probes = security04NegativeProbes(baseline, manifest, review);
     console.log(`Security 04 negative probes passed: ${probes.join("; ")}`);
+    return;
+  }
+  if (command === "stage-10-negative-probes") {
+    const review = readReviewedDifferences();
+    if (!review || review.policy !== STAGE_10_POLICY) {
+      throw new Error(
+        "Stage 10 negative probes require the exact Stage 10 review"
+      );
+    }
+    validateReviewedDifferences(review, baselineBytes, differences);
+    const policy = reviewPolicy(review);
+    policy.validateCandidate(baseline, manifest);
+    validateSafetyEvidence(review);
+    validateOpcodeEvidence(review, baseline, manifest);
+    const probes = stage10NegativeProbes(baseline, manifest, review);
+    console.log(`Stage 10 negative probes passed: ${probes.join("; ")}`);
     return;
   }
   const review = existingReview;

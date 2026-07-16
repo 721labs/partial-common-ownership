@@ -1,6 +1,6 @@
 // contracts/token/modules/interfaces/IRemittance.sol
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.20;
 
 interface IRemittance {
   /// @notice Enables previous owners to withdraw remittances that failed to send.

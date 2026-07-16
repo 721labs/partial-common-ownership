@@ -43,19 +43,27 @@ $ pnpm compatibility
 $ pnpm test:package
 ```
 
+The package gate also inspects the packed bytes rather than trusting the
+working tree. It requires exact `@openzeppelin/contracts@5.6.1` as the sole
+OpenZeppelin declaration, exactly 13 shipped production Solidity sources, and
+the exact `^0.8.20` pragma in every one before compiling clean Hardhat and Forge
+consumers.
+
 Repository tool configurations compile with exactly Solidity 0.8.36 while
 retaining the London EVM target, disabled optimizer with 200 configured runs,
-`viaIR = false`, and the existing metadata mode. Production sources continue
-to advertise the compatible `^0.8.12` range until the separately reviewed
-OpenZeppelin 5 upgrade. Test and fixture pragmas are pinned to exact 0.8.36.
+`viaIR = false`, and the existing metadata mode. Production sources advertise
+the compatible `^0.8.20` range required by the OpenZeppelin 5 dependency. Test
+and fixture pragmas remain pinned to exact 0.8.36. The custom ERC721 is retained;
+the dependency supplies interfaces, `Context`, and `ERC165`, not production
+ownership or transfer semantics.
 
 The compiler warning gates perform forced builds and require the complete,
-exact reviewed warning inventories from both compiler entry points. Hardhat
-currently emits 10 Solidity warnings and Forge emits 65, including warnings
-from tests and dependencies, mutability suggestions, and test-contract
-code-size warnings. Forge lint
-diagnostics are captured separately from the compiler JSON and are not counted
-as Solidity compiler warnings.
+exact reviewed warning inventories from both compiler entry points, including
+warnings from production code, fixtures, and Forge tests. Mutability
+suggestions, the test-only unchecked call, and expected test-contract code-size
+warnings are included rather than globally ignored. Forge lint diagnostics are
+captured separately from the compiler JSON and are not counted as Solidity
+compiler warnings.
 
 ```console
 $ pnpm compiler-warnings:hardhat
@@ -110,6 +118,8 @@ The runner rejects version drift, unreviewed suppression comments, and every
 untriaged high- or medium-impact finding. The reviewed findings and their
 dispositions are documented in
 `docs/security/slither-0.11.5-triage.md`.
+The dependency-specific review is documented in
+`docs/security/custom-erc721-vs-openzeppelin-5.6.1.md`.
 
 ## Gas
 
@@ -122,10 +132,9 @@ When tests are run, it calculates the average gas usage of frequently used metho
 The Solidity compiler reports unused parameters because the ERC721 transfer
 methods are overridden to ensure purchasing and foreclosure remain the only
 transfer paths. It also reports the deliberately deferred `send`/`transfer`
-deprecations, upstream OpenZeppelin assembly annotations, compiler mutability
-suggestions, a test-only unchecked call, and expected oversized test harnesses.
-These warnings are reviewed by the exact complete allowlist above; they must
-not be ignored globally.
+deprecations, compiler mutability suggestions, a test-only unchecked call, and
+expected oversized test harnesses. These warnings are reviewed by the exact
+complete allowlist above; they must not be ignored globally.
 
 ## Modules
 

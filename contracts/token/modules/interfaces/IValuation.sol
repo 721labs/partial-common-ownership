@@ -1,6 +1,6 @@
 // contracts/token/modules/interfaces/IValuation.sol
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.20;
 
 interface IValuation {
   /// @notice Returns the self-assessed valuation for a token.
