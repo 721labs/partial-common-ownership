@@ -41,6 +41,8 @@ contract PCOInvariantHandler is Test {
 
     bytes32 private constant CURRENT_VALUATION_REVERT =
         keccak256(abi.encodeWithSignature("Error(string)", "Current valuation is incorrect"));
+    bytes32 private constant POST_TAX_AUTHORIZATION_REVERT =
+        keccak256(abi.encodeWithSignature("Error(string)", "ERC721: caller is not owner nor approved"));
 
     TestPCOToken public immutable token;
     address payable public immutable beneficiary;
@@ -57,6 +59,7 @@ contract PCOInvariantHandler is Test {
     bool public ghostBeneficiaryNoTax = true;
     bool public ghostBeneficiaryTakeoverDepositZero = true;
     bool public ghostOutstandingOneTime = true;
+    bool public ghostPostTaxAuthorizationRollback = true;
 
     uint256 public ghostTaxSuccessfullyRemitted;
     uint256 public ghostRejectingTaxWithdrawn;
@@ -68,6 +71,7 @@ contract PCOInvariantHandler is Test {
     uint256 public ghostDirectTransfers;
     uint256 public ghostBeneficiaryDirectTransfers;
     uint256 public ghostBeneficiaryDirectTransfersWithDeposit;
+    uint256 public ghostPostTaxAuthorizationChecks;
 
     struct MutationSnapshot {
         address owner;
@@ -192,10 +196,37 @@ contract PCOInvariantHandler is Test {
             return;
         }
 
+        if (token.foreclosed(tokenId)) {
+            _expectPostTaxAuthorizationRollback(tokenId, owner);
+            return;
+        }
+
         MutationSnapshot memory before = _snapshot(tokenId);
         vm.prank(owner);
         token.exit(tokenId);
         _accountMutation(tokenId, before);
+    }
+
+    /// @notice Deterministically reaches the pending-foreclosure exit path so
+    /// the post-collection authorization rollback cannot become vacuous if the
+    /// invariant action distribution changes.
+    function exercisePendingForeclosureExit(uint256 tokenSeed_) external {
+        uint256 tokenId = _tokenId(tokenSeed_);
+        _setBeneficiary(tokenId, beneficiary);
+        _ensureOwner(tokenId, alice, 1 ether, 2 ether);
+        if (token.ownerOf(tokenId) != alice) {
+            ghostPostTaxAuthorizationRollback = false;
+            return;
+        }
+
+        uint256 foreclosure = token.foreclosureTime(tokenId);
+        if (foreclosure >= block.timestamp) vm.warp(foreclosure + 1);
+        if (!token.foreclosed(tokenId)) {
+            ghostPostTaxAuthorizationRollback = false;
+            return;
+        }
+
+        _expectPostTaxAuthorizationRollback(tokenId, alice);
     }
 
     function purchaseForeclosure(uint256 tokenSeed_, uint256 buyerSeed_, uint256 valuationSeed_) external {
@@ -391,6 +422,41 @@ contract PCOInvariantHandler is Test {
         _accountMutation(tokenId_, before);
     }
 
+    function _expectPostTaxAuthorizationRollback(uint256 tokenId_, address caller_) internal {
+        MutationSnapshot memory before = _snapshot(tokenId_);
+        bytes32 stateBefore = _postTaxMutationStateHash(tokenId_);
+
+        vm.prank(caller_);
+        (bool success, bytes memory returnData) =
+            address(token).call(abi.encodeWithSelector(token.exit.selector, tokenId_));
+
+        if (
+            success || keccak256(returnData) != POST_TAX_AUTHORIZATION_REVERT
+                || _postTaxMutationStateHash(tokenId_) != stateBefore
+        ) ghostPostTaxAuthorizationRollback = false;
+
+        _accountMutation(tokenId_, before);
+        ghostPostTaxAuthorizationChecks++;
+    }
+
+    function _postTaxMutationStateHash(uint256 tokenId_) internal view returns (bytes32) {
+        return keccak256(
+            abi.encode(
+                token.ownerOf(tokenId_),
+                token.getApproved(tokenId_),
+                token.valuationOf(tokenId_),
+                token.depositOf(tokenId_),
+                token.lastCollectionTimeOf(tokenId_),
+                token.taxationCollected(tokenId_),
+                token.taxCollectedSinceLastTransferOf(tokenId_),
+                token.outstandingRemittances(beneficiary),
+                token.outstandingRemittances(address(rejectingTaxRecipient)),
+                token.outstandingRemittances(address(rejectingSeller)),
+                address(token).balance
+            )
+        );
+    }
+
     function _ensureOwner(uint256 tokenId_, address desiredOwner_, uint256 valuation_, uint256 minimumDeposit_)
         internal
     {
@@ -565,6 +631,7 @@ contract PCOInvariantTest is Test {
         handler.withdrawOutstanding(1);
         handler.exerciseBeneficiaryOwnership(0, 3 ether, 1 days);
         handler.directTransferToBeneficiary(1);
+        handler.exercisePendingForeclosureExit(0);
         _assertRequiredPathsReached();
 
         targetContract(address(handler));
@@ -647,6 +714,7 @@ contract PCOInvariantTest is Test {
 
     function invariant_takeoverLockAlwaysReleases() public {
         assertTrue(handler.ghostTakeoverLockReleased());
+        assertTrue(handler.ghostPostTaxAuthorizationRollback());
     }
 
     function invariant_outstandingRemittanceIsOneTime() public {
@@ -662,5 +730,6 @@ contract PCOInvariantTest is Test {
         assertGt(handler.ghostDirectTransfers(), 0, "direct ERC721 transfer not reached");
         assertGt(handler.ghostBeneficiaryDirectTransfers(), 0, "beneficiary transfer not reached");
         assertGt(handler.ghostBeneficiaryDirectTransfersWithDeposit(), 0, "beneficiary transfer deposit not preserved");
+        assertGt(handler.ghostPostTaxAuthorizationChecks(), 0, "post-tax authorization rollback not reached");
     }
 }

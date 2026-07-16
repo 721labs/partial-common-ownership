@@ -2,6 +2,7 @@
 pragma solidity 0.8.36;
 
 import {Test} from "forge-std/Test.sol";
+import {Vm} from "forge-std/Vm.sol";
 import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import {TestNFT} from "../../../contracts/test/TestNFT.sol";
 import {TestWrapper} from "../../../contracts/test/TestWrapper.sol";
@@ -36,6 +37,28 @@ contract WrapperFuzzTest is Test {
         uint256 wrapperEth;
     }
 
+    struct TakeoverSnapshot {
+        address owner;
+        address approval;
+        uint256 valuation;
+        uint256 deposit;
+        uint256 taxation;
+        uint256 transferTax;
+        uint256 collectionTime;
+        uint256 aliceEth;
+        uint256 bobEth;
+        uint256 carolEth;
+        uint256 wrapperEth;
+        uint256 aliceOutstanding;
+        uint256 bobOutstanding;
+        uint256 carolOutstanding;
+        uint256 aliceTokens;
+        uint256 bobTokens;
+        uint256 carolTokens;
+        uint256 wrapperTokens;
+        bytes32 lock;
+    }
+
     uint256 private constant TOKEN_COUNT = 3;
     uint256 private constant MAX_VALUATION = 100 ether;
     uint256 private constant MAX_DEPOSIT = 100 ether;
@@ -52,6 +75,14 @@ contract WrapperFuzzTest is Test {
     uint256 private constant DEPOSITS_SLOT = 12;
     uint256 private constant LOCKED_SLOT = 13;
     uint256 private constant WRAPPED_TOKEN_MAP_SLOT = 14;
+
+    bytes32 private constant APPROVAL_SIGNATURE = keccak256("Approval(address,address,uint256)");
+    bytes32 private constant TRANSFER_SIGNATURE = keccak256("Transfer(address,address,uint256)");
+    bytes32 private constant TAKEOVER_SIGNATURE = keccak256("LogLeaseTakeover(uint256,address,uint256)");
+    bytes32 private constant FORECLOSURE_SIGNATURE = keccak256("LogForeclosure(uint256,address)");
+    bytes32 private constant COLLECTION_SIGNATURE = keccak256("LogCollection(uint256,uint256)");
+    bytes32 private constant REMITTANCE_SIGNATURE = keccak256("LogRemittance(uint8,address,uint256)");
+    bytes32 private constant VALUATION_SIGNATURE = keccak256("LogValuation(uint256,uint256)");
 
     address private constant ALICE = address(0xA11CE);
     address private constant BOB = address(0xB0B);
@@ -350,34 +381,251 @@ contract WrapperFuzzTest is Test {
         vm.stopPrank();
     }
 
-    /// @dev DEFERRED ACCOUNTING FINDING: a beneficiary takeover validates its
-    /// payment while the token still reports the prior owner, but tax collection
-    /// can foreclose before the purchase is settled. The purchase is then treated
-    /// as coming from Wrapper, so the beneficiary's current-valuation payment is
-    /// neither remitted nor retained as a deposit. It remains as exact untracked
-    /// contract surplus. This test freezes that legacy behavior pending separately
-    /// authorized semantic remediation.
+    /// @dev The legacy identifier is retained for compatibility-inventory
+    /// stability. Payment is now validated against the owner after collection,
+    /// so crossing foreclosure cannot strand submitted value as surplus.
     function test_regression_deferredBeneficiaryTakeoverAcrossForeclosureLeavesUntrackedValuationSurplus() public {
+        _assertBeneficiaryCrossingForeclosureIsStabilized();
+
+        _resetWrapperFixtures();
+        _assertNonBeneficiaryCrossingForeclosureIsStabilized();
+
+        _resetWrapperFixtures();
+        _assertActiveOwnerMalformedPaymentRollsBackCollection();
+    }
+
+    function _assertBeneficiaryCrossingForeclosureIsStabilized() private {
         uint256 currentValuation = 2 ether;
         uint256 wrappedId = _wrapAsAlice(1, currentValuation, BOB, MAX_TAX_RATE, 1, 1 ether);
 
         assertEq(wrapper.ownerOf(wrappedId), ALICE);
         assertTrue(wrapper.foreclosed(wrappedId));
 
+        TakeoverSnapshot memory before_ = _takeoverSnapshot(wrappedId);
+        vm.recordLogs();
         vm.prank(BOB);
-        wrapper.takeoverLease{value: currentValuation}(wrappedId, currentValuation, currentValuation);
+        (bool success, bytes memory returnData) = address(wrapper).call{value: currentValuation}(
+            abi.encodeWithSelector(wrapper.takeoverLease.selector, wrappedId, currentValuation, currentValuation)
+        );
+        Vm.Log[] memory revertedLogs = vm.getRecordedLogs();
 
-        uint256 deposits = wrapper.depositOf(wrappedId);
-        uint256 liabilities = wrapper.outstandingRemittances(ALICE) + wrapper.outstandingRemittances(BOB)
-            + wrapper.outstandingRemittances(CAROL);
-        uint256 untrackedSurplus = address(wrapper).balance - deposits - liabilities;
+        assertFalse(success);
+        assertEq(returnData, _error("Msg contains value"));
+        _assertPendingForeclosurePrefix(revertedLogs, wrappedId);
+        assertEq(revertedLogs.length, 6);
+        _assertTakeoverStateUnchanged(wrappedId, before_);
+        assertEq(underlying.ownerOf(1), address(wrapper));
 
+        uint256 bobBalanceBefore = BOB.balance;
+        uint256 aliceBalanceBefore = ALICE.balance;
+        vm.recordLogs();
+        vm.prank(BOB);
+        wrapper.takeoverLease(wrappedId, currentValuation, currentValuation);
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+
+        _assertPendingForeclosureTakeoverLogs(logs, wrappedId, BOB, currentValuation);
         assertEq(wrapper.ownerOf(wrappedId), BOB);
         assertEq(wrapper.valuationOf(wrappedId), currentValuation);
-        assertEq(deposits, 0);
-        assertEq(liabilities, 0);
-        assertEq(address(wrapper).balance, currentValuation);
-        assertEq(untrackedSurplus, currentValuation);
+        assertEq(wrapper.depositOf(wrappedId), 0);
+        assertEq(wrapper.taxationCollected(wrappedId), 1 ether);
+        assertEq(wrapper.taxCollectedSinceLastTransferOf(wrappedId), 0);
+        assertEq(wrapper.lastCollectionTimeOf(wrappedId), block.timestamp);
+        assertEq(wrapper.getApproved(wrappedId), address(0));
+        assertEq(BOB.balance, bobBalanceBefore + 1 ether);
+        assertEq(ALICE.balance, aliceBalanceBefore);
+        assertEq(address(wrapper).balance, 0);
+        assertEq(_knownLiabilities(), 0);
+        assertEq(underlying.ownerOf(1), address(wrapper));
+        assertEq(vm.load(address(wrapper), _mappingSlot(wrappedId, LOCKED_SLOT)), bytes32(0));
+    }
+
+    function _assertNonBeneficiaryCrossingForeclosureIsStabilized() private {
+        uint256 currentValuation = 2 ether;
+        uint256 wrappedId = _wrapAsAlice(1, currentValuation, BOB, MAX_TAX_RATE, 1, 1 ether);
+
+        TakeoverSnapshot memory before_ = _takeoverSnapshot(wrappedId);
+        vm.recordLogs();
+        vm.prank(CAROL);
+        (bool success, bytes memory returnData) = address(wrapper)
+            .call(abi.encodeWithSelector(wrapper.takeoverLease.selector, wrappedId, currentValuation, currentValuation));
+        Vm.Log[] memory revertedLogs = vm.getRecordedLogs();
+
+        assertFalse(success);
+        assertEq(returnData, _error("Message does not contain surplus value for deposit"));
+        _assertPendingForeclosurePrefix(revertedLogs, wrappedId);
+        assertEq(revertedLogs.length, 6);
+        _assertTakeoverStateUnchanged(wrappedId, before_);
+
+        uint256 bobBalanceBefore = BOB.balance;
+        uint256 carolBalanceBefore = CAROL.balance;
+        uint256 aliceBalanceBefore = ALICE.balance;
+        vm.recordLogs();
+        vm.prank(CAROL);
+        wrapper.takeoverLease{value: 1 wei}(wrappedId, currentValuation, currentValuation);
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+
+        _assertPendingForeclosureTakeoverLogs(logs, wrappedId, CAROL, currentValuation);
+        assertEq(wrapper.ownerOf(wrappedId), CAROL);
+        assertEq(wrapper.valuationOf(wrappedId), currentValuation);
+        assertEq(wrapper.depositOf(wrappedId), 1 wei);
+        assertEq(wrapper.taxationCollected(wrappedId), 1 ether);
+        assertEq(wrapper.taxCollectedSinceLastTransferOf(wrappedId), 0);
+        assertEq(wrapper.lastCollectionTimeOf(wrappedId), block.timestamp);
+        assertEq(wrapper.getApproved(wrappedId), address(0));
+        assertEq(BOB.balance, bobBalanceBefore + 1 ether);
+        assertEq(CAROL.balance, carolBalanceBefore - 1 wei);
+        assertEq(ALICE.balance, aliceBalanceBefore);
+        assertEq(address(wrapper).balance, 1 wei);
+        assertEq(address(wrapper).balance, wrapper.depositOf(wrappedId) + _knownLiabilities());
+        assertEq(underlying.ownerOf(1), address(wrapper));
+        assertEq(vm.load(address(wrapper), _mappingSlot(wrappedId, LOCKED_SLOT)), bytes32(0));
+    }
+
+    function _assertActiveOwnerMalformedPaymentRollsBackCollection() private {
+        uint256 wrappedId = _wrapAsAlice(1, 2 ether, BOB, MAX_TAX_RATE, 1, 5 ether);
+        wrapper.collectTax(wrappedId);
+
+        vm.prank(CAROL);
+        wrapper.takeoverLease{value: 10 ether}(wrappedId, 2 ether, 0);
+        vm.warp(block.timestamp + 1 hours);
+
+        (uint256 due,) = wrapper.taxOwed(wrappedId);
+        assertGt(due, 0);
+        assertLt(due, wrapper.depositOf(wrappedId));
+
+        TakeoverSnapshot memory before_ = _takeoverSnapshot(wrappedId);
+        vm.recordLogs();
+        vm.prank(BOB);
+        (bool success, bytes memory returnData) = address(wrapper).call{value: 2 ether + 1 wei}(
+            abi.encodeWithSelector(wrapper.takeoverLease.selector, wrappedId, 2 ether, 2 ether)
+        );
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+
+        assertFalse(success);
+        assertEq(returnData, _error("Msg contains surplus value"));
+        assertEq(logs.length, 2);
+        _assertLog(logs[0], COLLECTION_SIGNATURE);
+        assertEq(logs[0].topics[1], bytes32(wrappedId));
+        assertEq(logs[0].topics[2], bytes32(due));
+        _assertLog(logs[1], REMITTANCE_SIGNATURE);
+        assertEq(logs[1].topics[1], bytes32(uint256(3)));
+        assertEq(logs[1].topics[2], _addressTopic(BOB));
+        assertEq(logs[1].topics[3], bytes32(due));
+        _assertTakeoverStateUnchanged(wrappedId, before_);
+        assertEq(underlying.ownerOf(1), address(wrapper));
+    }
+
+    function _takeoverSnapshot(uint256 wrappedId_) private view returns (TakeoverSnapshot memory snapshot_) {
+        snapshot_.owner = wrapper.ownerOf(wrappedId_);
+        snapshot_.approval = wrapper.getApproved(wrappedId_);
+        snapshot_.valuation = wrapper.valuationOf(wrappedId_);
+        snapshot_.deposit = wrapper.depositOf(wrappedId_);
+        snapshot_.taxation = wrapper.taxationCollected(wrappedId_);
+        snapshot_.transferTax = wrapper.taxCollectedSinceLastTransferOf(wrappedId_);
+        snapshot_.collectionTime = wrapper.lastCollectionTimeOf(wrappedId_);
+        snapshot_.aliceEth = ALICE.balance;
+        snapshot_.bobEth = BOB.balance;
+        snapshot_.carolEth = CAROL.balance;
+        snapshot_.wrapperEth = address(wrapper).balance;
+        snapshot_.aliceOutstanding = wrapper.outstandingRemittances(ALICE);
+        snapshot_.bobOutstanding = wrapper.outstandingRemittances(BOB);
+        snapshot_.carolOutstanding = wrapper.outstandingRemittances(CAROL);
+        snapshot_.aliceTokens = wrapper.balanceOf(ALICE);
+        snapshot_.bobTokens = wrapper.balanceOf(BOB);
+        snapshot_.carolTokens = wrapper.balanceOf(CAROL);
+        snapshot_.wrapperTokens = wrapper.balanceOf(address(wrapper));
+        snapshot_.lock = vm.load(address(wrapper), _mappingSlot(wrappedId_, LOCKED_SLOT));
+    }
+
+    function _assertTakeoverStateUnchanged(uint256 wrappedId_, TakeoverSnapshot memory before_) private view {
+        assertEq(wrapper.ownerOf(wrappedId_), before_.owner);
+        assertEq(wrapper.getApproved(wrappedId_), before_.approval);
+        assertEq(wrapper.valuationOf(wrappedId_), before_.valuation);
+        assertEq(wrapper.depositOf(wrappedId_), before_.deposit);
+        assertEq(wrapper.taxationCollected(wrappedId_), before_.taxation);
+        assertEq(wrapper.taxCollectedSinceLastTransferOf(wrappedId_), before_.transferTax);
+        assertEq(wrapper.lastCollectionTimeOf(wrappedId_), before_.collectionTime);
+        assertEq(ALICE.balance, before_.aliceEth);
+        assertEq(BOB.balance, before_.bobEth);
+        assertEq(CAROL.balance, before_.carolEth);
+        assertEq(address(wrapper).balance, before_.wrapperEth);
+        assertEq(wrapper.outstandingRemittances(ALICE), before_.aliceOutstanding);
+        assertEq(wrapper.outstandingRemittances(BOB), before_.bobOutstanding);
+        assertEq(wrapper.outstandingRemittances(CAROL), before_.carolOutstanding);
+        assertEq(wrapper.balanceOf(ALICE), before_.aliceTokens);
+        assertEq(wrapper.balanceOf(BOB), before_.bobTokens);
+        assertEq(wrapper.balanceOf(CAROL), before_.carolTokens);
+        assertEq(wrapper.balanceOf(address(wrapper)), before_.wrapperTokens);
+        assertEq(vm.load(address(wrapper), _mappingSlot(wrappedId_, LOCKED_SLOT)), before_.lock);
+    }
+
+    function _assertPendingForeclosureTakeoverLogs(
+        Vm.Log[] memory logs_,
+        uint256 wrappedId_,
+        address buyer_,
+        uint256 valuation_
+    ) private view {
+        assertEq(logs_.length, 10);
+        _assertPendingForeclosurePrefix(logs_, wrappedId_);
+        _assertLog(logs_[6], VALUATION_SIGNATURE);
+        assertEq(logs_[6].topics[1], bytes32(wrappedId_));
+        assertEq(logs_[6].topics[2], bytes32(valuation_));
+        _assertLog(logs_[7], APPROVAL_SIGNATURE);
+        assertEq(logs_[7].topics[1], _addressTopic(address(wrapper)));
+        assertEq(logs_[7].topics[2], bytes32(0));
+        assertEq(logs_[7].topics[3], bytes32(wrappedId_));
+        _assertLog(logs_[8], TRANSFER_SIGNATURE);
+        assertEq(logs_[8].topics[1], _addressTopic(address(wrapper)));
+        assertEq(logs_[8].topics[2], _addressTopic(buyer_));
+        assertEq(logs_[8].topics[3], bytes32(wrappedId_));
+        _assertLog(logs_[9], TAKEOVER_SIGNATURE);
+        assertEq(logs_[9].topics[1], bytes32(wrappedId_));
+        assertEq(logs_[9].topics[2], _addressTopic(buyer_));
+        assertEq(logs_[9].topics[3], bytes32(valuation_));
+    }
+
+    function _assertPendingForeclosurePrefix(Vm.Log[] memory logs_, uint256 wrappedId_) private view {
+        assertGe(logs_.length, 6);
+        _assertLog(logs_[0], COLLECTION_SIGNATURE);
+        assertEq(logs_[0].topics[1], bytes32(wrappedId_));
+        assertEq(logs_[0].topics[2], bytes32(uint256(1 ether)));
+        _assertLog(logs_[1], REMITTANCE_SIGNATURE);
+        assertEq(logs_[1].topics[1], bytes32(uint256(3)));
+        assertEq(logs_[1].topics[2], _addressTopic(BOB));
+        assertEq(logs_[1].topics[3], bytes32(uint256(1 ether)));
+        _assertLog(logs_[2], VALUATION_SIGNATURE);
+        assertEq(logs_[2].topics[1], bytes32(wrappedId_));
+        assertEq(logs_[2].topics[2], bytes32(0));
+        _assertLog(logs_[3], APPROVAL_SIGNATURE);
+        assertEq(logs_[3].topics[1], _addressTopic(ALICE));
+        assertEq(logs_[3].topics[2], bytes32(0));
+        assertEq(logs_[3].topics[3], bytes32(wrappedId_));
+        _assertLog(logs_[4], TRANSFER_SIGNATURE);
+        assertEq(logs_[4].topics[1], _addressTopic(ALICE));
+        assertEq(logs_[4].topics[2], _addressTopic(address(wrapper)));
+        assertEq(logs_[4].topics[3], bytes32(wrappedId_));
+        _assertLog(logs_[5], FORECLOSURE_SIGNATURE);
+        assertEq(logs_[5].topics[1], bytes32(wrappedId_));
+        assertEq(logs_[5].topics[2], _addressTopic(ALICE));
+    }
+
+    function _assertLog(Vm.Log memory log_, bytes32 signature_) private view {
+        assertEq(log_.emitter, address(wrapper));
+        assertEq(log_.topics[0], signature_);
+        assertEq(log_.data.length, 0);
+    }
+
+    function _knownLiabilities() private view returns (uint256) {
+        return wrapper.outstandingRemittances(ALICE) + wrapper.outstandingRemittances(BOB)
+            + wrapper.outstandingRemittances(CAROL);
+    }
+
+    function _error(string memory reason_) private pure returns (bytes memory) {
+        return abi.encodeWithSignature("Error(string)", reason_);
+    }
+
+    function _addressTopic(address value_) private pure returns (bytes32) {
+        return bytes32(uint256(uint160(value_)));
     }
 
     /// @dev DEFERRED CUSTODY-LOSS FINDING: if foreclosure is collected before

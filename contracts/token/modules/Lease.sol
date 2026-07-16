@@ -61,27 +61,6 @@ abstract contract Lease is ILease, Taxation {
     );
 
     bool senderIsBeneficiary = msg.sender == beneficiaryOf(tokenId_);
-    // Current owner is a wallet address or the address of this contract
-    // if the token is foreclosed or has never been purchased.
-    address currentOwner = ownerOf(tokenId_);
-
-    if (senderIsBeneficiary) {
-      if (currentOwner == address(this)) {
-        // If token is owned by contract, beneficiary does not need to pay anything.
-        require(msg.value == 0, "Msg contains value");
-      } else {
-        // Beneficiary only needs to pay the current valuation,
-        // doesn't need to put down a deposit.
-        require(msg.value == currentValuation_, "Msg contains surplus value");
-      }
-    } else {
-      // Value sent must be greater the amount being remitted to the current owner;
-      // surplus is necessary for deposit.
-      require(
-        msg.value > valuationPriorToTaxCollection,
-        "Message does not contain surplus value for deposit"
-      );
-    }
 
     // Owner will be seller or this contract if foreclosed.
     // Prevent an accidental re-purchase.
@@ -98,6 +77,24 @@ abstract contract Lease is ILease, Taxation {
 
     address ownerAfterCollection = ownerOf(tokenId_);
     bool purchasedFromContract = ownerAfterCollection == address(this);
+
+    if (senderIsBeneficiary) {
+      if (purchasedFromContract) {
+        // If token is owned by contract, beneficiary does not need to pay anything.
+        require(msg.value == 0, "Msg contains value");
+      } else {
+        // Beneficiary only needs to pay the current valuation,
+        // doesn't need to put down a deposit.
+        require(msg.value == currentValuation_, "Msg contains surplus value");
+      }
+    } else {
+      // Value sent must fund a deposit when purchasing from the contract, or
+      // exceed the amount remitted when purchasing from an external owner.
+      require(
+        msg.value > (purchasedFromContract ? 0 : valuationPriorToTaxCollection),
+        "Message does not contain surplus value for deposit"
+      );
+    }
 
     // Token is being purchased for the first time or out of foreclosure
     if (purchasedFromContract) {
@@ -150,6 +147,7 @@ abstract contract Lease is ILease, Taxation {
     override
     _onlyApprovedOrOwner(tokenId_)
     _collectTax(tokenId_)
+    _onlyApprovedOrOwner(tokenId_)
   {
     uint256 currentValuation = valuationOf(tokenId_);
     require(newValuation_ > 0, "New valuation cannot be zero");

@@ -41,6 +41,22 @@ revert with `AmountZero` while collecting the zero deposit.
 Evidence:
 `test/solidity/invariant/PCODeferredRegression.t.sol:test_deferredStage10_pendingForeclosureSelfAssessPreservesLegacyBrickedState`.
 
+Status: the stale-authorization and bricked-state subfinding is remediated by
+Security 03. `selfAssess`, `deposit`, `withdrawDeposit`, and `exit` retain their
+original authorization check, collect tax, and then repeat the same
+authorization check against the actual post-collection owner and approvals. If
+collection forecloses, the mutation reverts with the existing ERC721
+authorization payload and rolls back custody, approvals, tax, remittance or
+outstanding-remittance accounting, Ether, and function-specific effects. The
+retained regression identifier covers owner, token-approved, and
+approved-for-all callers across all four mutations, including a zero-value
+withdrawal, followed by a successful third-party foreclosure purchase.
+Security 03 does not change the beneficiary tax exemption or its inherited
+collection-timestamp semantics; immediate pending foreclosure after a long
+beneficiary-owned period remains a documented mechanism behavior, but it can
+no longer be converted into the nonzero-valuation contract-custody bricked
+state through these mutations.
+
 ## Beneficiary takeover crossing foreclosure
 
 A beneficiary takeover validates the current-valuation payment while the token
@@ -51,6 +67,18 @@ as untracked contract surplus.
 
 Evidence:
 `test/solidity/fuzz/WrapperFuzz.t.sol:test_regression_deferredBeneficiaryTakeoverAcrossForeclosureLeavesUntrackedValuationSurplus`.
+
+Status: remediated by Security 03. Payment validation now runs after tax
+collection and uses the actual owner after collection. A beneficiary pays zero
+when buying from contract custody and exactly the prior valuation when buying
+from an external seller. A non-beneficiary supplies any positive deposit when
+buying from contract custody and more than the prior valuation when buying
+from an external seller. The three existing revert strings and their source
+callsite count are unchanged. The retained regression identifier proves exact
+rollback and lock release for the formerly accepted beneficiary payment, a
+zero-value beneficiary retry without surplus, and a non-beneficiary purchase
+with a positive deposit below the pre-foreclosure valuation. Stateful Wrapper
+coverage now exercises the previously excluded crossing-foreclosure path.
 
 ## Unwrap after materialized Wrapper foreclosure
 
@@ -93,7 +121,10 @@ security correction, while public ABI and storage remain unchanged.
 
 Stage 10 must include the historical findings and their remediation status in
 its custom-ERC721-versus-OpenZeppelin 5 security comparison. Security 01 fixes
-the nested-foreclosure transfer corruption, and Security 02 fixes the
-callback-before-initialization finding. The three remaining semantic findings
-stay open until their corresponding authorized security PRs pass the same
-compatibility, migration, and deployment review.
+the nested-foreclosure transfer corruption, Security 02 fixes the
+callback-before-initialization finding, and Security 03 fixes post-collection
+authorization plus takeover payment classification. The beneficiary exemption
+and inherited collection timestamp remain unchanged mechanism semantics. The
+foreclosed-unwrap custody-loss finding is the remaining open security
+remediation in this sequence and stays deferred until its separately authorized
+PR passes the same compatibility, migration, and deployment review.

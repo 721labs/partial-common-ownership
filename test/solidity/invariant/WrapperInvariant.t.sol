@@ -35,6 +35,12 @@ contract WrapperInvariantTest is Test {
         handler.unwrap(0);
         handler.wrap(0, 2, 0, 0, 3649, 0);
 
+        // Exercise a beneficiary takeover whose tax collection crosses from an
+        // external owner into foreclosure. Payment is classified from the
+        // post-collection contract owner, so this intended-valid call sends 0.
+        handler.wrap(1, 2, 1 ether, 999_999_999_999, 0, 0);
+        handler.takeover(1, 2, 0, 0);
+
         targetContract(address(handler));
     }
 
@@ -189,6 +195,7 @@ contract WrapperInvariantTest is Test {
         assertFalse(handler.ghostUnexpectedInvalidCallSuccess(), "intended-invalid call succeeded");
         assertGe(handler.ghostSuccessfulWraps(), 2, "wrap and rewrap reached");
         assertGe(handler.ghostSuccessfulTakeovers(), 1, "takeover reached");
+        assertGe(handler.ghostCrossingForeclosureTakeovers(), 1, "crossing-foreclosure takeover reached");
         assertGe(handler.ghostSuccessfulTransfers(), 1, "wrapped transfer reached");
         assertGe(handler.ghostSuccessfulUnwraps(), 1, "non-foreclosed unwrap reached");
         assertGe(handler.ghostFailedCalls(), 1, "expected rejection reached");

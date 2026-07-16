@@ -24,7 +24,7 @@ const APPROVED_SUPPRESSIONS = [
   "contracts/token/modules/Remittance.sol:73:incorrect-equality:if (balance == 0) revert NoOutstandingBalance();",
   "contracts/token/modules/Remittance.sol:109:incorrect-equality:if (remittance_ == 0) revert AmountZero();",
   "contracts/token/modules/Taxation.sol:94:incorrect-equality:if (owed == 0) return;",
-  "contracts/token/modules/Taxation.sol:200:divide-before-multiply:return",
+  "contracts/token/modules/Taxation.sol:203:divide-before-multiply:return",
 ].sort();
 
 function fail(message) {
