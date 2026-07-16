@@ -39,6 +39,7 @@
     "test": "hardhat typechain && hardhat --network hardhat test && forge test -vvv",
     "prettier": "prettier --write 'contracts/**/*.sol'",
     "solhint": "solhint contracts/*.sol contracts/**/*.sol contracts/**/**/*.sol contracts/**/**/**/*.sol",
+    "compatibility": "node scripts/compatibility.js check",
     "lock:validate": "node scripts/check-pnpm-lock.js",
     "audit:ratchet": "node scripts/audit-ratchet.js",
     "publish": "npm publish --access public",

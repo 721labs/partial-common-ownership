@@ -38,6 +38,45 @@ const REQUIRED_OUTPUTS = [
   "storageLayout",
 ];
 
+const STAGE_04_RAW_BYTECODE_HASH_PATHS = new Set([
+  "$.contracts.contracts/Wrapper.sol:Wrapper.creationBytecode.keccak256",
+  "$.contracts.contracts/Wrapper.sol:Wrapper.runtimeBytecode.keccak256",
+  "$.contracts.contracts/token/PartialCommonOwnership.sol:PartialCommonOwnership.creationBytecode.keccak256",
+  "$.contracts.contracts/token/PartialCommonOwnership.sol:PartialCommonOwnership.runtimeBytecode.keccak256",
+]);
+
+const REVIEW_POLICIES = Object.freeze({
+  "stage-04-source-path-metadata-and-gas": Object.freeze({
+    candidate: "stage-04-package-canonical-openzeppelin",
+    requiredOpcodeEvidence: Object.freeze({
+      mode: "metadata-stripped-equality",
+      path: "compatibility/evidence/stage-04-package-canonical-openzeppelin.json",
+      contracts: Object.freeze([
+        "contracts/Wrapper.sol:Wrapper",
+        "contracts/token/PartialCommonOwnership.sol:PartialCommonOwnership",
+      ]),
+    }),
+    permits(reviewPath) {
+      return (
+        STAGE_04_RAW_BYTECODE_HASH_PATHS.has(reviewPath) ||
+        /^\$\.gasSnapshot\.entries\[\d+\]$/.test(reviewPath)
+      );
+    },
+  }),
+});
+
+const NON_WAIVABLE_REVIEW_PATHS = [
+  {
+    name: "contract ABI, functions, events, errors, or storage layout",
+    pattern:
+      /^\$\.contracts\..+\.(?:abi|functions|events|errors|storageLayout)(?:\.|\[|$)/,
+  },
+  {
+    name: "interfaces, enums, or ERC165 results",
+    pattern: /^\$\.(?:interfaces|enums|erc165)(?:\.|\[|$)/,
+  },
+];
+
 const OPCODES = {
   0x00: "STOP",
   0x01: "ADD",
@@ -784,12 +823,73 @@ function readReviewedDifferences() {
   if (!review.candidate || typeof review.candidate !== "string") {
     throw new Error("Compatibility review must name its candidate");
   }
+  if (!review.policy || typeof review.policy !== "string") {
+    throw new Error("Compatibility review must name an enumerated policy");
+  }
   return review;
+}
+
+function reviewPolicy(review) {
+  const policy = REVIEW_POLICIES[review.policy];
+  if (!policy) {
+    throw new Error(
+      `Unknown compatibility review policy: ${review.policy}. Add a named policy to scripts/compatibility.js before reviewing a new class of change.`
+    );
+  }
+  if (policy.candidate !== review.candidate) {
+    throw new Error(
+      `Compatibility review policy ${review.policy} is restricted to ${policy.candidate}, not ${review.candidate}`
+    );
+  }
+  if (policy.requiredOpcodeEvidence) {
+    const required = policy.requiredOpcodeEvidence;
+    const supplied = review.opcodeEvidence;
+    if (!supplied || typeof supplied !== "object") {
+      throw new Error(
+        `Compatibility review policy ${review.policy} requires opcode evidence`
+      );
+    }
+    if (supplied.mode !== required.mode) {
+      throw new Error(
+        `Compatibility review policy ${review.policy} requires opcode evidence mode ${required.mode}`
+      );
+    }
+    if (supplied.path !== required.path) {
+      throw new Error(
+        `Compatibility review policy ${review.policy} requires checked-in opcode evidence at ${required.path}`
+      );
+    }
+    if (!Array.isArray(supplied.contracts)) {
+      throw new Error(
+        `Compatibility review policy ${review.policy} requires an exact opcode evidence contract set`
+      );
+    }
+    const requiredContracts = [...required.contracts].sort();
+    const suppliedContracts = [...new Set(supplied.contracts)].sort();
+    if (
+      suppliedContracts.length !== supplied.contracts.length ||
+      !valuesEqual(suppliedContracts, requiredContracts)
+    ) {
+      throw new Error(
+        `Compatibility review policy ${
+          review.policy
+        } requires opcode evidence for exactly: ${requiredContracts.join(", ")}`
+      );
+    }
+  }
+  return policy;
+}
+
+function nonWaivableReviewDomain(reviewPath) {
+  return NON_WAIVABLE_REVIEW_PATHS.find(({ pattern }) =>
+    pattern.test(reviewPath)
+  );
 }
 
 function validateReviewedDifferences(review, baselineBytes, differences) {
   if (!review) return;
 
+  const policy = reviewPolicy(review);
   const baselineDigest = sha256(baselineBytes);
   if (review.baselineSha256 !== baselineDigest) {
     throw new Error(
@@ -804,6 +904,17 @@ function validateReviewedDifferences(review, baselineBytes, differences) {
     }
     if (allowedByPath.has(allowance.path)) {
       throw new Error(`Duplicate reviewed difference path: ${allowance.path}`);
+    }
+    const protectedDomain = nonWaivableReviewDomain(allowance.path);
+    if (protectedDomain) {
+      throw new Error(
+        `Reviewed differences may never waive ${protectedDomain.name}: ${allowance.path}`
+      );
+    }
+    if (!policy.permits(allowance.path)) {
+      throw new Error(
+        `Compatibility review policy ${review.policy} does not permit path: ${allowance.path}`
+      );
     }
     if (!Object.prototype.hasOwnProperty.call(allowance, "baselineValue")) {
       throw new Error(

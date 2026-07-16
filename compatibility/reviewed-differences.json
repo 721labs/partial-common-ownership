@@ -1,6 +1,7 @@
 {
   "schemaVersion": 1,
   "candidate": "stage-04-package-canonical-openzeppelin",
+  "policy": "stage-04-source-path-metadata-and-gas",
   "baselineSha256": "4ec069e1cdb046198456b1db9179522b604d8dab062838c79e4cf8aa1e9df55c",
   "allowedDifferences": [
     {
