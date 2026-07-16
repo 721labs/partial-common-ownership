@@ -45,6 +45,13 @@ const STAGE_04_RAW_BYTECODE_HASH_PATHS = new Set([
   "$.contracts.contracts/token/PartialCommonOwnership.sol:PartialCommonOwnership.runtimeBytecode.keccak256",
 ]);
 
+const STAGE_05_RAW_BYTECODE_HASH_PATHS = new Set([
+  "$.contracts.contracts/Wrapper.sol:Wrapper.creationBytecode.keccak256",
+  "$.contracts.contracts/Wrapper.sol:Wrapper.runtimeBytecode.keccak256",
+  "$.contracts.contracts/token/PartialCommonOwnership.sol:PartialCommonOwnership.creationBytecode.keccak256",
+  "$.contracts.contracts/token/PartialCommonOwnership.sol:PartialCommonOwnership.runtimeBytecode.keccak256",
+]);
+
 const REVIEW_POLICIES = Object.freeze({
   "stage-04-source-path-metadata-and-gas": Object.freeze({
     candidate: "stage-04-package-canonical-openzeppelin",
@@ -63,6 +70,23 @@ const REVIEW_POLICIES = Object.freeze({
       );
     },
   }),
+  "stage-05-openzeppelin-4-9-6-metadata-bytecode": Object.freeze({
+    candidate: "stage-05-openzeppelin-4-9-6",
+    requiredOpcodeEvidence: Object.freeze({
+      mode: "metadata-stripped-equality",
+      path: "compatibility/evidence/stage-05-openzeppelin-4-9-6.json",
+      contracts: Object.freeze([
+        "contracts/Wrapper.sol:Wrapper",
+        "contracts/token/PartialCommonOwnership.sol:PartialCommonOwnership",
+      ]),
+    }),
+    permits(reviewPath) {
+      return (
+        STAGE_05_RAW_BYTECODE_HASH_PATHS.has(reviewPath) ||
+        reviewPath === "$.gasSnapshot.entries[11]"
+      );
+    },
+  }),
 });
 
 const NON_WAIVABLE_REVIEW_PATHS = [
@@ -74,6 +98,10 @@ const NON_WAIVABLE_REVIEW_PATHS = [
   {
     name: "interfaces, enums, or ERC165 results",
     pattern: /^\$\.(?:interfaces|enums|erc165)(?:\.|\[|$)/,
+  },
+  {
+    name: "the executed behavior-test inventory",
+    pattern: /^\$\.tests(?:\.|\[|$)/,
   },
 ];
 
