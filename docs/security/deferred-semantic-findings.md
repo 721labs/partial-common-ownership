@@ -91,6 +91,23 @@ custody with no live wrapper metadata or remaining unwrap path.
 Evidence:
 `test/solidity/fuzz/WrapperFuzz.t.sol:test_regression_deferredForeclosedUnwrapLeavesUnderlyingWithoutWrapperRecord`.
 
+Status: remediated by Security 04. `unwrap` preserves the existing nonexistent-
+token and originator checks, captures the wrapped token's current owner, and
+then rejects Wrapper as its own underlying-token destination with the existing
+`DestinationContractAddress` custom error. The rejection occurs before wrapper
+metadata deletion or burn, commits no events or state changes, and leaves both
+the live wrapper record and underlying custody intact. A buyer can acquire the
+foreclosed wrapped token from contract custody, after which the original
+operator can unwrap it and deliver the underlying token to that buyer. A
+pending foreclosure that has not yet transferred wrapped-token ownership to
+Wrapper retains its prior successful collection-and-unwrap behavior.
+
+The same destination guard prevents metadata loss after a non-safe transfer of
+a live wrapped token directly to Wrapper. Security 04 does not change or
+reclassify the tax, deposit, or ownership-accounting semantics of that raw
+wrapped-token transfer, nor does it change the handling of raw underlying-token
+transfers; those adjacent direct-transfer concerns remain outside this fix.
+
 ## ERC721 receiver callback before PCO initialization
 
 `PartialCommonOwnership._mint` previously invoked `_safeMint` before setting
@@ -123,8 +140,9 @@ Stage 10 must include the historical findings and their remediation status in
 its custom-ERC721-versus-OpenZeppelin 5 security comparison. Security 01 fixes
 the nested-foreclosure transfer corruption, Security 02 fixes the
 callback-before-initialization finding, and Security 03 fixes post-collection
-authorization plus takeover payment classification. The beneficiary exemption
-and inherited collection timestamp remain unchanged mechanism semantics. The
-foreclosed-unwrap custody-loss finding is the remaining open security
-remediation in this sequence and stays deferred until its separately authorized
-PR passes the same compatibility, migration, and deployment review.
+authorization plus takeover payment classification. Security 04 fixes
+self-destination unwrap custody and metadata loss. The beneficiary exemption
+and inherited collection timestamp remain unchanged, deferred mechanism
+semantics. Adjacent direct-transfer accounting concerns are not reclassified by
+this fix and require separately authorized compatibility, migration, and
+deployment review.

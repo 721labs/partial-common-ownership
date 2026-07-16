@@ -51,7 +51,7 @@
       "@openzeppelin/contracts/token/ERC721/ERC721.sol": "7af3ff063370acb5e1f1a2aab125ceca457cd1fa60ff8afa37aabc366349d286",
       "contracts/token/modules/Remittance.sol": "082eb1351b8c02bb8b84188c999b7dd9e422ca7ff5001d4eabf652b66c4ae3c0",
       "contracts/test/Blocker.sol": "aca41aa8d3aac9a0470992486b2332ebe60fef1f68733ea1796eb928a11192e9",
-      "contracts/Wrapper.sol": "60e71c963513d7878d080c1460892304667eea8ff31d1bab4f1bda99b5436ce4"
+      "contracts/Wrapper.sol": "074f4296a91c734b1a419b3ac4066bc609e8f6c08d230176b58769354660bdc5"
     },
     "warnings": [
       {
@@ -106,22 +106,22 @@
       {
         "code": "5667",
         "source": "contracts/Wrapper.sol",
-        "start": 5432,
-        "end": 5445,
+        "start": 5502,
+        "end": 5515,
         "message": "Unused function parameter. Remove or comment out the variable name to silence this warning."
       },
       {
         "code": "5667",
         "source": "contracts/Wrapper.sol",
-        "start": 5451,
-        "end": 5467,
+        "start": 5521,
+        "end": 5537,
         "message": "Unused function parameter. Remove or comment out the variable name to silence this warning."
       },
       {
         "code": "5667",
         "source": "contracts/Wrapper.sol",
-        "start": 5473,
-        "end": 5491,
+        "start": 5543,
+        "end": 5561,
         "message": "Unused function parameter. Remove or comment out the variable name to silence this warning."
       }
     ]
@@ -187,13 +187,13 @@
       "node_modules/@openzeppelin/contracts/token/ERC721/ERC721.sol": "7af3ff063370acb5e1f1a2aab125ceca457cd1fa60ff8afa37aabc366349d286",
       "contracts/token/modules/Remittance.sol": "082eb1351b8c02bb8b84188c999b7dd9e422ca7ff5001d4eabf652b66c4ae3c0",
       "contracts/test/Blocker.sol": "aca41aa8d3aac9a0470992486b2332ebe60fef1f68733ea1796eb928a11192e9",
-      "contracts/Wrapper.sol": "60e71c963513d7878d080c1460892304667eea8ff31d1bab4f1bda99b5436ce4",
+      "contracts/Wrapper.sol": "074f4296a91c734b1a419b3ac4066bc609e8f6c08d230176b58769354660bdc5",
       "contracts/test/EnhancedTest.sol": "8f0f905bceafb2003604984b4b2cfc8fef7a3e63b832bfbe36e848b01712bb08",
       "test/solidity/Beneficiary.t.sol": "c0c7f46108b2fb29a39461a87babf51801ea4de23fdb0b9949117b954d2cad93",
       "test/solidity/Remittance.t.sol": "62978e34b5a3f6c6326bd3ae48281c4b1c65caeb87264f384c64b0578850a427",
-      "test/solidity/fuzz/WrapperFuzz.t.sol": "18d32cf9476c7a46362df42d7b8c4979048200b81d8e1ace84e3e86c172be6cc",
+      "test/solidity/fuzz/WrapperFuzz.t.sol": "866f5bf4ee563f43315af96c436d720a55146bb429fdb6587d825775a350e86e",
       "test/solidity/invariant/PCOInvariant.t.sol": "8a1f76de69c21233608992678ace76e8a72225d5361d50063bcaa0c7069c4efb",
-      "test/solidity/invariant/WrapperInvariant.t.sol": "bce81fd95029aae12fd8eb35c21061cbe3c539ab27e870040898a7da6be06cee",
+      "test/solidity/invariant/WrapperInvariant.t.sol": "aae1d8fbdef2d2793e8c6c39cd7da09cee146971c5909574fea8243875beb829",
       "test/solidity/parity/PCOMutationParity.t.sol": "3aee5877b76da7143bf3b678f86d76e670f7ce86b49ec9a8d13216cf4cd78aea",
       "test/solidity/parity/PCOReadTaxParity.t.sol": "3e743560bff1f62eb359fcadfbca9b87022a9b6eb68c1c73d27e8051f3fbc8a8",
       "test/solidity/parity/WrapperParity.t.sol": "07b21216d9d5dd35591f6b3693a62a5ffbb313d4da3013dbdf24cd101a8ce964",
@@ -255,22 +255,22 @@
       {
         "code": "5667",
         "source": "contracts/Wrapper.sol",
-        "start": 5432,
-        "end": 5445,
+        "start": 5502,
+        "end": 5515,
         "message": "Unused function parameter. Remove or comment out the variable name to silence this warning."
       },
       {
         "code": "5667",
         "source": "contracts/Wrapper.sol",
-        "start": 5451,
-        "end": 5467,
+        "start": 5521,
+        "end": 5537,
         "message": "Unused function parameter. Remove or comment out the variable name to silence this warning."
       },
       {
         "code": "5667",
         "source": "contracts/Wrapper.sol",
-        "start": 5473,
-        "end": 5491,
+        "start": 5543,
+        "end": 5561,
         "message": "Unused function parameter. Remove or comment out the variable name to silence this warning."
       },
       {
@@ -311,15 +311,15 @@
       {
         "code": "2018",
         "source": "test/solidity/fuzz/WrapperFuzz.t.sol",
-        "start": 3984,
-        "end": 4259,
+        "start": 4482,
+        "end": 4757,
         "message": "Function state mutability can be restricted to view"
       },
       {
         "code": "2018",
         "source": "test/solidity/fuzz/WrapperFuzz.t.sol",
-        "start": 31021,
-        "end": 32297,
+        "start": 36791,
+        "end": 38067,
         "message": "Function state mutability can be restricted to view"
       },
       {
@@ -381,64 +381,64 @@
       {
         "code": "2018",
         "source": "test/solidity/invariant/WrapperInvariant.t.sol",
-        "start": 1876,
-        "end": 2919,
+        "start": 2163,
+        "end": 3206,
         "message": "Function state mutability can be restricted to view"
       },
       {
         "code": "2018",
         "source": "test/solidity/invariant/WrapperInvariant.t.sol",
-        "start": 2925,
-        "end": 4280,
+        "start": 3212,
+        "end": 4567,
         "message": "Function state mutability can be restricted to view"
       },
       {
         "code": "2018",
         "source": "test/solidity/invariant/WrapperInvariant.t.sol",
-        "start": 4286,
-        "end": 5892,
+        "start": 4573,
+        "end": 6179,
         "message": "Function state mutability can be restricted to view"
       },
       {
         "code": "2018",
         "source": "test/solidity/invariant/WrapperInvariant.t.sol",
-        "start": 5898,
-        "end": 6515,
+        "start": 6185,
+        "end": 6760,
         "message": "Function state mutability can be restricted to view"
       },
       {
         "code": "2018",
         "source": "test/solidity/invariant/WrapperInvariant.t.sol",
-        "start": 6890,
-        "end": 7448,
+        "start": 6996,
+        "end": 8565,
         "message": "Function state mutability can be restricted to view"
       },
       {
         "code": "2018",
         "source": "test/solidity/invariant/WrapperInvariant.t.sol",
-        "start": 7454,
-        "end": 7910,
+        "start": 8571,
+        "end": 9027,
         "message": "Function state mutability can be restricted to view"
       },
       {
         "code": "2018",
         "source": "test/solidity/invariant/WrapperInvariant.t.sol",
-        "start": 7916,
-        "end": 8559,
+        "start": 9033,
+        "end": 9676,
         "message": "Function state mutability can be restricted to view"
       },
       {
         "code": "2018",
         "source": "test/solidity/invariant/WrapperInvariant.t.sol",
-        "start": 8565,
-        "end": 8918,
+        "start": 9682,
+        "end": 10035,
         "message": "Function state mutability can be restricted to view"
       },
       {
         "code": "2018",
         "source": "test/solidity/invariant/WrapperInvariant.t.sol",
-        "start": 8924,
-        "end": 9719,
+        "start": 10041,
+        "end": 10950,
         "message": "Function state mutability can be restricted to view"
       },
       {
@@ -612,9 +612,9 @@
       {
         "code": "5574",
         "source": "test/solidity/fuzz/WrapperFuzz.t.sol",
-        "start": 989,
-        "end": 32923,
-        "message": "Contract code size is 89832 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
+        "start": 1065,
+        "end": 38693,
+        "message": "Contract code size is 99066 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
       },
       {
         "code": "5574",
@@ -641,8 +641,8 @@
         "code": "5574",
         "source": "test/solidity/invariant/WrapperInvariant.t.sol",
         "start": 223,
-        "end": 10577,
-        "message": "Contract code size is 81213 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
+        "end": 11808,
+        "message": "Contract code size is 84132 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
       },
       {
         "code": "5574",
@@ -663,7 +663,7 @@
         "source": "test/solidity/parity/WrapperParity.t.sol",
         "start": 461,
         "end": 42694,
-        "message": "Contract code size is 118305 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
+        "message": "Contract code size is 118406 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
       }
     ]
   }

@@ -166,6 +166,33 @@ node scripts/compatibility.js check
 node scripts/compatibility.js security-03-negative-probes
 ```
 
+Security remediation 04 uses the named
+`security-04-foreclosed-unwrap-guard` policy. It anchors the merged Security 03
+squash commit `f7e98cbc778c279af82b6514d70df886ba0af6cd`, together with the
+exact Security 03 evidence and review digests, and reconstructs that
+checkpoint's production opcodes and gas entries before comparison. The only
+production edit adds the existing `DestinationContractAddress()` custom-error
+guard to `Wrapper.unwrap` after the existing originator check and owner capture,
+but before wrapper metadata deletion, burn, or underlying transfer.
+
+The source gate digest-binds that exact placement, the strengthened retained
+regression and invariant sources, the warning allowlist, documentation,
+dependency/tool configuration, the unchanged 89-Hardhat and 140-Forge test
+inventories, and the complete 29-source Hardhat compiler-input closure. ABI,
+selectors, events, errors, storage, interfaces, enums, ERC165 answers, compiler
+settings, project revert strings, and test identifiers remain hard equal.
+Only Wrapper bytecode and reviewed gas consequences are permitted; the
+standalone PartialCommonOwnership bytecode, opcodes, hashes, and sizes must
+equal Security 03 exactly. Reproduce the review, evidence, and adversarial
+policy probes with:
+
+```console
+node scripts/compatibility.js write-security-04-review
+node scripts/compatibility.js write-evidence
+node scripts/compatibility.js check
+node scripts/compatibility.js security-04-negative-probes
+```
+
 The original baseline predated explicit revert-literal extraction.
 `project-revert-strings.json` is a SHA-256-bound supplement derived from the
 unchanged production sources at the recorded baseline commit. It binds all 35

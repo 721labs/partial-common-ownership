@@ -114,6 +114,8 @@ contract Wrapper is PCO {
     // Get current owner's address prior to burning.
     address owner = ownerOf(tokenId_);
 
+    if (owner == address(this)) revert DestinationContractAddress();
+
     // Delete wrapper state
     delete _wrappedTokenMap[tokenId_];
 

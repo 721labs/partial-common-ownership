@@ -476,6 +476,147 @@ const SECURITY_03_COMPILER_SOURCE_NAMES_SHA256 =
   "e0fad97cd536ee22fdd2d9f3da46b483190352856d175166a763cc0c2667d4d5";
 const SECURITY_03_COMPILER_CANDIDATE_CLOSURE_SHA256 =
   "ae84ad645afd12641f10ee2634af301eaca52f1e568267dd20f7858aef0dacc8";
+const SECURITY_04_CANDIDATE = "security-04-foreclosed-unwrap-guard";
+const SECURITY_04_POLICY = "security-04-foreclosed-unwrap-guard";
+const SECURITY_04_EVIDENCE_PATH =
+  "compatibility/evidence/security-04-foreclosed-unwrap-guard.json";
+const SECURITY_04_BASE_COMMIT = "f7e98cbc778c279af82b6514d70df886ba0af6cd";
+const SECURITY_03_CHECKPOINT_EVIDENCE_SHA256 =
+  "38d8551d97cb810f11cc963b81054ffb0fc2dd33dc1761e1dade9ec56d13b69a";
+const SECURITY_03_CHECKPOINT_REVIEW_SHA256 =
+  "21f427c71a6cccf9026801c634cdd8957edefa571993bcc5f207dbe31ad48cb4";
+const SECURITY_04_WRAPPER_SOURCE = "contracts/Wrapper.sol";
+const SECURITY_04_WRAPPER_BASE_SHA256 =
+  "60e71c963513d7878d080c1460892304667eea8ff31d1bab4f1bda99b5436ce4";
+const SECURITY_04_WRAPPER_CANDIDATE_SHA256 =
+  "074f4296a91c734b1a419b3ac4066bc609e8f6c08d230176b58769354660bdc5";
+const SECURITY_04_ERROR_SIGNATURE = "DestinationContractAddress()";
+const SECURITY_04_ERROR_SELECTOR = "0x8ec2449e";
+const SECURITY_04_REGRESSION_SOURCE = "test/solidity/fuzz/WrapperFuzz.t.sol";
+const SECURITY_04_REGRESSION_TEST =
+  "test/solidity/fuzz/WrapperFuzz.t.sol:WrapperFuzzTest:test_regression_deferredForeclosedUnwrapLeavesUnderlyingWithoutWrapperRecord";
+const SECURITY_04_INVARIANT_SOURCE =
+  "test/solidity/invariant/WrapperInvariant.t.sol";
+const SECURITY_04_INVARIANT_HELPER =
+  "test/solidity/invariant/helpers/WrapperInvariantHarness.sol";
+const SECURITY_04_RETAINED_FORGE_TESTS = Object.freeze([
+  SECURITY_04_REGRESSION_TEST,
+  "test/solidity/invariant/WrapperInvariant.t.sol:WrapperInvariantTest:invariant_deferredForeclosedUnwrapCustodyLossIsClassified",
+  "test/solidity/parity/WrapperParity.t.sol:WrapperParityTest:test_unwrap_nonOriginatorReverts",
+  "test/solidity/parity/WrapperParity.t.sol:WrapperParityTest:test_unwrap_nonexistentTokenReverts",
+  "test/solidity/parity/WrapperParity.t.sol:WrapperParityTest:test_unwrap_afterBeneficiaryWrap",
+  "test/solidity/parity/WrapperParity.t.sol:WrapperParityTest:test_unwrap_afterNonBeneficiaryWrap",
+  "test/solidity/parity/WrapperParity.t.sol:WrapperParityTest:test_unwrap_collectsTaxAndReturnsDeposit",
+]);
+const SECURITY_04_CHECKPOINT_BINDING = Object.freeze({
+  commit: SECURITY_04_BASE_COMMIT,
+  evidence: Object.freeze({
+    path: SECURITY_03_EVIDENCE_PATH,
+    sha256: SECURITY_03_CHECKPOINT_EVIDENCE_SHA256,
+  }),
+  review: Object.freeze({
+    path: "compatibility/reviewed-differences.json",
+    sha256: SECURITY_03_CHECKPOINT_REVIEW_SHA256,
+  }),
+});
+const SECURITY_04_BEHAVIOR_EVIDENCE = Object.freeze({
+  inventoryChange: "none",
+  inventories: Object.freeze({
+    hardhat: Object.freeze({
+      count: SECURITY_01_HARDHAT_COUNT,
+      namesSha256: SECURITY_01_HARDHAT_NAMES_SHA256,
+    }),
+    forge: Object.freeze({
+      count: SECURITY_01_FORGE_COUNT,
+      namesSha256: SECURITY_01_FORGE_NAMES_SHA256,
+    }),
+  }),
+  guard: Object.freeze({
+    sourcePath: SECURITY_04_REGRESSION_SOURCE,
+    sourceSha256:
+      "866f5bf4ee563f43315af96c436d720a55146bb429fdb6587d825775a350e86e",
+    test: SECURITY_04_REGRESSION_TEST,
+    error: Object.freeze({
+      signature: SECURITY_04_ERROR_SIGNATURE,
+      selector: SECURITY_04_ERROR_SELECTOR,
+      declarationChange: "none; reuse the inherited Remittance custom error",
+    }),
+    precedence: Object.freeze([
+      "_tokenMinted outer nonexistent-token gate",
+      "read _wrappedTokenMap",
+      "Wrap originator only require",
+      "capture ownerOf",
+      "DestinationContractAddress guard",
+      "delete _wrappedTokenMap",
+      "_burn",
+      "underlying safeTransferFrom",
+    ]),
+    callerOutcomes: Object.freeze({
+      nonOriginator:
+        "Error(string): Wrap originator only, including after materialized foreclosure",
+      originator:
+        "DestinationContractAddress() when the wrapped owner is Wrapper",
+    }),
+    rollback:
+      "The guard emits no committed logs and preserves wrapped ownership, metadata, underlying custody, balances, approvals, tax, deposit, remittance, and lock state.",
+    recovery:
+      "A takeover from contract custody restores an external wrapped owner, after which the original operator can unwrap to that owner.",
+    adjacentPath:
+      "The same guard preserves metadata after a raw non-safe wrapped-token transfer to Wrapper without reclassifying that transfer's economics.",
+  }),
+  pendingForeclosure:
+    "Owner capture occurs before _burn tax collection, so a not-yet-materialized foreclosure retains its successful nine-event collection, foreclosure, burn, and underlying delivery behavior.",
+  retainedForgeTests: SECURITY_04_RETAINED_FORGE_TESTS,
+  invariantSources: Object.freeze({
+    [SECURITY_04_INVARIANT_SOURCE]:
+      "aae1d8fbdef2d2793e8c6c39cd7da09cee146971c5909574fea8243875beb829",
+    [SECURITY_04_INVARIANT_HELPER]:
+      "c69db0ef5cc4015f9e4a47a540b1c3ae688a6b0fb37ba1376a042b57161f1cf3",
+  }),
+});
+const SECURITY_04_BOUND_FILES = Object.freeze({
+  "compatibility/README.md":
+    "940d69135432484c320c07adcb7ddb6a3b23cffa30dc8361aae5be48b18e541f",
+  "docs/security/deferred-semantic-findings.md":
+    "429ecb9b5bbefdf2a39df12e760988b14fcd785ee41477ae64094ea895175ff1",
+  [SECURITY_04_REGRESSION_SOURCE]:
+    "866f5bf4ee563f43315af96c436d720a55146bb429fdb6587d825775a350e86e",
+  [SECURITY_04_INVARIANT_SOURCE]:
+    "aae1d8fbdef2d2793e8c6c39cd7da09cee146971c5909574fea8243875beb829",
+  [SECURITY_04_INVARIANT_HELPER]:
+    "c69db0ef5cc4015f9e4a47a540b1c3ae688a6b0fb37ba1376a042b57161f1cf3",
+});
+const SECURITY_04_CONFIG_FILES = Object.freeze({
+  ...SECURITY_03_CONFIG_FILES,
+  "compatibility/compiler-warning-allowlist.json":
+    "3dfbd1a79d97a077fe78c25f5a3d5fb6ae11327868b806caa1c54f0143a1cf57",
+});
+const SECURITY_04_CORE_CHANGED_PATHS = Object.freeze(
+  [
+    "compatibility/README.md",
+    "compatibility/compiler-warning-allowlist.json",
+    SECURITY_04_WRAPPER_SOURCE,
+    "docs/security/deferred-semantic-findings.md",
+    "scripts/compatibility.js",
+    SECURITY_04_REGRESSION_SOURCE,
+    SECURITY_04_INVARIANT_SOURCE,
+    SECURITY_04_INVARIANT_HELPER,
+  ].sort()
+);
+const SECURITY_04_FINAL_CHANGED_PATHS = Object.freeze(
+  [
+    ...SECURITY_04_CORE_CHANGED_PATHS,
+    SECURITY_04_EVIDENCE_PATH,
+    "compatibility/reviewed-differences.json",
+  ].sort()
+);
+const SECURITY_04_COMPILER_SOURCE_COUNT = 29;
+const SECURITY_04_COMPILER_SOURCE_NAMES_SHA256 =
+  "e0fad97cd536ee22fdd2d9f3da46b483190352856d175166a763cc0c2667d4d5";
+const SECURITY_04_COMPILER_CANDIDATE_CLOSURE_SHA256 =
+  "1c174ffca1bd590e4dff0842a22f38ef6c7b07a8bdb2443c9e132446df50022e";
+const SECURITY_04_WRAPPER_BYTECODE_PATH =
+  /^\$\.contracts\.contracts\/Wrapper\.sol:Wrapper\.(?:creationBytecode|runtimeBytecode)\.(?:keccak256|metadataBytes|metadataStrippedKeccak256|metadataStrippedOpcodes|metadataStrippedSizeBytes|sizeBytes)$/;
 const PROJECT_REVERT_STRINGS_PATH = path.join(
   ROOT,
   "compatibility",
@@ -914,6 +1055,21 @@ function validateSecurity03Candidate(baseline, candidate) {
   validateSecurity01HardFields(baseline, candidate);
 }
 
+function validateSecurity04Candidate(baseline, candidate) {
+  validateSecurity01Inventory(candidate);
+  validateStage08Candidate(baseline, candidate);
+  stage09ForgeStdEvidence();
+  const checkpoint = security03CheckpointAnchor();
+  security04SourceEvidence();
+  security04BehaviorEvidence(candidate);
+  validateSecurity04RevertBinding(
+    protectedProjectRevertStrings(),
+    candidate.projectRevertStrings
+  );
+  validateSecurity01HardFields(baseline, candidate);
+  validateSecurity04PCOEquality(baseline, candidate, checkpoint);
+}
+
 const REVIEW_POLICIES = Object.freeze({
   "stage-04-source-path-metadata-and-gas": Object.freeze({
     candidate: "stage-04-package-canonical-openzeppelin",
@@ -1170,6 +1326,28 @@ const REVIEW_POLICIES = Object.freeze({
       );
     },
     validateCandidate: validateSecurity03Candidate,
+  }),
+  [SECURITY_04_POLICY]: Object.freeze({
+    candidate: SECURITY_04_CANDIDATE,
+    requiredOpcodeEvidence: Object.freeze({
+      mode: "security-04-security-03-relative-wrapper-only",
+      path: SECURITY_04_EVIDENCE_PATH,
+      contracts: STAGE_08_PRODUCTION_CONTRACTS,
+    }),
+    requiredSafetyEvidence: Object.freeze({
+      path: "compatibility/evidence/stage-07-safety-artifacts.json",
+      sha256:
+        "0065814caec6e3044951f80c891c9948454e90138d016513ed07d0fcfb7c67d8",
+    }),
+    requiredSecurity03Checkpoint: SECURITY_04_CHECKPOINT_BINDING,
+    requiredBehaviorEvidence: SECURITY_04_BEHAVIOR_EVIDENCE,
+    permits(reviewPath) {
+      return (
+        SECURITY_04_WRAPPER_BYTECODE_PATH.test(reviewPath) ||
+        STAGE_08_GAS_SNAPSHOT_PATH.test(reviewPath)
+      );
+    },
+    validateCandidate: validateSecurity04Candidate,
   }),
 });
 
@@ -1509,6 +1687,19 @@ function validateSecurity03RevertBinding(baselineEntries, candidateEntries) {
   }
 }
 
+function security04ProjectRevertStrings(baselineEntries) {
+  return security03ProjectRevertStrings(baselineEntries);
+}
+
+function validateSecurity04RevertBinding(baselineEntries, candidateEntries) {
+  const expected = security04ProjectRevertStrings(baselineEntries);
+  if (!valuesEqual(candidateEntries, expected)) {
+    throw new Error(
+      "Security 04 must preserve every Security 03 project-owned revert string and callsite exactly"
+    );
+  }
+}
+
 function validateSecurity01ChangedPaths(changedPaths) {
   const unexpected = changedPaths.filter(
     (relativePath) =>
@@ -1794,6 +1985,114 @@ function security03SourceEvidence() {
     boundFiles: security03BoundFileEvidence(),
     configFiles: security03ConfigEvidence(),
     compilerSources: security03CompilerSourceEvidence(),
+  });
+}
+
+function validateSecurity04ChangedPaths(actual) {
+  const permittedStates = [
+    SECURITY_04_CORE_CHANGED_PATHS,
+    [
+      ...SECURITY_04_CORE_CHANGED_PATHS,
+      "compatibility/reviewed-differences.json",
+    ],
+    SECURITY_04_FINAL_CHANGED_PATHS,
+  ].map((paths) => [...new Set(paths)].sort());
+  const normalized = [...new Set(actual)].sort();
+  if (!permittedStates.some((expected) => valuesEqual(normalized, expected))) {
+    const differences = collectDifferences(
+      SECURITY_04_FINAL_CHANGED_PATHS,
+      normalized,
+      "$.security04ChangedPaths"
+    );
+    throw new Error(
+      `Security 04 repository changes differ from its exact core/review/evidence states:\n${differences
+        .slice(0, 20)
+        .map((difference) => `- ${formatDifference(difference)}`)
+        .join("\n")}`
+    );
+  }
+  return [...SECURITY_04_FINAL_CHANGED_PATHS];
+}
+
+function security04BoundFileEvidence() {
+  const files = fileDigestEvidence(SECURITY_04_BOUND_FILES);
+  validateExactFileDigests(files, SECURITY_04_BOUND_FILES, "security04Files");
+  return files;
+}
+
+function security04ConfigEvidence() {
+  const files = fileDigestEvidence(SECURITY_04_CONFIG_FILES);
+  validateExactFileDigests(files, SECURITY_04_CONFIG_FILES, "configFiles");
+  return files;
+}
+
+function validateSecurity04CompilerSourceEvidence(evidence) {
+  if (
+    evidence.sourceCount !== SECURITY_04_COMPILER_SOURCE_COUNT ||
+    evidence.sourceNamesSha256 !== SECURITY_04_COMPILER_SOURCE_NAMES_SHA256 ||
+    evidence.security03ClosureSha256 !==
+      SECURITY_03_COMPILER_CANDIDATE_CLOSURE_SHA256 ||
+    evidence.candidateClosureSha256 !==
+      SECURITY_04_COMPILER_CANDIDATE_CLOSURE_SHA256 ||
+    !valuesEqual(evidence.addedSources, []) ||
+    !valuesEqual(evidence.removedSources, []) ||
+    !valuesEqual(evidence.changedSources, [
+      {
+        path: SECURITY_04_WRAPPER_SOURCE,
+        security03Sha256: SECURITY_04_WRAPPER_BASE_SHA256,
+        candidateSha256: SECURITY_04_WRAPPER_CANDIDATE_SHA256,
+      },
+    ])
+  ) {
+    throw new Error(
+      "Security 04 compiler source closure differs from the exact Security 03 closure plus its one authorized Wrapper edit"
+    );
+  }
+}
+
+function security04CompilerSourceEvidence() {
+  const sourceHashes = compilerSourceHashes();
+  if (
+    sourceHashes[SECURITY_04_WRAPPER_SOURCE] !==
+    SECURITY_04_WRAPPER_CANDIDATE_SHA256
+  ) {
+    throw new Error(
+      "Security 04 compiler input is missing the exact authorized Wrapper source"
+    );
+  }
+  const security03Hashes = { ...sourceHashes };
+  security03Hashes[SECURITY_04_WRAPPER_SOURCE] =
+    SECURITY_04_WRAPPER_BASE_SHA256;
+  const evidence = sorted({
+    sourceCount: Object.keys(sourceHashes).length,
+    sourceNamesSha256: sha256(stableJson(Object.keys(sourceHashes).sort())),
+    security03ClosureSha256: sha256(stableJson(security03Hashes)),
+    candidateClosureSha256: sha256(stableJson(sourceHashes)),
+    addedSources: [],
+    removedSources: [],
+    changedSources: [
+      {
+        path: SECURITY_04_WRAPPER_SOURCE,
+        security03Sha256: SECURITY_04_WRAPPER_BASE_SHA256,
+        candidateSha256: SECURITY_04_WRAPPER_CANDIDATE_SHA256,
+      },
+    ],
+  });
+  validateSecurity04CompilerSourceEvidence(evidence);
+  return evidence;
+}
+
+function security04SourceEvidence() {
+  security03CheckpointAnchor();
+  return sorted({
+    checkpoint: SECURITY_04_CHECKPOINT_BINDING,
+    production: security04ProductionSourceEvidence(),
+    changedPaths: validateSecurity04ChangedPaths(
+      repositoryChangedPaths(SECURITY_04_BASE_COMMIT)
+    ),
+    boundFiles: security04BoundFileEvidence(),
+    configFiles: security04ConfigEvidence(),
+    compilerSources: security04CompilerSourceEvidence(),
   });
 }
 
@@ -2194,6 +2493,177 @@ function security03ProductionSourceEvidence() {
       },
     },
   });
+}
+
+function security04ProductionSourceEvidence() {
+  run("git", ["merge-base", "--is-ancestor", SECURITY_04_BASE_COMMIT, "HEAD"]);
+  const baseWrapper = run("git", [
+    "show",
+    `${SECURITY_04_BASE_COMMIT}:${SECURITY_04_WRAPPER_SOURCE}`,
+  ]).stdout;
+  if (sha256(baseWrapper) !== SECURITY_04_WRAPPER_BASE_SHA256) {
+    throw new Error("Security 04 Wrapper checkpoint source changed");
+  }
+  const beforeGuard = [
+    "    // Get current owner's address prior to burning.",
+    "    address owner = ownerOf(tokenId_);",
+    "",
+    "    // Delete wrapper state",
+  ].join("\n");
+  const afterGuard = [
+    "    // Get current owner's address prior to burning.",
+    "    address owner = ownerOf(tokenId_);",
+    "",
+    "    if (owner == address(this)) revert DestinationContractAddress();",
+    "",
+    "    // Delete wrapper state",
+  ].join("\n");
+  const expectedWrapper = replaceExactlyOnce(
+    baseWrapper,
+    beforeGuard,
+    afterGuard,
+    "Security 04 unwrap self-destination guard placement"
+  );
+  const candidateWrapper = fs.readFileSync(
+    path.join(ROOT, SECURITY_04_WRAPPER_SOURCE),
+    "utf8"
+  );
+  if (
+    candidateWrapper !== expectedWrapper ||
+    sha256(candidateWrapper) !== SECURITY_04_WRAPPER_CANDIDATE_SHA256
+  ) {
+    throw new Error(
+      "Security 04 permits only the exact DestinationContractAddress guard after originator authorization and owner capture but before destructive unwrap effects"
+    );
+  }
+  const unwrap = candidateWrapper.slice(
+    candidateWrapper.indexOf("  function unwrap(uint256 tokenId_)"),
+    candidateWrapper.indexOf("  /// @notice Queries the wrapped token's URI.")
+  );
+  const orderedFragments = [
+    "function unwrap(uint256 tokenId_) public _tokenMinted(tokenId_)",
+    "WrappedToken memory token = _wrappedTokenMap[tokenId_];",
+    'require(token.operatorAddress == msg.sender, "Wrap originator only");',
+    "address owner = ownerOf(tokenId_);",
+    "if (owner == address(this)) revert DestinationContractAddress();",
+    "delete _wrappedTokenMap[tokenId_];",
+    "_burn(tokenId_);",
+    "tokenContract.safeTransferFrom(address(this), owner, token.tokenId);",
+  ];
+  let cursor = -1;
+  for (const fragment of orderedFragments) {
+    const next = unwrap.indexOf(fragment);
+    if (next <= cursor) {
+      throw new Error(
+        `Security 04 unwrap guard precedence changed at: ${fragment}`
+      );
+    }
+    cursor = next;
+  }
+  return sorted({
+    baseCommit: SECURITY_04_BASE_COMMIT,
+    sourcePath: SECURITY_04_WRAPPER_SOURCE,
+    security03Sha256: SECURITY_04_WRAPPER_BASE_SHA256,
+    candidateSha256: SECURITY_04_WRAPPER_CANDIDATE_SHA256,
+    exactChange:
+      "After the existing mapping read and originator require, capture ownerOf and reject Wrapper as its own destination with the inherited DestinationContractAddress custom error before metadata deletion, burn, or underlying transfer.",
+    precedence: SECURITY_04_BEHAVIOR_EVIDENCE.guard.precedence,
+    error: SECURITY_04_BEHAVIOR_EVIDENCE.guard.error,
+  });
+}
+
+function validateSecurity04ProductionSourceBinding(evidence) {
+  const expected = security04ProductionSourceEvidence();
+  if (!valuesEqual(evidence, expected)) {
+    throw new Error("Security 04 production source binding is stale");
+  }
+}
+
+function security04BehaviorEvidence(candidate) {
+  const files = [
+    [
+      SECURITY_04_REGRESSION_SOURCE,
+      SECURITY_04_BEHAVIOR_EVIDENCE.guard.sourceSha256,
+      [
+        "_assertUnwrapGuardRevertsAndRollsBack",
+        '_error("Wrap originator only")',
+        "abi.encodeWithSelector(Remittance.DestinationContractAddress.selector)",
+        "assertEq(logs.length, 0)",
+        "_assertUnwrapGuardStateUnchanged",
+        "wrapper.takeoverLease{value: 1 ether}(wrappedId, 1 ether, 0)",
+        "assertEq(underlying.ownerOf(1), CAROL)",
+        "wrapper.transferFrom(ALICE, address(wrapper), directlyTransferredId)",
+      ],
+    ],
+    [
+      SECURITY_04_INVARIANT_SOURCE,
+      SECURITY_04_BEHAVIOR_EVIDENCE.invariantSources[
+        SECURITY_04_INVARIANT_SOURCE
+      ],
+      [
+        "handler.warpAndCollect(2, 0)",
+        "handler.unwrap(2)",
+        "ghostSelfDestinationUnwrapRejected",
+        "self-destination rejection preserves wrapper record",
+        "ghostSelfDestinationUnwrapRejections",
+      ],
+    ],
+    [
+      SECURITY_04_INVARIANT_HELPER,
+      SECURITY_04_BEHAVIOR_EVIDENCE.invariantSources[
+        SECURITY_04_INVARIANT_HELPER
+      ],
+      [
+        "abi.encodeWithSelector(Remittance.DestinationContractAddress.selector)",
+        "ghostSelfDestinationUnwrapRejected[tokenId] = true",
+        "ghostSelfDestinationUnwrapRejections++",
+        "ghostUnexpectedInvalidCallSuccess = true",
+      ],
+    ],
+  ];
+  for (const [relativePath, expectedSha256, fragments] of files) {
+    const bytes = fs.readFileSync(path.join(ROOT, relativePath));
+    if (sha256(bytes) !== expectedSha256) {
+      throw new Error(`Security 04 behavior source changed: ${relativePath}`);
+    }
+    const source = bytes.toString("utf8");
+    for (const fragment of fragments) {
+      if (!source.includes(fragment)) {
+        throw new Error(
+          `Security 04 behavior source ${relativePath} is missing: ${fragment}`
+        );
+      }
+    }
+  }
+  validateSecurity01Inventory(candidate);
+  for (const test of SECURITY_04_RETAINED_FORGE_TESTS) {
+    if (
+      candidate.tests.forge.names.filter((name) => name === test).length !== 1
+    ) {
+      throw new Error(
+        `Security 04 requires exactly one retained executed Forge identifier: ${test}`
+      );
+    }
+  }
+  const errors =
+    candidate.contracts["contracts/Wrapper.sol:Wrapper"]?.errors || [];
+  const matchingErrors = errors.filter(
+    (entry) =>
+      entry.signature === SECURITY_04_ERROR_SIGNATURE &&
+      entry.selector === SECURITY_04_ERROR_SELECTOR
+  );
+  if (matchingErrors.length !== 1) {
+    throw new Error(
+      "Security 04 requires the one existing DestinationContractAddress custom-error selector"
+    );
+  }
+  return sorted(SECURITY_04_BEHAVIOR_EVIDENCE);
+}
+
+function validateSecurity04BehaviorBinding(evidence) {
+  if (!valuesEqual(evidence, SECURITY_04_BEHAVIOR_EVIDENCE)) {
+    throw new Error("Security 04 behavior evidence binding is stale");
+  }
 }
 
 function security03BehaviorEvidence(candidate) {
@@ -3296,6 +3766,17 @@ function reviewPolicy(review) {
       );
     }
   }
+  if (policy.requiredSecurity03Checkpoint) {
+    const supplied = review.security03Checkpoint;
+    if (
+      !supplied ||
+      !valuesEqual(supplied, policy.requiredSecurity03Checkpoint)
+    ) {
+      throw new Error(
+        `Compatibility review policy ${review.policy} requires the exact Security 03 checkpoint`
+      );
+    }
+  }
   if (policy.requiredForgeStdEvidence) {
     const required = policy.requiredForgeStdEvidence;
     const supplied = review.forgeStdEvidence;
@@ -3668,6 +4149,41 @@ function security03Review(baselineBytes, differences) {
     },
     security02Checkpoint: SECURITY_03_CHECKPOINT_BINDING,
     behaviorEvidence: SECURITY_03_BEHAVIOR_EVIDENCE,
+    safetyEvidence: {
+      path: "compatibility/evidence/stage-07-safety-artifacts.json",
+      sha256:
+        "0065814caec6e3044951f80c891c9948454e90138d016513ed07d0fcfb7c67d8",
+    },
+  };
+}
+
+function security04ReviewReason(reviewPath) {
+  if (SECURITY_04_WRAPPER_BYTECODE_PATH.test(reviewPath)) {
+    return "The exact foreclosed-unwrap self-destination guard changes Wrapper compiler output. Security 04 records complete Security-03-relative Wrapper opcode diffs, raw and normalized hashes and sizes, EIP-170 checks, exact source placement, and behavior provenance; standalone PartialCommonOwnership remains exact.";
+  }
+  if (STAGE_08_GAS_SNAPSHOT_PATH.test(reviewPath)) {
+    return "The authorized Wrapper guard affects this deterministic gas result. Security 04 records the exact Security-03-relative legacy entry and rechecks all 12 key flows against max(3%, 2,000 gas).";
+  }
+  throw new Error(`Security 04 has no review reason for ${reviewPath}`);
+}
+
+function security04Review(baselineBytes, differences) {
+  return {
+    schemaVersion: 1,
+    candidate: SECURITY_04_CANDIDATE,
+    policy: SECURITY_04_POLICY,
+    baselineSha256: sha256(baselineBytes),
+    allowedDifferences: differences.map((difference) => ({
+      ...difference,
+      reason: security04ReviewReason(difference.path),
+    })),
+    opcodeEvidence: {
+      mode: "security-04-security-03-relative-wrapper-only",
+      path: SECURITY_04_EVIDENCE_PATH,
+      contracts: [...STAGE_08_PRODUCTION_CONTRACTS],
+    },
+    security03Checkpoint: SECURITY_04_CHECKPOINT_BINDING,
+    behaviorEvidence: SECURITY_04_BEHAVIOR_EVIDENCE,
     safetyEvidence: {
       path: "compatibility/evidence/stage-07-safety-artifacts.json",
       sha256:
@@ -4104,6 +4620,86 @@ function validateSecurity02CheckpointBinding(checkpoint) {
   }
 }
 
+function security03CheckpointAnchor() {
+  const evidenceBytes = fs.readFileSync(SECURITY_03_EVIDENCE_PATH);
+  const evidenceSha256 = sha256(evidenceBytes);
+  if (evidenceSha256 !== SECURITY_03_CHECKPOINT_EVIDENCE_SHA256) {
+    throw new Error(
+      `Security 03 checkpoint evidence changed: expected ${SECURITY_03_CHECKPOINT_EVIDENCE_SHA256}, received ${evidenceSha256}`
+    );
+  }
+  const evidence = JSON.parse(evidenceBytes);
+  if (
+    evidence.schemaVersion !== 1 ||
+    evidence.candidate !== SECURITY_03_CANDIDATE ||
+    evidence.mode !== "security-03-security-02-relative-full-diff"
+  ) {
+    throw new Error("Security 03 checkpoint evidence has an invalid identity");
+  }
+  const reviewBytes = Buffer.from(
+    run("git", [
+      "show",
+      `${SECURITY_04_BASE_COMMIT}:compatibility/reviewed-differences.json`,
+    ]).stdout
+  );
+  const reviewSha256 = sha256(reviewBytes);
+  if (reviewSha256 !== SECURITY_03_CHECKPOINT_REVIEW_SHA256) {
+    throw new Error(
+      `Security 03 checkpoint review changed: expected ${SECURITY_03_CHECKPOINT_REVIEW_SHA256}, received ${reviewSha256}`
+    );
+  }
+  const review = JSON.parse(reviewBytes);
+  if (
+    review.schemaVersion !== 1 ||
+    review.candidate !== SECURITY_03_CANDIDATE ||
+    review.policy !== SECURITY_03_POLICY ||
+    review.opcodeEvidence?.path !== SECURITY_03_EVIDENCE_PATH
+  ) {
+    throw new Error("Security 03 checkpoint review has an invalid identity");
+  }
+  const checkpoint = {
+    commit: SECURITY_04_BASE_COMMIT,
+    evidence: {
+      path: SECURITY_03_EVIDENCE_PATH,
+      sha256: evidenceSha256,
+      value: evidence,
+    },
+    review: {
+      path: "compatibility/reviewed-differences.json",
+      sha256: reviewSha256,
+      value: review,
+    },
+  };
+  validateSecurity03CheckpointBinding(checkpoint);
+  return checkpoint;
+}
+
+function validateSecurity03CheckpointBinding(checkpoint) {
+  const binding = {
+    commit: checkpoint?.commit,
+    evidence: {
+      path: checkpoint?.evidence?.path,
+      sha256: checkpoint?.evidence?.sha256,
+    },
+    review: {
+      path: checkpoint?.review?.path,
+      sha256: checkpoint?.review?.sha256,
+    },
+  };
+  if (!valuesEqual(binding, SECURITY_04_CHECKPOINT_BINDING)) {
+    throw new Error("Security 04 Security 03 checkpoint binding changed");
+  }
+  if (
+    checkpoint.evidence.value?.candidate !== SECURITY_03_CANDIDATE ||
+    checkpoint.evidence.value?.mode !==
+      "security-03-security-02-relative-full-diff" ||
+    checkpoint.review.value?.candidate !== SECURITY_03_CANDIDATE ||
+    checkpoint.review.value?.policy !== SECURITY_03_POLICY
+  ) {
+    throw new Error("Security 04 Security 03 checkpoint identity changed");
+  }
+}
+
 function applyUnifiedOpcodeDiff(baselineOpcodes, diff) {
   if (!diff) return baselineOpcodes;
   const baseline = opcodeInstructions(baselineOpcodes);
@@ -4296,6 +4892,75 @@ function security02CheckpointLegacyGasEntries(checkpoint) {
   }
   if (sha256(stableJson(previousEntries)) !== evidence.candidateEntriesSha256) {
     throw new Error("Security 02 legacy gas checkpoint digest changed");
+  }
+  return previousEntries;
+}
+
+function security03CheckpointOpcodes(
+  baseline,
+  qualifiedName,
+  bytecodeKind,
+  checkpoint
+) {
+  const security02 = security02CheckpointAnchor();
+  const security02Opcodes = security02CheckpointOpcodes(
+    baseline,
+    qualifiedName,
+    bytecodeKind,
+    security02
+  );
+  const security03Bytecode =
+    checkpoint.evidence.value.productionRelativeToSecurity02.contracts[
+      qualifiedName
+    ][bytecodeKind];
+  if (
+    sha256(security02Opcodes) !==
+    security03Bytecode.metadataStrippedOpcodes.security02Sha256
+  ) {
+    throw new Error(
+      `Security 04 could not reconstruct Security 02 ${qualifiedName} ${bytecodeKind}`
+    );
+  }
+  const security03Opcodes = applyUnifiedOpcodeDiff(
+    security02Opcodes,
+    security03Bytecode.metadataStrippedOpcodes.fullDiff.hunks
+  );
+  if (
+    sha256(security03Opcodes) !==
+    security03Bytecode.metadataStrippedOpcodes.candidateSha256
+  ) {
+    throw new Error(
+      `Security 04 could not reconstruct Security 03 ${qualifiedName} ${bytecodeKind}`
+    );
+  }
+  return security03Opcodes;
+}
+
+function security03CheckpointLegacyGasEntries(checkpoint) {
+  const previousEntries = security02CheckpointLegacyGasEntries(
+    security02CheckpointAnchor()
+  );
+  const evidence = checkpoint.evidence.value.legacyGasRelativeToSecurity02;
+  if (
+    evidence.fuzzSeed !== "0x721" ||
+    evidence.inventoryCount !== previousEntries.length ||
+    sha256(stableJson(previousEntries)) !== evidence.security02EntriesSha256
+  ) {
+    throw new Error(
+      "Security 03 checkpoint has an invalid legacy gas inventory"
+    );
+  }
+  for (const change of evidence.changes) {
+    const match = change.path.match(/^\$\.gasSnapshot\.entries\[(\d+)\]$/);
+    if (!match) throw new Error(`Invalid Security 03 gas path: ${change.path}`);
+    const index = Number(match[1]);
+    if (previousEntries[index] !== change.security02Value) {
+      throw new Error(`Security 03 gas anchor mismatch at index ${index}`);
+    }
+    previousEntries[index] = change.candidateValue;
+  }
+  if (sha256(stableJson(previousEntries)) !== evidence.candidateEntriesSha256) {
+    throw new Error("Security 03 legacy gas checkpoint digest changed");
   }
   return previousEntries;
 }
@@ -5406,6 +6071,334 @@ function security03Evidence(review, baseline, candidate) {
   });
 }
 
+function security04RevertEvidence(baseline, candidate) {
+  const checkpointEntries = security03ProjectRevertStrings(
+    baseline.projectRevertStrings
+  );
+  if (!valuesEqual(candidate.projectRevertStrings, checkpointEntries)) {
+    throw new Error("Security 04 revert-callsite evidence does not match");
+  }
+  return sorted({
+    security03Count: checkpointEntries.length,
+    candidateCount: candidate.projectRevertStrings.length,
+    security03Sha256: sha256(stableJson(checkpointEntries)),
+    candidateSha256: sha256(stableJson(candidate.projectRevertStrings)),
+    equal: true,
+  });
+}
+
+function security04HardCompatibilityEvidence(baseline, candidate) {
+  const evidence = security01HardCompatibilityEvidence(baseline, candidate);
+  delete evidence.behaviorTestInventory.unchangedFromStage09;
+  evidence.behaviorTestInventory.unchangedFromSecurity03 = true;
+  return sorted(evidence);
+}
+
+function security04PCOEqualityEvidence(baseline, candidate, checkpoint) {
+  const qualifiedName =
+    "contracts/token/PartialCommonOwnership.sol:PartialCommonOwnership";
+  const checkpointContract =
+    checkpoint.evidence.value.productionRelativeToSecurity02.contracts[
+      qualifiedName
+    ];
+  const candidateContract = candidate.contracts[qualifiedName];
+  if (!checkpointContract || !candidateContract) {
+    throw new Error("Security 04 PCO equality anchor is missing");
+  }
+  const bytecodes = {};
+  for (const bytecodeKind of ["creationBytecode", "runtimeBytecode"]) {
+    const checkpointBytecode = checkpointContract[bytecodeKind];
+    const checkpointOpcodes = security03CheckpointOpcodes(
+      baseline,
+      qualifiedName,
+      bytecodeKind,
+      checkpoint
+    );
+    const expected = {
+      rawKeccak256: checkpointBytecode.rawBytecode.candidateKeccak256,
+      rawSizeBytes: checkpointBytecode.rawBytecode.candidateSizeBytes,
+      metadataBytes: checkpointBytecode.rawBytecode.candidateMetadataBytes,
+      metadataStrippedKeccak256:
+        checkpointBytecode.metadataStrippedBytecode.candidateKeccak256,
+      metadataStrippedSizeBytes:
+        checkpointBytecode.metadataStrippedBytecode.candidateSizeBytes,
+      metadataStrippedOpcodesSha256: sha256(checkpointOpcodes),
+    };
+    const actual = {
+      rawKeccak256: candidateContract[bytecodeKind].keccak256,
+      rawSizeBytes: candidateContract[bytecodeKind].sizeBytes,
+      metadataBytes: candidateContract[bytecodeKind].metadataBytes,
+      metadataStrippedKeccak256:
+        candidateContract[bytecodeKind].metadataStrippedKeccak256,
+      metadataStrippedSizeBytes:
+        candidateContract[bytecodeKind].metadataStrippedSizeBytes,
+      metadataStrippedOpcodesSha256: sha256(
+        candidateContract[bytecodeKind].metadataStrippedOpcodes
+      ),
+    };
+    if (
+      !valuesEqual(actual, expected) ||
+      candidateContract[bytecodeKind].metadataStrippedOpcodes !==
+        checkpointOpcodes
+    ) {
+      const differences = collectDifferences(
+        expected,
+        actual,
+        `$.security03PCO.${bytecodeKind}`
+      );
+      throw new Error(
+        `Security 04 must preserve standalone PCO ${bytecodeKind} exactly:\n${differences
+          .map((difference) => `- ${formatDifference(difference)}`)
+          .join("\n")}`
+      );
+    }
+    bytecodes[bytecodeKind] = { expected, candidate: actual, equal: true };
+  }
+  const security03RuntimeSize =
+    checkpointContract.runtimeBytecode.rawBytecode.candidateSizeBytes;
+  const candidateRuntimeSize = candidateContract.runtimeBytecode.sizeBytes;
+  if (
+    security03RuntimeSize !== candidateRuntimeSize ||
+    candidateRuntimeSize > 24_576
+  ) {
+    throw new Error("Security 04 PCO runtime size changed or exceeds EIP-170");
+  }
+  return sorted({
+    ...bytecodes,
+    eip170: {
+      limitBytes: 24_576,
+      security03RuntimeSizeBytes: security03RuntimeSize,
+      candidateRuntimeSizeBytes: candidateRuntimeSize,
+      equal: true,
+      candidateWithinLimit: true,
+    },
+  });
+}
+
+function validateSecurity04PCOEquality(baseline, candidate, checkpoint) {
+  security04PCOEqualityEvidence(baseline, candidate, checkpoint);
+}
+
+function security04ProductionEvidence(baseline, candidate, checkpoint) {
+  const qualifiedName = "contracts/Wrapper.sol:Wrapper";
+  const checkpointContract =
+    checkpoint.evidence.value.productionRelativeToSecurity02.contracts[
+      qualifiedName
+    ];
+  const candidateContract = candidate.contracts[qualifiedName];
+  if (!checkpointContract || !candidateContract) {
+    throw new Error("Security 04 Wrapper production anchor is missing");
+  }
+  const bytecodes = {};
+  for (const bytecodeKind of ["creationBytecode", "runtimeBytecode"]) {
+    const checkpointBytecode = checkpointContract[bytecodeKind];
+    const checkpointOpcodes = security03CheckpointOpcodes(
+      baseline,
+      qualifiedName,
+      bytecodeKind,
+      checkpoint
+    );
+    const candidateBytecode = candidateContract[bytecodeKind];
+    if (checkpointOpcodes === candidateBytecode.metadataStrippedOpcodes) {
+      throw new Error(
+        `Security 04 expected a Wrapper ${bytecodeKind} opcode consequence`
+      );
+    }
+    bytecodes[bytecodeKind] = {
+      rawBytecode: {
+        security03Keccak256: checkpointBytecode.rawBytecode.candidateKeccak256,
+        candidateKeccak256: candidateBytecode.keccak256,
+        security03SizeBytes: checkpointBytecode.rawBytecode.candidateSizeBytes,
+        candidateSizeBytes: candidateBytecode.sizeBytes,
+        sizeDeltaBytes:
+          candidateBytecode.sizeBytes -
+          checkpointBytecode.rawBytecode.candidateSizeBytes,
+        security03MetadataBytes:
+          checkpointBytecode.rawBytecode.candidateMetadataBytes,
+        candidateMetadataBytes: candidateBytecode.metadataBytes,
+      },
+      metadataStrippedBytecode: {
+        security03Keccak256:
+          checkpointBytecode.metadataStrippedBytecode.candidateKeccak256,
+        candidateKeccak256: candidateBytecode.metadataStrippedKeccak256,
+        security03SizeBytes:
+          checkpointBytecode.metadataStrippedBytecode.candidateSizeBytes,
+        candidateSizeBytes: candidateBytecode.metadataStrippedSizeBytes,
+        sizeDeltaBytes:
+          candidateBytecode.metadataStrippedSizeBytes -
+          checkpointBytecode.metadataStrippedBytecode.candidateSizeBytes,
+      },
+      metadataStrippedOpcodes: {
+        security03Sha256: sha256(checkpointOpcodes),
+        candidateSha256: sha256(candidateBytecode.metadataStrippedOpcodes),
+        equal: false,
+        fullDiff: unifiedOpcodeDiff(
+          checkpointOpcodes,
+          candidateBytecode.metadataStrippedOpcodes
+        ),
+      },
+    };
+  }
+  const security03RuntimeSize =
+    checkpointContract.runtimeBytecode.rawBytecode.candidateSizeBytes;
+  const candidateRuntimeSize = candidateContract.runtimeBytecode.sizeBytes;
+  if (candidateRuntimeSize > 24_576) {
+    throw new Error("Security 04 Wrapper exceeds the EIP-170 size limit");
+  }
+  const expectedCompiler =
+    checkpoint.evidence.value.productionRelativeToSecurity02.compiler;
+  const candidateCompiler = {
+    version: candidate.compiler.version,
+    longVersion: candidate.compiler.longVersion,
+    settingsSha256: sha256(stableJson(candidate.compiler.settings)),
+  };
+  if (!valuesEqual(candidateCompiler, expectedCompiler)) {
+    throw new Error("Security 04 compiler differs from Security 03");
+  }
+  return sorted({
+    compiler: candidateCompiler,
+    contracts: {
+      [qualifiedName]: {
+        ...bytecodes,
+        eip170: {
+          limitBytes: 24_576,
+          security03RuntimeSizeBytes: security03RuntimeSize,
+          candidateRuntimeSizeBytes: candidateRuntimeSize,
+          sizeDeltaBytes: candidateRuntimeSize - security03RuntimeSize,
+          security03WithinLimit: security03RuntimeSize <= 24_576,
+          candidateWithinLimit: true,
+        },
+      },
+      "contracts/token/PartialCommonOwnership.sol:PartialCommonOwnership":
+        security04PCOEqualityEvidence(baseline, candidate, checkpoint),
+    },
+  });
+}
+
+function security04LegacyGasEvidence(candidate, checkpoint) {
+  const previousEntries = security03CheckpointLegacyGasEntries(checkpoint);
+  const candidateEntries = candidate.gasSnapshot.entries;
+  if (
+    candidate.gasSnapshot.fuzzSeed !== "0x721" ||
+    candidateEntries.length !== previousEntries.length
+  ) {
+    throw new Error("Security 04 must preserve the legacy gas inventory");
+  }
+  const changes = [];
+  for (let index = 0; index < previousEntries.length; index += 1) {
+    if (previousEntries[index] !== candidateEntries[index]) {
+      changes.push({
+        path: `$.gasSnapshot.entries[${index}]`,
+        security03Value: previousEntries[index],
+        candidateValue: candidateEntries[index],
+      });
+    }
+  }
+  return sorted({
+    fuzzSeed: "0x721",
+    inventoryCount: previousEntries.length,
+    security03EntriesSha256: sha256(stableJson(previousEntries)),
+    candidateEntriesSha256: sha256(stableJson(candidateEntries)),
+    changedIndices: changes.map(({ path: reviewPath }) =>
+      Number(reviewPath.match(/\[(\d+)\]/)[1])
+    ),
+    changes,
+  });
+}
+
+function security04KeyFlowGasEvidence(checkpoint, candidateGas) {
+  const previous = new Map(
+    checkpoint.evidence.value.keyFlowGasRelativeToSecurity02.comparisons.map(
+      (entry) => [entry.name, entry]
+    )
+  );
+  const current = new Map();
+  for (const [group, entries] of Object.entries(candidateGas.groups)) {
+    for (const entry of entries) current.set(entry.name, { group, ...entry });
+  }
+  if (!valuesEqual([...previous.keys()].sort(), [...current.keys()].sort())) {
+    throw new Error("Security 04 must preserve the 12 key-flow gas inventory");
+  }
+  const comparisons = [...previous.keys()].sort().map((name) => {
+    const security03 = previous.get(name);
+    const candidateEntry = current.get(name);
+    if (
+      security03.group !== candidateEntry.group ||
+      security03.baselineGas !== candidateEntry.baselineGas ||
+      security03.maximumGas !== candidateEntry.maximumGas ||
+      !candidateEntry.withinLimit
+    ) {
+      throw new Error(`Security 04 gas evidence is invalid for ${name}`);
+    }
+    return {
+      group: candidateEntry.group,
+      name,
+      security03Gas: security03.candidateGas,
+      candidateGas: candidateEntry.candidateGas,
+      deltaGas: candidateEntry.candidateGas - security03.candidateGas,
+      baselineGas: candidateEntry.baselineGas,
+      maximumGas: candidateEntry.maximumGas,
+      withinBaselineLimit: true,
+    };
+  });
+  return sorted({
+    baselinePath: candidateGas.baselinePath,
+    baselineSha256: candidateGas.baselineSha256,
+    baselinePolicy: candidateGas.policy,
+    fuzzSeed: candidateGas.fuzzSeed,
+    comparisons,
+  });
+}
+
+function security04CustomErrorEvidence(candidate) {
+  const matching = candidate.contracts[
+    "contracts/Wrapper.sol:Wrapper"
+  ].errors.filter(
+    (entry) =>
+      entry.signature === SECURITY_04_ERROR_SIGNATURE &&
+      entry.selector === SECURITY_04_ERROR_SELECTOR
+  );
+  if (matching.length !== 1) {
+    throw new Error("Security 04 custom-error evidence changed");
+  }
+  return sorted({
+    ...matching[0],
+    declarationChange: false,
+    inheritedFrom: "contracts/token/modules/Remittance.sol:Remittance",
+    usedByGuard: true,
+  });
+}
+
+function security04Evidence(review, baseline, candidate) {
+  const checkpoint = security03CheckpointAnchor();
+  const keyFlowGas = stage08GasEvidence();
+  return sorted({
+    schemaVersion: 1,
+    candidate: review.candidate,
+    baselineSha256: review.baselineSha256,
+    mode: review.opcodeEvidence.mode,
+    inheritedSecurity03Checkpoint: SECURITY_04_CHECKPOINT_BINDING,
+    sourcePatch: security04SourceEvidence(),
+    intentionalBehaviorChange: security04BehaviorEvidence(candidate),
+    customError: security04CustomErrorEvidence(candidate),
+    revertCallsite: security04RevertEvidence(baseline, candidate),
+    hardCompatibility: security04HardCompatibilityEvidence(baseline, candidate),
+    productionRelativeToSecurity03: security04ProductionEvidence(
+      baseline,
+      candidate,
+      checkpoint
+    ),
+    legacyGasRelativeToSecurity03: security04LegacyGasEvidence(
+      candidate,
+      checkpoint
+    ),
+    keyFlowGasRelativeToSecurity03: security04KeyFlowGasEvidence(
+      checkpoint,
+      keyFlowGas
+    ),
+  });
+}
+
 function security01ComparisonBaseline(baseline, candidate) {
   validateSecurity01Inventory(candidate);
   security01SourceEvidence();
@@ -5565,6 +6558,54 @@ function security03ComparisonBaseline(baseline, candidate) {
   expectedToolchain.forge[2] = candidate.toolchain.forge[2];
   if (!valuesEqual(candidate.toolchain, expectedToolchain)) {
     throw new Error("Security 03 must preserve the pinned Forge identity");
+  }
+  comparison.toolchain = expectedToolchain;
+  return comparison;
+}
+
+function security04ComparisonBaseline(baseline, candidate) {
+  validateSecurity01Inventory(candidate);
+  security04SourceEvidence();
+  validateStage08Candidate(baseline, candidate);
+  const checkpoint = security03CheckpointAnchor();
+  const comparison = deepClone(baseline);
+  comparison.compiler.version = STAGE_08_COMPILER_VERSION;
+  comparison.compiler.longVersion = STAGE_08_COMPILER_LONG_VERSION;
+
+  for (const qualifiedName of STAGE_08_PRODUCTION_CONTRACTS) {
+    const checkpointContract =
+      checkpoint.evidence.value.productionRelativeToSecurity02.contracts[
+        qualifiedName
+      ];
+    for (const bytecodeKind of ["creationBytecode", "runtimeBytecode"]) {
+      const checkpointBytecode = checkpointContract[bytecodeKind];
+      Object.assign(comparison.contracts[qualifiedName][bytecodeKind], {
+        keccak256: checkpointBytecode.rawBytecode.candidateKeccak256,
+        sizeBytes: checkpointBytecode.rawBytecode.candidateSizeBytes,
+        metadataBytes: checkpointBytecode.rawBytecode.candidateMetadataBytes,
+        metadataStrippedKeccak256:
+          checkpointBytecode.metadataStrippedBytecode.candidateKeccak256,
+        metadataStrippedSizeBytes:
+          checkpointBytecode.metadataStrippedBytecode.candidateSizeBytes,
+        metadataStrippedOpcodes: security03CheckpointOpcodes(
+          baseline,
+          qualifiedName,
+          bytecodeKind,
+          checkpoint
+        ),
+      });
+    }
+  }
+  comparison.gasSnapshot.entries =
+    security03CheckpointLegacyGasEntries(checkpoint);
+  comparison.tests = deepClone(candidate.tests);
+  comparison.projectRevertStrings = security04ProjectRevertStrings(
+    baseline.projectRevertStrings
+  );
+  const expectedToolchain = deepClone(baseline.toolchain);
+  expectedToolchain.forge[2] = candidate.toolchain.forge[2];
+  if (!valuesEqual(candidate.toolchain, expectedToolchain)) {
+    throw new Error("Security 04 must preserve the pinned Forge identity");
   }
   comparison.toolchain = expectedToolchain;
   return comparison;
@@ -6178,6 +7219,281 @@ function security03NegativeProbes(baseline, candidate, review) {
   return probes;
 }
 
+function expectSecurity04Rejection(name, operation) {
+  try {
+    operation();
+  } catch (_error) {
+    return name;
+  }
+  throw new Error(`Security 04 negative probe unexpectedly passed: ${name}`);
+}
+
+function security04NegativeProbes(baseline, candidate, review) {
+  const probes = [];
+  const reject = (name, operation) =>
+    probes.push(expectSecurity04Rejection(name, operation));
+  const wrapperName = "contracts/Wrapper.sol:Wrapper";
+  const pcoName =
+    "contracts/token/PartialCommonOwnership.sol:PartialCommonOwnership";
+
+  const forgeCountDrift = deepClone(candidate);
+  forgeCountDrift.tests.forge.count += 1;
+  reject("Forge inventory count drift", () =>
+    validateSecurity01Inventory(forgeCountDrift)
+  );
+  const forgeNameDrift = deepClone(candidate);
+  forgeNameDrift.tests.forge.names[0] += "_drift";
+  reject("Forge inventory name drift", () =>
+    validateSecurity01Inventory(forgeNameDrift)
+  );
+  const hardhatCountDrift = deepClone(candidate);
+  hardhatCountDrift.tests.hardhat.count += 1;
+  reject("Hardhat inventory count drift", () =>
+    validateSecurity01Inventory(hardhatCountDrift)
+  );
+  const hardhatNameDrift = deepClone(candidate);
+  hardhatNameDrift.tests.hardhat.names[0] += " drift";
+  reject("Hardhat inventory name drift", () =>
+    validateSecurity01Inventory(hardhatNameDrift)
+  );
+  const parityDrift = deepClone(SECURITY_01_PARITY_FILES);
+  parityDrift["compatibility/parity-map.json"] = "0".repeat(64);
+  reject("parity-map digest drift", () =>
+    validateExactFileDigests(
+      parityDrift,
+      SECURITY_01_PARITY_FILES,
+      "parityFiles"
+    )
+  );
+  const retainedTestDrift = deepClone(candidate);
+  const retainedIndex = retainedTestDrift.tests.forge.names.indexOf(
+    SECURITY_04_REGRESSION_TEST
+  );
+  if (retainedIndex < 0) {
+    throw new Error(
+      "Security 04 negative probes could not find regression test"
+    );
+  }
+  retainedTestDrift.tests.forge.names[retainedIndex] += "_drift";
+  reject("retained guard regression identifier drift", () =>
+    security04BehaviorEvidence(retainedTestDrift)
+  );
+
+  const checkpointEvidenceDrift = security03CheckpointAnchor();
+  checkpointEvidenceDrift.evidence.sha256 = "0".repeat(64);
+  reject("Security 03 evidence checkpoint drift", () =>
+    validateSecurity03CheckpointBinding(checkpointEvidenceDrift)
+  );
+  const checkpointReviewDrift = security03CheckpointAnchor();
+  checkpointReviewDrift.review.sha256 = "0".repeat(64);
+  reject("Security 03 review checkpoint drift", () =>
+    validateSecurity03CheckpointBinding(checkpointReviewDrift)
+  );
+
+  reject("unauthorized repository path", () =>
+    validateSecurity04ChangedPaths([
+      ...SECURITY_04_CORE_CHANGED_PATHS,
+      "contracts/token/modules/Valuation.sol",
+    ])
+  );
+  reject("missing authorized repository path", () =>
+    validateSecurity04ChangedPaths(
+      SECURITY_04_CORE_CHANGED_PATHS.filter(
+        (relativePath) => relativePath !== SECURITY_04_REGRESSION_SOURCE
+      )
+    )
+  );
+
+  const boundFileDrift = deepClone(SECURITY_04_BOUND_FILES);
+  boundFileDrift[SECURITY_04_REGRESSION_SOURCE] = "0".repeat(64);
+  reject("guard regression file digest drift", () =>
+    validateExactFileDigests(
+      boundFileDrift,
+      SECURITY_04_BOUND_FILES,
+      "security04Files"
+    )
+  );
+  const configDrift = deepClone(SECURITY_04_CONFIG_FILES);
+  configDrift["compatibility/compiler-warning-allowlist.json"] = "0".repeat(64);
+  reject("warning allowlist digest drift", () =>
+    validateExactFileDigests(
+      configDrift,
+      SECURITY_04_CONFIG_FILES,
+      "configFiles"
+    )
+  );
+
+  const compilerClosureDrift = security04CompilerSourceEvidence();
+  compilerClosureDrift.candidateClosureSha256 = "0".repeat(64);
+  reject("compiler source closure drift", () =>
+    validateSecurity04CompilerSourceEvidence(compilerClosureDrift)
+  );
+  const compilerSourceAddition = security04CompilerSourceEvidence();
+  compilerSourceAddition.sourceCount += 1;
+  compilerSourceAddition.addedSources.push("contracts/test/Unexpected.sol");
+  reject("compiler source addition", () =>
+    validateSecurity04CompilerSourceEvidence(compilerSourceAddition)
+  );
+  const compilerSourceSubstitution = security04CompilerSourceEvidence();
+  compilerSourceSubstitution.changedSources[0].candidateSha256 = "0".repeat(64);
+  reject("compiler source digest substitution", () =>
+    validateSecurity04CompilerSourceEvidence(compilerSourceSubstitution)
+  );
+
+  const productionSourceDrift = security04ProductionSourceEvidence();
+  productionSourceDrift.precedence = [
+    productionSourceDrift.precedence[0],
+    productionSourceDrift.precedence[4],
+    ...productionSourceDrift.precedence.slice(1, 4),
+    ...productionSourceDrift.precedence.slice(5),
+  ];
+  reject("unwrap source precedence drift", () =>
+    validateSecurity04ProductionSourceBinding(productionSourceDrift)
+  );
+  const behaviorDrift = deepClone(SECURITY_04_BEHAVIOR_EVIDENCE);
+  behaviorDrift.guard.precedence[2] = "DestinationContractAddress guard";
+  reject("guard behavior precedence drift", () =>
+    validateSecurity04BehaviorBinding(behaviorDrift)
+  );
+
+  const customErrorDrift = deepClone(candidate);
+  const destinationError = customErrorDrift.contracts[wrapperName].errors.find(
+    (entry) => entry.signature === SECURITY_04_ERROR_SIGNATURE
+  );
+  if (!destinationError) {
+    throw new Error("Security 04 negative probes could not find custom error");
+  }
+  destinationError.selector = "0x00000000";
+  reject("DestinationContractAddress selector drift", () =>
+    security04CustomErrorEvidence(customErrorDrift)
+  );
+
+  const revertDrift = deepClone(candidate.projectRevertStrings);
+  revertDrift[revertDrift.length - 1].value += " drift";
+  reject("project revert callsite drift", () =>
+    validateSecurity04RevertBinding(baseline.projectRevertStrings, revertDrift)
+  );
+
+  const hardFieldProbe = (name, mutate) => {
+    const drift = deepClone(candidate);
+    mutate(drift);
+    reject(name, () => validateSecurity01HardFields(baseline, drift));
+  };
+  hardFieldProbe("hard ABI drift", (drift) =>
+    drift.contracts[wrapperName].abi.push({
+      type: "function",
+      name: "drift",
+      inputs: [],
+      outputs: [],
+      stateMutability: "view",
+    })
+  );
+  hardFieldProbe("hard function selector drift", (drift) => {
+    drift.contracts[wrapperName].functions[0].selector = "0x00000000";
+  });
+  hardFieldProbe("hard event drift", (drift) => {
+    drift.contracts[wrapperName].events[0].topic0 = `0x${"00".repeat(32)}`;
+  });
+  hardFieldProbe("hard error drift", (drift) => {
+    drift.contracts[wrapperName].errors[0].selector = "0x00000000";
+  });
+  hardFieldProbe("hard storage drift", (drift) => {
+    drift.contracts[pcoName].storageLayout.storage[0].slot = "999";
+  });
+  hardFieldProbe("hard interface drift", (drift) => {
+    drift.interfaces[
+      "contracts/token/modules/interfaces/ILease.sol:ILease"
+    ].interfaceId = "0x00000000";
+  });
+  hardFieldProbe("hard enum drift", (drift) => {
+    drift.enums[0].members[0].ordinal = 99;
+  });
+  hardFieldProbe("hard ERC165 drift", (drift) => {
+    drift.erc165.probes.Wrapper[0].supported =
+      !drift.erc165.probes.Wrapper[0].supported;
+  });
+  hardFieldProbe("compiler settings drift", (drift) => {
+    drift.compiler.settings.optimizer.enabled = true;
+  });
+
+  const checkpoint = security03CheckpointAnchor();
+  const pcoRawHashDrift = deepClone(candidate);
+  pcoRawHashDrift.contracts[
+    pcoName
+  ].creationBytecode.keccak256 = `0x${"00".repeat(32)}`;
+  reject("standalone PCO raw bytecode drift", () =>
+    validateSecurity04PCOEquality(baseline, pcoRawHashDrift, checkpoint)
+  );
+  const pcoOpcodeDrift = deepClone(candidate);
+  pcoOpcodeDrift.contracts[pcoName].runtimeBytecode.metadataStrippedOpcodes +=
+    " STOP";
+  reject("standalone PCO opcode drift", () =>
+    validateSecurity04PCOEquality(baseline, pcoOpcodeDrift, checkpoint)
+  );
+  const pcoSizeDrift = deepClone(candidate);
+  pcoSizeDrift.contracts[pcoName].runtimeBytecode.sizeBytes += 1;
+  reject("standalone PCO runtime size drift", () =>
+    validateSecurity04PCOEquality(baseline, pcoSizeDrift, checkpoint)
+  );
+
+  const unauthorizedPcoPath = `$.contracts.${pcoName}.runtimeBytecode.keccak256`;
+  const unauthorizedPcoDifference = {
+    path: unauthorizedPcoPath,
+    baselineValue: "checkpoint",
+    candidateValue: "drift",
+    reason: "must be rejected",
+  };
+  const unauthorizedPcoReview = deepClone(review);
+  unauthorizedPcoReview.allowedDifferences.push(unauthorizedPcoDifference);
+  reject("unauthorized standalone PCO reviewed difference", () =>
+    validateReviewedDifferences(
+      unauthorizedPcoReview,
+      fs.readFileSync(BASELINE_PATH),
+      [
+        ...collectDifferences(
+          security04ComparisonBaseline(baseline, candidate),
+          candidate
+        ),
+        unauthorizedPcoDifference,
+      ]
+    )
+  );
+
+  const reviewCheckpointDrift = deepClone(review);
+  reviewCheckpointDrift.security03Checkpoint.evidence.sha256 = "0".repeat(64);
+  reject("review checkpoint binding drift", () =>
+    reviewPolicy(reviewCheckpointDrift)
+  );
+  const checkpointOpcodeDrift = security03CheckpointAnchor();
+  checkpointOpcodeDrift.evidence.value.productionRelativeToSecurity02.contracts[
+    wrapperName
+  ].runtimeBytecode.metadataStrippedOpcodes.candidateSha256 = "0".repeat(64);
+  reject("checkpoint opcode diff drift", () =>
+    security03CheckpointOpcodes(
+      baseline,
+      wrapperName,
+      "runtimeBytecode",
+      checkpointOpcodeDrift
+    )
+  );
+  const checkpointGasDrift = security03CheckpointAnchor();
+  checkpointGasDrift.evidence.value.legacyGasRelativeToSecurity02.candidateEntriesSha256 =
+    "0".repeat(64);
+  reject("checkpoint legacy gas drift", () =>
+    security03CheckpointLegacyGasEntries(checkpointGasDrift)
+  );
+
+  const evidencePath = opcodeEvidencePath(review);
+  const checkedInEvidence = JSON.parse(fs.readFileSync(evidencePath, "utf8"));
+  const staleEvidence = deepClone(checkedInEvidence);
+  staleEvidence.sourcePatch.production.candidateSha256 = "0".repeat(64);
+  reject("stale Security 04 opcode evidence", () =>
+    validateExactOpcodeEvidence(staleEvidence, checkedInEvidence)
+  );
+
+  return probes;
+}
+
 function reviewedOpcodeEvidence(review, baseline, candidate) {
   const configuration = review.opcodeEvidence;
   if (!configuration) return null;
@@ -6189,6 +7505,7 @@ function reviewedOpcodeEvidence(review, baseline, candidate) {
       "security-01-stage-09-relative-full-diff",
       "security-02-security-01-relative-full-diff",
       "security-03-security-02-relative-full-diff",
+      "security-04-security-03-relative-wrapper-only",
     ].includes(configuration.mode)
   ) {
     throw new Error(`Unsupported opcode evidence mode: ${configuration.mode}`);
@@ -6210,6 +7527,9 @@ function reviewedOpcodeEvidence(review, baseline, candidate) {
   }
   if (configuration.mode === "security-03-security-02-relative-full-diff") {
     return security03Evidence(review, baseline, candidate);
+  }
+  if (configuration.mode === "security-04-security-03-relative-wrapper-only") {
+    return security04Evidence(review, baseline, candidate);
   }
 
   const contracts = {};
@@ -6418,15 +7738,20 @@ function expectedProjectRevertStrings(command, protectedRevertStrings) {
   const security03Candidate = security03ProjectRevertStrings(
     protectedRevertStrings
   );
+  const security04Candidate = security04ProjectRevertStrings(
+    protectedRevertStrings
+  );
   if (command === "write-security-01-review") return security01Candidate;
   if (command === "write-security-02-review") return security02Candidate;
   if (command === "write-security-03-review") return security03Candidate;
+  if (command === "write-security-04-review") return security04Candidate;
   if (command === "diff") {
     return {
       baseline: protectedRevertStrings,
       security01Candidate,
       security02Candidate,
       security03Candidate,
+      security04Candidate,
     };
   }
   if (
@@ -6436,6 +7761,7 @@ function expectedProjectRevertStrings(command, protectedRevertStrings) {
       "security-01-negative-probes",
       "security-02-negative-probes",
       "security-03-negative-probes",
+      "security-04-negative-probes",
     ].includes(command) &&
     fs.existsSync(REVIEW_PATH)
   ) {
@@ -6443,6 +7769,7 @@ function expectedProjectRevertStrings(command, protectedRevertStrings) {
     if (review.policy === SECURITY_01_POLICY) return security01Candidate;
     if (review.policy === SECURITY_02_POLICY) return security02Candidate;
     if (review.policy === SECURITY_03_POLICY) return security03Candidate;
+    if (review.policy === SECURITY_04_POLICY) return security04Candidate;
   }
   return protectedRevertStrings;
 }
@@ -6459,16 +7786,18 @@ async function main() {
       "security-01-negative-probes",
       "security-02-negative-probes",
       "security-03-negative-probes",
+      "security-04-negative-probes",
       "write-stage-08-review",
       "write-stage-09-review",
       "write-security-01-review",
       "write-security-02-review",
       "write-security-03-review",
+      "write-security-04-review",
       "write-evidence",
     ].includes(command)
   ) {
     console.error(
-      "Usage: node scripts/compatibility.js <capture|check|diff|revert-strings|stage-09-negative-probes|security-01-negative-probes|security-02-negative-probes|security-03-negative-probes|write-stage-08-review|write-stage-09-review|write-security-01-review|write-security-02-review|write-security-03-review|write-evidence>"
+      "Usage: node scripts/compatibility.js <capture|check|diff|revert-strings|stage-09-negative-probes|security-01-negative-probes|security-02-negative-probes|security-03-negative-probes|security-04-negative-probes|write-stage-08-review|write-stage-09-review|write-security-01-review|write-security-02-review|write-security-03-review|write-security-04-review|write-evidence>"
     );
     process.exitCode = 2;
     return;
@@ -6550,6 +7879,7 @@ async function main() {
     "security-01-negative-probes",
     "security-02-negative-probes",
     "security-03-negative-probes",
+    "security-04-negative-probes",
   ].includes(command);
   const security01ReviewActive =
     command === "write-security-01-review" ||
@@ -6560,7 +7890,12 @@ async function main() {
   const security03ReviewActive =
     command === "write-security-03-review" ||
     (inheritedReviewCommand && existingReview?.policy === SECURITY_03_POLICY);
-  const comparisonBaseline = security03ReviewActive
+  const security04ReviewActive =
+    command === "write-security-04-review" ||
+    (inheritedReviewCommand && existingReview?.policy === SECURITY_04_POLICY);
+  const comparisonBaseline = security04ReviewActive
+    ? security04ComparisonBaseline(baseline, manifest)
+    : security03ReviewActive
     ? security03ComparisonBaseline(baseline, manifest)
     : security02ReviewActive
     ? security02ComparisonBaseline(baseline, manifest)
@@ -6663,6 +7998,23 @@ async function main() {
     );
     return;
   }
+  if (command === "write-security-04-review") {
+    const review = security04Review(baselineBytes, differences);
+    validateReviewedDifferences(review, baselineBytes, differences);
+    const policy = reviewPolicy(review);
+    policy.validateCandidate(baseline, manifest);
+    validateSafetyEvidence(review);
+    fs.writeFileSync(REVIEW_PATH, stableJson(review));
+    console.log(
+      `Wrote ${
+        differences.length
+      } exact Security 04 reviewed differences to ${path.relative(
+        ROOT,
+        REVIEW_PATH
+      )}`
+    );
+    return;
+  }
   if (command === "stage-09-negative-probes") {
     const probes = stage09NegativeProbes(baseline, manifest);
     console.log(`Stage 9 negative probes passed: ${probes.join("; ")}`);
@@ -6711,6 +8063,21 @@ async function main() {
     validateSafetyEvidence(review);
     const probes = security03NegativeProbes(baseline, manifest, review);
     console.log(`Security 03 negative probes passed: ${probes.join("; ")}`);
+    return;
+  }
+  if (command === "security-04-negative-probes") {
+    const review = readReviewedDifferences();
+    if (!review || review.policy !== SECURITY_04_POLICY) {
+      throw new Error(
+        "Security 04 negative probes require the exact Security 04 review"
+      );
+    }
+    validateReviewedDifferences(review, baselineBytes, differences);
+    const policy = reviewPolicy(review);
+    policy.validateCandidate(baseline, manifest);
+    validateSafetyEvidence(review);
+    const probes = security04NegativeProbes(baseline, manifest, review);
+    console.log(`Security 04 negative probes passed: ${probes.join("; ")}`);
     return;
   }
   const review = existingReview;
