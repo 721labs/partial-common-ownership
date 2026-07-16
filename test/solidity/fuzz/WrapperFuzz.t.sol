@@ -23,6 +23,19 @@ contract WrapperFuzzWrongReceiver is IERC721Receiver {
 /// @dev Bounded Wrapper fuzzing keeps arithmetic beneath overflow thresholds
 /// while covering every input field and the beneficiary/operator role split.
 contract WrapperFuzzTest is Test {
+    struct DelinquentTransferSnapshot {
+        address approval;
+        bool operatorApproval;
+        uint256 valuation;
+        uint256 deposit;
+        uint256 taxation;
+        uint256 transferTax;
+        uint256 collectionTime;
+        uint256 beneficiaryBalance;
+        uint256 beneficiaryRemittance;
+        uint256 wrapperEth;
+    }
+
     uint256 private constant TOKEN_COUNT = 3;
     uint256 private constant MAX_VALUATION = 100 ether;
     uint256 private constant MAX_DEPOSIT = 100 ether;
@@ -243,16 +256,35 @@ contract WrapperFuzzTest is Test {
         assertEq(vm.load(address(wrapper), _mappingSlot(wrappedId, LOCKED_SLOT)), bytes32(0));
     }
 
-    /// @dev DEFERRED SEMANTIC/SECURITY FINDING: when an owner holds multiple
-    /// wrapped tokens, transferFrom can collect a delinquent token's full
-    /// deposit and perform a nested foreclosure transfer in the hook, then
-    /// continue the original transfer with stale `from` state. The wrapped
-    /// ownership/balance accounting below is the exact legacy behavior. It is
-    /// frozen here so this safety-only stage neither hides nor silently fixes
-    /// a public semantic; remediation requires separate authorization.
+    /// @dev The legacy test identifier is retained for compatibility-manifest
+    /// inventory stability. The remediated behavior is an exact revert and
+    /// complete rollback across all caller and ERC721 transfer entry points.
     function test_regression_deferredDelinquentTransferContinuesAfterNestedForeclosure() public {
+        for (uint256 callerMode = 0; callerMode < 3; callerMode++) {
+            for (uint256 transferMode = 0; transferMode < 3; transferMode++) {
+                _resetWrapperFixtures();
+                _assertDelinquentTransferRevertsAndRollsBack(callerMode, transferMode);
+            }
+        }
+    }
+
+    /// @dev Tax collection may foreclose via a nested transfer from the hook.
+    /// The outer transfer must then reject its stale `from` value and roll back
+    /// the foreclosure, remittance, approvals, and every accounting change.
+    function _assertDelinquentTransferRevertsAndRollsBack(uint256 callerMode_, uint256 transferMode_) private {
         uint256 firstWrappedId = _wrapAsAlice(1, 1 ether, BOB, MAX_TAX_RATE, 1, 1 ether);
         uint256 secondWrappedId = _wrapAsAlice(2, 1 ether, BOB, MAX_TAX_RATE, 1, 1 ether);
+
+        address caller = ALICE;
+        if (callerMode_ == 1) {
+            vm.prank(ALICE);
+            wrapper.approve(CAROL, firstWrappedId);
+            caller = CAROL;
+        } else if (callerMode_ == 2) {
+            vm.prank(ALICE);
+            wrapper.setApprovalForAll(CAROL, true);
+            caller = CAROL;
+        }
 
         assertEq(wrapper.balanceOf(ALICE), 2);
         uint256 foreclosureBoundary = wrapper.foreclosureTime(firstWrappedId);
@@ -260,25 +292,62 @@ contract WrapperFuzzTest is Test {
         assertTrue(wrapper.foreclosed(firstWrappedId));
         assertEq(wrapper.ownerOf(firstWrappedId), ALICE);
         assertEq(wrapper.ownerOf(secondWrappedId), ALICE);
-        uint256 beneficiaryBalanceBefore = BOB.balance;
 
-        vm.prank(ALICE);
-        wrapper.transferFrom(ALICE, CAROL, firstWrappedId);
+        DelinquentTransferSnapshot memory before_ = _delinquentTransferSnapshot(firstWrappedId);
 
-        assertEq(wrapper.ownerOf(firstWrappedId), CAROL);
-        assertEq(wrapper.valuationOf(firstWrappedId), 0);
-        assertEq(wrapper.depositOf(firstWrappedId), 0);
-        assertEq(wrapper.taxationCollected(firstWrappedId), 1 ether);
-        assertEq(BOB.balance, beneficiaryBalanceBefore + 1 ether);
-        assertEq(underlying.ownerOf(1), address(wrapper));
+        vm.expectRevert(
+            abi.encodeWithSignature("Error(string)", "ERC721: transfer from incorrect owner"), address(wrapper)
+        );
+        vm.prank(caller);
+        if (transferMode_ == 0) {
+            wrapper.transferFrom(ALICE, CAROL, firstWrappedId);
+        } else if (transferMode_ == 1) {
+            wrapper.safeTransferFrom(ALICE, CAROL, firstWrappedId);
+        } else {
+            wrapper.safeTransferFrom(ALICE, CAROL, firstWrappedId, hex"0721");
+        }
 
-        // The nested transfer credited Wrapper, while the continuing outer
-        // transfer credited Carol and debited Alice a second time. Token two
-        // still reports Alice as owner even though Alice's balance is now zero.
-        assertEq(wrapper.balanceOf(address(wrapper)), 1);
-        assertEq(wrapper.balanceOf(CAROL), 1);
-        assertEq(wrapper.balanceOf(ALICE), 0);
+        assertEq(wrapper.ownerOf(firstWrappedId), ALICE);
         assertEq(wrapper.ownerOf(secondWrappedId), ALICE);
+        assertEq(wrapper.balanceOf(ALICE), 2);
+        assertEq(wrapper.balanceOf(address(wrapper)), 0);
+        assertEq(wrapper.balanceOf(CAROL), 0);
+        assertEq(wrapper.getApproved(firstWrappedId), before_.approval);
+        assertEq(wrapper.isApprovedForAll(ALICE, CAROL), before_.operatorApproval);
+        assertEq(wrapper.valuationOf(firstWrappedId), before_.valuation);
+        assertEq(wrapper.depositOf(firstWrappedId), before_.deposit);
+        assertEq(wrapper.taxationCollected(firstWrappedId), before_.taxation);
+        assertEq(wrapper.taxCollectedSinceLastTransferOf(firstWrappedId), before_.transferTax);
+        assertEq(wrapper.lastCollectionTimeOf(firstWrappedId), before_.collectionTime);
+        assertEq(BOB.balance, before_.beneficiaryBalance);
+        assertEq(wrapper.outstandingRemittances(BOB), before_.beneficiaryRemittance);
+        assertEq(address(wrapper).balance, before_.wrapperEth);
+        assertEq(underlying.ownerOf(1), address(wrapper));
+        assertEq(underlying.ownerOf(2), address(wrapper));
+    }
+
+    function _delinquentTransferSnapshot(uint256 wrappedId_)
+        private
+        view
+        returns (DelinquentTransferSnapshot memory snapshot_)
+    {
+        snapshot_.approval = wrapper.getApproved(wrappedId_);
+        snapshot_.operatorApproval = wrapper.isApprovedForAll(ALICE, CAROL);
+        snapshot_.valuation = wrapper.valuationOf(wrappedId_);
+        snapshot_.deposit = wrapper.depositOf(wrappedId_);
+        snapshot_.taxation = wrapper.taxationCollected(wrappedId_);
+        snapshot_.transferTax = wrapper.taxCollectedSinceLastTransferOf(wrappedId_);
+        snapshot_.collectionTime = wrapper.lastCollectionTimeOf(wrappedId_);
+        snapshot_.beneficiaryBalance = BOB.balance;
+        snapshot_.beneficiaryRemittance = wrapper.outstandingRemittances(BOB);
+        snapshot_.wrapperEth = address(wrapper).balance;
+    }
+
+    function _resetWrapperFixtures() private {
+        vm.startPrank(ALICE);
+        underlying = new TestNFT();
+        wrapper = new TestWrapper();
+        vm.stopPrank();
     }
 
     /// @dev DEFERRED ACCOUNTING FINDING: a beneficiary takeover validates its

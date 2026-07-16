@@ -334,6 +334,13 @@ abstract contract ERC721 is Context, ERC165, IERC721 {
 
     _beforeTokenTransfer(from, to, tokenId);
 
+    // The hook may have transferred the token. Revalidate ownership before
+    // applying this transfer's balance and ownership changes.
+    require(
+      ERC721.ownerOf(tokenId) == from,
+      "ERC721: transfer from incorrect owner"
+    );
+
     // Clear approvals from the previous owner
     _approve(address(0), tokenId);
 

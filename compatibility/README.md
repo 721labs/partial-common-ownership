@@ -73,6 +73,37 @@ node scripts/compatibility.js write-evidence
 node scripts/compatibility.js check
 ```
 
+Security remediation 01 uses the named
+`security-01-erc721-post-hook-owner-recheck` policy. The immutable baseline and
+the Stage 8/9 evidence remain unchanged. The policy reconstructs the exact
+green Stage 9 compiler, bytecode, gas, toolchain, and 89 Hardhat plus 140 Forge
+test inventory from digest-bound evidence, then permits only the reviewed
+production bytecode and gas consequences of duplicating the existing
+incorrect-owner check immediately after `_beforeTokenTransfer`.
+
+The source gate is anchored at Stage 9 commit
+`4b42e69201df9d9d541954ae2c077e39434bc711` and rejects any other production
+source edit. It also binds the complete 28-source Hardhat compiler-input closure
+(including installed OpenZeppelin sources), dependency manifests and lockfile,
+Hardhat and Foundry configuration, remappings, submodule metadata, and the
+exact parity-map, parity-fragment, and safety-inventory file digests. ABI,
+function/error selectors, events, storage, interfaces, enums, ERC165 answers,
+compiler settings, and the exact Stage 9 test-name hashes (89 Hardhat and 140
+Forge) remain hard equal before the Stage 9 comparison is reconstructed. The
+only revert-callsite exception is one additional use of the existing
+`ERC721: transfer from incorrect owner` payload in the same `_transfer`
+callable. The checked-in evidence records Stage-9-relative opcode diffs,
+bytecode hashes and sizes, EIP-170 checks, the unchanged regression-test
+identifier, the owner/approval/transfer-overload behavior matrix, and all 12
+key-flow gas comparisons. Reproduce it with:
+
+```console
+node scripts/compatibility.js write-security-01-review
+node scripts/compatibility.js write-evidence
+node scripts/compatibility.js check
+node scripts/compatibility.js security-01-negative-probes
+```
+
 The original baseline predated explicit revert-literal extraction.
 `project-revert-strings.json` is a SHA-256-bound supplement derived from the
 unchanged production sources at the recorded baseline commit. It binds all 35
