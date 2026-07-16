@@ -196,7 +196,7 @@
       "test/solidity/invariant/WrapperInvariant.t.sol": "d4fe7664cdaaf5568fced3e4d58d3f8fb0741713326b476d3c697c5f6a53ba29",
       "test/solidity/parity/PCOMutationParity.t.sol": "e12b937960d4ab8d5cc3320f7750494c8d6f7263f6b2ffab6e2af3364c9087cc",
       "test/solidity/parity/PCOReadTaxParity.t.sol": "3e743560bff1f62eb359fcadfbca9b87022a9b6eb68c1c73d27e8051f3fbc8a8",
-      "test/solidity/parity/WrapperParity.t.sol": "1ccd07d240c70efe39e773c27619b25ca380ef26e9492baab51d48c22bab13bf",
+      "test/solidity/parity/WrapperParity.t.sol": "07b21216d9d5dd35591f6b3693a62a5ffbb313d4da3013dbdf24cd101a8ce964",
       "test/solidity/fuzz/PCOFuzzLease.t.sol": "8135adf07e89a0a763b3448fa6caf73e624cdd24b6faf24496c50994e3d7a584",
       "test/solidity/fuzz/PCOFuzzRemittanceERC721.t.sol": "5b24cbeec13c3be3474de73337e776fc841f77cda3f61309984a314fbdd71e23",
       "test/solidity/fuzz/PCOFuzzTax.t.sol": "9636f544cc77cae0923ba670047f7fd0134cc51772bb7e9a1109cb54defe21f6",
@@ -528,57 +528,64 @@
       {
         "code": "2018",
         "source": "test/solidity/parity/WrapperParity.t.sol",
-        "start": 13862,
-        "end": 14439,
+        "start": 15236,
+        "end": 15813,
         "message": "Function state mutability can be restricted to view"
       },
       {
         "code": "2018",
         "source": "test/solidity/parity/WrapperParity.t.sol",
-        "start": 14445,
-        "end": 14718,
+        "start": 15819,
+        "end": 16092,
         "message": "Function state mutability can be restricted to view"
       },
       {
         "code": "2018",
         "source": "test/solidity/parity/WrapperParity.t.sol",
-        "start": 17846,
-        "end": 18306,
-        "message": "Function state mutability can be restricted to view"
-      },
-      {
-        "code": "2018",
-        "source": "test/solidity/parity/WrapperParity.t.sol",
-        "start": 18312,
-        "end": 18686,
-        "message": "Function state mutability can be restricted to view"
-      },
-      {
-        "code": "2018",
-        "source": "test/solidity/parity/WrapperParity.t.sol",
-        "start": 26901,
-        "end": 27363,
+        "start": 26984,
+        "end": 27500,
         "message": "Function state mutability can be restricted to pure"
       },
       {
         "code": "2018",
         "source": "test/solidity/parity/WrapperParity.t.sol",
-        "start": 27943,
-        "end": 28328,
+        "start": 31766,
+        "end": 32269,
+        "message": "Function state mutability can be restricted to view"
+      },
+      {
+        "code": "2018",
+        "source": "test/solidity/parity/WrapperParity.t.sol",
+        "start": 32275,
+        "end": 32649,
+        "message": "Function state mutability can be restricted to view"
+      },
+      {
+        "code": "2018",
+        "source": "test/solidity/parity/WrapperParity.t.sol",
+        "start": 40852,
+        "end": 41302,
         "message": "Function state mutability can be restricted to pure"
       },
       {
         "code": "2018",
         "source": "test/solidity/parity/WrapperParity.t.sol",
-        "start": 28334,
-        "end": 28565,
+        "start": 41854,
+        "end": 42239,
         "message": "Function state mutability can be restricted to pure"
       },
       {
         "code": "2018",
         "source": "test/solidity/parity/WrapperParity.t.sol",
-        "start": 28571,
-        "end": 28781,
+        "start": 42245,
+        "end": 42476,
+        "message": "Function state mutability can be restricted to pure"
+      },
+      {
+        "code": "2018",
+        "source": "test/solidity/parity/WrapperParity.t.sol",
+        "start": 42482,
+        "end": 42692,
         "message": "Function state mutability can be restricted to pure"
       },
       {
@@ -607,7 +614,7 @@
         "source": "test/solidity/fuzz/WrapperFuzz.t.sol",
         "start": 952,
         "end": 20673,
-        "message": "Contract code size is 70415 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
+        "message": "Contract code size is 70385 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
       },
       {
         "code": "5574",
@@ -635,7 +642,7 @@
         "source": "test/solidity/invariant/WrapperInvariant.t.sol",
         "start": 223,
         "end": 10136,
-        "message": "Contract code size is 80135 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
+        "message": "Contract code size is 80105 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
       },
       {
         "code": "5574",
@@ -654,9 +661,9 @@
       {
         "code": "5574",
         "source": "test/solidity/parity/WrapperParity.t.sol",
-        "start": 345,
-        "end": 28783,
-        "message": "Contract code size is 79903 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
+        "start": 461,
+        "end": 42694,
+        "message": "Contract code size is 118023 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
       }
     ]
   }

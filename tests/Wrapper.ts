@@ -306,6 +306,360 @@ describe("Wrapper.sol", async function () {
             TOKENS.ONE
           )
         ).to.be.revertedWith("Tokens can only be received via #wrap");
+
+        const receiverFactory = await ethers.getContractFactory(
+          "PCOInitializationReceiver"
+        );
+        const receiver = await receiverFactory.deploy(
+          wrapperContract.address,
+          testNFTContract.address,
+          alice.address
+        );
+        await receiver.deployed();
+
+        for await (const tokenId of mintedTestNFTs) {
+          await deployerNFT.contract[
+            "safeTransferFrom(address,address,uint256)"
+          ](deployer.address, receiver.address, tokenId);
+        }
+
+        const actions = {
+          accept: 0,
+          wrongSelector: 1,
+          approveThenRevert: 2,
+          transferAndAccept: 3,
+          unwrapAndAccept: 4,
+        };
+        const callbackSignature = ethers.utils.id(
+          "CallbackObserved(uint256,uint8)"
+        );
+        const approvalSignature = ethers.utils.id(
+          "Approval(address,address,uint256)"
+        );
+        const transferSignature = ethers.utils.id(
+          "Transfer(address,address,uint256)"
+        );
+        const valuationSignature = ethers.utils.id(
+          "LogValuation(uint256,uint256)"
+        );
+        const beneficiarySignature = ethers.utils.id(
+          "LogBeneficiaryUpdated(uint256,address)"
+        );
+        const wrappedSignature = ethers.utils.id(
+          "LogTokenWrapped(address,uint256,uint256)"
+        );
+
+        const mappingSlot = (key: BigNumber | string, slot: number): string =>
+          ethers.utils.keccak256(
+            ethers.utils.defaultAbiCoder.encode(
+              ["uint256", "uint256"],
+              [key, slot]
+            )
+          );
+
+        const expectZeroStorage = async (
+          wrappedId: BigNumber
+        ): Promise<void> => {
+          for (const slot of [0, 2, 4, 6, 7, 8, 9, 10, 11, 12, 13]) {
+            expect(
+              await provider.getStorageAt(
+                wrapperContract.address,
+                mappingSlot(wrappedId, slot)
+              )
+            ).to.equal(ethers.constants.HashZero);
+          }
+
+          const wrappedMapSlot = ethers.BigNumber.from(
+            mappingSlot(wrappedId, 14)
+          );
+          for (let offset = 0; offset < 3; offset++) {
+            expect(
+              await provider.getStorageAt(
+                wrapperContract.address,
+                wrappedMapSlot.add(offset).toHexString()
+              )
+            ).to.equal(ethers.constants.HashZero);
+          }
+        };
+
+        const expectRejectedWrapRolledBack = async (
+          expectedReason: string,
+          action: number
+        ): Promise<void> => {
+          const wrappedId = wrappedTokenId(testNFTContract.address, TOKENS.ONE);
+          const receiverEtherBefore = await provider.getBalance(
+            receiver.address
+          );
+          const wrapperEtherBefore = await provider.getBalance(
+            wrapperContract.address
+          );
+
+          await expect(
+            receiver.wrap(
+              TOKENS.ONE,
+              wrapValuation,
+              bob.address,
+              taxConfig.taxRate,
+              taxConfig.collectionFrequency,
+              action,
+              { value: ETH3 }
+            )
+          ).to.be.revertedWith(expectedReason);
+
+          const expectedRevertData = ethers.utils.hexConcat([
+            ethers.utils.id("Error(string)").slice(0, 10),
+            ethers.utils.defaultAbiCoder.encode(["string"], [expectedReason]),
+          ]);
+          expect(
+            await receiver.callStatic.attemptRejectedWrap(
+              TOKENS.ONE,
+              wrapValuation,
+              receiver.address,
+              taxConfig.taxRate,
+              taxConfig.collectionFrequency,
+              action
+            )
+          ).to.equal(expectedRevertData);
+          const caughtAttempt = await receiver.attemptRejectedWrap(
+            TOKENS.ONE,
+            wrapValuation,
+            receiver.address,
+            taxConfig.taxRate,
+            taxConfig.collectionFrequency,
+            action
+          );
+          const caughtReceipt = await caughtAttempt.wait();
+          expect(caughtReceipt.logs).to.have.length(0);
+
+          expect(await testNFTContract.ownerOf(TOKENS.ONE)).to.equal(
+            receiver.address
+          );
+          expect(await testNFTContract.getApproved(TOKENS.ONE)).to.equal(
+            ethers.constants.AddressZero
+          );
+          expect(await testNFTContract.balanceOf(receiver.address)).to.equal(3);
+          expect(
+            await testNFTContract.balanceOf(wrapperContract.address)
+          ).to.equal(0);
+          await expect(wrapperContract.ownerOf(wrappedId)).to.be.revertedWith(
+            ERC721ErrorMessages.OWNER_NONEXISTENT_TOKEN
+          );
+          expect(await wrapperContract.balanceOf(receiver.address)).to.equal(0);
+          expect(await wrapperContract.valuationOf(wrappedId)).to.equal(0);
+          expect(await wrapperContract.beneficiaryOf(wrappedId)).to.equal(
+            ethers.constants.AddressZero
+          );
+          expect(await wrapperContract.taxationCollected(wrappedId)).to.equal(
+            0
+          );
+          expect(
+            await wrapperContract.lastCollectionTimeOf(wrappedId)
+          ).to.equal(0);
+          expect(
+            await wrapperContract.outstandingRemittances(receiver.address)
+          ).to.equal(0);
+          await expect(wrapperContract.depositOf(wrappedId)).to.be.revertedWith(
+            PCOErrorMessages.NONEXISTENT_TOKEN
+          );
+          await expect(wrapperContract.taxRateOf(wrappedId)).to.be.revertedWith(
+            PCOErrorMessages.NONEXISTENT_TOKEN
+          );
+          await expect(
+            wrapperContract.collectionFrequencyOf(wrappedId)
+          ).to.be.revertedWith(PCOErrorMessages.NONEXISTENT_TOKEN);
+          expect(await receiver.callbackCount()).to.equal(0);
+          expect(await provider.getBalance(receiver.address)).to.equal(
+            receiverEtherBefore
+          );
+          expect(await provider.getBalance(wrapperContract.address)).to.equal(
+            wrapperEtherBefore
+          );
+          await expectZeroStorage(wrappedId);
+          expect(
+            await provider.getStorageAt(
+              wrapperContract.address,
+              mappingSlot(receiver.address, 1)
+            )
+          ).to.equal(ethers.constants.HashZero);
+          expect(
+            await provider.getStorageAt(
+              wrapperContract.address,
+              mappingSlot(receiver.address, 5)
+            )
+          ).to.equal(ethers.constants.HashZero);
+        };
+
+        await expectRejectedWrapRolledBack(
+          "ERC721: transfer to non ERC721Receiver implementer",
+          actions.wrongSelector
+        );
+        await expectRejectedWrapRolledBack(
+          "PCO receiver: intentional rollback",
+          actions.approveThenRevert
+        );
+
+        const acceptedId = wrappedTokenId(testNFTContract.address, TOKENS.ONE);
+        const accepted = await receiver.wrap(
+          TOKENS.ONE,
+          wrapValuation,
+          bob.address,
+          taxConfig.taxRate,
+          taxConfig.collectionFrequency,
+          actions.accept,
+          { value: ETH3 }
+        );
+        const acceptedReceipt = await accepted.wait();
+        expect(
+          acceptedReceipt.logs.map((log: any) => log.topics[0])
+        ).to.deep.equal([
+          approvalSignature,
+          transferSignature,
+          transferSignature,
+          valuationSignature,
+          beneficiarySignature,
+          callbackSignature,
+          wrappedSignature,
+        ]);
+        expect(
+          acceptedReceipt.logs.map((log: any) => log.address)
+        ).to.deep.equal([
+          testNFTContract.address,
+          testNFTContract.address,
+          wrapperContract.address,
+          wrapperContract.address,
+          wrapperContract.address,
+          receiver.address,
+          wrapperContract.address,
+        ]);
+        expect(await receiver.callbackCount()).to.equal(1);
+        expect(await wrapperContract.ownerOf(acceptedId)).to.equal(
+          receiver.address
+        );
+        expect(await wrapperContract.depositOf(acceptedId)).to.equal(ETH3);
+        expect(await wrapperContract.valuationOf(acceptedId)).to.equal(
+          wrapValuation
+        );
+        expect(await wrapperContract.beneficiaryOf(acceptedId)).to.equal(
+          bob.address
+        );
+        expect(await wrapperContract.taxRateOf(acceptedId)).to.equal(
+          taxConfig.taxRate
+        );
+        expect(
+          await wrapperContract.collectionFrequencyOf(acceptedId)
+        ).to.equal(taxationPeriodToSeconds(taxConfig.collectionFrequency));
+        expect(await wrapperContract.taxationCollected(acceptedId)).to.equal(0);
+        expect(
+          await wrapperContract.taxCollectedSinceLastTransferOf(acceptedId)
+        ).to.equal(0);
+        expect(await wrapperContract.lastCollectionTimeOf(acceptedId)).to.equal(
+          0
+        );
+        expect(await wrapperContract.tokenURI(acceptedId)).to.equal(
+          "721.dev/1"
+        );
+        expect(await testNFTContract.ownerOf(TOKENS.ONE)).to.equal(
+          wrapperContract.address
+        );
+        expect(await provider.getBalance(wrapperContract.address)).to.equal(
+          ETH3
+        );
+
+        const transferredId = wrappedTokenId(
+          testNFTContract.address,
+          TOKENS.TWO
+        );
+        const transferred = await receiver.wrap(
+          TOKENS.TWO,
+          wrapValuation,
+          receiver.address,
+          taxConfig.taxRate,
+          taxConfig.collectionFrequency,
+          actions.transferAndAccept
+        );
+        const transferredReceipt = await transferred.wait();
+        expect(
+          transferredReceipt.logs.map((log: any) => log.topics[0])
+        ).to.deep.equal([
+          approvalSignature,
+          transferSignature,
+          transferSignature,
+          valuationSignature,
+          beneficiarySignature,
+          callbackSignature,
+          approvalSignature,
+          transferSignature,
+          wrappedSignature,
+        ]);
+        expect(await receiver.callbackCount()).to.equal(2);
+        expect(await wrapperContract.ownerOf(transferredId)).to.equal(
+          alice.address
+        );
+        expect(await wrapperContract.balanceOf(receiver.address)).to.equal(1);
+        expect(await wrapperContract.balanceOf(alice.address)).to.equal(1);
+        expect(await wrapperContract.depositOf(transferredId)).to.equal(0);
+        expect(await testNFTContract.ownerOf(TOKENS.TWO)).to.equal(
+          wrapperContract.address
+        );
+
+        const unwrappedId = wrappedTokenId(
+          testNFTContract.address,
+          TOKENS.THREE
+        );
+        const unwrapped = await receiver.wrap(
+          TOKENS.THREE,
+          wrapValuation,
+          receiver.address,
+          taxConfig.taxRate,
+          taxConfig.collectionFrequency,
+          actions.unwrapAndAccept
+        );
+        const unwrappedReceipt = await unwrapped.wait();
+        expect(
+          unwrappedReceipt.logs.map((log: any) => log.topics[0])
+        ).to.deep.equal([
+          approvalSignature,
+          transferSignature,
+          transferSignature,
+          valuationSignature,
+          beneficiarySignature,
+          callbackSignature,
+          approvalSignature,
+          transferSignature,
+          transferSignature,
+          wrappedSignature,
+        ]);
+        expect(await receiver.callbackCount()).to.equal(3);
+        await expect(wrapperContract.ownerOf(unwrappedId)).to.be.revertedWith(
+          ERC721ErrorMessages.OWNER_NONEXISTENT_TOKEN
+        );
+        expect(await wrapperContract.valuationOf(unwrappedId)).to.equal(0);
+        expect(await wrapperContract.beneficiaryOf(unwrappedId)).to.equal(
+          ethers.constants.AddressZero
+        );
+        expect(await wrapperContract.taxationCollected(unwrappedId)).to.equal(
+          0
+        );
+        expect(
+          await wrapperContract.lastCollectionTimeOf(unwrappedId)
+        ).to.equal(0);
+        await expect(wrapperContract.depositOf(unwrappedId)).to.be.revertedWith(
+          PCOErrorMessages.NONEXISTENT_TOKEN
+        );
+        await expect(wrapperContract.tokenURI(unwrappedId)).to.be.revertedWith(
+          ERC721MetadataErrorMessages.NONEXISTENT_TOKEN
+        );
+        expect(await testNFTContract.ownerOf(TOKENS.THREE)).to.equal(
+          receiver.address
+        );
+        expect(await testNFTContract.getApproved(TOKENS.THREE)).to.equal(
+          ethers.constants.AddressZero
+        );
+        expect(await wrapperContract.balanceOf(receiver.address)).to.equal(1);
+        expect(await provider.getBalance(wrapperContract.address)).to.equal(
+          ETH3
+        );
+        await expectZeroStorage(unwrappedId);
       });
     });
   });

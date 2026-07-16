@@ -5,10 +5,10 @@ import {Test} from "forge-std/Test.sol";
 import {Vm} from "forge-std/Vm.sol";
 import {TestNFT} from "../../../contracts/test/TestNFT.sol";
 import {TestWrapper} from "../../../contracts/test/TestWrapper.sol";
+import {PCOInitializationReceiver, PCOReceiverAction} from "../../../contracts/test/PCOInitializationReceiver.sol";
 
 /// @dev One-to-one deterministic ports of the 20 legacy Wrapper.ts scenarios.
 contract WrapperParityTest is Test {
-
     uint256 private constant TOKEN_ONE = 1;
     uint256 private constant TOKEN_TWO = 2;
     uint256 private constant TOKEN_THREE = 3;
@@ -22,6 +22,7 @@ contract WrapperParityTest is Test {
     uint256 private constant WRAPPED_TOKEN_MAP_SLOT = 14;
 
     bytes32 private constant APPROVAL_SIGNATURE = keccak256("Approval(address,address,uint256)");
+    bytes32 private constant CALLBACK_OBSERVED_SIGNATURE = keccak256("CallbackObserved(uint256,uint8)");
     bytes32 private constant TRANSFER_SIGNATURE = keccak256("Transfer(address,address,uint256)");
     bytes32 private constant LOG_BENEFICIARY_UPDATED_SIGNATURE = keccak256("LogBeneficiaryUpdated(uint256,address)");
     bytes32 private constant LOG_COLLECTION_SIGNATURE = keccak256("LogCollection(uint256,uint256)");
@@ -52,6 +53,32 @@ contract WrapperParityTest is Test {
     }
 
     function test_onERC721Received_directSafeTransferReverts() public {
+        _assertDirectSafeTransferReverts();
+
+        PCOInitializationReceiver receiver = new PCOInitializationReceiver(wrapper, testNFT, ALICE);
+        vm.deal(address(this), 100 ether);
+
+        vm.startPrank(DEPLOYER);
+        testNFT.safeTransferFrom(DEPLOYER, address(receiver), TOKEN_ONE);
+        testNFT.safeTransferFrom(DEPLOYER, address(receiver), TOKEN_TWO);
+        testNFT.safeTransferFrom(DEPLOYER, address(receiver), TOKEN_THREE);
+        vm.stopPrank();
+
+        assertEq(testNFT.balanceOf(address(receiver)), 3);
+        assertEq(testNFT.balanceOf(address(wrapper)), 0);
+
+        _assertReceiverCallbackRollback(
+            receiver, PCOReceiverAction.WrongSelector, bytes("ERC721: transfer to non ERC721Receiver implementer")
+        );
+        _assertReceiverCallbackRollback(
+            receiver, PCOReceiverAction.ApproveThenRevert, bytes("PCO receiver: intentional rollback")
+        );
+        _assertReceiverAcceptsInitializedToken(receiver);
+        _assertReceiverTransfersInitializedToken(receiver);
+        _assertReceiverUnwrapsInitializedToken(receiver);
+    }
+
+    function _assertDirectSafeTransferReverts() internal {
         uint256 deployerBalanceBefore = testNFT.balanceOf(DEPLOYER);
         uint256 wrapperBalanceBefore = testNFT.balanceOf(address(wrapper));
 
@@ -323,6 +350,241 @@ contract WrapperParityTest is Test {
         assertEq(testNFT.balanceOf(DEPLOYER), 3);
     }
 
+    function _assertReceiverCallbackRollback(
+        PCOInitializationReceiver receiver_,
+        PCOReceiverAction action_,
+        bytes memory expectedRevert_
+    ) internal {
+        uint256 wrappedId = wrapper.wrappedTokenId(address(testNFT), TOKEN_ONE);
+        uint256 testBalanceBefore = address(this).balance;
+        uint256 receiverBalanceBefore = address(receiver_).balance;
+        uint256 wrapperBalanceBefore = address(wrapper).balance;
+
+        vm.expectRevert(expectedRevert_);
+        receiver_.wrap{value: NON_BENEFICIARY_DEPOSIT}(
+            TOKEN_ONE, WRAP_VALUATION, payable(BOB), TAX_RATE, COLLECTION_FREQUENCY_DAYS, action_
+        );
+        bytes memory caughtRevert = receiver_.attemptRejectedWrap(
+            TOKEN_ONE, WRAP_VALUATION, payable(address(receiver_)), TAX_RATE, COLLECTION_FREQUENCY_DAYS, action_
+        );
+        assertEq(caughtRevert, abi.encodeWithSignature("Error(string)", string(expectedRevert_)));
+        assertEq(testNFT.ownerOf(TOKEN_ONE), address(receiver_));
+        assertEq(testNFT.getApproved(TOKEN_ONE), address(0));
+        assertEq(testNFT.balanceOf(address(receiver_)), 3);
+        assertEq(testNFT.balanceOf(address(wrapper)), 0);
+        assertEq(receiver_.callbackCount(), 0);
+        assertEq(wrapper.balanceOf(address(receiver_)), 0);
+        assertEq(wrapper.balanceOf(ALICE), 0);
+        assertEq(wrapper.valuationOf(wrappedId), 0);
+        assertEq(wrapper.beneficiaryOf(wrappedId), address(0));
+        assertEq(wrapper.taxationCollected(wrappedId), 0);
+        assertEq(wrapper.lastCollectionTimeOf(wrappedId), 0);
+        assertEq(wrapper.outstandingRemittances(address(receiver_)), 0);
+        assertEq(wrapper.outstandingRemittances(BOB), 0);
+        assertEq(address(this).balance, testBalanceBefore);
+        assertEq(address(receiver_).balance, receiverBalanceBefore);
+        assertEq(address(wrapper).balance, wrapperBalanceBefore);
+
+        _assertWrappedTokenDoesNotExist(wrappedId);
+        vm.expectRevert(bytes("ERC721: query for nonexistent token"));
+        wrapper.depositOf(wrappedId);
+        vm.expectRevert(bytes("ERC721: query for nonexistent token"));
+        wrapper.taxCollectedSinceLastTransferOf(wrappedId);
+        vm.expectRevert(bytes("ERC721: query for nonexistent token"));
+        wrapper.taxRateOf(wrappedId);
+        vm.expectRevert(bytes("ERC721: query for nonexistent token"));
+        wrapper.collectionFrequencyOf(wrappedId);
+        vm.expectRevert(bytes("ERC721Metadata: URI query for nonexistent token"));
+        wrapper.tokenURI(wrappedId);
+
+        _assertWrappedTokenRawStateCleared(wrappedId);
+        assertEq(vm.load(address(wrapper), _mappingStorageSlot(uint256(uint160(address(receiver_))), 1)), bytes32(0));
+        assertEq(vm.load(address(wrapper), _mappingStorageSlot(uint256(uint160(address(receiver_))), 5)), bytes32(0));
+
+        bytes32 operatorOwnerSlot = _mappingStorageSlot(uint256(uint160(address(receiver_))), 3);
+        bytes32 operatorApprovalSlot = keccak256(abi.encode(uint256(uint160(ALICE)), operatorOwnerSlot));
+        assertEq(vm.load(address(wrapper), operatorApprovalSlot), bytes32(0));
+    }
+
+    function _assertReceiverAcceptsInitializedToken(PCOInitializationReceiver receiver_) internal {
+        uint256 wrappedId = wrapper.wrappedTokenId(address(testNFT), TOKEN_ONE);
+        uint256 receiverBalanceBefore = address(receiver_).balance;
+        uint256 wrapperBalanceBefore = address(wrapper).balance;
+
+        vm.recordLogs();
+        receiver_.wrap{value: NON_BENEFICIARY_DEPOSIT}(
+            TOKEN_ONE, WRAP_VALUATION, payable(BOB), TAX_RATE, COLLECTION_FREQUENCY_DAYS, PCOReceiverAction.Accept
+        );
+        Vm.Log[] memory entries = vm.getRecordedLogs();
+
+        assertEq(entries.length, 7, "initialized callback event count");
+        _assertInitializationEventPrefix(entries, receiver_, TOKEN_ONE, wrappedId, BOB, PCOReceiverAction.Accept);
+        _assertLogTokenWrapped(entries[6], TOKEN_ONE, wrappedId);
+
+        assertEq(receiver_.callbackCount(), 1);
+        assertEq(wrapper.ownerOf(wrappedId), address(receiver_));
+        assertEq(wrapper.balanceOf(address(receiver_)), 1);
+        assertEq(wrapper.getApproved(wrappedId), address(0));
+        assertEq(wrapper.depositOf(wrappedId), NON_BENEFICIARY_DEPOSIT);
+        assertEq(wrapper.valuationOf(wrappedId), WRAP_VALUATION);
+        assertEq(wrapper.beneficiaryOf(wrappedId), BOB);
+        assertEq(wrapper.taxRateOf(wrappedId), TAX_RATE);
+        assertEq(wrapper.collectionFrequencyOf(wrappedId), COLLECTION_FREQUENCY_SECONDS);
+        assertEq(wrapper.taxationCollected(wrappedId), 0);
+        assertEq(wrapper.taxCollectedSinceLastTransferOf(wrappedId), 0);
+        assertEq(wrapper.lastCollectionTimeOf(wrappedId), 0);
+        assertEq(wrapper.tokenURI(wrappedId), "721.dev/1");
+        assertEq(testNFT.ownerOf(TOKEN_ONE), address(wrapper));
+        assertEq(testNFT.getApproved(TOKEN_ONE), address(0));
+        assertEq(address(receiver_).balance, receiverBalanceBefore);
+        assertEq(address(wrapper).balance, wrapperBalanceBefore + NON_BENEFICIARY_DEPOSIT);
+        _assertWrappedTokenStorageForOperator(wrappedId, TOKEN_ONE, address(receiver_));
+    }
+
+    function _assertReceiverTransfersInitializedToken(PCOInitializationReceiver receiver_) internal {
+        uint256 wrappedId = wrapper.wrappedTokenId(address(testNFT), TOKEN_TWO);
+        uint256 wrapperEtherBefore = address(wrapper).balance;
+
+        vm.recordLogs();
+        receiver_.wrap(
+            TOKEN_TWO,
+            WRAP_VALUATION,
+            payable(address(receiver_)),
+            TAX_RATE,
+            COLLECTION_FREQUENCY_DAYS,
+            PCOReceiverAction.TransferAndAccept
+        );
+        Vm.Log[] memory entries = vm.getRecordedLogs();
+
+        assertEq(entries.length, 9, "reentrant transfer event count");
+        _assertInitializationEventPrefix(
+            entries, receiver_, TOKEN_TWO, wrappedId, address(receiver_), PCOReceiverAction.TransferAndAccept
+        );
+        assertEq(entries[6].emitter, address(wrapper));
+        _assertApproval(entries[6], address(receiver_), address(0), wrappedId);
+        _assertTransferFromEmitter(entries[7], address(wrapper), address(receiver_), ALICE, wrappedId);
+        _assertLogTokenWrapped(entries[8], TOKEN_TWO, wrappedId);
+
+        assertEq(receiver_.callbackCount(), 2);
+        assertEq(wrapper.ownerOf(wrappedId), ALICE);
+        assertEq(wrapper.balanceOf(address(receiver_)), 1);
+        assertEq(wrapper.balanceOf(ALICE), 1);
+        assertEq(wrapper.getApproved(wrappedId), address(0));
+        assertEq(wrapper.depositOf(wrappedId), 0);
+        assertEq(wrapper.valuationOf(wrappedId), WRAP_VALUATION);
+        assertEq(wrapper.beneficiaryOf(wrappedId), address(receiver_));
+        assertEq(wrapper.taxRateOf(wrappedId), TAX_RATE);
+        assertEq(wrapper.collectionFrequencyOf(wrappedId), COLLECTION_FREQUENCY_SECONDS);
+        assertEq(wrapper.taxationCollected(wrappedId), 0);
+        assertEq(wrapper.taxCollectedSinceLastTransferOf(wrappedId), 0);
+        assertEq(wrapper.lastCollectionTimeOf(wrappedId), 0);
+        assertEq(wrapper.tokenURI(wrappedId), "721.dev/2");
+        assertEq(testNFT.ownerOf(TOKEN_TWO), address(wrapper));
+        assertEq(address(wrapper).balance, wrapperEtherBefore);
+        _assertWrappedTokenStorageForOperator(wrappedId, TOKEN_TWO, address(receiver_));
+    }
+
+    function _assertReceiverUnwrapsInitializedToken(PCOInitializationReceiver receiver_) internal {
+        uint256 wrappedId = wrapper.wrappedTokenId(address(testNFT), TOKEN_THREE);
+        uint256 wrapperEtherBefore = address(wrapper).balance;
+
+        vm.recordLogs();
+        receiver_.wrap(
+            TOKEN_THREE,
+            WRAP_VALUATION,
+            payable(address(receiver_)),
+            TAX_RATE,
+            COLLECTION_FREQUENCY_DAYS,
+            PCOReceiverAction.UnwrapAndAccept
+        );
+        Vm.Log[] memory entries = vm.getRecordedLogs();
+
+        assertEq(entries.length, 10, "reentrant unwrap event count");
+        _assertInitializationEventPrefix(
+            entries, receiver_, TOKEN_THREE, wrappedId, address(receiver_), PCOReceiverAction.UnwrapAndAccept
+        );
+        assertEq(entries[6].emitter, address(wrapper));
+        _assertApproval(entries[6], address(receiver_), address(0), wrappedId);
+        _assertTransferFromEmitter(entries[7], address(wrapper), address(receiver_), address(0), wrappedId);
+        _assertTransferFromEmitter(entries[8], address(testNFT), address(wrapper), address(receiver_), TOKEN_THREE);
+        _assertLogTokenWrapped(entries[9], TOKEN_THREE, wrappedId);
+
+        assertEq(receiver_.callbackCount(), 3);
+        _assertWrappedTokenDoesNotExist(wrappedId);
+        assertEq(wrapper.balanceOf(address(receiver_)), 1);
+        assertEq(wrapper.balanceOf(ALICE), 1);
+        assertEq(wrapper.valuationOf(wrappedId), 0);
+        assertEq(wrapper.beneficiaryOf(wrappedId), address(0));
+        assertEq(wrapper.taxationCollected(wrappedId), 0);
+        assertEq(wrapper.lastCollectionTimeOf(wrappedId), 0);
+        vm.expectRevert(bytes("ERC721: query for nonexistent token"));
+        wrapper.depositOf(wrappedId);
+        vm.expectRevert(bytes("ERC721: query for nonexistent token"));
+        wrapper.taxCollectedSinceLastTransferOf(wrappedId);
+        vm.expectRevert(bytes("ERC721: query for nonexistent token"));
+        wrapper.taxRateOf(wrappedId);
+        vm.expectRevert(bytes("ERC721: query for nonexistent token"));
+        wrapper.collectionFrequencyOf(wrappedId);
+        vm.expectRevert(bytes("ERC721Metadata: URI query for nonexistent token"));
+        wrapper.tokenURI(wrappedId);
+        assertEq(testNFT.ownerOf(TOKEN_THREE), address(receiver_));
+        assertEq(testNFT.getApproved(TOKEN_THREE), address(0));
+        assertEq(address(wrapper).balance, wrapperEtherBefore);
+        _assertWrappedTokenRawStateCleared(wrappedId);
+    }
+
+    function _assertInitializationEventPrefix(
+        Vm.Log[] memory entries_,
+        PCOInitializationReceiver receiver_,
+        uint256 underlyingId_,
+        uint256 wrappedId_,
+        address beneficiary_,
+        PCOReceiverAction action_
+    ) internal {
+        assertEq(entries_[0].emitter, address(testNFT));
+        _assertApproval(entries_[0], address(receiver_), address(wrapper), underlyingId_);
+        _assertTransferFromEmitter(entries_[1], address(testNFT), address(receiver_), address(wrapper), underlyingId_);
+        _assertTransferFromEmitter(entries_[2], address(wrapper), address(0), address(receiver_), wrappedId_);
+        assertEq(entries_[3].emitter, address(wrapper));
+        _assertValuation(entries_[3], wrappedId_, WRAP_VALUATION);
+        assertEq(entries_[4].emitter, address(wrapper));
+        _assertBeneficiary(entries_[4], wrappedId_, beneficiary_);
+        _assertCallbackObserved(entries_[5], receiver_, wrappedId_, action_);
+    }
+
+    function _assertCallbackObserved(
+        Vm.Log memory entry_,
+        PCOInitializationReceiver receiver_,
+        uint256 wrappedId_,
+        PCOReceiverAction action_
+    ) internal {
+        assertEq(entry_.emitter, address(receiver_));
+        assertEq(entry_.topics.length, 3);
+        assertEq(entry_.topics[0], CALLBACK_OBSERVED_SIGNATURE);
+        assertEq(entry_.topics[1], bytes32(wrappedId_));
+        assertEq(entry_.topics[2], bytes32(uint256(action_)));
+        assertEq(entry_.data.length, 0);
+    }
+
+    function _assertLogTokenWrapped(Vm.Log memory entry_, uint256 underlyingId_, uint256 wrappedId_) internal view {
+        assertEq(entry_.emitter, address(wrapper));
+        assertEq(entry_.topics.length, 1);
+        assertEq(entry_.topics[0], LOG_TOKEN_WRAPPED_SIGNATURE);
+        assertEq(entry_.data, abi.encode(address(testNFT), underlyingId_, wrappedId_));
+    }
+
+    function _assertWrappedTokenRawStateCleared(uint256 wrappedId_) internal {
+        uint256[11] memory tokenMappingSlots = [uint256(0), 2, 4, 6, 7, 8, 9, 10, 11, 12, 13];
+        for (uint256 i = 0; i < tokenMappingSlots.length; i++) {
+            assertEq(vm.load(address(wrapper), _mappingStorageSlot(wrappedId_, tokenMappingSlots[i])), bytes32(0));
+        }
+        _assertWrappedTokenStorageCleared(wrappedId_);
+    }
+
+    function _mappingStorageSlot(uint256 key_, uint256 slot_) internal pure returns (bytes32) {
+        return keccak256(abi.encode(key_, slot_));
+    }
+
     function _wrap(uint256 tokenId_, address beneficiary_) internal returns (uint256 wrappedId) {
         wrappedId = wrapper.wrappedTokenId(address(testNFT), tokenId_);
         uint256 deposit = beneficiary_ == DEPLOYER ? 0 : NON_BENEFICIARY_DEPOSIT;
@@ -393,10 +655,16 @@ contract WrapperParityTest is Test {
     }
 
     function _assertWrappedTokenStorage(uint256 wrappedId_, uint256 underlyingId_) internal {
+        _assertWrappedTokenStorageForOperator(wrappedId_, underlyingId_, DEPLOYER);
+    }
+
+    function _assertWrappedTokenStorageForOperator(uint256 wrappedId_, uint256 underlyingId_, address operator_)
+        internal
+    {
         bytes32 baseSlot = _wrappedTokenBaseSlot(wrappedId_);
         assertEq(address(uint160(uint256(vm.load(address(wrapper), baseSlot)))), address(testNFT));
         assertEq(uint256(vm.load(address(wrapper), _offsetSlot(baseSlot, 1))), underlyingId_);
-        assertEq(address(uint160(uint256(vm.load(address(wrapper), _offsetSlot(baseSlot, 2))))), DEPLOYER);
+        assertEq(address(uint160(uint256(vm.load(address(wrapper), _offsetSlot(baseSlot, 2))))), operator_);
     }
 
     function _assertWrappedTokenStorageCleared(uint256 wrappedId_) internal {
@@ -534,9 +802,7 @@ contract WrapperParityTest is Test {
         _assertTransfer(logs[7], address(wrapper), address(0), wrappedId_);
     }
 
-    function _assertApproval(Vm.Log memory entry_, address owner_, address approved_, uint256 tokenId_)
-        internal
-    {
+    function _assertApproval(Vm.Log memory entry_, address owner_, address approved_, uint256 tokenId_) internal {
         assertEq(entry_.topics.length, 4);
         assertEq(entry_.topics[0], APPROVAL_SIGNATURE);
         _assertIndexedAddress(entry_, 1, owner_);
@@ -597,9 +863,7 @@ contract WrapperParityTest is Test {
         assertEq(entry_.data.length, 0);
     }
 
-    function _assertRemittance(Vm.Log memory entry_, uint256 trigger_, address recipient_, uint256 amount_)
-        internal
-    {
+    function _assertRemittance(Vm.Log memory entry_, uint256 trigger_, address recipient_, uint256 amount_) internal {
         assertEq(entry_.topics.length, 4);
         assertEq(entry_.topics[0], LOG_REMITTANCE_SIGNATURE);
         assertEq(entry_.topics[1], bytes32(trigger_));
@@ -608,11 +872,7 @@ contract WrapperParityTest is Test {
         assertEq(entry_.data.length, 0);
     }
 
-    function _wrapperLogs(Vm.Log[] memory entries_)
-        internal
-        view
-        returns (Vm.Log[] memory logs)
-    {
+    function _wrapperLogs(Vm.Log[] memory entries_) internal view returns (Vm.Log[] memory logs) {
         uint256 count;
         for (uint256 i = 0; i < entries_.length; i++) {
             if (entries_[i].emitter == address(wrapper)) count++;

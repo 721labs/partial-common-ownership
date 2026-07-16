@@ -31,13 +31,16 @@ contract PartialCommonOwnership is Lease {
     uint256 taxRate_,
     uint256 collectionFrequency_
   ) internal {
-    // slither-disable-next-line reentrancy-eth
-    _safeMint(leasee_, tokenId_);
+    ERC721._mint(leasee_, tokenId_);
     _setDeposit(tokenId_, deposit_);
     _setValuation(tokenId_, valuation_);
     _setBeneficiary(tokenId_, beneficiary_);
     _setTaxRate(tokenId_, taxRate_);
     _setCollectionFrequency(tokenId_, collectionFrequency_);
+    require(
+      _checkOnERC721Received(address(0), leasee_, tokenId_, ""),
+      "ERC721: transfer to non ERC721Receiver implementer"
+    );
   }
 
   /// @notice Burns a token.
