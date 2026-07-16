@@ -7,6 +7,11 @@ const { spawnSync } = require("child_process");
 const ROOT = path.resolve(__dirname, "..");
 const MAP_PATH = path.join(ROOT, "compatibility", "parity-map.json");
 const BASELINE_PATH = path.join(ROOT, "compatibility", "baseline.json");
+const SAFETY_INVENTORY_PATH = path.join(
+  ROOT,
+  "compatibility",
+  "safety-test-inventory.json"
+);
 const FORGE_BIN = process.env.FORGE_BIN || "forge";
 
 function fail(message) {
@@ -139,6 +144,41 @@ function executeForgeTests() {
     );
   }
   return sorted(names);
+}
+
+function safetyForgeTests() {
+  if (!fs.existsSync(SAFETY_INVENTORY_PATH)) {
+    fail("Missing checked-in Stage 7 safety-test inventory");
+  }
+  const inventory = readJson(SAFETY_INVENTORY_PATH);
+  if (
+    inventory.schemaVersion !== 1 ||
+    inventory.candidate !== "stage-07-foundry-safety" ||
+    !Array.isArray(inventory.names) ||
+    inventory.names.length !== inventory.expectedCount
+  ) {
+    fail("Stage 7 safety-test inventory has an invalid schema");
+  }
+  const names = sorted(inventory.names);
+  const duplicates = duplicateValues(names);
+  if (duplicates.length > 0) {
+    fail(`Safety tests are duplicated: ${duplicates.join(", ")}`);
+  }
+  for (const name of names) {
+    const separator = name.indexOf(":");
+    const source = separator < 0 ? "" : name.slice(0, separator);
+    if (!/^test\/solidity\/(?:fuzz|invariant)\/.+\.t\.sol$/.test(source)) {
+      fail(`Safety test is outside fuzz/invariant directories: ${name}`);
+    }
+    const sourcePath = resolveUnder(
+      source,
+      "test/solidity",
+      "Safety-test source"
+    );
+    if (!fs.existsSync(sourcePath))
+      fail(`Safety-test source is missing: ${source}`);
+  }
+  return names;
 }
 
 function main() {
@@ -290,13 +330,29 @@ function main() {
     );
   }
 
+  const safetyTargets = safetyForgeTests();
+  const allForgeTargets = sorted([...forgeTargets, ...safetyTargets]);
+  const duplicateAllTargets = duplicateValues(allForgeTargets);
+  if (duplicateAllTargets.length > 0) {
+    fail(
+      `Safety and parity targets overlap: ${duplicateAllTargets.join(", ")}`
+    );
+  }
   const discoveredForgeTests = discoverForgeTests();
-  compareExact("Executed Forge inventory", forgeTargets, discoveredForgeTests);
+  compareExact(
+    "Discovered Forge inventory",
+    allForgeTargets,
+    discoveredForgeTests
+  );
   const executedForgeTests = executeForgeTests();
-  compareExact("Successful Forge inventory", forgeTargets, executedForgeTests);
+  compareExact(
+    "Successful Forge inventory",
+    allForgeTargets,
+    executedForgeTests
+  );
 
   console.log(
-    `Parity map passed: ${hardhatEntries.length} Hardhat + ${forgeLegacyEntries.length} baseline Forge scenarios map one-to-one to ${discoveredForgeTests.length} Forge tests.`
+    `Safety inventory passed: ${hardhatEntries.length} Hardhat + ${forgeLegacyEntries.length} baseline Forge scenarios map one-to-one to ${forgeTargets.length} behavior tests, plus ${safetyTargets.length} successful safety tests.`
   );
 }
 

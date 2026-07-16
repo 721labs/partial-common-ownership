@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "candidate": "stage-06-forge-parity",
-  "policy": "stage-06-forge-parity-expansion",
+  "candidate": "stage-07-foundry-safety",
+  "policy": "stage-07-foundry-safety-expansion",
   "baselineSha256": "4ec069e1cdb046198456b1db9179522b604d8dab062838c79e4cf8aa1e9df55c",
   "allowedDifferences": [
     {
@@ -35,30 +35,40 @@
       "reason": "The fixed-seed snapshot is one gas lower in mean and median; production opcodes and behavior remain unchanged."
     },
     {
+      "path": "$.toolchain.forge[2]",
+      "baselineValue": "Build Timestamp: 2026-05-08T07:54:31.470926000Z (1778226871)",
+      "candidateValue": "Build Timestamp: <platform-specific>",
+      "reason": "Official Foundry 1.7.1 binaries share the pinned version and commit but embed platform-specific build timestamps; the manifest retains and compares the stable version, commit, and build profile."
+    },
+    {
       "path": "$.tests.forge.count",
       "baselineValue": 15,
-      "candidateValue": 104,
-      "reason": "Stage 6 intentionally adds the 89 uniquely mapped Forge behavior ports; the exact successful inventory is validated against the checked-in parity map."
+      "candidateValue": 140,
+      "reason": "Stage 7 preserves all 104 uniquely mapped behaviors and adds exactly 36 bounded fuzz, invariant, and deferred-regression safety tests validated by the checked-in inventories."
     },
     {
       "path": "$.tests.forge.names.length",
       "baselineValue": 15,
-      "candidateValue": 104,
-      "reason": "Stage 6 intentionally adds the 89 uniquely mapped Forge behavior ports; the exact successful inventory is validated against the checked-in parity map."
+      "candidateValue": 140,
+      "reason": "Stage 7 preserves all 104 uniquely mapped behaviors and adds exactly 36 bounded fuzz, invariant, and deferred-regression safety tests validated by the checked-in inventories."
     },
     {
       "path": "$.tests.total",
       "baselineValue": 104,
-      "candidateValue": 193,
-      "reason": "The unchanged 89-test Hardhat oracle now runs alongside exactly 104 successful Forge regressions."
+      "candidateValue": 229,
+      "reason": "The unchanged 89-test Hardhat oracle runs alongside exactly 104 Forge behavior regressions and 36 successful safety tests."
     }
   ],
   "opcodeEvidence": {
     "mode": "metadata-stripped-equality",
-    "path": "compatibility/evidence/stage-06-forge-parity.json",
+    "path": "compatibility/evidence/stage-07-foundry-safety.json",
     "contracts": [
       "contracts/Wrapper.sol:Wrapper",
       "contracts/token/PartialCommonOwnership.sol:PartialCommonOwnership"
     ]
+  },
+  "safetyEvidence": {
+    "path": "compatibility/evidence/stage-07-safety-artifacts.json",
+    "sha256": "0065814caec6e3044951f80c891c9948454e90138d016513ed07d0fcfb7c67d8"
   }
 }

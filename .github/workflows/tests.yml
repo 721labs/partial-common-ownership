@@ -2,20 +2,22 @@ name: "tests"
 
 on:
   workflow_dispatch:
+  pull_request:
+  schedule:
+    - cron: "17 6 * * 1"
   push:
     branches:
-      - "*" # All branches
+      - "**" # All branches, including slash-named upgrade branches
 
 permissions:
   contents: read
 
 jobs:
   coverage:
-    name: "coverage"
+    name: "Forge Coverage"
     runs-on: ubuntu-latest
     needs: []
-    # SKIP: Retained only until the Forge coverage gate replaces it in Stage 7.
-    if: False
+    timeout-minutes: 15
     steps:
       - name: "Checkout Repo"
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -42,8 +44,12 @@ jobs:
             ${{ runner.os }}-pnpm-
       - name: "Install JS Dependencies"
         run: "pnpm install --frozen-lockfile"
-      - name: "Run solidity-coverage"
-        run: "pnpm run coverage"
+      - name: "Install Foundry"
+        uses: foundry-rs/foundry-toolchain@b00af27efadbc7b4ca8b82abbd903b17cc874d2a # v1.9.0
+        with:
+          version: v1.7.1
+      - name: "Enforce Forge LCOV baseline"
+        run: "pnpm run coverage:forge"
   solhint:
     name: "solhint"
     runs-on: ubuntu-latest
@@ -116,6 +122,9 @@ jobs:
     name: "Forge Tests"
     runs-on: ubuntu-latest
     needs: []
+    timeout-minutes: 15
+    env:
+      FOUNDRY_PROFILE: ci
     steps:
       - name: "Checkout Repo"
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -146,8 +155,14 @@ jobs:
         uses: foundry-rs/foundry-toolchain@b00af27efadbc7b4ca8b82abbd903b17cc874d2a # v1.9.0
         with:
           version: v1.7.1
+      - name: "Check Solidity formatting"
+        run: "pnpm run fmt:forge"
       - name: "Run tests"
-        run: "pnpm run test:forge"
+        run: "pnpm run test:safety"
+      - name: "Enforce key-flow gas baseline"
+        run: "pnpm run gas:check"
+      - name: "Enforce EIP-170 contract sizes"
+        run: "pnpm run size:check"
   package-consumers:
     name: "Compatibility and Package Consumers"
     runs-on: ubuntu-latest
@@ -186,3 +201,54 @@ jobs:
         run: "pnpm run compatibility"
       - name: "Test packed package consumers"
         run: "pnpm run test:package"
+  foundry-scheduled:
+    name: "Scheduled Foundry Safety"
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    needs: []
+    timeout-minutes: 45
+    env:
+      FOUNDRY_PROFILE: scheduled
+    steps:
+      - name: "Checkout Repo"
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          submodules: recursive
+      - name: "Install Node"
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "24.18.0"
+      - name: "Enable Corepack"
+        run: |
+          corepack enable pnpm
+          corepack install --global pnpm@11.13.1
+          test "$(pnpm --version)" = "11.13.1"
+      - name: "Install JS Dependencies"
+        run: "pnpm install --frozen-lockfile"
+      - name: "Install Foundry"
+        uses: foundry-rs/foundry-toolchain@b00af27efadbc7b4ca8b82abbd903b17cc874d2a # v1.9.0
+        with:
+          version: v1.7.1
+      - name: "Generate and log rotating seed"
+        id: seed
+        shell: bash
+        run: |
+          seed=$(printf '0x%064x' "$GITHUB_RUN_ID")
+          echo "FOUNDRY_FUZZ_SEED=$seed" >> "$GITHUB_ENV"
+          echo "seed=$seed" >> "$GITHUB_OUTPUT"
+          printf '%s\n' "$seed" > "$RUNNER_TEMP/foundry-seed.txt"
+          echo "Foundry seed: \`$seed\`" >> "$GITHUB_STEP_SUMMARY"
+      - name: "Run scheduled fuzz and invariant profile"
+        timeout-minutes: 42
+        run: "pnpm run test:safety:scheduled"
+      - name: "Upload minimized failures and seed"
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: foundry-scheduled-${{ github.run_id }}-${{ steps.seed.outputs.seed }}
+          path: |
+            cache/fuzz
+            cache/invariant
+            ${{ runner.temp }}/foundry-seed.txt
+          if-no-files-found: warn
+          retention-days: 14

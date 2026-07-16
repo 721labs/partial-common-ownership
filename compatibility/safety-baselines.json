@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "candidate": "stage-07-foundry-safety",
+  "artifacts": {
+    "coverage/lcov.info": {
+      "sha256": "ff3da920a30fcb3661376d4d94f549eb81d14831618d7d324c0fd240668ad969",
+      "sizeBytes": 21117
+    },
+    "gas/key-flows.snap": {
+      "sha256": "c57e387d3a71141ce69078dc051608e8eb1f5bccbddf5745f6d478d709b575f7",
+      "sizeBytes": 961
+    }
+  }
+}
