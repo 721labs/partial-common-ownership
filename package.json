@@ -23,9 +23,11 @@
     }
   ],
   "files": [
+    "contracts/Wrapper.sol",
+    "contracts/token/**/*.sol",
     "docs",
-    "contracts/token/*.sol",
-    "contracts/Wrapper.sol"
+    "README.md",
+    "LICENSE"
   ],
   "repository": "git@github.com:721labs/partial-common-ownership.git",
   "scripts": {
@@ -33,15 +35,16 @@
     "compile": "hardhat compile",
     "test:hardhat": "hardhat typechain && hardhat --network hardhat test",
     "test:forge": "forge test -vvv",
+    "test:package": "node scripts/test-package.js",
     "test": "hardhat typechain && hardhat --network hardhat test && forge test -vvv",
     "prettier": "prettier --write 'contracts/**/*.sol'",
     "solhint": "solhint contracts/*.sol contracts/**/*.sol contracts/**/**/*.sol contracts/**/**/**/*.sol",
+    "compatibility": "node scripts/compatibility.js check",
     "lock:validate": "node scripts/check-pnpm-lock.js",
     "audit:ratchet": "node scripts/audit-ratchet.js",
     "publish": "npm publish --access public",
     "coverage": "cross-env TYPE_COMPILATION=false hardhat coverage",
-    "typechain": "hardhat typechain",
-    "postinstall": "hardhat typechain"
+    "typechain": "hardhat typechain"
   },
   "devDependencies": {
     "@ethersproject/abi": "5.6.0",
@@ -50,7 +53,6 @@
     "@nomiclabs/hardhat-ethers": "2.0.5",
     "@nomiclabs/hardhat-waffle": "2.0.3",
     "@nomiclabs/hardhat-web3": "2.0.0",
-    "@openzeppelin/contracts": "4.5.0",
     "@openzeppelin/test-helpers": "0.5.15",
     "@typechain/ethers-v5": "10.0.0",
     "@typechain/hardhat": "6.0.0",
@@ -65,7 +67,6 @@
     "ethers": "5.6.2",
     "hardhat": "2.28.6",
     "hardhat-gas-reporter": "1.0.8",
-    "hardhat-preprocessor": "0.1.5",
     "prettier": "2.6.2",
     "prettier-plugin-solidity": "1.0.0-beta.19",
     "solhint": "3.3.7",
@@ -76,7 +77,9 @@
     "typescript": "4.6.3",
     "web3": "1.7.1"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@openzeppelin/contracts": "4.5.0"
+  },
   "packageManager": "pnpm@11.13.1",
   "private": false
 }
