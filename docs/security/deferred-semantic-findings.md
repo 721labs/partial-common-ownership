@@ -57,6 +57,10 @@ Evidence:
 
 ## Disposition
 
+The [Slither 0.11.5 triage](./slither-0.11.5-triage.md) additionally records
+the confirmed callback-before-initialization risk in `_safeMint`, which is not
+dismissed as a false positive.
+
 Stage 10 must include these behaviors in its custom-ERC721-versus-OpenZeppelin 5
 security comparison. Any semantic correction requires a separately authorized
 project with its own compatibility, migration, and deployment analysis; it is

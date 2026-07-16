@@ -70,6 +70,7 @@ abstract contract Remittance is IRemittance {
     address recipient = msg.sender;
     uint256 balance = outstandingRemittances[recipient];
 
+    // slither-disable-next-line incorrect-equality
     if (balance == 0) revert NoOutstandingBalance();
     if (address(this).balance < balance) revert InsufficientBalance();
 
@@ -105,6 +106,7 @@ abstract contract Remittance is IRemittance {
     if (recipient_ == address(0)) revert DestinationZeroAddress();
 
     // Cannot send no funds.
+    // slither-disable-next-line incorrect-equality
     if (remittance_ == 0) revert AmountZero();
 
     // Warning: This state should never be reached.  It indicates the contract

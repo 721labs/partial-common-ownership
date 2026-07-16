@@ -91,6 +91,7 @@ abstract contract Taxation is
 
     // Owed will be 0 when the token is owned by its beneficiary.
     // i.e. no tax is owed.
+    // slither-disable-next-line incorrect-equality
     if (owed == 0) return;
 
     // If foreclosure should have occured in the past, last collection time will be
@@ -196,6 +197,7 @@ abstract contract Taxation is
     returns (uint256 taxDue)
   {
     uint256 valuation = valuationOf(tokenId_);
+    // slither-disable-next-line divide-before-multiply
     return
       (((valuation * time_) / collectionFrequencyOf(tokenId_)) *
         taxRateOf(tokenId_)) / TAX_DENOMINATOR;

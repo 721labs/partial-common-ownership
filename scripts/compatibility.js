@@ -62,6 +62,27 @@ const STAGE_07_SAFETY_ARTIFACTS = Object.freeze([
   "gas/key-flows.snap",
 ]);
 
+const STAGE_08_COMPILER_VERSION = "0.8.36";
+const STAGE_08_COMPILER_LONG_VERSION = "0.8.36+commit.8a079791";
+const STAGE_08_OPCODE_EVIDENCE_PATH =
+  "compatibility/evidence/stage-08-solidity-0-8-36.json";
+const STAGE_08_PRODUCTION_CONTRACTS = Object.freeze([
+  "contracts/Wrapper.sol:Wrapper",
+  "contracts/token/PartialCommonOwnership.sol:PartialCommonOwnership",
+]);
+const STAGE_08_BYTECODE_PATH =
+  /^\$\.contracts\.(?:contracts\/Wrapper\.sol:Wrapper|contracts\/token\/PartialCommonOwnership\.sol:PartialCommonOwnership)\.(?:creationBytecode|runtimeBytecode)\.(?:keccak256|metadataBytes|metadataStrippedKeccak256|metadataStrippedOpcodes|metadataStrippedSizeBytes|sizeBytes)$/;
+const STAGE_08_GAS_SNAPSHOT_PATH = /^\$\.gasSnapshot\.entries\[\d+\]$/;
+const STAGE_08_KEY_FLOW_GAS_PATH = path.join(ROOT, "gas", "key-flows.snap");
+const PROJECT_REVERT_STRINGS_PATH = path.join(
+  ROOT,
+  "compatibility",
+  "project-revert-strings.json"
+);
+const PROJECT_REVERT_STRINGS_SHA256 =
+  "027be662c5a30bc124afd2f8965e39fcd18c3681bd76fddd659bf78396190b68";
+const BASELINE_SOURCE_COMMIT = "ca72ca7f13dd0a2103d592b39a4fcaa749e9045f";
+
 function stage06ParityForgeTests() {
   const mapPath = path.join(ROOT, "compatibility", "parity-map.json");
   const map = JSON.parse(fs.readFileSync(mapPath, "utf8"));
@@ -282,6 +303,24 @@ function validateStage07Candidate(baseline, candidate) {
   }
 }
 
+function validateStage08Candidate(baseline, candidate) {
+  validateStage07Candidate(baseline, candidate);
+
+  if (
+    candidate.compiler.version !== STAGE_08_COMPILER_VERSION ||
+    candidate.compiler.longVersion !== STAGE_08_COMPILER_LONG_VERSION
+  ) {
+    throw new Error(
+      `Stage 8 requires exact Solidity ${STAGE_08_COMPILER_LONG_VERSION}`
+    );
+  }
+  if (!valuesEqual(candidate.compiler.settings, baseline.compiler.settings)) {
+    throw new Error(
+      "Stage 8 may change only the compiler version; all compiler settings must remain identical"
+    );
+  }
+}
+
 const REVIEW_POLICIES = Object.freeze({
   "stage-04-source-path-metadata-and-gas": Object.freeze({
     candidate: "stage-04-package-canonical-openzeppelin",
@@ -355,7 +394,8 @@ const REVIEW_POLICIES = Object.freeze({
     }),
     requiredSafetyEvidence: Object.freeze({
       path: "compatibility/evidence/stage-07-safety-artifacts.json",
-      sha256: "0065814caec6e3044951f80c891c9948454e90138d016513ed07d0fcfb7c67d8",
+      sha256:
+        "0065814caec6e3044951f80c891c9948454e90138d016513ed07d0fcfb7c67d8",
     }),
     permits(reviewPath) {
       return (
@@ -374,6 +414,37 @@ const REVIEW_POLICIES = Object.freeze({
     },
     validateCandidate: validateStage07Candidate,
   }),
+  "stage-08-solidity-0-8-36-compiler": Object.freeze({
+    candidate: "stage-08-solidity-0-8-36",
+    requiredOpcodeEvidence: Object.freeze({
+      mode: "metadata-stripped-full-diff",
+      path: STAGE_08_OPCODE_EVIDENCE_PATH,
+      contracts: STAGE_08_PRODUCTION_CONTRACTS,
+    }),
+    requiredSafetyEvidence: Object.freeze({
+      path: "compatibility/evidence/stage-07-safety-artifacts.json",
+      sha256:
+        "0065814caec6e3044951f80c891c9948454e90138d016513ed07d0fcfb7c67d8",
+    }),
+    permits(reviewPath) {
+      return (
+        reviewPath === "$.compiler.version" ||
+        reviewPath === "$.compiler.longVersion" ||
+        STAGE_08_BYTECODE_PATH.test(reviewPath) ||
+        STAGE_08_GAS_SNAPSHOT_PATH.test(reviewPath) ||
+        reviewPath === "$.toolchain.forge[2]" ||
+        reviewPath === "$.tests.total" ||
+        STAGE_06_FORGE_TEST_PATH.test(reviewPath)
+      );
+    },
+    permitsProtectedPath(reviewPath) {
+      return (
+        reviewPath === "$.tests.total" ||
+        STAGE_06_FORGE_TEST_PATH.test(reviewPath)
+      );
+    },
+    validateCandidate: validateStage08Candidate,
+  }),
 });
 
 const NON_WAIVABLE_REVIEW_PATHS = [
@@ -385,6 +456,10 @@ const NON_WAIVABLE_REVIEW_PATHS = [
   {
     name: "interfaces, enums, or ERC165 results",
     pattern: /^\$\.(?:interfaces|enums|erc165)(?:\.|\[|$)/,
+  },
+  {
+    name: "project-owned revert strings",
+    pattern: /^\$\.projectRevertStrings(?:\.|\[|$)/,
   },
   {
     name: "the executed behavior-test inventory",
@@ -532,6 +607,29 @@ function stableJson(value) {
 
 function sha256(value) {
   return crypto.createHash("sha256").update(value).digest("hex");
+}
+
+function protectedProjectRevertStrings() {
+  if (!fs.existsSync(PROJECT_REVERT_STRINGS_PATH)) {
+    throw new Error("Project revert-string baseline is missing");
+  }
+  const bytes = fs.readFileSync(PROJECT_REVERT_STRINGS_PATH);
+  const digest = sha256(bytes);
+  if (digest !== PROJECT_REVERT_STRINGS_SHA256) {
+    throw new Error(
+      `Project revert-string baseline digest changed: expected ${PROJECT_REVERT_STRINGS_SHA256}, received ${digest}`
+    );
+  }
+  const baseline = JSON.parse(bytes);
+  if (
+    baseline.schemaVersion !== 1 ||
+    baseline.baselineSourceCommit !== BASELINE_SOURCE_COMMIT ||
+    !Array.isArray(baseline.entries) ||
+    baseline.entries.length !== 35
+  ) {
+    throw new Error("Project revert-string baseline has an invalid schema");
+  }
+  return baseline.entries;
 }
 
 function findBuildInfo() {
@@ -877,6 +975,107 @@ function enumSummary(output) {
   );
 }
 
+function callableSignature(node, prefix = "") {
+  const name = node.kind === "constructor" ? "constructor" : node.name;
+  const parameters = (node.parameters?.parameters || []).map((parameter) => {
+    const type = parameter.typeDescriptions?.typeString;
+    if (!type) {
+      throw new Error(
+        `Missing compiler type for ${prefix}${name || node.kind} parameter`
+      );
+    }
+    return type;
+  });
+  return `${prefix}${name || node.kind}(${parameters.join(",")})`;
+}
+
+function projectRevertStringSummary(output) {
+  const discovered = [];
+
+  function visit(value, context) {
+    if (Array.isArray(value)) {
+      for (const child of value) visit(child, context);
+      return;
+    }
+    if (!value || typeof value !== "object") return;
+
+    let nextContext = context;
+    if (value.nodeType === "ContractDefinition") {
+      nextContext = { ...context, contract: value.name };
+    } else if (value.nodeType === "FunctionDefinition") {
+      nextContext = {
+        ...context,
+        callable: callableSignature(value),
+      };
+    } else if (value.nodeType === "ModifierDefinition") {
+      nextContext = {
+        ...context,
+        callable: callableSignature(value, "modifier "),
+      };
+    }
+
+    if (
+      value.nodeType === "FunctionCall" &&
+      value.expression?.nodeType === "Identifier" &&
+      ["require", "revert"].includes(value.expression.name)
+    ) {
+      const callKind = value.expression.name;
+      const message =
+        callKind === "require" ? value.arguments?.[1] : value.arguments?.[0];
+      if (message?.nodeType === "Literal" && message.kind === "string") {
+        if (!nextContext.contract || !nextContext.callable) {
+          throw new Error(
+            `Project revert string is outside a contract callable in ${context.source}`
+          );
+        }
+        const sourceOffset = Number.parseInt(
+          String(value.src).split(":")[0],
+          10
+        );
+        if (!Number.isInteger(sourceOffset)) {
+          throw new Error(`Invalid AST source location in ${context.source}`);
+        }
+        discovered.push({
+          source: context.source,
+          contract: nextContext.contract,
+          callable: nextContext.callable,
+          callKind,
+          sourceOffset,
+          value: message.value,
+        });
+      }
+    }
+
+    for (const child of Object.values(value)) visit(child, nextContext);
+  }
+
+  for (const source of Object.keys(output.sources || {}).sort()) {
+    if (
+      source !== "contracts/Wrapper.sol" &&
+      !source.startsWith("contracts/token/")
+    ) {
+      continue;
+    }
+    const ast = output.sources[source]?.ast;
+    if (!ast) throw new Error(`Missing AST for project source ${source}`);
+    visit(ast, { source, contract: null, callable: null });
+  }
+
+  discovered.sort((left, right) => {
+    const sourceOrder = left.source.localeCompare(right.source);
+    if (sourceOrder !== 0) return sourceOrder;
+    return left.sourceOffset - right.sourceOffset;
+  });
+
+  const ordinals = new Map();
+  return discovered.map(({ sourceOffset: _sourceOffset, ...entry }) => {
+    const key = `${entry.source}:${entry.contract}:${entry.callable}:${entry.callKind}`;
+    const ordinal = ordinals.get(key) || 0;
+    ordinals.set(key, ordinal + 1);
+    return { ...entry, ordinal };
+  });
+}
+
 function xorInterfaceId(selectors) {
   let value = 0;
   for (const selector of selectors)
@@ -1081,13 +1280,14 @@ async function generateManifest() {
 
   return sorted({
     schemaVersion: 1,
-    baselineSourceCommit: "ca72ca7f13dd0a2103d592b39a4fcaa749e9045f",
+    baselineSourceCommit: BASELINE_SOURCE_COMMIT,
     toolchain: {
       forge: forgeVersionSummary(),
     },
     compiler: compilerSettings(buildInfo, compilerInput),
     contracts,
     enums: enumSummary(output),
+    projectRevertStrings: projectRevertStringSummary(output),
     interfaces,
     erc165: {
       contract: "contracts/Wrapper.sol:Wrapper",
@@ -1362,10 +1562,278 @@ function validateReviewedDifferences(review, baselineBytes, differences) {
   }
 }
 
+function stage08ReviewReason(reviewPath) {
+  if (/^\$\.compiler\.(?:version|longVersion)$/.test(reviewPath)) {
+    return "Tool configurations are pinned to exact Solidity 0.8.36; every compiler setting other than version remains unchanged.";
+  }
+  if (STAGE_08_BYTECODE_PATH.test(reviewPath)) {
+    return "Solidity 0.8.36 changes compiler-generated bytecode; the checked-in evidence records complete metadata-stripped opcode changes, raw and normalized hashes and sizes, and EIP-170 validation.";
+  }
+  if (STAGE_08_GAS_SNAPSHOT_PATH.test(reviewPath)) {
+    return "Solidity 0.8.36 changes compiler-generated gas; this exact snapshot delta is reviewed with the checked-in PCO and Wrapper key-flow gas evidence.";
+  }
+  if (reviewPath === "$.toolchain.forge[2]") {
+    return "Official Foundry 1.7.1 binaries share the pinned version and commit but embed platform-specific build timestamps; the manifest compares the stable version, commit, and build profile.";
+  }
+  if (
+    reviewPath === "$.tests.total" ||
+    STAGE_06_FORGE_TEST_PATH.test(reviewPath)
+  ) {
+    return "Stage 8 preserves the Stage 7 inventory exactly: 89 Hardhat oracle tests, 104 mapped Forge behaviors, and 36 Forge safety tests.";
+  }
+  throw new Error(`Stage 8 has no review reason for ${reviewPath}`);
+}
+
+function stage08Review(baselineBytes, differences) {
+  return {
+    schemaVersion: 1,
+    candidate: "stage-08-solidity-0-8-36",
+    policy: "stage-08-solidity-0-8-36-compiler",
+    baselineSha256: sha256(baselineBytes),
+    allowedDifferences: differences.map((difference) => ({
+      ...difference,
+      reason: stage08ReviewReason(difference.path),
+    })),
+    opcodeEvidence: {
+      mode: "metadata-stripped-full-diff",
+      path: STAGE_08_OPCODE_EVIDENCE_PATH,
+      contracts: [...STAGE_08_PRODUCTION_CONTRACTS],
+    },
+    safetyEvidence: {
+      path: "compatibility/evidence/stage-07-safety-artifacts.json",
+      sha256:
+        "0065814caec6e3044951f80c891c9948454e90138d016513ed07d0fcfb7c67d8",
+    },
+  };
+}
+
+function opcodeInstructions(opcodes) {
+  if (!opcodes) return [];
+  const words = opcodes.split(" ");
+  const instructions = [];
+  for (let index = 0; index < words.length; index += 1) {
+    const word = words[index];
+    if (/^PUSH(?:[1-9]|[12]\d|3[0-2])$/.test(word)) {
+      if (!/^0x[0-9a-f]*$/.test(words[index + 1] || "")) {
+        throw new Error(`Malformed disassembly after ${word}`);
+      }
+      instructions.push(`${word} ${words[index + 1]}`);
+      index += 1;
+    } else {
+      instructions.push(word);
+    }
+  }
+  if (instructions.join(" ") !== opcodes) {
+    throw new Error("Opcode disassembly could not be tokenized losslessly");
+  }
+  return instructions;
+}
+
+function unifiedOpcodeDiff(baselineOpcodes, candidateOpcodes) {
+  const baseline = opcodeInstructions(baselineOpcodes);
+  const candidate = opcodeInstructions(candidateOpcodes);
+  const temporaryDirectory = fs.mkdtempSync(
+    path.join(os.tmpdir(), "pco-opcode-diff-")
+  );
+  const baselinePath = path.join(temporaryDirectory, "baseline.opcodes");
+  const candidatePath = path.join(temporaryDirectory, "candidate.opcodes");
+  try {
+    fs.writeFileSync(baselinePath, `${baseline.join("\n")}\n`);
+    fs.writeFileSync(candidatePath, `${candidate.join("\n")}\n`);
+    const result = spawnSync(
+      "git",
+      [
+        "-c",
+        "core.safecrlf=false",
+        "diff",
+        "--no-index",
+        "--no-ext-diff",
+        "--no-color",
+        "--text",
+        "--no-renames",
+        "--diff-algorithm=histogram",
+        "--unified=3",
+        baselinePath,
+        candidatePath,
+      ],
+      {
+        cwd: ROOT,
+        encoding: "utf8",
+        env: { ...process.env, LC_ALL: "C" },
+        maxBuffer: 128 * 1024 * 1024,
+      }
+    );
+    if (result.error) throw result.error;
+    if (![0, 1].includes(result.status)) {
+      throw new Error(
+        `Unable to generate Stage 8 opcode diff: ${
+          result.stderr || result.stdout
+        }`
+      );
+    }
+    const changed = !valuesEqual(baseline, candidate);
+    if ((result.status === 1) !== changed) {
+      throw new Error("Git opcode diff status disagrees with opcode equality");
+    }
+    const outputLines = (result.stdout || "").split(/\r?\n/);
+    const firstHunk = outputLines.findIndex((line) => line.startsWith("@@ "));
+    if (changed && firstHunk < 0) {
+      throw new Error("Changed opcodes produced no unified diff hunks");
+    }
+    const hunks =
+      firstHunk < 0
+        ? ""
+        : `${outputLines.slice(firstHunk).join("\n").trimEnd()}\n`;
+    return {
+      format: "git-histogram-unified-v1",
+      contextInstructions: 3,
+      baselineInstructionCount: baseline.length,
+      candidateInstructionCount: candidate.length,
+      hunkCount: (hunks.match(/^@@ /gm) || []).length,
+      hunksSha256: sha256(hunks),
+      hunks,
+    };
+  } finally {
+    fs.rmSync(temporaryDirectory, { recursive: true, force: true });
+  }
+}
+
+function parseDeterministicGasSnapshot(contents, source) {
+  const entries = new Map();
+  for (const line of contents.split(/\r?\n/)) {
+    if (!line) continue;
+    const match = line.match(/^(.*) \(gas: (\d+)\)$/);
+    if (!match) {
+      throw new Error(
+        `Non-deterministic Stage 8 gas entry in ${source}: ${line}`
+      );
+    }
+    if (entries.has(match[1])) {
+      throw new Error(`Duplicate Stage 8 gas entry in ${source}: ${match[1]}`);
+    }
+    entries.set(match[1], Number(match[2]));
+  }
+  return entries;
+}
+
+function stage08GasEvidence() {
+  if (!fs.existsSync(STAGE_08_KEY_FLOW_GAS_PATH)) {
+    throw new Error(
+      "Stage 8 requires the checked-in Stage 7 key-flow gas baseline"
+    );
+  }
+  const baselineBytes = fs.readFileSync(STAGE_08_KEY_FLOW_GAS_PATH);
+  const baseline = parseDeterministicGasSnapshot(
+    baselineBytes.toString("utf8"),
+    path.relative(ROOT, STAGE_08_KEY_FLOW_GAS_PATH)
+  );
+  const expectedGroups = {
+    PartialCommonOwnership: [...baseline.keys()]
+      .filter((name) =>
+        /^(?:PCOMutationParityTest|PCOReadTaxParityTest):/.test(name)
+      )
+      .sort(),
+    Wrapper: [...baseline.keys()]
+      .filter((name) => /^WrapperParityTest:/.test(name))
+      .sort(),
+  };
+  if (
+    baseline.size !== 12 ||
+    expectedGroups.PartialCommonOwnership.length !== 8 ||
+    expectedGroups.Wrapper.length !== 4
+  ) {
+    throw new Error(
+      "Stage 8 gas evidence requires exactly 8 PCO and 4 Wrapper key flows"
+    );
+  }
+
+  const testNames = [...baseline.keys()].map((name) => {
+    const separator = name.indexOf(":");
+    return name.slice(separator + 1).replace(/\(.*$/, "");
+  });
+  if (new Set(testNames).size !== testNames.length) {
+    throw new Error("Stage 8 key-flow test names must be unique");
+  }
+  const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const matchTest = `^(${testNames.map(escapeRegex).join("|")})\\(.*\\)$`;
+  const outputPath = temporaryFile("stage-08-gas-snapshot.txt");
+  let candidate;
+  try {
+    run(FORGE_BIN, [
+      "snapshot",
+      "--fuzz-seed",
+      "0x721",
+      "--match-test",
+      matchTest,
+      "--snap",
+      outputPath,
+    ]);
+    candidate = parseDeterministicGasSnapshot(
+      fs.readFileSync(outputPath, "utf8"),
+      "Stage 8 candidate"
+    );
+  } finally {
+    fs.rmSync(outputPath, { force: true });
+  }
+  if (!valuesEqual([...candidate.keys()].sort(), [...baseline.keys()].sort())) {
+    throw new Error(
+      "Stage 8 candidate gas inventory differs from its baseline"
+    );
+  }
+
+  const groups = {};
+  const regressions = [];
+  for (const [group, names] of Object.entries(expectedGroups)) {
+    groups[group] = names.map((name) => {
+      const baselineGas = baseline.get(name);
+      const candidateGas = candidate.get(name);
+      const allowedIncreaseGas = Math.floor(
+        Math.max(baselineGas * 0.03, 2_000)
+      );
+      const maximumGas = baselineGas + allowedIncreaseGas;
+      const withinLimit = candidateGas <= maximumGas;
+      if (!withinLimit) {
+        regressions.push(`${name}: ${baselineGas} -> ${candidateGas}`);
+      }
+      return {
+        name,
+        baselineGas,
+        candidateGas,
+        deltaGas: candidateGas - baselineGas,
+        allowedIncreaseGas,
+        maximumGas,
+        withinLimit,
+      };
+    });
+  }
+  if (regressions.length > 0) {
+    throw new Error(
+      `Stage 8 gas regressions exceed max(3%, 2,000 gas):\n${regressions.join(
+        "\n"
+      )}`
+    );
+  }
+
+  return sorted({
+    baselinePath: path.relative(ROOT, STAGE_08_KEY_FLOW_GAS_PATH),
+    baselineSha256: sha256(baselineBytes),
+    fuzzSeed: "0x721",
+    policy: {
+      percent: 3,
+      absoluteFloorGas: 2_000,
+    },
+    groups,
+  });
+}
+
 function reviewedOpcodeEvidence(review, baseline, candidate) {
   const configuration = review.opcodeEvidence;
   if (!configuration) return null;
-  if (configuration.mode !== "metadata-stripped-equality") {
+  if (
+    !["metadata-stripped-equality", "metadata-stripped-full-diff"].includes(
+      configuration.mode
+    )
+  ) {
     throw new Error(`Unsupported opcode evidence mode: ${configuration.mode}`);
   }
   if (
@@ -1390,38 +1858,74 @@ function reviewedOpcodeEvidence(review, baseline, candidate) {
       const opcodesEqual =
         baselineBytecode.metadataStrippedOpcodes ===
         candidateBytecode.metadataStrippedOpcodes;
-      if (!opcodesEqual) {
+      if (
+        configuration.mode === "metadata-stripped-equality" &&
+        !opcodesEqual
+      ) {
         throw new Error(
           `${qualifiedName} ${bytecodeKind} has a metadata-stripped opcode change; the equality evidence cannot approve it`
         );
       }
-      contractEvidence[bytecodeKind] = {
-        rawKeccak256: {
-          baseline: baselineBytecode.keccak256,
-          candidate: candidateBytecode.keccak256,
-          changed: baselineBytecode.keccak256 !== candidateBytecode.keccak256,
-        },
-        metadataStrippedKeccak256: {
-          baseline: baselineBytecode.metadataStrippedKeccak256,
-          candidate: candidateBytecode.metadataStrippedKeccak256,
-          equal:
-            baselineBytecode.metadataStrippedKeccak256 ===
-            candidateBytecode.metadataStrippedKeccak256,
-        },
-        metadataStrippedSizeBytes: {
-          baseline: baselineBytecode.metadataStrippedSizeBytes,
-          candidate: candidateBytecode.metadataStrippedSizeBytes,
-          equal:
-            baselineBytecode.metadataStrippedSizeBytes ===
-            candidateBytecode.metadataStrippedSizeBytes,
-        },
-        metadataStrippedOpcodes: {
-          baselineSha256: sha256(baselineBytecode.metadataStrippedOpcodes),
-          candidateSha256: sha256(candidateBytecode.metadataStrippedOpcodes),
-          equal: opcodesEqual,
-          diff: [],
-        },
-      };
+      if (configuration.mode === "metadata-stripped-equality") {
+        contractEvidence[bytecodeKind] = {
+          rawKeccak256: {
+            baseline: baselineBytecode.keccak256,
+            candidate: candidateBytecode.keccak256,
+            changed: baselineBytecode.keccak256 !== candidateBytecode.keccak256,
+          },
+          metadataStrippedKeccak256: {
+            baseline: baselineBytecode.metadataStrippedKeccak256,
+            candidate: candidateBytecode.metadataStrippedKeccak256,
+            equal:
+              baselineBytecode.metadataStrippedKeccak256 ===
+              candidateBytecode.metadataStrippedKeccak256,
+          },
+          metadataStrippedSizeBytes: {
+            baseline: baselineBytecode.metadataStrippedSizeBytes,
+            candidate: candidateBytecode.metadataStrippedSizeBytes,
+            equal:
+              baselineBytecode.metadataStrippedSizeBytes ===
+              candidateBytecode.metadataStrippedSizeBytes,
+          },
+          metadataStrippedOpcodes: {
+            baselineSha256: sha256(baselineBytecode.metadataStrippedOpcodes),
+            candidateSha256: sha256(candidateBytecode.metadataStrippedOpcodes),
+            equal: opcodesEqual,
+            diff: [],
+          },
+        };
+      } else {
+        contractEvidence[bytecodeKind] = {
+          rawBytecode: {
+            baselineKeccak256: baselineBytecode.keccak256,
+            candidateKeccak256: candidateBytecode.keccak256,
+            baselineSizeBytes: baselineBytecode.sizeBytes,
+            candidateSizeBytes: candidateBytecode.sizeBytes,
+            sizeDeltaBytes:
+              candidateBytecode.sizeBytes - baselineBytecode.sizeBytes,
+            baselineMetadataBytes: baselineBytecode.metadataBytes,
+            candidateMetadataBytes: candidateBytecode.metadataBytes,
+          },
+          metadataStrippedBytecode: {
+            baselineKeccak256: baselineBytecode.metadataStrippedKeccak256,
+            candidateKeccak256: candidateBytecode.metadataStrippedKeccak256,
+            baselineSizeBytes: baselineBytecode.metadataStrippedSizeBytes,
+            candidateSizeBytes: candidateBytecode.metadataStrippedSizeBytes,
+            sizeDeltaBytes:
+              candidateBytecode.metadataStrippedSizeBytes -
+              baselineBytecode.metadataStrippedSizeBytes,
+          },
+          metadataStrippedOpcodes: {
+            baselineSha256: sha256(baselineBytecode.metadataStrippedOpcodes),
+            candidateSha256: sha256(candidateBytecode.metadataStrippedOpcodes),
+            equal: opcodesEqual,
+            fullDiff: unifiedOpcodeDiff(
+              baselineBytecode.metadataStrippedOpcodes,
+              candidateBytecode.metadataStrippedOpcodes
+            ),
+          },
+        };
+      }
     }
 
     const baselineRuntimeSize = baselineContract.runtimeBytecode.sizeBytes;
@@ -1436,18 +1940,20 @@ function reviewedOpcodeEvidence(review, baseline, candidate) {
     contracts[qualifiedName] = contractEvidence;
   }
 
-  return sorted({
+  const evidence = {
     schemaVersion: 1,
     candidate: review.candidate,
     baselineSha256: review.baselineSha256,
     mode: configuration.mode,
     contracts,
-  });
+  };
+  if (configuration.mode === "metadata-stripped-full-diff") {
+    evidence.gas = stage08GasEvidence();
+  }
+  return sorted(evidence);
 }
 
-function validateOpcodeEvidence(review, baseline, candidate) {
-  const evidence = reviewedOpcodeEvidence(review, baseline, candidate);
-  if (!evidence) return;
+function opcodeEvidencePath(review) {
   if (
     !review.opcodeEvidence.path ||
     typeof review.opcodeEvidence.path !== "string"
@@ -1456,12 +1962,28 @@ function validateOpcodeEvidence(review, baseline, candidate) {
       "Opcode evidence configuration must name its checked-in path"
     );
   }
-
   const evidencePath = path.resolve(ROOT, review.opcodeEvidence.path);
   const compatibilityRoot = `${path.join(ROOT, "compatibility")}${path.sep}`;
   if (!evidencePath.startsWith(compatibilityRoot)) {
     throw new Error("Opcode evidence must be stored under compatibility/");
   }
+  return evidencePath;
+}
+
+function writeOpcodeEvidence(review, baseline, candidate) {
+  const evidence = reviewedOpcodeEvidence(review, baseline, candidate);
+  if (!evidence) {
+    throw new Error("Compatibility review does not request opcode evidence");
+  }
+  const evidencePath = opcodeEvidencePath(review);
+  fs.writeFileSync(evidencePath, stableJson(evidence));
+  return evidencePath;
+}
+
+function validateOpcodeEvidence(review, baseline, candidate) {
+  const evidence = reviewedOpcodeEvidence(review, baseline, candidate);
+  if (!evidence) return;
+  const evidencePath = opcodeEvidencePath(review);
   if (!fs.existsSync(evidencePath)) {
     throw new Error(`Checked-in opcode evidence is missing: ${evidencePath}`);
   }
@@ -1515,8 +2037,19 @@ function validateSafetyEvidence(review) {
 
 async function main() {
   const command = process.argv[2];
-  if (!["capture", "check", "diff"].includes(command)) {
-    console.error("Usage: node scripts/compatibility.js <capture|check|diff>");
+  if (
+    ![
+      "capture",
+      "check",
+      "diff",
+      "revert-strings",
+      "write-stage-08-review",
+      "write-evidence",
+    ].includes(command)
+  ) {
+    console.error(
+      "Usage: node scripts/compatibility.js <capture|check|diff|revert-strings|write-stage-08-review|write-evidence>"
+    );
     process.exitCode = 2;
     return;
   }
@@ -1528,6 +2061,30 @@ async function main() {
   }
 
   const manifest = await generateManifest();
+  if (command === "revert-strings") {
+    console.log(
+      stableJson({
+        schemaVersion: 1,
+        baselineSourceCommit: BASELINE_SOURCE_COMMIT,
+        entries: manifest.projectRevertStrings,
+      })
+    );
+    return;
+  }
+  const protectedRevertStrings = protectedProjectRevertStrings();
+  if (!valuesEqual(manifest.projectRevertStrings, protectedRevertStrings)) {
+    const revertDifferences = collectDifferences(
+      protectedRevertStrings,
+      manifest.projectRevertStrings,
+      "$.projectRevertStrings"
+    );
+    throw new Error(
+      `Project-owned revert strings changed:\n${revertDifferences
+        .slice(0, 20)
+        .map((difference) => `- ${formatDifference(difference)}`)
+        .join("\n")}`
+    );
+  }
   if (command === "capture") {
     fs.writeFileSync(BASELINE_PATH, stableJson(manifest));
     console.log(
@@ -1545,6 +2102,15 @@ async function main() {
   }
   const baselineBytes = fs.readFileSync(BASELINE_PATH);
   const baseline = JSON.parse(baselineBytes);
+  if (
+    baseline.projectRevertStrings &&
+    !valuesEqual(baseline.projectRevertStrings, protectedRevertStrings)
+  ) {
+    throw new Error(
+      "Compatibility baseline conflicts with the protected revert-string supplement"
+    );
+  }
+  baseline.projectRevertStrings = protectedRevertStrings;
   const differences = collectDifferences(baseline, manifest);
   if (command === "diff") {
     console.log(
@@ -1556,7 +2122,29 @@ async function main() {
     );
     return;
   }
+  if (command === "write-stage-08-review") {
+    const review = stage08Review(baselineBytes, differences);
+    validateReviewedDifferences(review, baselineBytes, differences);
+    const policy = reviewPolicy(review);
+    policy.validateCandidate(baseline, manifest);
+    validateSafetyEvidence(review);
+    fs.writeFileSync(REVIEW_PATH, stableJson(review));
+    console.log(
+      `Wrote ${
+        differences.length
+      } exact Stage 8 reviewed differences to ${path.relative(
+        ROOT,
+        REVIEW_PATH
+      )}`
+    );
+    return;
+  }
   const review = readReviewedDifferences();
+  if (command === "write-evidence" && !review) {
+    throw new Error(
+      "Cannot write evidence without an exact compatibility review"
+    );
+  }
   if (differences.length > 0 && !review) {
     console.error("Compatibility check failed. First differences:");
     for (const difference of differences.slice(0, 50)) {
@@ -1570,8 +2158,18 @@ async function main() {
   if (review) {
     const policy = reviewPolicy(review);
     if (policy.validateCandidate) policy.validateCandidate(baseline, manifest);
-    validateOpcodeEvidence(review, baseline, manifest);
     validateSafetyEvidence(review);
+    if (command === "write-evidence") {
+      const evidencePath = writeOpcodeEvidence(review, baseline, manifest);
+      console.log(
+        `Wrote deterministic opcode, bytecode-size, EIP-170, and gas evidence to ${path.relative(
+          ROOT,
+          evidencePath
+        )}`
+      );
+      return;
+    }
+    validateOpcodeEvidence(review, baseline, manifest);
   }
 
   console.log(

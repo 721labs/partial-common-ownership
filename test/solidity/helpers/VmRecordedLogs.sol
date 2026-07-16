@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.12;
+pragma solidity 0.8.36;
 
 /// @dev Modern `getRecordedLogs` return shape, kept local until forge-std is upgraded.
 interface VmRecordedLogs {

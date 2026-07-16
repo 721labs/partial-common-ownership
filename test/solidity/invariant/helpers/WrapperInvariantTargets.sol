@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.12;
+pragma solidity 0.8.36;
 
 /// @dev Minimal ABI-compatible target registry for the repository's pre-
 /// StdInvariant forge-std pin. Replace with StdInvariant after Stage 9.

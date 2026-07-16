@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.12;
+pragma solidity 0.8.36;
 
 /// @dev The repository's pinned forge-std predates StdInvariant. This is the
 /// minimal, ABI-compatible target registry consumed by modern Forge. Delete

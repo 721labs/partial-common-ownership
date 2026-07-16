@@ -1,0 +1,403 @@
+{
+  "schemaVersion": 2,
+  "compiler": {
+    "version": "0.8.36",
+    "longVersion": "0.8.36+commit.8a079791"
+  },
+  "diagnostic": {
+    "component": "general",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  "tools": {
+    "hardhat": {
+      "version": "2.28.6"
+    },
+    "forge": {
+      "version": "1.7.1",
+      "commitSha": "4072e48705af9d93e3c0f6e29e93b5e9a40caed8",
+      "buildProfile": "dist"
+    }
+  },
+  "hardhat": {
+    "settings": {
+      "evmVersion": "london",
+      "optimizer": {
+        "enabled": false,
+        "runs": 200
+      },
+      "viaIR": false,
+      "metadata": {
+        "bytecodeHash": "ipfs",
+        "useLiteralContent": false
+      },
+      "outputSelection": {
+        "*": {
+          "*": [
+            "storageLayout",
+            "abi",
+            "evm.bytecode",
+            "evm.deployedBytecode",
+            "evm.methodIdentifiers",
+            "metadata"
+          ],
+          "": ["ast"]
+        }
+      }
+    },
+    "sourceSha256": {
+      "@openzeppelin/contracts/utils/Address.sol": "8b85a2463eda119c2f42c34fa3d942b61aee65df381f48ed436fe8edb3a7d602",
+      "@openzeppelin/contracts/utils/Strings.sol": "cb2df477077a5963ab50a52768cb74ec6f32177177a78611ddbbe2c07e2d36de",
+      "@openzeppelin/contracts/token/ERC721/ERC721.sol": "7af3ff063370acb5e1f1a2aab125ceca457cd1fa60ff8afa37aabc366349d286",
+      "contracts/token/modules/Remittance.sol": "082eb1351b8c02bb8b84188c999b7dd9e422ca7ff5001d4eabf652b66c4ae3c0",
+      "contracts/test/Blocker.sol": "aca41aa8d3aac9a0470992486b2332ebe60fef1f68733ea1796eb928a11192e9",
+      "contracts/Wrapper.sol": "60e71c963513d7878d080c1460892304667eea8ff31d1bab4f1bda99b5436ce4"
+    },
+    "warnings": [
+      {
+        "code": "2424",
+        "source": "@openzeppelin/contracts/utils/Address.sol",
+        "start": 9152,
+        "end": 9294,
+        "message": "Natspec memory-safe-assembly special comment for inline assembly is deprecated and scheduled for removal. Use the memory-safe block annotation instead."
+      },
+      {
+        "code": "2424",
+        "source": "@openzeppelin/contracts/utils/Strings.sol",
+        "start": 731,
+        "end": 807,
+        "message": "Natspec memory-safe-assembly special comment for inline assembly is deprecated and scheduled for removal. Use the memory-safe block annotation instead."
+      },
+      {
+        "code": "2424",
+        "source": "@openzeppelin/contracts/utils/Strings.sol",
+        "start": 925,
+        "end": 1018,
+        "message": "Natspec memory-safe-assembly special comment for inline assembly is deprecated and scheduled for removal. Use the memory-safe block annotation instead."
+      },
+      {
+        "code": "2424",
+        "source": "@openzeppelin/contracts/token/ERC721/ERC721.sol",
+        "start": 14571,
+        "end": 14666,
+        "message": "Natspec memory-safe-assembly special comment for inline assembly is deprecated and scheduled for removal. Use the memory-safe block annotation instead."
+      },
+      {
+        "code": "9207",
+        "source": "contracts/token/modules/Remittance.sol",
+        "start": 2569,
+        "end": 2596,
+        "message": "'transfer' is deprecated and scheduled for removal. Use 'call{value: <amount>}(\"\")' instead."
+      },
+      {
+        "code": "9207",
+        "source": "contracts/token/modules/Remittance.sol",
+        "start": 4289,
+        "end": 4313,
+        "message": "'send' is deprecated and scheduled for removal. Use 'call{value: <amount>}(\"\")' instead."
+      },
+      {
+        "code": "9302",
+        "source": "contracts/test/Blocker.sol",
+        "start": 584,
+        "end": 792,
+        "message": "Return value of low-level calls not used."
+      },
+      {
+        "code": "5667",
+        "source": "contracts/Wrapper.sol",
+        "start": 5432,
+        "end": 5445,
+        "message": "Unused function parameter. Remove or comment out the variable name to silence this warning."
+      },
+      {
+        "code": "5667",
+        "source": "contracts/Wrapper.sol",
+        "start": 5451,
+        "end": 5467,
+        "message": "Unused function parameter. Remove or comment out the variable name to silence this warning."
+      },
+      {
+        "code": "5667",
+        "source": "contracts/Wrapper.sol",
+        "start": 5473,
+        "end": 5491,
+        "message": "Unused function parameter. Remove or comment out the variable name to silence this warning."
+      }
+    ]
+  },
+  "forge": {
+    "compilerProfile": "default",
+    "settings": {
+      "roots": {
+        "src": "contracts",
+        "test": "test/solidity",
+        "libs": ["lib"]
+      },
+      "solc": "0.8.36",
+      "autoDetectSolc": false,
+      "autoDetectRemappings": true,
+      "evmVersion": "london",
+      "optimizer": {
+        "enabled": false,
+        "runs": 200,
+        "details": null
+      },
+      "viaIR": false,
+      "metadata": {
+        "bytecodeHash": "ipfs",
+        "cbor": true,
+        "useLiteralContent": false
+      },
+      "remappings": [
+        "@openzeppelin/=node_modules/@openzeppelin/",
+        "ds-test/=lib/forge-std/lib/ds-test/src/",
+        "forge-std/=lib/forge-std/src/"
+      ],
+      "libraries": [],
+      "ignoredErrorCodes": [],
+      "ignoredErrorCodesFrom": [],
+      "ignoredWarningsFrom": [],
+      "modelChecker": null,
+      "revertStrings": null,
+      "sparseMode": false,
+      "additionalCompilerProfiles": [],
+      "compilationRestrictions": []
+    },
+    "metadataSettings": {
+      "evmVersion": "london",
+      "optimizer": {
+        "enabled": false,
+        "runs": 200
+      },
+      "viaIR": false,
+      "metadata": {
+        "bytecodeHash": "ipfs"
+      },
+      "libraries": {},
+      "remappings": [
+        ":@openzeppelin/=node_modules/@openzeppelin/",
+        ":ds-test/=lib/forge-std/lib/ds-test/src/",
+        ":forge-std/=lib/forge-std/src/"
+      ]
+    },
+    "sourceSha256": {
+      "node_modules/@openzeppelin/contracts/utils/Address.sol": "8b85a2463eda119c2f42c34fa3d942b61aee65df381f48ed436fe8edb3a7d602",
+      "node_modules/@openzeppelin/contracts/utils/Strings.sol": "cb2df477077a5963ab50a52768cb74ec6f32177177a78611ddbbe2c07e2d36de",
+      "lib/forge-std/src/console.sol": "f8fa05526f70fa83e8c42b0cdd64760169444a98b32fd40fe6a31f8f4c846cd0",
+      "lib/forge-std/src/Test.sol": "a1f9140381686b82fd8dda03f75ec2b8c9553a37f4657d6d14c796530399e432",
+      "node_modules/@openzeppelin/contracts/token/ERC721/ERC721.sol": "7af3ff063370acb5e1f1a2aab125ceca457cd1fa60ff8afa37aabc366349d286",
+      "contracts/token/modules/Remittance.sol": "082eb1351b8c02bb8b84188c999b7dd9e422ca7ff5001d4eabf652b66c4ae3c0",
+      "contracts/test/Blocker.sol": "aca41aa8d3aac9a0470992486b2332ebe60fef1f68733ea1796eb928a11192e9",
+      "contracts/Wrapper.sol": "60e71c963513d7878d080c1460892304667eea8ff31d1bab4f1bda99b5436ce4",
+      "test/solidity/fuzz/PCOFuzzLease.t.sol": "8135adf07e89a0a763b3448fa6caf73e624cdd24b6faf24496c50994e3d7a584",
+      "test/solidity/fuzz/PCOFuzzRemittanceERC721.t.sol": "5b24cbeec13c3be3474de73337e776fc841f77cda3f61309984a314fbdd71e23",
+      "test/solidity/fuzz/PCOFuzzTax.t.sol": "9636f544cc77cae0923ba670047f7fd0134cc51772bb7e9a1109cb54defe21f6",
+      "test/solidity/fuzz/WrapperFuzz.t.sol": "73964e0384af509bcbcb967573be85a8606cca06972fc9e20ba3d9ef2e3750a9",
+      "test/solidity/invariant/PCODeferredRegression.t.sol": "32f01832c1db5bd409a19d76add6b3381f268fc32e60a01773624b31b60d4f20",
+      "test/solidity/invariant/PCOInvariant.t.sol": "37c00e7c4a1be2cdbda032670d14b28b07d1d78409b6963cc6dd5f0c042cef9e",
+      "test/solidity/invariant/WrapperInvariant.t.sol": "16e5ca3dd038acdcc66e44a2a90124da602c5c2c0d293ad8a5a5ed6e50705ba9",
+      "test/solidity/parity/PCOMutationParity.t.sol": "40defd4df576dbfe435feeeceaaf5e9c4925f170e50c83ca8b64d0f39e8dac70",
+      "test/solidity/parity/PCOReadTaxParity.t.sol": "100fa6631bb32cdf3289bdf4f79996f775336647e6a04b0d0da5ffc7bcdc2f2c",
+      "test/solidity/parity/WrapperParity.t.sol": "c2de1d81e3bee43c47ca794fccca04fcc0e9bacd965b2cf93e88f5e9b3663da8"
+    },
+    "warnings": [
+      {
+        "code": "2424",
+        "source": "node_modules/@openzeppelin/contracts/utils/Address.sol",
+        "start": 9152,
+        "end": 9294,
+        "message": "Natspec memory-safe-assembly special comment for inline assembly is deprecated and scheduled for removal. Use the memory-safe block annotation instead."
+      },
+      {
+        "code": "2424",
+        "source": "node_modules/@openzeppelin/contracts/utils/Strings.sol",
+        "start": 731,
+        "end": 807,
+        "message": "Natspec memory-safe-assembly special comment for inline assembly is deprecated and scheduled for removal. Use the memory-safe block annotation instead."
+      },
+      {
+        "code": "2424",
+        "source": "node_modules/@openzeppelin/contracts/utils/Strings.sol",
+        "start": 925,
+        "end": 1018,
+        "message": "Natspec memory-safe-assembly special comment for inline assembly is deprecated and scheduled for removal. Use the memory-safe block annotation instead."
+      },
+      {
+        "code": "2424",
+        "source": "lib/forge-std/src/console.sol",
+        "start": 392,
+        "end": 551,
+        "message": "Natspec memory-safe-assembly special comment for inline assembly is deprecated and scheduled for removal. Use the memory-safe block annotation instead."
+      },
+      {
+        "code": "2424",
+        "source": "lib/forge-std/src/Test.sol",
+        "start": 5863,
+        "end": 5951,
+        "message": "Natspec memory-safe-assembly special comment for inline assembly is deprecated and scheduled for removal. Use the memory-safe block annotation instead."
+      },
+      {
+        "code": "2424",
+        "source": "lib/forge-std/src/Test.sol",
+        "start": 6283,
+        "end": 6371,
+        "message": "Natspec memory-safe-assembly special comment for inline assembly is deprecated and scheduled for removal. Use the memory-safe block annotation instead."
+      },
+      {
+        "code": "2424",
+        "source": "lib/forge-std/src/Test.sol",
+        "start": 6804,
+        "end": 6894,
+        "message": "Natspec memory-safe-assembly special comment for inline assembly is deprecated and scheduled for removal. Use the memory-safe block annotation instead."
+      },
+      {
+        "code": "2424",
+        "source": "lib/forge-std/src/Test.sol",
+        "start": 7247,
+        "end": 7337,
+        "message": "Natspec memory-safe-assembly special comment for inline assembly is deprecated and scheduled for removal. Use the memory-safe block annotation instead."
+      },
+      {
+        "code": "2424",
+        "source": "lib/forge-std/src/Test.sol",
+        "start": 22359,
+        "end": 22402,
+        "message": "Natspec memory-safe-assembly special comment for inline assembly is deprecated and scheduled for removal. Use the memory-safe block annotation instead."
+      },
+      {
+        "code": "2424",
+        "source": "lib/forge-std/src/Test.sol",
+        "start": 25152,
+        "end": 25236,
+        "message": "Natspec memory-safe-assembly special comment for inline assembly is deprecated and scheduled for removal. Use the memory-safe block annotation instead."
+      },
+      {
+        "code": "2424",
+        "source": "node_modules/@openzeppelin/contracts/token/ERC721/ERC721.sol",
+        "start": 14571,
+        "end": 14666,
+        "message": "Natspec memory-safe-assembly special comment for inline assembly is deprecated and scheduled for removal. Use the memory-safe block annotation instead."
+      },
+      {
+        "code": "9207",
+        "source": "contracts/token/modules/Remittance.sol",
+        "start": 2569,
+        "end": 2596,
+        "message": "'transfer' is deprecated and scheduled for removal. Use 'call{value: <amount>}(\"\")' instead."
+      },
+      {
+        "code": "9207",
+        "source": "contracts/token/modules/Remittance.sol",
+        "start": 4289,
+        "end": 4313,
+        "message": "'send' is deprecated and scheduled for removal. Use 'call{value: <amount>}(\"\")' instead."
+      },
+      {
+        "code": "9302",
+        "source": "contracts/test/Blocker.sol",
+        "start": 584,
+        "end": 792,
+        "message": "Return value of low-level calls not used."
+      },
+      {
+        "code": "5667",
+        "source": "contracts/Wrapper.sol",
+        "start": 5432,
+        "end": 5445,
+        "message": "Unused function parameter. Remove or comment out the variable name to silence this warning."
+      },
+      {
+        "code": "5667",
+        "source": "contracts/Wrapper.sol",
+        "start": 5451,
+        "end": 5467,
+        "message": "Unused function parameter. Remove or comment out the variable name to silence this warning."
+      },
+      {
+        "code": "5667",
+        "source": "contracts/Wrapper.sol",
+        "start": 5473,
+        "end": 5491,
+        "message": "Unused function parameter. Remove or comment out the variable name to silence this warning."
+      },
+      {
+        "code": "5574",
+        "source": "test/solidity/fuzz/PCOFuzzLease.t.sol",
+        "start": 361,
+        "end": 13654,
+        "message": "Contract code size is 54499 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
+      },
+      {
+        "code": "5574",
+        "source": "test/solidity/fuzz/PCOFuzzRemittanceERC721.t.sol",
+        "start": 418,
+        "end": 10082,
+        "message": "Contract code size is 54042 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
+      },
+      {
+        "code": "5574",
+        "source": "test/solidity/fuzz/PCOFuzzTax.t.sol",
+        "start": 375,
+        "end": 5865,
+        "message": "Contract code size is 41344 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
+      },
+      {
+        "code": "5574",
+        "source": "test/solidity/fuzz/WrapperFuzz.t.sol",
+        "start": 952,
+        "end": 17826,
+        "message": "Contract code size is 64128 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
+      },
+      {
+        "code": "5574",
+        "source": "test/solidity/invariant/PCODeferredRegression.t.sol",
+        "start": 610,
+        "end": 3080,
+        "message": "Contract code size is 32095 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
+      },
+      {
+        "code": "5574",
+        "source": "test/solidity/invariant/PCOInvariant.t.sol",
+        "start": 1183,
+        "end": 21888,
+        "message": "Contract code size is 29100 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
+      },
+      {
+        "code": "5574",
+        "source": "test/solidity/invariant/PCOInvariant.t.sol",
+        "start": 21890,
+        "end": 28245,
+        "message": "Contract code size is 74690 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
+      },
+      {
+        "code": "5574",
+        "source": "test/solidity/invariant/WrapperInvariant.t.sol",
+        "start": 302,
+        "end": 10240,
+        "message": "Contract code size is 81352 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
+      },
+      {
+        "code": "5574",
+        "source": "test/solidity/parity/PCOMutationParity.t.sol",
+        "start": 416,
+        "end": 39221,
+        "message": "Contract code size is 86964 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
+      },
+      {
+        "code": "5574",
+        "source": "test/solidity/parity/PCOReadTaxParity.t.sol",
+        "start": 535,
+        "end": 32423,
+        "message": "Contract code size is 73599 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
+      },
+      {
+        "code": "5574",
+        "source": "test/solidity/parity/WrapperParity.t.sol",
+        "start": 370,
+        "end": 29408,
+        "message": "Contract code size is 79593 bytes and exceeds 24576 bytes (a limit introduced in Spurious Dragon). This contract may not be deployable on Mainnet. Consider enabling the optimizer (with a low \"runs\" value!), turning off revert strings, or using libraries."
+      }
+    ]
+  }
+}

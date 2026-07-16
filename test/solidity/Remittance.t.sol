@@ -1,6 +1,6 @@
 // test/solidity/Remittance.t.sol
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.12;
+pragma solidity 0.8.36;
 
 import {EnhancedTest} from "../../contracts/test/EnhancedTest.sol";
 import {Remittance, RemittanceTriggers} from "../../contracts/token/modules/Remittance.sol";

@@ -1,6 +1,6 @@
 // contracts/test/TestWrapper.sol
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.12;
+pragma solidity 0.8.36;
 
 import "../Wrapper.sol";
 
