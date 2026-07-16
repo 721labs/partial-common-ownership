@@ -104,6 +104,37 @@ node scripts/compatibility.js check
 node scripts/compatibility.js security-01-negative-probes
 ```
 
+Security remediation 02 uses the named
+`security-02-pco-init-before-callback` policy. It anchors the immutable
+Security 01 commit `b8be19e6ae6676d445127b38a47c7f73f1c45917`, the exact
+Security 01 evidence and review digests, and reconstructs that checkpoint's
+production opcodes and gas entries before comparison. The policy permits only
+making the existing ERC721 receiver helper internal and changing PCO minting
+to establish ERC721 ownership plus the five existing PCO fields before the
+same receiver callback is invoked with the same rejection payload.
+
+The source gate digest-binds the exact production edits, the package-excluded
+receiver fixture, the existing Hardhat and Forge regression sources, Slither
+runner and triage updates, dependency/tool configuration, parity files, and
+the complete compiler-input closure. It rejects any added test identifier:
+the strengthened callback matrix remains inside one existing Hardhat oracle
+and one existing Forge parity test, preserving the exact 89 Hardhat and 140
+Forge names. The matrix proves initialized callback state and ordered events,
+full rollback for a wrong selector or receiver revert, and safe reentrant
+transfer and unwrap cleanup. ABI, selectors, events, errors, storage,
+interfaces, enums, ERC165 answers, compiler settings, and every prior
+project-owned revert callsite remain hard equal. The only revert-callsite
+addition is the existing `ERC721: transfer to non ERC721Receiver implementer`
+payload in the existing PCO `_mint` callable. Reproduce the review, evidence,
+and adversarial policy probes with:
+
+```console
+node scripts/compatibility.js write-security-02-review
+node scripts/compatibility.js write-evidence
+node scripts/compatibility.js check
+node scripts/compatibility.js security-02-negative-probes
+```
+
 The original baseline predated explicit revert-literal extraction.
 `project-revert-strings.json` is a SHA-256-bound supplement derived from the
 unchanged production sources at the recorded baseline commit. It binds all 35

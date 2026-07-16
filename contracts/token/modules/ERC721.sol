@@ -458,7 +458,7 @@ abstract contract ERC721 is Context, ERC165, IERC721 {
   }
 
   //////////////////////////////
-  /// Private Methods
+  /// Internal Methods
   //////////////////////////////
 
   /**
@@ -471,12 +471,13 @@ abstract contract ERC721 is Context, ERC165, IERC721 {
    * @param _data bytes optional data to send along with the call
    * @return bool whether the call correctly returned the expected magic value
    */
+  /* solhint-disable ordering */
   function _checkOnERC721Received(
     address from,
     address to,
     uint256 tokenId,
     bytes memory _data
-  ) private returns (bool) {
+  ) internal returns (bool) {
     if (to.isContract()) {
       try
         IERC721Receiver(to).onERC721Received(_msgSender(), from, tokenId, _data)
@@ -497,4 +498,5 @@ abstract contract ERC721 is Context, ERC165, IERC721 {
       return true;
     }
   }
+  /* solhint-enable ordering */
 }

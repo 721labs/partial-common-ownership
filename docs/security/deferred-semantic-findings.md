@@ -63,15 +63,37 @@ custody with no live wrapper metadata or remaining unwrap path.
 Evidence:
 `test/solidity/fuzz/WrapperFuzz.t.sol:test_regression_deferredForeclosedUnwrapLeavesUnderlyingWithoutWrapperRecord`.
 
-## Disposition
+## ERC721 receiver callback before PCO initialization
 
-The [Slither 0.11.5 triage](./slither-0.11.5-triage.md) additionally records
-the confirmed callback-before-initialization risk in `_safeMint`, which is not
-dismissed as a false positive.
+`PartialCommonOwnership._mint` previously invoked `_safeMint` before setting
+the deposit, valuation, beneficiary, tax rate, and collection frequency. A
+contract leasee therefore received its ERC721 callback while it owned a
+partially initialized token and could reach transfer, taxation, or unwrap
+paths from that transient state.
+
+Evidence:
+`tests/Wrapper.ts:Wrapper.sol #onERC721Received fails cannot be called directly`
+and
+`test/solidity/parity/WrapperParity.t.sol:WrapperParityTest:test_onERC721Received_directSafeTransferReverts`.
+
+Status: remediated by Security 02. The base ERC721 mint and all PCO setters now
+complete before the same receiver check is invoked. The callback's operator,
+zero `from`, wrapped token ID, and empty data are unchanged. EOA event order is
+unchanged; a contract callback now occurs after the mint, valuation, and
+beneficiary events and before the final `LogTokenWrapped` event. Regression
+coverage proves complete initialized state, successful callback-time transfer
+and unwrap, exact event order, and full rollback for a wrong selector or
+receiver revert. The test-only receiver fixture is excluded from the package.
+The base mint is explicitly qualified so a downstream override of the
+two-argument `_mint` extension point cannot reintroduce a callback before PCO
+initialization; this reviewed internal extensibility restriction is part of the
+security correction, while public ABI and storage remain unchanged.
+
+## Disposition
 
 Stage 10 must include the historical findings and their remediation status in
 its custom-ERC721-versus-OpenZeppelin 5 security comparison. Security 01 fixes
-the nested-foreclosure transfer corruption. The remaining sections and the
-callback-before-initialization finding stay open until their corresponding
-authorized security PRs pass the same compatibility, migration, and deployment
-review.
+the nested-foreclosure transfer corruption, and Security 02 fixes the
+callback-before-initialization finding. The three remaining semantic findings
+stay open until their corresponding authorized security PRs pass the same
+compatibility, migration, and deployment review.
