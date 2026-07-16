@@ -1,11 +1,15 @@
 echo "Installing"
 
 echo "\n0. Set Node Version"
-source $HOME/.nvm/nvm.sh
+source "$HOME/.nvm/nvm.sh"
+nvm install
 nvm use
 
 echo "\n1. Install Dependencies"
-yarn
+corepack enable pnpm
+corepack install --global pnpm@11.13.1
+test "$(pnpm --version)" = "11.13.1"
+pnpm install --frozen-lockfile
 
 echo "\n2. Installing Foundry"
 curl -L https://foundry.paradigm.xyz | bash
