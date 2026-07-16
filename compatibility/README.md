@@ -135,6 +135,37 @@ node scripts/compatibility.js check
 node scripts/compatibility.js security-02-negative-probes
 ```
 
+Security remediation 03 uses the named
+`security-03-post-tax-stabilization` policy. It anchors the merged Security 02
+squash commit `02c2b6cfef5807e01fad80d81f1eb72519d74456`, together with the
+exact Security 02 evidence and review digests, and reconstructs that
+checkpoint's production opcodes and legacy gas entries before comparison.
+The only production edits are post-collection authorization rechecks for
+`selfAssess`, `deposit`, `withdrawDeposit`, and `exit`, plus moving takeover
+payment classification after tax collection so payment is based on the owner
+that will actually sell the token.
+
+The source gate digest-binds those two exact production transforms, every
+strengthened Forge regression and invariant source, the Slither provenance
+line, the warning allowlist, dependency/tool configuration, the unchanged
+89-Hardhat and 140-Forge inventories, and the complete 29-source Hardhat
+compiler-input closure. ABI, function and error selectors, events, storage,
+interfaces, enums, ERC165 answers, compiler settings, test identifiers, and
+project-owned revert payloads remain exact. The sole revert-manifest change is
+the reviewed ordering of existing takeover payment and already-owner checks;
+no payload or callsite is added or removed. Checked-in evidence records full
+Security-02-relative opcode diffs, raw and normalized bytecode hashes and
+sizes, EIP-170 checks, exact legacy and key-flow gas changes, rollback across
+all four post-tax mutations and three authorization modes, and successful
+cross-foreclosure takeover accounting and event order. Reproduce it with:
+
+```console
+node scripts/compatibility.js write-security-03-review
+node scripts/compatibility.js write-evidence
+node scripts/compatibility.js check
+node scripts/compatibility.js security-03-negative-probes
+```
+
 The original baseline predated explicit revert-literal extraction.
 `project-revert-strings.json` is a SHA-256-bound supplement derived from the
 unchanged production sources at the recorded baseline commit. It binds all 35

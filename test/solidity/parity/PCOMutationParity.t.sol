@@ -145,7 +145,9 @@ contract PCOMutationParityTest is Test {
         _takeoverFromContract(bob, TOKEN_ONE, ETH1, ETH1);
         vm.warp(block.timestamp + 1);
 
-        _expectTakeoverRevert(alice, TOKEN_ONE, ETH2, ETH1, ETH1, "Message does not contain surplus value for deposit");
+        _expectTakeoverPaymentRevertAfterCollection(
+            alice, TOKEN_ONE, ETH2, ETH1, ETH1, "Message does not contain surplus value for deposit"
+        );
     }
 
     function test_takeoverLease_fails_alreadyOwned() public {
@@ -163,7 +165,9 @@ contract PCOMutationParityTest is Test {
         _takeoverFromContract(alice, TOKEN_ONE, ETH1, ETH2);
         vm.warp(block.timestamp + 1);
 
-        _expectTakeoverRevert(beneficiary, TOKEN_ONE, ETH4, ETH1, ETH2, "Msg contains surplus value");
+        _expectTakeoverPaymentRevertAfterCollection(
+            beneficiary, TOKEN_ONE, ETH4, ETH1, ETH2, "Msg contains surplus value"
+        );
     }
 
     //////////////////////////////
@@ -681,6 +685,32 @@ contract PCOMutationParityTest is Test {
 
         Vm.Log[] memory logs = vm.getRecordedLogs();
         assertEq(logs.length, 0);
+        _assertStateUnchanged(tokenId, caller, beforeState);
+    }
+
+    /// @dev Payment validity is determined from the owner after tax collection.
+    /// Foundry records the transient collection trace from the reverted call;
+    /// the receipt/state rollback is proven by the unchanged-state assertions.
+    function _expectTakeoverPaymentRevertAfterCollection(
+        address caller,
+        uint256 tokenId,
+        uint256 newValuation,
+        uint256 currentValuation,
+        uint256 value,
+        string memory reason
+    ) internal {
+        TokenState memory beforeState = _state(tokenId, caller);
+        uint256 due = _taxDue(tokenId, currentValuation, block.timestamp - beforeState.lastCollectionTime);
+
+        vm.recordLogs();
+        vm.expectRevert(_error(reason));
+        vm.prank(caller);
+        token.takeoverLease{value: value}(tokenId, newValuation, currentValuation);
+
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+        assertEq(logs.length, 2);
+        _assertCollection(logs[0], tokenId, due);
+        _assertRemittance(logs[1], TAX_COLLECTION, beneficiary, due);
         _assertStateUnchanged(tokenId, caller, beforeState);
     }
 

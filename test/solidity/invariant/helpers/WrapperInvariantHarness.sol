@@ -86,6 +86,7 @@ contract WrapperInvariantHandler {
 
     struct TakeoverTerms {
         bool executable;
+        bool crossesForeclosure;
         address currentOwner;
         address buyer;
         uint256 wrappedId;
@@ -107,6 +108,7 @@ contract WrapperInvariantHandler {
     uint256 public ghostSuccessfulWraps;
     uint256 public ghostSuccessfulUnwraps;
     uint256 public ghostSuccessfulTakeovers;
+    uint256 public ghostCrossingForeclosureTakeovers;
     uint256 public ghostSuccessfulTransfers;
     uint256 public ghostFailedCalls;
     uint256 public ghostForeclosedUnwraps;
@@ -220,6 +222,7 @@ contract WrapperInvariantHandler {
         );
         if (success) {
             ghostSuccessfulTakeovers++;
+            if (terms.crossesForeclosure) ghostCrossingForeclosureTakeovers++;
         } else {
             ghostUnexpectedValidCallFailure = true;
         }
@@ -242,15 +245,9 @@ contract WrapperInvariantHandler {
         terms.currentValuation = wrapper.valuationOf(terms.wrappedId);
         address beneficiary = wrapper.beneficiaryOf(terms.wrappedId);
         (uint256 taxDueBeforeTakeover,) = wrapper.taxOwed(terms.wrappedId);
-
-        // A beneficiary purchase that starts from an actor but crosses into
-        // foreclosure during collectTax retains the required current valuation
-        // as untracked contract surplus. Keep that separately deferred legacy
-        // semantic out of the intended-state conservation campaign.
-        if (
-            terms.buyer == beneficiary && currentOwner != address(wrapper) && taxDueBeforeTakeover > 0
-                && taxDueBeforeTakeover >= wrapper.depositOf(terms.wrappedId)
-        ) return terms;
+        bool purchasedFromContract = currentOwner == address(wrapper)
+            || (taxDueBeforeTakeover > 0 && taxDueBeforeTakeover >= wrapper.depositOf(terms.wrappedId));
+        terms.crossesForeclosure = currentOwner != address(wrapper) && purchasedFromContract;
 
         uint256 increase = valuationIncreaseSeed_ % (MAX_VALUATION + 1);
         // If rounding makes the pre-takeover tax zero, collectTax deliberately
@@ -263,9 +260,10 @@ contract WrapperInvariantHandler {
         if (terms.newValuation == 0) terms.newValuation = 1;
 
         if (terms.buyer == beneficiary) {
-            terms.value = currentOwner == address(wrapper) ? 0 : terms.currentValuation;
+            terms.value = purchasedFromContract ? 0 : terms.currentValuation;
         } else {
-            terms.value = terms.currentValuation + (depositSeed_ % MAX_DEPOSIT) + 1;
+            uint256 buyerDeposit = (depositSeed_ % MAX_DEPOSIT) + 1;
+            terms.value = purchasedFromContract ? buyerDeposit : terms.currentValuation + buyerDeposit;
         }
         terms.executable = true;
     }

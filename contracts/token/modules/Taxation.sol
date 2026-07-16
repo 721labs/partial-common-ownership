@@ -127,6 +127,7 @@ abstract contract Taxation is
     override
     _onlyApprovedOrOwner(tokenId_)
     _collectTax(tokenId_)
+    _onlyApprovedOrOwner(tokenId_)
   {
     _setDeposit(tokenId_, depositOf(tokenId_) + msg.value);
   }
@@ -137,6 +138,7 @@ abstract contract Taxation is
     override
     _onlyApprovedOrOwner(tokenId_)
     _collectTax(tokenId_)
+    _onlyApprovedOrOwner(tokenId_)
   {
     _withdrawDeposit(tokenId_, wei_);
   }
@@ -147,6 +149,7 @@ abstract contract Taxation is
     override
     _onlyApprovedOrOwner(tokenId_)
     _collectTax(tokenId_)
+    _onlyApprovedOrOwner(tokenId_)
   {
     _withdrawDeposit(tokenId_, depositOf(tokenId_));
   }

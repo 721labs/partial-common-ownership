@@ -322,6 +322,160 @@ const SECURITY_02_COMPILER_SOURCE_NAMES_SHA256 =
   "e0fad97cd536ee22fdd2d9f3da46b483190352856d175166a763cc0c2667d4d5";
 const SECURITY_02_COMPILER_CANDIDATE_CLOSURE_SHA256 =
   "6a22c2752395f05857b7911e5613df456a67970f749b6efd659eec8805cef33b";
+const SECURITY_03_CANDIDATE = "security-03-post-tax-stabilization";
+const SECURITY_03_POLICY = "security-03-post-tax-stabilization";
+const SECURITY_03_EVIDENCE_PATH =
+  "compatibility/evidence/security-03-post-tax-stabilization.json";
+const SECURITY_03_BASE_COMMIT = "02c2b6cfef5807e01fad80d81f1eb72519d74456";
+const SECURITY_02_CHECKPOINT_EVIDENCE_SHA256 =
+  "de260dc24d9ca44def7022c9b87804aa5d9909e62b89fd2e57e71245302ff963";
+const SECURITY_02_CHECKPOINT_REVIEW_SHA256 =
+  "1b4cc0db830026a9005a3e2f1d09ad532c45e3bbca116a81b131a3c7ef7c7504";
+const SECURITY_03_LEASE_SOURCE = "contracts/token/modules/Lease.sol";
+const SECURITY_03_TAXATION_SOURCE = "contracts/token/modules/Taxation.sol";
+const SECURITY_03_LEASE_BASE_SHA256 =
+  "d54560b1dc08c81127282aacf2facc05a2800a9604a838e5aba075a0bbfbd61b";
+const SECURITY_03_LEASE_CANDIDATE_SHA256 =
+  "adf81aa5c07420f00579492d949c0f53221adb1e986230f88ee795471384c0a9";
+const SECURITY_03_TAXATION_BASE_SHA256 =
+  "0e7f83ab785c5588f3e4ba1069abb1de261270b4fce60f2fae58ec3e4d669852";
+const SECURITY_03_TAXATION_CANDIDATE_SHA256 =
+  "8f9ed173f460a453380d071c915b14881292b70fe54a52283f27d5e353707131";
+const SECURITY_03_POST_TAX_TEST_SOURCE =
+  "test/solidity/invariant/PCODeferredRegression.t.sol";
+const SECURITY_03_POST_TAX_TEST =
+  "test/solidity/invariant/PCODeferredRegression.t.sol:PCODeferredRegressionTest:test_deferredStage10_pendingForeclosureSelfAssessPreservesLegacyBrickedState";
+const SECURITY_03_TAKEOVER_TEST_SOURCE = "test/solidity/fuzz/WrapperFuzz.t.sol";
+const SECURITY_03_TAKEOVER_TEST =
+  "test/solidity/fuzz/WrapperFuzz.t.sol:WrapperFuzzTest:test_regression_deferredBeneficiaryTakeoverAcrossForeclosureLeavesUntrackedValuationSurplus";
+const SECURITY_03_CHECKPOINT_BINDING = Object.freeze({
+  commit: SECURITY_03_BASE_COMMIT,
+  evidence: Object.freeze({
+    path: SECURITY_02_EVIDENCE_PATH,
+    sha256: SECURITY_02_CHECKPOINT_EVIDENCE_SHA256,
+  }),
+  review: Object.freeze({
+    path: "compatibility/reviewed-differences.json",
+    sha256: SECURITY_02_CHECKPOINT_REVIEW_SHA256,
+  }),
+});
+const SECURITY_03_BEHAVIOR_EVIDENCE = Object.freeze({
+  inventoryChange: "none",
+  inventories: Object.freeze({
+    hardhat: Object.freeze({
+      count: SECURITY_01_HARDHAT_COUNT,
+      namesSha256: SECURITY_01_HARDHAT_NAMES_SHA256,
+    }),
+    forge: Object.freeze({
+      count: SECURITY_01_FORGE_COUNT,
+      namesSha256: SECURITY_01_FORGE_NAMES_SHA256,
+    }),
+  }),
+  postTaxAuthorization: Object.freeze({
+    sourcePath: SECURITY_03_POST_TAX_TEST_SOURCE,
+    sourceSha256:
+      "fbba30318497a2d621a5399f163e26776679b00829b7ac50e2f5611805af3bcf",
+    test: SECURITY_03_POST_TAX_TEST,
+    authorizationModes: Object.freeze([
+      "owner",
+      "token-approved operator",
+      "approved-for-all operator",
+    ]),
+    mutations: Object.freeze([
+      "selfAssess",
+      "deposit",
+      "withdrawDeposit",
+      "exit",
+    ]),
+    expectedRevert: "Error(string): ERC721: caller is not owner nor approved",
+    expectedOutcome:
+      "Tax collection may transiently foreclose, but stale pre-collection authorization cannot mutate state and the complete call rolls back.",
+  }),
+  takeoverPayment: Object.freeze({
+    sourcePath: SECURITY_03_TAKEOVER_TEST_SOURCE,
+    sourceSha256:
+      "18d32cf9476c7a46362df42d7b8c4979048200b81d8e1ace84e3e86c172be6cc",
+    test: SECURITY_03_TAKEOVER_TEST,
+    buyerClasses: Object.freeze(["beneficiary", "non-beneficiary"]),
+    successfulEventOrder: Object.freeze([
+      "LogCollection",
+      "LogRemittance or LogOutstandingRemittance",
+      "LogValuation(0)",
+      "Approval",
+      "Transfer(to contract)",
+      "LogForeclosure",
+      "LogValuation(new)",
+      "Approval",
+      "Transfer(to buyer)",
+      "LogLeaseTakeover",
+    ]),
+    accounting:
+      "No submitted value is left untracked; contract assets equal deposits plus outstanding-remittance liabilities.",
+    rollback:
+      "Malformed active-owner payment exposes transient Collection then Remittance to the Foundry recorder while committed state and receipt logs roll back.",
+  }),
+  invariantSources: Object.freeze({
+    "test/solidity/invariant/PCOInvariant.t.sol":
+      "8a1f76de69c21233608992678ace76e8a72225d5361d50063bcaa0c7069c4efb",
+    "test/solidity/invariant/WrapperInvariant.t.sol":
+      "bce81fd95029aae12fd8eb35c21061cbe3c539ab27e870040898a7da6be06cee",
+    "test/solidity/invariant/helpers/WrapperInvariantHarness.sol":
+      "c683246b1958083d0e675d190305c74296f69083ce2f11c50b85e485d917fe95",
+    "test/solidity/parity/PCOMutationParity.t.sol":
+      "3aee5877b76da7143bf3b678f86d76e670f7ce86b49ec9a8d13216cf4cd78aea",
+  }),
+});
+const SECURITY_03_BOUND_FILES = Object.freeze({
+  "compatibility/README.md":
+    "1824e84a0115d2814fecb1a16d8b7eb524a849e9cfbfc73e76f9cee8e864bcd8",
+  "docs/security/deferred-semantic-findings.md":
+    "108baaf737f4b8e58a772bc065f041090b65e01807f1ecf38a92dd3c2c696e08",
+  "scripts/run-slither.js":
+    "26437c5be98b3334ac46c24155a471d2ddec3d2dbcf304a27a50c895fb583f1e",
+  "test/solidity/fuzz/WrapperFuzz.t.sol":
+    "18d32cf9476c7a46362df42d7b8c4979048200b81d8e1ace84e3e86c172be6cc",
+  "test/solidity/invariant/PCODeferredRegression.t.sol":
+    "fbba30318497a2d621a5399f163e26776679b00829b7ac50e2f5611805af3bcf",
+  "test/solidity/invariant/PCOInvariant.t.sol":
+    "8a1f76de69c21233608992678ace76e8a72225d5361d50063bcaa0c7069c4efb",
+  "test/solidity/invariant/WrapperInvariant.t.sol":
+    "bce81fd95029aae12fd8eb35c21061cbe3c539ab27e870040898a7da6be06cee",
+  "test/solidity/invariant/helpers/WrapperInvariantHarness.sol":
+    "c683246b1958083d0e675d190305c74296f69083ce2f11c50b85e485d917fe95",
+  "test/solidity/parity/PCOMutationParity.t.sol":
+    "3aee5877b76da7143bf3b678f86d76e670f7ce86b49ec9a8d13216cf4cd78aea",
+});
+const SECURITY_03_CONFIG_FILES = Object.freeze({
+  ...SECURITY_02_CONFIG_FILES,
+  "compatibility/compiler-warning-allowlist.json":
+    "e9da00fd5108aa12a3d3514672502f1637bda9feeec3db4bc64396d1410ad824",
+});
+const SECURITY_03_CORE_CHANGED_PATHS = Object.freeze(
+  [
+    "compatibility/README.md",
+    "compatibility/compiler-warning-allowlist.json",
+    SECURITY_03_LEASE_SOURCE,
+    SECURITY_03_TAXATION_SOURCE,
+    "docs/security/deferred-semantic-findings.md",
+    "scripts/compatibility.js",
+    "scripts/run-slither.js",
+    ...Object.keys(SECURITY_03_BEHAVIOR_EVIDENCE.invariantSources),
+    SECURITY_03_POST_TAX_TEST_SOURCE,
+    SECURITY_03_TAKEOVER_TEST_SOURCE,
+  ].sort()
+);
+const SECURITY_03_FINAL_CHANGED_PATHS = Object.freeze(
+  [
+    ...SECURITY_03_CORE_CHANGED_PATHS,
+    SECURITY_03_EVIDENCE_PATH,
+    "compatibility/reviewed-differences.json",
+  ].sort()
+);
+const SECURITY_03_COMPILER_SOURCE_COUNT = 29;
+const SECURITY_03_COMPILER_SOURCE_NAMES_SHA256 =
+  "e0fad97cd536ee22fdd2d9f3da46b483190352856d175166a763cc0c2667d4d5";
+const SECURITY_03_COMPILER_CANDIDATE_CLOSURE_SHA256 =
+  "ae84ad645afd12641f10ee2634af301eaca52f1e568267dd20f7858aef0dacc8";
 const PROJECT_REVERT_STRINGS_PATH = path.join(
   ROOT,
   "compatibility",
@@ -746,6 +900,20 @@ function validateSecurity02Candidate(baseline, candidate) {
   validateSecurity01HardFields(baseline, candidate);
 }
 
+function validateSecurity03Candidate(baseline, candidate) {
+  validateSecurity01Inventory(candidate);
+  validateStage08Candidate(baseline, candidate);
+  stage09ForgeStdEvidence();
+  security02CheckpointAnchor();
+  security03SourceEvidence();
+  security03BehaviorEvidence(candidate);
+  validateSecurity03RevertBinding(
+    protectedProjectRevertStrings(),
+    candidate.projectRevertStrings
+  );
+  validateSecurity01HardFields(baseline, candidate);
+}
+
 const REVIEW_POLICIES = Object.freeze({
   "stage-04-source-path-metadata-and-gas": Object.freeze({
     candidate: "stage-04-package-canonical-openzeppelin",
@@ -973,6 +1141,35 @@ const REVIEW_POLICIES = Object.freeze({
       );
     },
     validateCandidate: validateSecurity02Candidate,
+  }),
+  [SECURITY_03_POLICY]: Object.freeze({
+    candidate: SECURITY_03_CANDIDATE,
+    requiredOpcodeEvidence: Object.freeze({
+      mode: "security-03-security-02-relative-full-diff",
+      path: SECURITY_03_EVIDENCE_PATH,
+      contracts: STAGE_08_PRODUCTION_CONTRACTS,
+    }),
+    requiredSafetyEvidence: Object.freeze({
+      path: "compatibility/evidence/stage-07-safety-artifacts.json",
+      sha256:
+        "0065814caec6e3044951f80c891c9948454e90138d016513ed07d0fcfb7c67d8",
+    }),
+    requiredSecurity02Checkpoint: SECURITY_03_CHECKPOINT_BINDING,
+    requiredBehaviorEvidence: SECURITY_03_BEHAVIOR_EVIDENCE,
+    permits(reviewPath) {
+      return (
+        STAGE_08_BYTECODE_PATH.test(reviewPath) ||
+        STAGE_08_GAS_SNAPSHOT_PATH.test(reviewPath) ||
+        /^\$\.projectRevertStrings(?:\.|\[|$)/.test(reviewPath)
+      );
+    },
+    permitsProtectedPath(reviewPath, protectedDomain) {
+      return (
+        protectedDomain === "project-owned revert strings" &&
+        /^\$\.projectRevertStrings(?:\.|\[|$)/.test(reviewPath)
+      );
+    },
+    validateCandidate: validateSecurity03Candidate,
   }),
 });
 
@@ -1248,6 +1445,70 @@ function validateSecurity02RevertBinding(baselineEntries, candidateEntries) {
   }
 }
 
+function security03ProjectRevertStrings(baselineEntries) {
+  const checkpointEntries = security02ProjectRevertStrings(baselineEntries);
+  const takeoverEntries = checkpointEntries.filter(
+    (entry) =>
+      entry.source === SECURITY_03_LEASE_SOURCE &&
+      entry.contract === "Lease" &&
+      entry.callable === "takeoverLease(uint256,uint256,uint256)" &&
+      entry.callKind === "require"
+  );
+  const expectedCheckpointValues = [
+    "Token is locked",
+    "Current valuation is incorrect",
+    "New valuation cannot be zero",
+    "New valuation must be >= current valuation",
+    "Msg contains value",
+    "Msg contains surplus value",
+    "Message does not contain surplus value for deposit",
+    "Buyer is already owner",
+  ];
+  if (
+    takeoverEntries.length !== expectedCheckpointValues.length ||
+    !valuesEqual(
+      takeoverEntries.map((entry) => entry.value),
+      expectedCheckpointValues
+    ) ||
+    !valuesEqual(
+      takeoverEntries.map((entry) => entry.ordinal),
+      expectedCheckpointValues.map((_value, index) => index)
+    )
+  ) {
+    throw new Error(
+      "Security 03 could not locate the exact Security 02 takeover revert ordering"
+    );
+  }
+  const firstIndex = checkpointEntries.indexOf(takeoverEntries[0]);
+  if (
+    !takeoverEntries.every(
+      (entry, index) => checkpointEntries[firstIndex + index] === entry
+    )
+  ) {
+    throw new Error("Security 03 takeover revert callsites are not contiguous");
+  }
+  const candidateValues = [
+    ...expectedCheckpointValues.slice(0, 4),
+    "Buyer is already owner",
+    ...expectedCheckpointValues.slice(4, 7),
+  ];
+  const reordered = candidateValues.map((value, ordinal) => ({
+    ...takeoverEntries.find((entry) => entry.value === value),
+    ordinal,
+  }));
+  checkpointEntries.splice(firstIndex, takeoverEntries.length, ...reordered);
+  return checkpointEntries;
+}
+
+function validateSecurity03RevertBinding(baselineEntries, candidateEntries) {
+  const expected = security03ProjectRevertStrings(baselineEntries);
+  if (!valuesEqual(candidateEntries, expected)) {
+    throw new Error(
+      "Security 03 permits only the reviewed takeover revert-callsite ordering; every payload and callsite must remain exact"
+    );
+  }
+}
+
 function validateSecurity01ChangedPaths(changedPaths) {
   const unexpected = changedPaths.filter(
     (relativePath) =>
@@ -1412,6 +1673,127 @@ function security02SourceEvidence() {
     boundFiles: security02BoundFileEvidence(),
     configFiles: security02ConfigEvidence(),
     compilerSources: security02CompilerSourceEvidence(),
+  });
+}
+
+function validateSecurity03ChangedPaths(actual) {
+  const permittedStates = [
+    SECURITY_03_CORE_CHANGED_PATHS,
+    [
+      ...SECURITY_03_CORE_CHANGED_PATHS,
+      "compatibility/reviewed-differences.json",
+    ],
+    SECURITY_03_FINAL_CHANGED_PATHS,
+  ].map((paths) => [...new Set(paths)].sort());
+  const normalized = [...new Set(actual)].sort();
+  if (!permittedStates.some((expected) => valuesEqual(normalized, expected))) {
+    const differences = collectDifferences(
+      SECURITY_03_FINAL_CHANGED_PATHS,
+      normalized,
+      "$.security03ChangedPaths"
+    );
+    throw new Error(
+      `Security 03 repository changes differ from its exact core/review/evidence states:\n${differences
+        .slice(0, 20)
+        .map((difference) => `- ${formatDifference(difference)}`)
+        .join("\n")}`
+    );
+  }
+  return [...SECURITY_03_FINAL_CHANGED_PATHS];
+}
+
+function security03BoundFileEvidence() {
+  const files = fileDigestEvidence(SECURITY_03_BOUND_FILES);
+  validateExactFileDigests(files, SECURITY_03_BOUND_FILES, "security03Files");
+  return files;
+}
+
+function security03ConfigEvidence() {
+  const files = fileDigestEvidence(SECURITY_03_CONFIG_FILES);
+  validateExactFileDigests(files, SECURITY_03_CONFIG_FILES, "configFiles");
+  return files;
+}
+
+function validateSecurity03CompilerSourceEvidence(evidence) {
+  if (
+    evidence.sourceCount !== SECURITY_03_COMPILER_SOURCE_COUNT ||
+    evidence.sourceNamesSha256 !== SECURITY_03_COMPILER_SOURCE_NAMES_SHA256 ||
+    evidence.security02ClosureSha256 !==
+      SECURITY_02_COMPILER_CANDIDATE_CLOSURE_SHA256 ||
+    evidence.candidateClosureSha256 !==
+      SECURITY_03_COMPILER_CANDIDATE_CLOSURE_SHA256 ||
+    !valuesEqual(evidence.addedSources, []) ||
+    !valuesEqual(evidence.removedSources, []) ||
+    !valuesEqual(evidence.changedSources, [
+      {
+        path: SECURITY_03_LEASE_SOURCE,
+        security02Sha256: SECURITY_03_LEASE_BASE_SHA256,
+        candidateSha256: SECURITY_03_LEASE_CANDIDATE_SHA256,
+      },
+      {
+        path: SECURITY_03_TAXATION_SOURCE,
+        security02Sha256: SECURITY_03_TAXATION_BASE_SHA256,
+        candidateSha256: SECURITY_03_TAXATION_CANDIDATE_SHA256,
+      },
+    ])
+  ) {
+    throw new Error(
+      "Security 03 compiler source closure differs from the exact Security 02 closure plus its two authorized production edits"
+    );
+  }
+}
+
+function security03CompilerSourceEvidence() {
+  const sourceHashes = compilerSourceHashes();
+  if (
+    sourceHashes[SECURITY_03_LEASE_SOURCE] !==
+      SECURITY_03_LEASE_CANDIDATE_SHA256 ||
+    sourceHashes[SECURITY_03_TAXATION_SOURCE] !==
+      SECURITY_03_TAXATION_CANDIDATE_SHA256
+  ) {
+    throw new Error(
+      "Security 03 compiler input is missing an exact authorized production source"
+    );
+  }
+  const security02Hashes = { ...sourceHashes };
+  security02Hashes[SECURITY_03_LEASE_SOURCE] = SECURITY_03_LEASE_BASE_SHA256;
+  security02Hashes[SECURITY_03_TAXATION_SOURCE] =
+    SECURITY_03_TAXATION_BASE_SHA256;
+  const evidence = sorted({
+    sourceCount: Object.keys(sourceHashes).length,
+    sourceNamesSha256: sha256(stableJson(Object.keys(sourceHashes).sort())),
+    security02ClosureSha256: sha256(stableJson(security02Hashes)),
+    candidateClosureSha256: sha256(stableJson(sourceHashes)),
+    addedSources: [],
+    removedSources: [],
+    changedSources: [
+      {
+        path: SECURITY_03_LEASE_SOURCE,
+        security02Sha256: SECURITY_03_LEASE_BASE_SHA256,
+        candidateSha256: SECURITY_03_LEASE_CANDIDATE_SHA256,
+      },
+      {
+        path: SECURITY_03_TAXATION_SOURCE,
+        security02Sha256: SECURITY_03_TAXATION_BASE_SHA256,
+        candidateSha256: SECURITY_03_TAXATION_CANDIDATE_SHA256,
+      },
+    ],
+  });
+  validateSecurity03CompilerSourceEvidence(evidence);
+  return evidence;
+}
+
+function security03SourceEvidence() {
+  security02CheckpointAnchor();
+  return sorted({
+    checkpoint: SECURITY_03_CHECKPOINT_BINDING,
+    production: security03ProductionSourceEvidence(),
+    changedPaths: validateSecurity03ChangedPaths(
+      repositoryChangedPaths(SECURITY_03_BASE_COMMIT)
+    ),
+    boundFiles: security03BoundFileEvidence(),
+    configFiles: security03ConfigEvidence(),
+    compilerSources: security03CompilerSourceEvidence(),
   });
 }
 
@@ -1644,6 +2026,275 @@ function security02ProductionSourceEvidence() {
       },
     },
   });
+}
+
+function security03ProductionSourceEvidence() {
+  run("git", ["merge-base", "--is-ancestor", SECURITY_03_BASE_COMMIT, "HEAD"]);
+
+  const baseLease = run("git", [
+    "show",
+    `${SECURITY_03_BASE_COMMIT}:${SECURITY_03_LEASE_SOURCE}`,
+  ]).stdout;
+  if (sha256(baseLease) !== SECURITY_03_LEASE_BASE_SHA256) {
+    throw new Error("Security 03 Lease checkpoint source changed");
+  }
+  const preCollectionPayment = [
+    "    bool senderIsBeneficiary = msg.sender == beneficiaryOf(tokenId_);",
+    "    // Current owner is a wallet address or the address of this contract",
+    "    // if the token is foreclosed or has never been purchased.",
+    "    address currentOwner = ownerOf(tokenId_);",
+    "",
+    "    if (senderIsBeneficiary) {",
+    "      if (currentOwner == address(this)) {",
+    "        // If token is owned by contract, beneficiary does not need to pay anything.",
+    '        require(msg.value == 0, "Msg contains value");',
+    "      } else {",
+    "        // Beneficiary only needs to pay the current valuation,",
+    "        // doesn't need to put down a deposit.",
+    '        require(msg.value == currentValuation_, "Msg contains surplus value");',
+    "      }",
+    "    } else {",
+    "      // Value sent must be greater the amount being remitted to the current owner;",
+    "      // surplus is necessary for deposit.",
+    "      require(",
+    "        msg.value > valuationPriorToTaxCollection,",
+    '        "Message does not contain surplus value for deposit"',
+    "      );",
+    "    }",
+    "",
+  ].join("\n");
+  let expectedLease = replaceExactlyOnce(
+    baseLease,
+    preCollectionPayment,
+    "    bool senderIsBeneficiary = msg.sender == beneficiaryOf(tokenId_);\n",
+    "Security 03 removes pre-collection payment classification"
+  );
+  const postCollectionAnchor = [
+    "    address ownerAfterCollection = ownerOf(tokenId_);",
+    "    bool purchasedFromContract = ownerAfterCollection == address(this);",
+    "",
+  ].join("\n");
+  const postCollectionPayment = [
+    postCollectionAnchor.trimEnd(),
+    "",
+    "    if (senderIsBeneficiary) {",
+    "      if (purchasedFromContract) {",
+    "        // If token is owned by contract, beneficiary does not need to pay anything.",
+    '        require(msg.value == 0, "Msg contains value");',
+    "      } else {",
+    "        // Beneficiary only needs to pay the current valuation,",
+    "        // doesn't need to put down a deposit.",
+    '        require(msg.value == currentValuation_, "Msg contains surplus value");',
+    "      }",
+    "    } else {",
+    "      // Value sent must fund a deposit when purchasing from the contract, or",
+    "      // exceed the amount remitted when purchasing from an external owner.",
+    "      require(",
+    "        msg.value > (purchasedFromContract ? 0 : valuationPriorToTaxCollection),",
+    '        "Message does not contain surplus value for deposit"',
+    "      );",
+    "    }",
+    "",
+  ].join("\n");
+  expectedLease = replaceExactlyOnce(
+    expectedLease,
+    postCollectionAnchor,
+    postCollectionPayment,
+    "Security 03 post-collection payment classification"
+  );
+  expectedLease = replaceExactlyOnce(
+    expectedLease,
+    [
+      "    _onlyApprovedOrOwner(tokenId_)",
+      "    _collectTax(tokenId_)",
+      "  {",
+    ].join("\n"),
+    [
+      "    _onlyApprovedOrOwner(tokenId_)",
+      "    _collectTax(tokenId_)",
+      "    _onlyApprovedOrOwner(tokenId_)",
+      "  {",
+    ].join("\n"),
+    "Security 03 selfAssess post-collection authorization"
+  );
+  const candidateLease = fs.readFileSync(
+    path.join(ROOT, SECURITY_03_LEASE_SOURCE),
+    "utf8"
+  );
+  if (
+    candidateLease !== expectedLease ||
+    sha256(candidateLease) !== SECURITY_03_LEASE_CANDIDATE_SHA256
+  ) {
+    throw new Error(
+      "Security 03 permits only post-collection takeover payment classification and the selfAssess authorization recheck in Lease"
+    );
+  }
+
+  const baseTaxation = run("git", [
+    "show",
+    `${SECURITY_03_BASE_COMMIT}:${SECURITY_03_TAXATION_SOURCE}`,
+  ]).stdout;
+  if (sha256(baseTaxation) !== SECURITY_03_TAXATION_BASE_SHA256) {
+    throw new Error("Security 03 Taxation checkpoint source changed");
+  }
+  let expectedTaxation = baseTaxation;
+  for (const callable of [
+    "function deposit(uint256 tokenId_)",
+    "function withdrawDeposit(uint256 tokenId_, uint256 wei_)",
+    "function exit(uint256 tokenId_)",
+  ]) {
+    const signatureStart = expectedTaxation.indexOf(`  ${callable}`);
+    if (signatureStart < 0) {
+      throw new Error(`Security 03 could not locate ${callable}`);
+    }
+    const bodyStart = expectedTaxation.indexOf("  {", signatureStart);
+    if (bodyStart < 0) {
+      throw new Error(`Security 03 could not locate ${callable} body`);
+    }
+    const prefix = expectedTaxation.slice(signatureStart, bodyStart + 3);
+    if (!prefix.endsWith("    _collectTax(tokenId_)\n  {")) {
+      throw new Error(`Security 03 ${callable} modifier ordering changed`);
+    }
+    const replacement = prefix.replace(
+      "    _collectTax(tokenId_)\n  {",
+      "    _collectTax(tokenId_)\n    _onlyApprovedOrOwner(tokenId_)\n  {"
+    );
+    expectedTaxation =
+      expectedTaxation.slice(0, signatureStart) +
+      replacement +
+      expectedTaxation.slice(bodyStart + 3);
+  }
+  const candidateTaxation = fs.readFileSync(
+    path.join(ROOT, SECURITY_03_TAXATION_SOURCE),
+    "utf8"
+  );
+  if (
+    candidateTaxation !== expectedTaxation ||
+    sha256(candidateTaxation) !== SECURITY_03_TAXATION_CANDIDATE_SHA256
+  ) {
+    throw new Error(
+      "Security 03 permits only one post-collection authorization recheck in deposit, withdrawDeposit, and exit"
+    );
+  }
+
+  return sorted({
+    baseCommit: SECURITY_03_BASE_COMMIT,
+    files: {
+      [SECURITY_03_LEASE_SOURCE]: {
+        security02Sha256: SECURITY_03_LEASE_BASE_SHA256,
+        candidateSha256: SECURITY_03_LEASE_CANDIDATE_SHA256,
+        exactChange:
+          "Move existing takeover payment classification after tax collection, classify from ownerAfterCollection, and add the existing authorization modifier after selfAssess tax collection.",
+      },
+      [SECURITY_03_TAXATION_SOURCE]: {
+        security02Sha256: SECURITY_03_TAXATION_BASE_SHA256,
+        candidateSha256: SECURITY_03_TAXATION_CANDIDATE_SHA256,
+        exactChange:
+          "Add the existing authorization modifier immediately after tax collection in deposit, withdrawDeposit, and exit.",
+      },
+    },
+  });
+}
+
+function security03BehaviorEvidence(candidate) {
+  const files = [
+    [
+      SECURITY_03_POST_TAX_TEST_SOURCE,
+      SECURITY_03_BEHAVIOR_EVIDENCE.postTaxAuthorization.sourceSha256,
+      [
+        "for (uint256 authorizationMode = 0; authorizationMode < 3; authorizationMode++)",
+        "for (uint256 mutationMode = 0; mutationMode < 4; mutationMode++)",
+        'abi.encodeWithSignature("Error(string)", "ERC721: caller is not owner nor approved")',
+        "assertEq(logs.length, 6)",
+        "assertEq(logs.length, 10)",
+        "assertEq(address(token_).balance, 1 wei + expectedOutstanding)",
+      ],
+    ],
+    [
+      SECURITY_03_TAKEOVER_TEST_SOURCE,
+      SECURITY_03_BEHAVIOR_EVIDENCE.takeoverPayment.sourceSha256,
+      [
+        "_assertBeneficiaryCrossingForeclosureIsStabilized",
+        "_assertNonBeneficiaryCrossingForeclosureIsStabilized",
+        "_assertActiveOwnerMalformedPaymentRollsBackCollection",
+        "_assertPendingForeclosureTakeoverLogs",
+        "assertEq(logs_.length, 10)",
+        "assertEq(address(wrapper).balance, wrapper.depositOf(wrappedId) + _knownLiabilities())",
+        "_assertTakeoverStateUnchanged(wrappedId, before_)",
+      ],
+    ],
+    [
+      "test/solidity/invariant/PCOInvariant.t.sol",
+      SECURITY_03_BEHAVIOR_EVIDENCE.invariantSources[
+        "test/solidity/invariant/PCOInvariant.t.sol"
+      ],
+      [
+        "ghostPostTaxAuthorizationRollback",
+        "ghostPostTaxAuthorizationChecks",
+        "_expectPostTaxAuthorizationRollback",
+      ],
+    ],
+    [
+      "test/solidity/invariant/WrapperInvariant.t.sol",
+      SECURITY_03_BEHAVIOR_EVIDENCE.invariantSources[
+        "test/solidity/invariant/WrapperInvariant.t.sol"
+      ],
+      ["handler.takeover(1, 2, 0, 0)", "ghostCrossingForeclosureTakeovers"],
+    ],
+    [
+      "test/solidity/invariant/helpers/WrapperInvariantHarness.sol",
+      SECURITY_03_BEHAVIOR_EVIDENCE.invariantSources[
+        "test/solidity/invariant/helpers/WrapperInvariantHarness.sol"
+      ],
+      [
+        "terms.crossesForeclosure",
+        "purchasedFromContract ? 0 : terms.currentValuation",
+        "purchasedFromContract ? buyerDeposit : terms.currentValuation + buyerDeposit",
+      ],
+    ],
+    [
+      "test/solidity/parity/PCOMutationParity.t.sol",
+      SECURITY_03_BEHAVIOR_EVIDENCE.invariantSources[
+        "test/solidity/parity/PCOMutationParity.t.sol"
+      ],
+      [
+        "_expectTakeoverPaymentRevertAfterCollection",
+        "_assertRolledBackCollectionLogs",
+        "_assertStateUnchanged(tokenId, caller, beforeState)",
+      ],
+    ],
+  ];
+  for (const [relativePath, expectedSha256, fragments] of files) {
+    const bytes = fs.readFileSync(path.join(ROOT, relativePath));
+    if (sha256(bytes) !== expectedSha256) {
+      throw new Error(`Security 03 behavior source changed: ${relativePath}`);
+    }
+    const source = bytes.toString("utf8");
+    for (const fragment of fragments) {
+      if (!source.includes(fragment)) {
+        throw new Error(
+          `Security 03 behavior source ${relativePath} is missing: ${fragment}`
+        );
+      }
+    }
+  }
+  validateSecurity01Inventory(candidate);
+  for (const test of [SECURITY_03_POST_TAX_TEST, SECURITY_03_TAKEOVER_TEST]) {
+    if (
+      candidate.tests.forge.names.filter((name) => name === test).length !== 1
+    ) {
+      throw new Error(
+        `Security 03 requires exactly one executed legacy regression identifier: ${test}`
+      );
+    }
+  }
+  return sorted(SECURITY_03_BEHAVIOR_EVIDENCE);
+}
+
+function validateSecurity03BehaviorBinding(evidence) {
+  if (!valuesEqual(evidence, SECURITY_03_BEHAVIOR_EVIDENCE)) {
+    throw new Error("Security 03 behavior evidence binding is stale");
+  }
 }
 
 function security01BehaviorEvidence(candidate) {
@@ -2634,6 +3285,17 @@ function reviewPolicy(review) {
       );
     }
   }
+  if (policy.requiredSecurity02Checkpoint) {
+    const supplied = review.security02Checkpoint;
+    if (
+      !supplied ||
+      !valuesEqual(supplied, policy.requiredSecurity02Checkpoint)
+    ) {
+      throw new Error(
+        `Compatibility review policy ${review.policy} requires the exact Security 02 checkpoint`
+      );
+    }
+  }
   if (policy.requiredForgeStdEvidence) {
     const required = policy.requiredForgeStdEvidence;
     const supplied = review.forgeStdEvidence;
@@ -2968,6 +3630,44 @@ function security02Review(baselineBytes, differences) {
     },
     security01Checkpoint: SECURITY_02_CHECKPOINT_BINDING,
     behaviorEvidence: SECURITY_02_BEHAVIOR_EVIDENCE,
+    safetyEvidence: {
+      path: "compatibility/evidence/stage-07-safety-artifacts.json",
+      sha256:
+        "0065814caec6e3044951f80c891c9948454e90138d016513ed07d0fcfb7c67d8",
+    },
+  };
+}
+
+function security03ReviewReason(reviewPath) {
+  if (STAGE_08_BYTECODE_PATH.test(reviewPath)) {
+    return "The exact post-tax authorization and takeover-payment stabilization changes compiler-generated production bytecode. Security 03 records complete Security-02-relative opcode diffs, raw and normalized hashes and sizes, EIP-170 checks, source transforms, and behavior provenance.";
+  }
+  if (STAGE_08_GAS_SNAPSHOT_PATH.test(reviewPath)) {
+    return "The authorized production stabilization affects this deterministic gas result. Security 03 records the exact Security-02-relative legacy entry and rechecks all 12 key flows against max(3%, 2,000 gas).";
+  }
+  if (/^\$\.projectRevertStrings(?:\.|\[|$)/.test(reviewPath)) {
+    return "Takeover payment checks now execute after collection, so the existing already-owner callsite precedes the three unchanged payment callsites. Security 03 requires the exact reviewed ordering with no added, removed, or changed payload or callsite.";
+  }
+  throw new Error(`Security 03 has no review reason for ${reviewPath}`);
+}
+
+function security03Review(baselineBytes, differences) {
+  return {
+    schemaVersion: 1,
+    candidate: SECURITY_03_CANDIDATE,
+    policy: SECURITY_03_POLICY,
+    baselineSha256: sha256(baselineBytes),
+    allowedDifferences: differences.map((difference) => ({
+      ...difference,
+      reason: security03ReviewReason(difference.path),
+    })),
+    opcodeEvidence: {
+      mode: "security-03-security-02-relative-full-diff",
+      path: SECURITY_03_EVIDENCE_PATH,
+      contracts: [...STAGE_08_PRODUCTION_CONTRACTS],
+    },
+    security02Checkpoint: SECURITY_03_CHECKPOINT_BINDING,
+    behaviorEvidence: SECURITY_03_BEHAVIOR_EVIDENCE,
     safetyEvidence: {
       path: "compatibility/evidence/stage-07-safety-artifacts.json",
       sha256:
@@ -3324,6 +4024,86 @@ function validateSecurity01CheckpointBinding(checkpoint) {
   }
 }
 
+function security02CheckpointAnchor() {
+  const evidenceBytes = fs.readFileSync(SECURITY_02_EVIDENCE_PATH);
+  const evidenceSha256 = sha256(evidenceBytes);
+  if (evidenceSha256 !== SECURITY_02_CHECKPOINT_EVIDENCE_SHA256) {
+    throw new Error(
+      `Security 02 checkpoint evidence changed: expected ${SECURITY_02_CHECKPOINT_EVIDENCE_SHA256}, received ${evidenceSha256}`
+    );
+  }
+  const evidence = JSON.parse(evidenceBytes);
+  if (
+    evidence.schemaVersion !== 1 ||
+    evidence.candidate !== SECURITY_02_CANDIDATE ||
+    evidence.mode !== "security-02-security-01-relative-full-diff"
+  ) {
+    throw new Error("Security 02 checkpoint evidence has an invalid identity");
+  }
+  const reviewBytes = Buffer.from(
+    run("git", [
+      "show",
+      `${SECURITY_03_BASE_COMMIT}:compatibility/reviewed-differences.json`,
+    ]).stdout
+  );
+  const reviewSha256 = sha256(reviewBytes);
+  if (reviewSha256 !== SECURITY_02_CHECKPOINT_REVIEW_SHA256) {
+    throw new Error(
+      `Security 02 checkpoint review changed: expected ${SECURITY_02_CHECKPOINT_REVIEW_SHA256}, received ${reviewSha256}`
+    );
+  }
+  const review = JSON.parse(reviewBytes);
+  if (
+    review.schemaVersion !== 1 ||
+    review.candidate !== SECURITY_02_CANDIDATE ||
+    review.policy !== SECURITY_02_POLICY ||
+    review.opcodeEvidence?.path !== SECURITY_02_EVIDENCE_PATH
+  ) {
+    throw new Error("Security 02 checkpoint review has an invalid identity");
+  }
+  const checkpoint = {
+    commit: SECURITY_03_BASE_COMMIT,
+    evidence: {
+      path: SECURITY_02_EVIDENCE_PATH,
+      sha256: evidenceSha256,
+      value: evidence,
+    },
+    review: {
+      path: "compatibility/reviewed-differences.json",
+      sha256: reviewSha256,
+      value: review,
+    },
+  };
+  validateSecurity02CheckpointBinding(checkpoint);
+  return checkpoint;
+}
+
+function validateSecurity02CheckpointBinding(checkpoint) {
+  const binding = {
+    commit: checkpoint?.commit,
+    evidence: {
+      path: checkpoint?.evidence?.path,
+      sha256: checkpoint?.evidence?.sha256,
+    },
+    review: {
+      path: checkpoint?.review?.path,
+      sha256: checkpoint?.review?.sha256,
+    },
+  };
+  if (!valuesEqual(binding, SECURITY_03_CHECKPOINT_BINDING)) {
+    throw new Error("Security 03 Security 02 checkpoint binding changed");
+  }
+  if (
+    checkpoint.evidence.value?.candidate !== SECURITY_02_CANDIDATE ||
+    checkpoint.evidence.value?.mode !==
+      "security-02-security-01-relative-full-diff" ||
+    checkpoint.review.value?.candidate !== SECURITY_02_CANDIDATE ||
+    checkpoint.review.value?.policy !== SECURITY_02_POLICY
+  ) {
+    throw new Error("Security 03 Security 02 checkpoint identity changed");
+  }
+}
+
 function applyUnifiedOpcodeDiff(baselineOpcodes, diff) {
   if (!diff) return baselineOpcodes;
   const baseline = opcodeInstructions(baselineOpcodes);
@@ -3449,6 +4229,75 @@ function security01CheckpointLegacyGasEntries(checkpoint) {
     throw new Error("Security 01 legacy gas checkpoint digest changed");
   }
   return entries;
+}
+
+function security02CheckpointOpcodes(
+  baseline,
+  qualifiedName,
+  bytecodeKind,
+  checkpoint
+) {
+  const security01 = security01CheckpointAnchor();
+  const security01Opcodes = security01CheckpointOpcodes(
+    baseline,
+    qualifiedName,
+    bytecodeKind,
+    security01
+  );
+  const security02Bytecode =
+    checkpoint.evidence.value.productionRelativeToSecurity01.contracts[
+      qualifiedName
+    ][bytecodeKind];
+  if (
+    sha256(security01Opcodes) !==
+    security02Bytecode.metadataStrippedOpcodes.security01Sha256
+  ) {
+    throw new Error(
+      `Security 03 could not reconstruct Security 01 ${qualifiedName} ${bytecodeKind}`
+    );
+  }
+  const security02Opcodes = applyUnifiedOpcodeDiff(
+    security01Opcodes,
+    security02Bytecode.metadataStrippedOpcodes.fullDiff.hunks
+  );
+  if (
+    sha256(security02Opcodes) !==
+    security02Bytecode.metadataStrippedOpcodes.candidateSha256
+  ) {
+    throw new Error(
+      `Security 03 could not reconstruct Security 02 ${qualifiedName} ${bytecodeKind}`
+    );
+  }
+  return security02Opcodes;
+}
+
+function security02CheckpointLegacyGasEntries(checkpoint) {
+  const previousEntries = security01CheckpointLegacyGasEntries(
+    security01CheckpointAnchor()
+  );
+  const evidence = checkpoint.evidence.value.legacyGasRelativeToSecurity01;
+  if (
+    evidence.fuzzSeed !== "0x721" ||
+    evidence.inventoryCount !== previousEntries.length ||
+    sha256(stableJson(previousEntries)) !== evidence.security01EntriesSha256
+  ) {
+    throw new Error(
+      "Security 02 checkpoint has an invalid legacy gas inventory"
+    );
+  }
+  for (const change of evidence.changes) {
+    const match = change.path.match(/^\$\.gasSnapshot\.entries\[(\d+)\]$/);
+    if (!match) throw new Error(`Invalid Security 02 gas path: ${change.path}`);
+    const index = Number(match[1]);
+    if (previousEntries[index] !== change.security01Value) {
+      throw new Error(`Security 02 gas anchor mismatch at index ${index}`);
+    }
+    previousEntries[index] = change.candidateValue;
+  }
+  if (sha256(stableJson(previousEntries)) !== evidence.candidateEntriesSha256) {
+    throw new Error("Security 02 legacy gas checkpoint digest changed");
+  }
+  return previousEntries;
 }
 
 function stage09ProductionEvidence(baseline, candidate) {
@@ -4309,6 +5158,254 @@ function security02Evidence(review, baseline, candidate) {
   });
 }
 
+function security03RevertEvidence(baseline, candidate) {
+  const checkpointEntries = security02ProjectRevertStrings(
+    baseline.projectRevertStrings
+  );
+  const expected = security03ProjectRevertStrings(
+    baseline.projectRevertStrings
+  );
+  if (!valuesEqual(candidate.projectRevertStrings, expected)) {
+    throw new Error("Security 03 revert-callsite evidence does not match");
+  }
+  const withoutOrdinal = (entries) =>
+    entries
+      .map(({ ordinal: _ordinal, ...entry }) => entry)
+      .sort((left, right) => stableJson(left).localeCompare(stableJson(right)));
+  if (
+    !valuesEqual(withoutOrdinal(checkpointEntries), withoutOrdinal(expected))
+  ) {
+    throw new Error(
+      "Security 03 added, removed, or changed a protected revert callsite"
+    );
+  }
+  const checkpointTakeover = checkpointEntries.filter(
+    (entry) =>
+      entry.source === SECURITY_03_LEASE_SOURCE &&
+      entry.callable === "takeoverLease(uint256,uint256,uint256)"
+  );
+  const candidateTakeover = expected.filter(
+    (entry) =>
+      entry.source === SECURITY_03_LEASE_SOURCE &&
+      entry.callable === "takeoverLease(uint256,uint256,uint256)"
+  );
+  return sorted({
+    security02Count: checkpointEntries.length,
+    candidateCount: expected.length,
+    callsiteMultisetSha256: sha256(stableJson(withoutOrdinal(expected))),
+    security02Order: checkpointTakeover,
+    candidateOrder: candidateTakeover,
+    exactReorderOnly: true,
+  });
+}
+
+function security03HardCompatibilityEvidence(baseline, candidate) {
+  const evidence = security01HardCompatibilityEvidence(baseline, candidate);
+  delete evidence.behaviorTestInventory.unchangedFromStage09;
+  evidence.behaviorTestInventory.unchangedFromSecurity02 = true;
+  return sorted(evidence);
+}
+
+function security03ProductionEvidence(baseline, candidate, checkpoint) {
+  const contracts = {};
+  for (const qualifiedName of STAGE_08_PRODUCTION_CONTRACTS) {
+    const checkpointContract =
+      checkpoint.evidence.value.productionRelativeToSecurity01.contracts[
+        qualifiedName
+      ];
+    const candidateContract = candidate.contracts[qualifiedName];
+    if (!checkpointContract || !candidateContract) {
+      throw new Error(
+        `Security 03 production anchor is missing ${qualifiedName}`
+      );
+    }
+    const bytecodes = {};
+    for (const bytecodeKind of ["creationBytecode", "runtimeBytecode"]) {
+      const checkpointBytecode = checkpointContract[bytecodeKind];
+      const checkpointOpcodes = security02CheckpointOpcodes(
+        baseline,
+        qualifiedName,
+        bytecodeKind,
+        checkpoint
+      );
+      const candidateBytecode = candidateContract[bytecodeKind];
+      if (checkpointOpcodes === candidateBytecode.metadataStrippedOpcodes) {
+        throw new Error(
+          `Security 03 expected an opcode consequence for ${qualifiedName} ${bytecodeKind}`
+        );
+      }
+      bytecodes[bytecodeKind] = {
+        rawBytecode: {
+          security02Keccak256:
+            checkpointBytecode.rawBytecode.candidateKeccak256,
+          candidateKeccak256: candidateBytecode.keccak256,
+          security02SizeBytes:
+            checkpointBytecode.rawBytecode.candidateSizeBytes,
+          candidateSizeBytes: candidateBytecode.sizeBytes,
+          sizeDeltaBytes:
+            candidateBytecode.sizeBytes -
+            checkpointBytecode.rawBytecode.candidateSizeBytes,
+          security02MetadataBytes:
+            checkpointBytecode.rawBytecode.candidateMetadataBytes,
+          candidateMetadataBytes: candidateBytecode.metadataBytes,
+        },
+        metadataStrippedBytecode: {
+          security02Keccak256:
+            checkpointBytecode.metadataStrippedBytecode.candidateKeccak256,
+          candidateKeccak256: candidateBytecode.metadataStrippedKeccak256,
+          security02SizeBytes:
+            checkpointBytecode.metadataStrippedBytecode.candidateSizeBytes,
+          candidateSizeBytes: candidateBytecode.metadataStrippedSizeBytes,
+          sizeDeltaBytes:
+            candidateBytecode.metadataStrippedSizeBytes -
+            checkpointBytecode.metadataStrippedBytecode.candidateSizeBytes,
+        },
+        metadataStrippedOpcodes: {
+          security02Sha256: sha256(checkpointOpcodes),
+          candidateSha256: sha256(candidateBytecode.metadataStrippedOpcodes),
+          equal: false,
+          fullDiff: unifiedOpcodeDiff(
+            checkpointOpcodes,
+            candidateBytecode.metadataStrippedOpcodes
+          ),
+        },
+      };
+    }
+    const security02RuntimeSize =
+      checkpointContract.runtimeBytecode.rawBytecode.candidateSizeBytes;
+    const candidateRuntimeSize = candidateContract.runtimeBytecode.sizeBytes;
+    if (candidateRuntimeSize > 24_576) {
+      throw new Error(`${qualifiedName} exceeds the EIP-170 size limit`);
+    }
+    contracts[qualifiedName] = {
+      ...bytecodes,
+      eip170: {
+        limitBytes: 24_576,
+        security02RuntimeSizeBytes: security02RuntimeSize,
+        candidateRuntimeSizeBytes: candidateRuntimeSize,
+        sizeDeltaBytes: candidateRuntimeSize - security02RuntimeSize,
+        security02WithinLimit: security02RuntimeSize <= 24_576,
+        candidateWithinLimit: true,
+      },
+    };
+  }
+  const expectedCompiler =
+    checkpoint.evidence.value.productionRelativeToSecurity01.compiler;
+  const candidateCompiler = {
+    version: candidate.compiler.version,
+    longVersion: candidate.compiler.longVersion,
+    settingsSha256: sha256(stableJson(candidate.compiler.settings)),
+  };
+  if (!valuesEqual(candidateCompiler, expectedCompiler)) {
+    throw new Error("Security 03 compiler differs from Security 02");
+  }
+  return sorted({ compiler: candidateCompiler, contracts });
+}
+
+function security03LegacyGasEvidence(candidate, checkpoint) {
+  const previousEntries = security02CheckpointLegacyGasEntries(checkpoint);
+  const candidateEntries = candidate.gasSnapshot.entries;
+  if (
+    candidate.gasSnapshot.fuzzSeed !== "0x721" ||
+    candidateEntries.length !== previousEntries.length
+  ) {
+    throw new Error("Security 03 must preserve the legacy gas inventory");
+  }
+  const changes = [];
+  for (let index = 0; index < previousEntries.length; index += 1) {
+    if (previousEntries[index] !== candidateEntries[index]) {
+      changes.push({
+        path: `$.gasSnapshot.entries[${index}]`,
+        security02Value: previousEntries[index],
+        candidateValue: candidateEntries[index],
+      });
+    }
+  }
+  return sorted({
+    fuzzSeed: "0x721",
+    inventoryCount: previousEntries.length,
+    security02EntriesSha256: sha256(stableJson(previousEntries)),
+    candidateEntriesSha256: sha256(stableJson(candidateEntries)),
+    changedIndices: changes.map(({ path: reviewPath }) =>
+      Number(reviewPath.match(/\[(\d+)\]/)[1])
+    ),
+    changes,
+  });
+}
+
+function security03KeyFlowGasEvidence(checkpoint, candidateGas) {
+  const previous = new Map(
+    checkpoint.evidence.value.keyFlowGasRelativeToSecurity01.comparisons.map(
+      (entry) => [entry.name, entry]
+    )
+  );
+  const current = new Map();
+  for (const [group, entries] of Object.entries(candidateGas.groups)) {
+    for (const entry of entries) current.set(entry.name, { group, ...entry });
+  }
+  if (!valuesEqual([...previous.keys()].sort(), [...current.keys()].sort())) {
+    throw new Error("Security 03 must preserve the 12 key-flow gas inventory");
+  }
+  const comparisons = [...previous.keys()].sort().map((name) => {
+    const security02 = previous.get(name);
+    const candidateEntry = current.get(name);
+    if (
+      security02.group !== candidateEntry.group ||
+      security02.baselineGas !== candidateEntry.baselineGas ||
+      security02.maximumGas !== candidateEntry.maximumGas ||
+      !candidateEntry.withinLimit
+    ) {
+      throw new Error(`Security 03 gas evidence is invalid for ${name}`);
+    }
+    return {
+      group: candidateEntry.group,
+      name,
+      security02Gas: security02.candidateGas,
+      candidateGas: candidateEntry.candidateGas,
+      deltaGas: candidateEntry.candidateGas - security02.candidateGas,
+      baselineGas: candidateEntry.baselineGas,
+      maximumGas: candidateEntry.maximumGas,
+      withinBaselineLimit: true,
+    };
+  });
+  return sorted({
+    baselinePath: candidateGas.baselinePath,
+    baselineSha256: candidateGas.baselineSha256,
+    baselinePolicy: candidateGas.policy,
+    fuzzSeed: candidateGas.fuzzSeed,
+    comparisons,
+  });
+}
+
+function security03Evidence(review, baseline, candidate) {
+  const checkpoint = security02CheckpointAnchor();
+  const keyFlowGas = stage08GasEvidence();
+  return sorted({
+    schemaVersion: 1,
+    candidate: review.candidate,
+    baselineSha256: review.baselineSha256,
+    mode: review.opcodeEvidence.mode,
+    inheritedSecurity02Checkpoint: SECURITY_03_CHECKPOINT_BINDING,
+    sourcePatch: security03SourceEvidence(),
+    intentionalBehaviorChange: security03BehaviorEvidence(candidate),
+    revertCallsite: security03RevertEvidence(baseline, candidate),
+    hardCompatibility: security03HardCompatibilityEvidence(baseline, candidate),
+    productionRelativeToSecurity02: security03ProductionEvidence(
+      baseline,
+      candidate,
+      checkpoint
+    ),
+    legacyGasRelativeToSecurity02: security03LegacyGasEvidence(
+      candidate,
+      checkpoint
+    ),
+    keyFlowGasRelativeToSecurity02: security03KeyFlowGasEvidence(
+      checkpoint,
+      keyFlowGas
+    ),
+  });
+}
+
 function security01ComparisonBaseline(baseline, candidate) {
   validateSecurity01Inventory(candidate);
   security01SourceEvidence();
@@ -4420,6 +5517,54 @@ function security02ComparisonBaseline(baseline, candidate) {
   expectedToolchain.forge[2] = candidate.toolchain.forge[2];
   if (!valuesEqual(candidate.toolchain, expectedToolchain)) {
     throw new Error("Security 02 must preserve the pinned Forge identity");
+  }
+  comparison.toolchain = expectedToolchain;
+  return comparison;
+}
+
+function security03ComparisonBaseline(baseline, candidate) {
+  validateSecurity01Inventory(candidate);
+  security03SourceEvidence();
+  validateStage08Candidate(baseline, candidate);
+  const checkpoint = security02CheckpointAnchor();
+  const comparison = deepClone(baseline);
+  comparison.compiler.version = STAGE_08_COMPILER_VERSION;
+  comparison.compiler.longVersion = STAGE_08_COMPILER_LONG_VERSION;
+
+  for (const qualifiedName of STAGE_08_PRODUCTION_CONTRACTS) {
+    const checkpointContract =
+      checkpoint.evidence.value.productionRelativeToSecurity01.contracts[
+        qualifiedName
+      ];
+    for (const bytecodeKind of ["creationBytecode", "runtimeBytecode"]) {
+      const checkpointBytecode = checkpointContract[bytecodeKind];
+      Object.assign(comparison.contracts[qualifiedName][bytecodeKind], {
+        keccak256: checkpointBytecode.rawBytecode.candidateKeccak256,
+        sizeBytes: checkpointBytecode.rawBytecode.candidateSizeBytes,
+        metadataBytes: checkpointBytecode.rawBytecode.candidateMetadataBytes,
+        metadataStrippedKeccak256:
+          checkpointBytecode.metadataStrippedBytecode.candidateKeccak256,
+        metadataStrippedSizeBytes:
+          checkpointBytecode.metadataStrippedBytecode.candidateSizeBytes,
+        metadataStrippedOpcodes: security02CheckpointOpcodes(
+          baseline,
+          qualifiedName,
+          bytecodeKind,
+          checkpoint
+        ),
+      });
+    }
+  }
+  comparison.gasSnapshot.entries =
+    security02CheckpointLegacyGasEntries(checkpoint);
+  comparison.tests = deepClone(candidate.tests);
+  comparison.projectRevertStrings = security02ProjectRevertStrings(
+    baseline.projectRevertStrings
+  );
+  const expectedToolchain = deepClone(baseline.toolchain);
+  expectedToolchain.forge[2] = candidate.toolchain.forge[2];
+  if (!valuesEqual(candidate.toolchain, expectedToolchain)) {
+    throw new Error("Security 03 must preserve the pinned Forge identity");
   }
   comparison.toolchain = expectedToolchain;
   return comparison;
@@ -4826,6 +5971,213 @@ function security02NegativeProbes(baseline, candidate, review) {
   return probes;
 }
 
+function expectSecurity03Rejection(name, operation) {
+  try {
+    operation();
+  } catch (_error) {
+    return name;
+  }
+  throw new Error(`Security 03 negative probe unexpectedly passed: ${name}`);
+}
+
+function security03NegativeProbes(baseline, candidate, review) {
+  const probes = [];
+  const reject = (name, operation) =>
+    probes.push(expectSecurity03Rejection(name, operation));
+
+  const forgeCountDrift = deepClone(candidate);
+  forgeCountDrift.tests.forge.count += 1;
+  reject("Forge inventory count drift", () =>
+    validateSecurity01Inventory(forgeCountDrift)
+  );
+  const forgeNameDrift = deepClone(candidate);
+  forgeNameDrift.tests.forge.names[0] += "_drift";
+  reject("Forge inventory name drift", () =>
+    validateSecurity01Inventory(forgeNameDrift)
+  );
+  const hardhatNameDrift = deepClone(candidate);
+  hardhatNameDrift.tests.hardhat.names[0] += " drift";
+  reject("Hardhat inventory name drift", () =>
+    validateSecurity01Inventory(hardhatNameDrift)
+  );
+  const parityDrift = deepClone(SECURITY_01_PARITY_FILES);
+  parityDrift["compatibility/parity-map.json"] = "0".repeat(64);
+  reject("parity-map digest drift", () =>
+    validateExactFileDigests(
+      parityDrift,
+      SECURITY_01_PARITY_FILES,
+      "parityFiles"
+    )
+  );
+
+  const checkpointEvidenceDrift = security02CheckpointAnchor();
+  checkpointEvidenceDrift.evidence.sha256 = "0".repeat(64);
+  reject("Security 02 evidence checkpoint drift", () =>
+    validateSecurity02CheckpointBinding(checkpointEvidenceDrift)
+  );
+  const checkpointReviewDrift = security02CheckpointAnchor();
+  checkpointReviewDrift.review.sha256 = "0".repeat(64);
+  reject("Security 02 review checkpoint drift", () =>
+    validateSecurity02CheckpointBinding(checkpointReviewDrift)
+  );
+
+  reject("unauthorized repository path", () =>
+    validateSecurity03ChangedPaths([
+      ...SECURITY_03_CORE_CHANGED_PATHS,
+      "contracts/token/modules/Valuation.sol",
+    ])
+  );
+  reject("missing authorized repository path", () =>
+    validateSecurity03ChangedPaths(
+      SECURITY_03_CORE_CHANGED_PATHS.filter(
+        (relativePath) => relativePath !== "scripts/run-slither.js"
+      )
+    )
+  );
+
+  const boundFileDrift = deepClone(SECURITY_03_BOUND_FILES);
+  boundFileDrift[SECURITY_03_POST_TAX_TEST_SOURCE] = "0".repeat(64);
+  reject("behavior file digest drift", () =>
+    validateExactFileDigests(
+      boundFileDrift,
+      SECURITY_03_BOUND_FILES,
+      "security03Files"
+    )
+  );
+  const configDrift = deepClone(SECURITY_03_CONFIG_FILES);
+  configDrift["compatibility/compiler-warning-allowlist.json"] = "0".repeat(64);
+  reject("warning allowlist digest drift", () =>
+    validateExactFileDigests(
+      configDrift,
+      SECURITY_03_CONFIG_FILES,
+      "configFiles"
+    )
+  );
+
+  const compilerClosureDrift = security03CompilerSourceEvidence();
+  compilerClosureDrift.candidateClosureSha256 = "0".repeat(64);
+  reject("compiler source closure drift", () =>
+    validateSecurity03CompilerSourceEvidence(compilerClosureDrift)
+  );
+  const compilerSourceAddition = security03CompilerSourceEvidence();
+  compilerSourceAddition.sourceCount += 1;
+  compilerSourceAddition.addedSources.push("contracts/test/Unexpected.sol");
+  reject("compiler source addition", () =>
+    validateSecurity03CompilerSourceEvidence(compilerSourceAddition)
+  );
+  const compilerSourceSubstitution = security03CompilerSourceEvidence();
+  compilerSourceSubstitution.changedSources[0].candidateSha256 = "0".repeat(64);
+  reject("compiler source digest substitution", () =>
+    validateSecurity03CompilerSourceEvidence(compilerSourceSubstitution)
+  );
+
+  const revertOrderDrift = deepClone(candidate.projectRevertStrings);
+  const takeover = revertOrderDrift.filter(
+    (entry) =>
+      entry.source === SECURITY_03_LEASE_SOURCE &&
+      entry.callable === "takeoverLease(uint256,uint256,uint256)"
+  );
+  [takeover[4].value, takeover[5].value] = [
+    takeover[5].value,
+    takeover[4].value,
+  ];
+  reject("takeover revert order drift", () =>
+    validateSecurity03RevertBinding(
+      baseline.projectRevertStrings,
+      revertOrderDrift
+    )
+  );
+  const behaviorDrift = deepClone(SECURITY_03_BEHAVIOR_EVIDENCE);
+  behaviorDrift.takeoverPayment.sourceSha256 = "0".repeat(64);
+  reject("stale behavior source hash", () =>
+    validateSecurity03BehaviorBinding(behaviorDrift)
+  );
+
+  const hardFieldProbe = (name, mutate) => {
+    const drift = deepClone(candidate);
+    mutate(drift);
+    reject(name, () => validateSecurity01HardFields(baseline, drift));
+  };
+  hardFieldProbe("hard ABI drift", (drift) =>
+    drift.contracts["contracts/Wrapper.sol:Wrapper"].abi.push({
+      type: "function",
+      name: "drift",
+      inputs: [],
+      outputs: [],
+      stateMutability: "view",
+    })
+  );
+  hardFieldProbe("hard function selector drift", (drift) => {
+    drift.contracts["contracts/Wrapper.sol:Wrapper"].functions[0].selector =
+      "0x00000000";
+  });
+  hardFieldProbe("hard event drift", (drift) => {
+    drift.contracts[
+      "contracts/Wrapper.sol:Wrapper"
+    ].events[0].topic0 = `0x${"00".repeat(32)}`;
+  });
+  hardFieldProbe("hard error drift", (drift) => {
+    drift.contracts["contracts/Wrapper.sol:Wrapper"].errors[0].selector =
+      "0x00000000";
+  });
+  hardFieldProbe("hard storage drift", (drift) => {
+    drift.contracts[
+      "contracts/token/PartialCommonOwnership.sol:PartialCommonOwnership"
+    ].storageLayout.storage[0].slot = "999";
+  });
+  hardFieldProbe("hard interface drift", (drift) => {
+    drift.interfaces[
+      "contracts/token/modules/interfaces/ILease.sol:ILease"
+    ].interfaceId = "0x00000000";
+  });
+  hardFieldProbe("hard enum drift", (drift) => {
+    drift.enums[0].members[0].ordinal = 99;
+  });
+  hardFieldProbe("hard ERC165 drift", (drift) => {
+    drift.erc165.probes.Wrapper[0].supported =
+      !drift.erc165.probes.Wrapper[0].supported;
+  });
+  hardFieldProbe("compiler settings drift", (drift) => {
+    drift.compiler.settings.optimizer.enabled = true;
+  });
+
+  const reviewCheckpointDrift = deepClone(review);
+  reviewCheckpointDrift.security02Checkpoint.evidence.sha256 = "0".repeat(64);
+  reject("review checkpoint binding drift", () =>
+    reviewPolicy(reviewCheckpointDrift)
+  );
+  const checkpointOpcodeDrift = security02CheckpointAnchor();
+  checkpointOpcodeDrift.evidence.value.productionRelativeToSecurity01.contracts[
+    "contracts/Wrapper.sol:Wrapper"
+  ].runtimeBytecode.metadataStrippedOpcodes.candidateSha256 = "0".repeat(64);
+  reject("checkpoint opcode diff drift", () =>
+    security02CheckpointOpcodes(
+      baseline,
+      "contracts/Wrapper.sol:Wrapper",
+      "runtimeBytecode",
+      checkpointOpcodeDrift
+    )
+  );
+  const checkpointGasDrift = security02CheckpointAnchor();
+  checkpointGasDrift.evidence.value.legacyGasRelativeToSecurity01.candidateEntriesSha256 =
+    "0".repeat(64);
+  reject("checkpoint legacy gas drift", () =>
+    security02CheckpointLegacyGasEntries(checkpointGasDrift)
+  );
+
+  const evidencePath = opcodeEvidencePath(review);
+  const checkedInEvidence = JSON.parse(fs.readFileSync(evidencePath, "utf8"));
+  const staleEvidence = deepClone(checkedInEvidence);
+  staleEvidence.sourcePatch.production.files[
+    SECURITY_03_LEASE_SOURCE
+  ].candidateSha256 = "0".repeat(64);
+  reject("stale Security 03 opcode evidence", () =>
+    validateExactOpcodeEvidence(staleEvidence, checkedInEvidence)
+  );
+
+  return probes;
+}
+
 function reviewedOpcodeEvidence(review, baseline, candidate) {
   const configuration = review.opcodeEvidence;
   if (!configuration) return null;
@@ -4836,6 +6188,7 @@ function reviewedOpcodeEvidence(review, baseline, candidate) {
       "stage-08-production-equality",
       "security-01-stage-09-relative-full-diff",
       "security-02-security-01-relative-full-diff",
+      "security-03-security-02-relative-full-diff",
     ].includes(configuration.mode)
   ) {
     throw new Error(`Unsupported opcode evidence mode: ${configuration.mode}`);
@@ -4854,6 +6207,9 @@ function reviewedOpcodeEvidence(review, baseline, candidate) {
   }
   if (configuration.mode === "security-02-security-01-relative-full-diff") {
     return security02Evidence(review, baseline, candidate);
+  }
+  if (configuration.mode === "security-03-security-02-relative-full-diff") {
+    return security03Evidence(review, baseline, candidate);
   }
 
   const contracts = {};
@@ -5059,13 +6415,18 @@ function expectedProjectRevertStrings(command, protectedRevertStrings) {
   const security02Candidate = security02ProjectRevertStrings(
     protectedRevertStrings
   );
+  const security03Candidate = security03ProjectRevertStrings(
+    protectedRevertStrings
+  );
   if (command === "write-security-01-review") return security01Candidate;
   if (command === "write-security-02-review") return security02Candidate;
+  if (command === "write-security-03-review") return security03Candidate;
   if (command === "diff") {
     return {
       baseline: protectedRevertStrings,
       security01Candidate,
       security02Candidate,
+      security03Candidate,
     };
   }
   if (
@@ -5074,12 +6435,14 @@ function expectedProjectRevertStrings(command, protectedRevertStrings) {
       "write-evidence",
       "security-01-negative-probes",
       "security-02-negative-probes",
+      "security-03-negative-probes",
     ].includes(command) &&
     fs.existsSync(REVIEW_PATH)
   ) {
     const review = readReviewedDifferences();
     if (review.policy === SECURITY_01_POLICY) return security01Candidate;
     if (review.policy === SECURITY_02_POLICY) return security02Candidate;
+    if (review.policy === SECURITY_03_POLICY) return security03Candidate;
   }
   return protectedRevertStrings;
 }
@@ -5095,15 +6458,17 @@ async function main() {
       "stage-09-negative-probes",
       "security-01-negative-probes",
       "security-02-negative-probes",
+      "security-03-negative-probes",
       "write-stage-08-review",
       "write-stage-09-review",
       "write-security-01-review",
       "write-security-02-review",
+      "write-security-03-review",
       "write-evidence",
     ].includes(command)
   ) {
     console.error(
-      "Usage: node scripts/compatibility.js <capture|check|diff|revert-strings|stage-09-negative-probes|security-01-negative-probes|security-02-negative-probes|write-stage-08-review|write-stage-09-review|write-security-01-review|write-security-02-review|write-evidence>"
+      "Usage: node scripts/compatibility.js <capture|check|diff|revert-strings|stage-09-negative-probes|security-01-negative-probes|security-02-negative-probes|security-03-negative-probes|write-stage-08-review|write-stage-09-review|write-security-01-review|write-security-02-review|write-security-03-review|write-evidence>"
     );
     process.exitCode = 2;
     return;
@@ -5184,6 +6549,7 @@ async function main() {
     "write-evidence",
     "security-01-negative-probes",
     "security-02-negative-probes",
+    "security-03-negative-probes",
   ].includes(command);
   const security01ReviewActive =
     command === "write-security-01-review" ||
@@ -5191,7 +6557,12 @@ async function main() {
   const security02ReviewActive =
     command === "write-security-02-review" ||
     (inheritedReviewCommand && existingReview?.policy === SECURITY_02_POLICY);
-  const comparisonBaseline = security02ReviewActive
+  const security03ReviewActive =
+    command === "write-security-03-review" ||
+    (inheritedReviewCommand && existingReview?.policy === SECURITY_03_POLICY);
+  const comparisonBaseline = security03ReviewActive
+    ? security03ComparisonBaseline(baseline, manifest)
+    : security02ReviewActive
     ? security02ComparisonBaseline(baseline, manifest)
     : security01ReviewActive
     ? security01ComparisonBaseline(baseline, manifest)
@@ -5275,6 +6646,23 @@ async function main() {
     );
     return;
   }
+  if (command === "write-security-03-review") {
+    const review = security03Review(baselineBytes, differences);
+    validateReviewedDifferences(review, baselineBytes, differences);
+    const policy = reviewPolicy(review);
+    policy.validateCandidate(baseline, manifest);
+    validateSafetyEvidence(review);
+    fs.writeFileSync(REVIEW_PATH, stableJson(review));
+    console.log(
+      `Wrote ${
+        differences.length
+      } exact Security 03 reviewed differences to ${path.relative(
+        ROOT,
+        REVIEW_PATH
+      )}`
+    );
+    return;
+  }
   if (command === "stage-09-negative-probes") {
     const probes = stage09NegativeProbes(baseline, manifest);
     console.log(`Stage 9 negative probes passed: ${probes.join("; ")}`);
@@ -5308,6 +6696,21 @@ async function main() {
     validateSafetyEvidence(review);
     const probes = security02NegativeProbes(baseline, manifest, review);
     console.log(`Security 02 negative probes passed: ${probes.join("; ")}`);
+    return;
+  }
+  if (command === "security-03-negative-probes") {
+    const review = readReviewedDifferences();
+    if (!review || review.policy !== SECURITY_03_POLICY) {
+      throw new Error(
+        "Security 03 negative probes require the exact Security 03 review"
+      );
+    }
+    validateReviewedDifferences(review, baselineBytes, differences);
+    const policy = reviewPolicy(review);
+    policy.validateCandidate(baseline, manifest);
+    validateSafetyEvidence(review);
+    const probes = security03NegativeProbes(baseline, manifest, review);
+    console.log(`Security 03 negative probes passed: ${probes.join("; ")}`);
     return;
   }
   const review = existingReview;
