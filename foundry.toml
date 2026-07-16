@@ -14,4 +14,30 @@ cbor_metadata = true
 use_literal_content = false
 allow_internal_expect_revert = false
 
+[profile.default.fuzz]
+runs = 512
+seed = "0x721"
+
+[profile.default.invariant]
+runs = 128
+depth = 64
+fail_on_revert = true
+
+[profile.ci.fuzz]
+runs = 512
+seed = "0x721"
+
+[profile.ci.invariant]
+runs = 128
+depth = 64
+fail_on_revert = true
+
+[profile.scheduled.fuzz]
+runs = 10000
+
+[profile.scheduled.invariant]
+runs = 2000
+depth = 128
+fail_on_revert = true
+
 # See more config options https://github.com/gakonst/foundry/tree/master/config

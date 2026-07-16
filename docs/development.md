@@ -43,6 +43,29 @@ $ pnpm compatibility
 $ pnpm test:package
 ```
 
+The default and CI Foundry profile uses seed `0x721`, 512 fuzz runs, and 128
+stateful invariant runs at depth 64. The scheduled profile uses 10,000 fuzz
+runs and 2,000 invariant runs at depth 128; CI supplies and records a rotating
+seed and uploads any minimized failure corpus.
+
+The remaining Foundry safety gates are:
+
+```console
+$ pnpm test:safety
+$ pnpm fmt:forge
+$ pnpm safety-baselines:check
+$ pnpm coverage:forge
+$ pnpm gas:check
+$ pnpm size:check
+```
+
+Coverage cannot regress from the checked-in LCOV baseline. New production
+files must reach at least 90% line/function and 80% branch coverage. Key-flow
+gas may increase by at most the greater of 3% or 2,000 gas, and every deployable
+production artifact must remain within EIP-170's 24,576-byte limit.
+The gas and LCOV artifacts are SHA-256-bound through the compatibility review;
+they must never be refreshed merely to make a candidate pass.
+
 ## Gas
 
 The Partial Common Ownership business logic is fairly complex and, in alignment with best practices, you should consider gas usage during development. To make this easier, `hardhat-gas-reporter` is included.

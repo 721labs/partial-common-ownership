@@ -27,6 +27,12 @@ inventory expansion is additionally constrained by `parity-map.json`; it may
 add the mapped tests but may not rename or remove any Hardhat oracle scenario or
 baseline Forge test.
 
+Stage 7's additional fuzz, invariant, coverage, and gas artifacts are bound by
+`safety-test-inventory.json`, `safety-baselines.json`, and a separately hashed
+named-policy evidence file under `evidence/`. Changing a baseline therefore
+requires an explicit compatibility-policy review; updating the artifact and
+its adjacent manifest alone cannot make the gate pass.
+
 Do not overwrite these files to make a dependency or compiler upgrade pass.
 For an intentional compiler change, generate a separate candidate manifest and
 review the ABI, selector, event, storage, opcode, bytecode-size, and gas deltas.

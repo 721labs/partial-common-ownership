@@ -34,7 +34,9 @@
     "console": "hardhat console",
     "compile": "hardhat compile",
     "test:hardhat": "hardhat typechain && hardhat --network hardhat test",
-    "test:forge": "forge test -vvv && node scripts/check-parity.js",
+    "test:forge": "node scripts/check-parity.js",
+    "test:safety": "cross-env FOUNDRY_PROFILE=ci node scripts/check-parity.js",
+    "test:safety:scheduled": "cross-env FOUNDRY_PROFILE=scheduled node scripts/check-parity.js",
     "test:package": "node scripts/test-package.js",
     "test": "hardhat typechain && hardhat --network hardhat test && pnpm run test:forge",
     "prettier": "prettier --write 'contracts/**/*.sol'",
@@ -46,6 +48,11 @@
     "audit:ratchet": "node scripts/audit-ratchet.js",
     "publish": "npm publish --access public",
     "coverage": "cross-env TYPE_COMPILATION=false hardhat coverage",
+    "coverage:forge": "cross-env FOUNDRY_PROFILE=ci node scripts/run-coverage.js",
+    "fmt:forge": "forge fmt --check test/solidity/fuzz test/solidity/invariant",
+    "gas:check": "node scripts/check-gas.js",
+    "safety-baselines:check": "node scripts/check-safety-baselines.js",
+    "size:check": "node scripts/check-contract-sizes.js",
     "typechain": "hardhat typechain"
   },
   "devDependencies": {

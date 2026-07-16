@@ -6,7 +6,9 @@ cache
 types
 
 # Solidity Coverage
-/coverage
+/coverage/*
+!/coverage/README.md
+!/coverage/lcov.info
 coverage.json
 
 # Environment Variables

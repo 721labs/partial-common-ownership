@@ -11,7 +11,9 @@ to one unique Forge regression test:
 
 Run `pnpm parity:check` with Foundry 1.7.1. The check fails unless the 89
 Hardhat names and 15 baseline Forge names are covered exactly once, all 104
-Forge targets are unique, and the discovered Forge inventory is exactly the
-mapped inventory. The compatibility baseline remains immutable; Stage 6 only
-permits the validated Forge test expansion while keeping the 89-test Hardhat
-oracle unchanged.
+Forge targets are unique, and the discovered behavior inventory is exact.
+Stage 7 adds a separate, exact `compatibility/safety-test-inventory.json` for
+fuzz, invariant, and deferred-regression tests; discovery and successful
+execution must equal the union of both inventories with no overlap or skipped
+test. The compatibility baseline remains immutable while the 89-test Hardhat
+oracle stays unchanged.

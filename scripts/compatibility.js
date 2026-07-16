@@ -5,6 +5,7 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const { spawnSync } = require("child_process");
+const { verifySafetyBaselines } = require("./check-safety-baselines");
 
 const ROOT = path.resolve(__dirname, "..");
 const BASELINE_PATH = path.join(ROOT, "compatibility", "baseline.json");
@@ -54,6 +55,12 @@ const STAGE_05_RAW_BYTECODE_HASH_PATHS = new Set([
 
 const STAGE_06_FORGE_TEST_PATH =
   /^\$\.tests\.forge\.(?:count|names(?:\.length|\[\d+\]))$/;
+const STAGE_07_SAFETY_ARTIFACTS = Object.freeze([
+  "compatibility/safety-baselines.json",
+  "compatibility/safety-test-inventory.json",
+  "coverage/lcov.info",
+  "gas/key-flows.snap",
+]);
 
 function stage06ParityForgeTests() {
   const mapPath = path.join(ROOT, "compatibility", "parity-map.json");
@@ -168,6 +175,113 @@ function validateStage06Candidate(baseline, candidate) {
   }
 }
 
+function stage07SafetyForgeTests() {
+  const inventoryPath = path.join(
+    ROOT,
+    "compatibility",
+    "safety-test-inventory.json"
+  );
+  if (!fs.existsSync(inventoryPath)) {
+    throw new Error("Stage 7 safety-test inventory is missing");
+  }
+  const inventory = JSON.parse(fs.readFileSync(inventoryPath, "utf8"));
+  if (
+    inventory.schemaVersion !== 1 ||
+    inventory.candidate !== "stage-07-foundry-safety" ||
+    !Array.isArray(inventory.names) ||
+    inventory.names.length !== inventory.expectedCount
+  ) {
+    throw new Error("Stage 7 safety-test inventory has an invalid schema");
+  }
+  const names = [...new Set(inventory.names)].sort();
+  if (names.length !== inventory.names.length) {
+    throw new Error("Stage 7 safety-test inventory contains duplicates");
+  }
+  for (const name of names) {
+    const separator = name.indexOf(":");
+    const source = separator < 0 ? "" : name.slice(0, separator);
+    if (!/^test\/solidity\/(?:fuzz|invariant)\/.+\.t\.sol$/.test(source)) {
+      throw new Error(
+        `Stage 7 safety test is outside its owned directories: ${name}`
+      );
+    }
+    const resolvedSource = path.resolve(ROOT, source);
+    const safetyRoot = `${path.join(ROOT, "test", "solidity")}${path.sep}`;
+    if (
+      !resolvedSource.startsWith(safetyRoot) ||
+      !fs.existsSync(resolvedSource)
+    ) {
+      throw new Error(`Stage 7 safety-test source is missing: ${source}`);
+    }
+  }
+  return names;
+}
+
+function stage07SafetyArtifacts() {
+  verifySafetyBaselines();
+  const artifacts = {};
+  for (const relativePath of STAGE_07_SAFETY_ARTIFACTS) {
+    const artifactPath = path.resolve(ROOT, relativePath);
+    if (!artifactPath.startsWith(`${ROOT}${path.sep}`)) {
+      throw new Error(
+        `Stage 7 safety artifact escapes the repository: ${relativePath}`
+      );
+    }
+    if (!fs.existsSync(artifactPath)) {
+      throw new Error(`Stage 7 safety artifact is missing: ${relativePath}`);
+    }
+    const bytes = fs.readFileSync(artifactPath);
+    artifacts[relativePath] = {
+      sha256: sha256(bytes),
+      sizeBytes: bytes.length,
+    };
+  }
+  return sorted({
+    candidate: "stage-07-foundry-safety",
+    artifacts,
+  });
+}
+
+function validateStage07Candidate(baseline, candidate) {
+  if (!valuesEqual(candidate.tests.hardhat, baseline.tests.hardhat)) {
+    throw new Error(
+      "Stage 7 must preserve the exact 89-test Hardhat oracle inventory"
+    );
+  }
+  const parity = stage06ParityForgeTests();
+  if (
+    !valuesEqual(
+      parity.hardhatLegacyTitles,
+      [...baseline.tests.hardhat.names].sort()
+    ) ||
+    !valuesEqual(
+      parity.forgeLegacyTitles,
+      [...baseline.tests.forge.names].sort()
+    )
+  ) {
+    throw new Error(
+      "Stage 7 parity map must preserve every baseline behavior scenario"
+    );
+  }
+  const safetyNames = stage07SafetyForgeTests();
+  const expectedForgeNames = [...parity.forgeNames, ...safetyNames].sort();
+  if (new Set(expectedForgeNames).size !== expectedForgeNames.length) {
+    throw new Error("Stage 7 safety tests overlap mapped behavior tests");
+  }
+  if (!valuesEqual(candidate.tests.forge.names, expectedForgeNames)) {
+    throw new Error(
+      "Stage 7 Forge inventory must exactly match parity plus safety inventories"
+    );
+  }
+  if (
+    candidate.tests.forge.count !== expectedForgeNames.length ||
+    candidate.tests.total !==
+      baseline.tests.hardhat.count + expectedForgeNames.length
+  ) {
+    throw new Error("Stage 7 combined test counts are inconsistent");
+  }
+}
+
 const REVIEW_POLICIES = Object.freeze({
   "stage-04-source-path-metadata-and-gas": Object.freeze({
     candidate: "stage-04-package-canonical-openzeppelin",
@@ -228,6 +342,36 @@ const REVIEW_POLICIES = Object.freeze({
       );
     },
     validateCandidate: validateStage06Candidate,
+  }),
+  "stage-07-foundry-safety-expansion": Object.freeze({
+    candidate: "stage-07-foundry-safety",
+    requiredOpcodeEvidence: Object.freeze({
+      mode: "metadata-stripped-equality",
+      path: "compatibility/evidence/stage-07-foundry-safety.json",
+      contracts: Object.freeze([
+        "contracts/Wrapper.sol:Wrapper",
+        "contracts/token/PartialCommonOwnership.sol:PartialCommonOwnership",
+      ]),
+    }),
+    requiredSafetyEvidence: Object.freeze({
+      path: "compatibility/evidence/stage-07-safety-artifacts.json",
+      sha256: "0065814caec6e3044951f80c891c9948454e90138d016513ed07d0fcfb7c67d8",
+    }),
+    permits(reviewPath) {
+      return (
+        STAGE_05_RAW_BYTECODE_HASH_PATHS.has(reviewPath) ||
+        reviewPath === "$.gasSnapshot.entries[11]" ||
+        reviewPath === "$.tests.total" ||
+        STAGE_06_FORGE_TEST_PATH.test(reviewPath)
+      );
+    },
+    permitsProtectedPath(reviewPath) {
+      return (
+        reviewPath === "$.tests.total" ||
+        STAGE_06_FORGE_TEST_PATH.test(reviewPath)
+      );
+    },
+    validateCandidate: validateStage07Candidate,
   }),
 });
 
@@ -846,6 +990,8 @@ function captureGasSnapshot() {
       "snapshot",
       "--fuzz-seed",
       "0x721",
+      "--fuzz-runs",
+      "256",
       "--match-contract",
       "^(BeneficiaryTest|RemittanceTest|ValuationTest)$",
       "--snap",
@@ -1086,6 +1232,23 @@ function reviewPolicy(review) {
       );
     }
   }
+  if (policy.requiredSafetyEvidence) {
+    const required = policy.requiredSafetyEvidence;
+    const supplied = review.safetyEvidence;
+    if (!supplied || typeof supplied !== "object") {
+      throw new Error(
+        `Compatibility review policy ${review.policy} requires safety-baseline evidence`
+      );
+    }
+    if (
+      supplied.path !== required.path ||
+      supplied.sha256 !== required.sha256
+    ) {
+      throw new Error(
+        `Compatibility review policy ${review.policy} requires exact safety evidence ${required.path} at ${required.sha256}`
+      );
+    }
+  }
   return policy;
 }
 
@@ -1302,6 +1465,42 @@ function validateOpcodeEvidence(review, baseline, candidate) {
   }
 }
 
+function validateSafetyEvidence(review) {
+  const configuration = review.safetyEvidence;
+  if (!configuration) return;
+
+  const evidencePath = path.resolve(ROOT, configuration.path);
+  const compatibilityRoot = `${path.join(ROOT, "compatibility")}${path.sep}`;
+  if (!evidencePath.startsWith(compatibilityRoot)) {
+    throw new Error("Safety evidence must be stored under compatibility/");
+  }
+  if (!fs.existsSync(evidencePath)) {
+    throw new Error(`Checked-in safety evidence is missing: ${evidencePath}`);
+  }
+
+  const evidenceBytes = fs.readFileSync(evidencePath);
+  const actualDigest = sha256(evidenceBytes);
+  if (actualDigest !== configuration.sha256) {
+    throw new Error(
+      `Safety evidence digest changed: expected ${configuration.sha256}, received ${actualDigest}`
+    );
+  }
+  const checkedInEvidence = JSON.parse(evidenceBytes);
+  const expectedEvidence = stage07SafetyArtifacts();
+  if (!valuesEqual(checkedInEvidence, expectedEvidence)) {
+    const evidenceDifferences = collectDifferences(
+      checkedInEvidence,
+      expectedEvidence
+    );
+    throw new Error(
+      `Checked-in safety evidence is stale:\n${evidenceDifferences
+        .slice(0, 20)
+        .map((difference) => `- ${formatDifference(difference)}`)
+        .join("\n")}`
+    );
+  }
+}
+
 async function main() {
   const command = process.argv[2];
   if (!["capture", "check", "diff"].includes(command)) {
@@ -1360,6 +1559,7 @@ async function main() {
     const policy = reviewPolicy(review);
     if (policy.validateCandidate) policy.validateCandidate(baseline, manifest);
     validateOpcodeEvidence(review, baseline, manifest);
+    validateSafetyEvidence(review);
   }
 
   console.log(
