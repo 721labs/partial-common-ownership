@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "candidate": "stage-05-openzeppelin-4-9-6",
-  "policy": "stage-05-openzeppelin-4-9-6-metadata-bytecode",
+  "candidate": "stage-06-forge-parity",
+  "policy": "stage-06-forge-parity-expansion",
   "baselineSha256": "4ec069e1cdb046198456b1db9179522b604d8dab062838c79e4cf8aa1e9df55c",
   "allowedDifferences": [
     {
@@ -33,11 +33,29 @@
       "baselineValue": "RemittanceTest:test_withdrawOutstandingRemittance(uint256) (runs: 256, μ: 29909, ~: 29922)",
       "candidateValue": "RemittanceTest:test_withdrawOutstandingRemittance(uint256) (runs: 256, μ: 29908, ~: 29921)",
       "reason": "The fixed-seed snapshot is one gas lower in mean and median; production opcodes and behavior remain unchanged."
+    },
+    {
+      "path": "$.tests.forge.count",
+      "baselineValue": 15,
+      "candidateValue": 104,
+      "reason": "Stage 6 intentionally adds the 89 uniquely mapped Forge behavior ports; the exact successful inventory is validated against the checked-in parity map."
+    },
+    {
+      "path": "$.tests.forge.names.length",
+      "baselineValue": 15,
+      "candidateValue": 104,
+      "reason": "Stage 6 intentionally adds the 89 uniquely mapped Forge behavior ports; the exact successful inventory is validated against the checked-in parity map."
+    },
+    {
+      "path": "$.tests.total",
+      "baselineValue": 104,
+      "candidateValue": 193,
+      "reason": "The unchanged 89-test Hardhat oracle now runs alongside exactly 104 successful Forge regressions."
     }
   ],
   "opcodeEvidence": {
     "mode": "metadata-stripped-equality",
-    "path": "compatibility/evidence/stage-05-openzeppelin-4-9-6.json",
+    "path": "compatibility/evidence/stage-06-forge-parity.json",
     "contracts": [
       "contracts/Wrapper.sol:Wrapper",
       "contracts/token/PartialCommonOwnership.sol:PartialCommonOwnership"

@@ -52,6 +52,122 @@ const STAGE_05_RAW_BYTECODE_HASH_PATHS = new Set([
   "$.contracts.contracts/token/PartialCommonOwnership.sol:PartialCommonOwnership.runtimeBytecode.keccak256",
 ]);
 
+const STAGE_06_FORGE_TEST_PATH =
+  /^\$\.tests\.forge\.(?:count|names(?:\.length|\[\d+\]))$/;
+
+function stage06ParityForgeTests() {
+  const mapPath = path.join(ROOT, "compatibility", "parity-map.json");
+  const map = JSON.parse(fs.readFileSync(mapPath, "utf8"));
+  if (map.schemaVersion !== 1 || !Array.isArray(map.fragments)) {
+    throw new Error("Stage 6 parity map has an invalid schema");
+  }
+  const parityRoot = `${path.join(ROOT, "compatibility", "parity")}${path.sep}`;
+  const forgeTestRoot = `${path.join(ROOT, "test", "solidity")}${path.sep}`;
+  const names = [];
+  const legacyIds = [];
+  const legacyKeys = [];
+  const legacyTitles = { hardhat: [], forge: [] };
+  for (const fragmentPath of map.fragments) {
+    if (path.isAbsolute(fragmentPath)) {
+      throw new Error(
+        `Stage 6 parity fragment must be relative: ${fragmentPath}`
+      );
+    }
+    const resolvedFragmentPath = path.resolve(ROOT, fragmentPath);
+    if (!resolvedFragmentPath.startsWith(parityRoot)) {
+      throw new Error(
+        `Stage 6 parity fragment must be stored under compatibility/parity: ${fragmentPath}`
+      );
+    }
+    const fragment = JSON.parse(fs.readFileSync(resolvedFragmentPath, "utf8"));
+    if (
+      fragment.schemaVersion !== 1 ||
+      !Array.isArray(fragment.entries) ||
+      fragment.entries.length !== fragment.expectedCount ||
+      !["hardhat", "forge"].includes(fragment.legacySuite)
+    ) {
+      throw new Error(`Stage 6 parity fragment is invalid: ${fragmentPath}`);
+    }
+    for (const entry of fragment.entries) {
+      if (path.isAbsolute(entry.forgeFile)) {
+        throw new Error(
+          `Stage 6 Forge target must be repository-relative: ${entry.forgeFile}`
+        );
+      }
+      const resolvedForgeFile = path.resolve(ROOT, entry.forgeFile);
+      if (!resolvedForgeFile.startsWith(forgeTestRoot)) {
+        throw new Error(
+          `Stage 6 Forge target must be stored under test/solidity: ${entry.forgeFile}`
+        );
+      }
+      legacyIds.push(entry.legacyId);
+      legacyKeys.push(`${fragment.legacySuite}:${entry.legacyTitle}`);
+      legacyTitles[fragment.legacySuite].push(entry.legacyTitle);
+      names.push(
+        `${entry.forgeFile}:${entry.forgeContract}:${entry.forgeTest}`
+      );
+    }
+  }
+  const uniqueNames = [...new Set(names)].sort();
+  const uniqueLegacyIds = new Set(legacyIds);
+  const uniqueLegacyKeys = new Set(legacyKeys);
+  if (
+    names.length !== map.expectedEntries ||
+    uniqueNames.length !== map.expectedForgeTests ||
+    uniqueLegacyIds.size !== names.length ||
+    uniqueLegacyKeys.size !== names.length ||
+    legacyTitles.hardhat.length !== map.expectedLegacyCounts.hardhat ||
+    legacyTitles.forge.length !== map.expectedLegacyCounts.forge
+  ) {
+    throw new Error(
+      `Stage 6 parity map must contain ${map.expectedEntries} unique legacy and Forge targets`
+    );
+  }
+  return {
+    forgeNames: uniqueNames,
+    hardhatLegacyTitles: legacyTitles.hardhat.sort(),
+    forgeLegacyTitles: legacyTitles.forge.sort(),
+  };
+}
+
+function validateStage06Candidate(baseline, candidate) {
+  if (!valuesEqual(candidate.tests.hardhat, baseline.tests.hardhat)) {
+    throw new Error(
+      "Stage 6 must preserve the exact 89-test Hardhat oracle inventory"
+    );
+  }
+  const parity = stage06ParityForgeTests();
+  if (
+    !valuesEqual(
+      parity.hardhatLegacyTitles,
+      [...baseline.tests.hardhat.names].sort()
+    ) ||
+    !valuesEqual(
+      parity.forgeLegacyTitles,
+      [...baseline.tests.forge.names].sort()
+    )
+  ) {
+    throw new Error(
+      "Stage 6 parity map must cover every baseline behavior scenario exactly once"
+    );
+  }
+  const expectedForgeNames = parity.forgeNames;
+  if (!valuesEqual(candidate.tests.forge.names, expectedForgeNames)) {
+    throw new Error(
+      "Stage 6 Forge inventory must exactly match the checked-in 104-entry parity map"
+    );
+  }
+  if (candidate.tests.forge.count !== expectedForgeNames.length) {
+    throw new Error("Stage 6 Forge test count does not match its parity map");
+  }
+  if (
+    candidate.tests.total !==
+    baseline.tests.hardhat.count + expectedForgeNames.length
+  ) {
+    throw new Error("Stage 6 combined behavior-test count is inconsistent");
+  }
+}
+
 const REVIEW_POLICIES = Object.freeze({
   "stage-04-source-path-metadata-and-gas": Object.freeze({
     candidate: "stage-04-package-canonical-openzeppelin",
@@ -86,6 +202,32 @@ const REVIEW_POLICIES = Object.freeze({
         reviewPath === "$.gasSnapshot.entries[11]"
       );
     },
+  }),
+  "stage-06-forge-parity-expansion": Object.freeze({
+    candidate: "stage-06-forge-parity",
+    requiredOpcodeEvidence: Object.freeze({
+      mode: "metadata-stripped-equality",
+      path: "compatibility/evidence/stage-06-forge-parity.json",
+      contracts: Object.freeze([
+        "contracts/Wrapper.sol:Wrapper",
+        "contracts/token/PartialCommonOwnership.sol:PartialCommonOwnership",
+      ]),
+    }),
+    permits(reviewPath) {
+      return (
+        STAGE_05_RAW_BYTECODE_HASH_PATHS.has(reviewPath) ||
+        reviewPath === "$.gasSnapshot.entries[11]" ||
+        reviewPath === "$.tests.total" ||
+        STAGE_06_FORGE_TEST_PATH.test(reviewPath)
+      );
+    },
+    permitsProtectedPath(reviewPath) {
+      return (
+        reviewPath === "$.tests.total" ||
+        STAGE_06_FORGE_TEST_PATH.test(reviewPath)
+      );
+    },
+    validateCandidate: validateStage06Candidate,
   }),
 });
 
@@ -662,14 +804,53 @@ function captureForgeTests() {
     }
   }
 
-  run(FORGE_BIN, ["test"]);
+  const execution = parseJsonAfterCompilerOutput(
+    run(FORGE_BIN, ["test", "--json"]).stdout
+  );
+  const executedNames = [];
+  const unsuccessful = [];
+  for (const [suiteName, suite] of Object.entries(execution)) {
+    const separator = suiteName.lastIndexOf(":");
+    if (separator < 0 || !suite.test_results) {
+      throw new Error(`Forge emitted an invalid execution suite: ${suiteName}`);
+    }
+    const source = suiteName.slice(0, separator);
+    const contractName = suiteName.slice(separator + 1);
+    for (const [signature, result] of Object.entries(suite.test_results)) {
+      const testName = signature.replace(/\(.*$/, "");
+      const fullName = `${source}:${contractName}:${testName}`;
+      executedNames.push(fullName);
+      if (result.status !== "Success") {
+        unsuccessful.push(`${fullName}: ${result.status}`);
+      }
+    }
+  }
+  executedNames.sort();
+  if (!valuesEqual(executedNames, names)) {
+    throw new Error("Forge executed inventory differs from test discovery");
+  }
+  if (unsuccessful.length > 0) {
+    throw new Error(
+      `Forge suite contains failed or skipped tests:\n${unsuccessful.join(
+        "\n"
+      )}`
+    );
+  }
   return { count: names.length, names };
 }
 
 function captureGasSnapshot() {
   const outputPath = temporaryFile("gas-snapshot.txt");
   try {
-    run(FORGE_BIN, ["snapshot", "--fuzz-seed", "0x721", "--snap", outputPath]);
+    run(FORGE_BIN, [
+      "snapshot",
+      "--fuzz-seed",
+      "0x721",
+      "--match-contract",
+      "^(BeneficiaryTest|RemittanceTest|ValuationTest)$",
+      "--snap",
+      outputPath,
+    ]);
     return {
       fuzzSeed: "0x721",
       entries: fs
@@ -934,7 +1115,13 @@ function validateReviewedDifferences(review, baselineBytes, differences) {
       throw new Error(`Duplicate reviewed difference path: ${allowance.path}`);
     }
     const protectedDomain = nonWaivableReviewDomain(allowance.path);
-    if (protectedDomain) {
+    if (
+      protectedDomain &&
+      !(
+        policy.permitsProtectedPath &&
+        policy.permitsProtectedPath(allowance.path, protectedDomain.name)
+      )
+    ) {
       throw new Error(
         `Reviewed differences may never waive ${protectedDomain.name}: ${allowance.path}`
       );
@@ -1117,8 +1304,8 @@ function validateOpcodeEvidence(review, baseline, candidate) {
 
 async function main() {
   const command = process.argv[2];
-  if (!["capture", "check"].includes(command)) {
-    console.error("Usage: node scripts/compatibility.js <capture|check>");
+  if (!["capture", "check", "diff"].includes(command)) {
+    console.error("Usage: node scripts/compatibility.js <capture|check|diff>");
     process.exitCode = 2;
     return;
   }
@@ -1148,6 +1335,16 @@ async function main() {
   const baselineBytes = fs.readFileSync(BASELINE_PATH);
   const baseline = JSON.parse(baselineBytes);
   const differences = collectDifferences(baseline, manifest);
+  if (command === "diff") {
+    console.log(
+      stableJson({
+        schemaVersion: 1,
+        baselineSha256: sha256(baselineBytes),
+        differences,
+      })
+    );
+    return;
+  }
   const review = readReviewedDifferences();
   if (differences.length > 0 && !review) {
     console.error("Compatibility check failed. First differences:");
@@ -1159,7 +1356,11 @@ async function main() {
   }
 
   validateReviewedDifferences(review, baselineBytes, differences);
-  if (review) validateOpcodeEvidence(review, baseline, manifest);
+  if (review) {
+    const policy = reviewPolicy(review);
+    if (policy.validateCandidate) policy.validateCandidate(baseline, manifest);
+    validateOpcodeEvidence(review, baseline, manifest);
+  }
 
   console.log(
     `Compatibility check passed: ${manifest.tests.hardhat.count} Hardhat + ${
