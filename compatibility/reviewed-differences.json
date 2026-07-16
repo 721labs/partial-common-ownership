@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "candidate": "stage-04-package-canonical-openzeppelin",
+  "baselineSha256": "4ec069e1cdb046198456b1db9179522b604d8dab062838c79e4cf8aa1e9df55c",
+  "allowedDifferences": [
+    {
+      "path": "$.contracts.contracts/Wrapper.sol:Wrapper.creationBytecode.keccak256",
+      "baselineValue": "0x416c8a2c12a674cac0f472442830a4f0cc581e118bd7c079846886d91764d03a",
+      "candidateValue": "0xfcc3941bd9ef5acf1bcfed42c166f53e0b340ca7b26499ee91965bd9cc99b8cf",
+      "reason": "The canonical OpenZeppelin source-unit path changes compiler metadata only; metadata-stripped creation bytecode is identical."
+    },
+    {
+      "path": "$.contracts.contracts/Wrapper.sol:Wrapper.runtimeBytecode.keccak256",
+      "baselineValue": "0x96b05a8bcf117adb28ff88a6321d29eb0170ad45f1a58525c6f7e09876d96a0a",
+      "candidateValue": "0x5ed01b3812ffb1828e17f2175bb6eb506e16adf7054e24da74cc832b77d223d0",
+      "reason": "The canonical OpenZeppelin source-unit path changes compiler metadata only; metadata-stripped runtime bytecode is identical."
+    },
+    {
+      "path": "$.contracts.contracts/token/PartialCommonOwnership.sol:PartialCommonOwnership.creationBytecode.keccak256",
+      "baselineValue": "0x3814717bd105739a08051b8e27479b2ec7e8ccea70b28449262e91560577fb8d",
+      "candidateValue": "0xbf1ed95e61438be3f54c91737b204a86d145f9b4abc8132189e072fa32fe6364",
+      "reason": "The canonical OpenZeppelin source-unit path changes compiler metadata only; metadata-stripped creation bytecode is identical."
+    },
+    {
+      "path": "$.contracts.contracts/token/PartialCommonOwnership.sol:PartialCommonOwnership.runtimeBytecode.keccak256",
+      "baselineValue": "0x27fe492cdb1f8b86839558deec3186ee0998b501dbdc5960d01bfd71a0baf735",
+      "candidateValue": "0x21d919cfe4d73eff24a7b139480d16336212b72de61819df86a278a94d23d884",
+      "reason": "The canonical OpenZeppelin source-unit path changes compiler metadata only; metadata-stripped runtime bytecode is identical."
+    },
+    {
+      "path": "$.gasSnapshot.entries[11]",
+      "baselineValue": "RemittanceTest:test_withdrawOutstandingRemittance(uint256) (runs: 256, μ: 29909, ~: 29922)",
+      "candidateValue": "RemittanceTest:test_withdrawOutstandingRemittance(uint256) (runs: 256, μ: 29908, ~: 29921)",
+      "reason": "The fixed-seed Forge snapshot changed by one gas in both mean and median; metadata-stripped production bytecode and behavior are unchanged."
+    }
+  ],
+  "opcodeEvidence": {
+    "mode": "metadata-stripped-equality",
+    "path": "compatibility/evidence/stage-04-package-canonical-openzeppelin.json",
+    "contracts": [
+      "contracts/Wrapper.sol:Wrapper",
+      "contracts/token/PartialCommonOwnership.sol:PartialCommonOwnership"
+    ]
+  }
+}

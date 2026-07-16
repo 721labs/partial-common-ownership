@@ -1,13 +1,9 @@
-// Native dependencies
-import fs from "fs";
-
 // Import Hardhat extensions
 import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-waffle";
 import "@nomiclabs/hardhat-web3";
 import "hardhat-gas-reporter";
 import "solidity-coverage";
-import "hardhat-preprocessor";
 
 // Dependencies
 import { subtask } from "hardhat/config";
@@ -25,21 +21,21 @@ if (process.env.TYPE_COMPILATION !== "false") {
   require("@typechain/hardhat");
 }
 
-// Ignore Forge test files during compilation; otherwise these will throw exceptions
-// due to their using the alternative dependency system.
+// Ignore Forge-only test sources during Hardhat compilation; Forge resolves its
+// pinned test library from the retained git submodule.
 subtask(TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS).setAction(
   async (_, __, runSuper) => {
     const paths = await runSuper();
-    return paths.filter((p: string) => !p.endsWith(".t.sol"));
+    const forgeTestBase = path.resolve(
+      process.cwd(),
+      "contracts/test/EnhancedTest.sol"
+    );
+    return paths.filter(
+      (p: string) =>
+        !p.endsWith(".t.sol") && path.normalize(p) !== forgeTestBase
+    );
   }
 );
-
-// Load Forge dependency mapping
-const forgeRemapping = fs
-  .readFileSync("remappings.txt", "utf8")
-  .split("\n")
-  .filter(Boolean) // remove empty lines
-  .map((line) => line.trim().split("="));
 
 /**
  * @type import('hardhat/config').HardhatUserConfig
@@ -68,21 +64,6 @@ export default {
         },
       },
     },
-  },
-  preprocess: {
-    eachLine: () => ({
-      transform: (line: string) => {
-        if (line.match(/^\s*import /i)) {
-          for (const [from, to] of forgeRemapping) {
-            if (line.includes(from)) {
-              line = line.replace(from, to);
-              break;
-            }
-          }
-        }
-        return line;
-      },
-    }),
   },
   paths: {
     sources: "./contracts",

@@ -8,6 +8,9 @@ const { spawnSync } = require("child_process");
 
 const ROOT = path.resolve(__dirname, "..");
 const BASELINE_PATH = path.join(ROOT, "compatibility", "baseline.json");
+const REVIEW_PATH = process.env.COMPATIBILITY_REVIEW
+  ? path.resolve(ROOT, process.env.COMPATIBILITY_REVIEW)
+  : path.join(ROOT, "compatibility", "reviewed-differences.json");
 const FORGE_BIN = process.env.FORGE_BIN || "forge";
 const HARDHAT_CONFIG = path.join(
   ROOT,
@@ -17,14 +20,8 @@ const HARDHAT_CONFIG = path.join(
 
 const TARGETS = [
   ["contracts/Wrapper.sol", "Wrapper"],
-  [
-    "contracts/token/PartialCommonOwnership.sol",
-    "PartialCommonOwnership",
-  ],
-  [
-    "contracts/token/modules/interfaces/IBeneficiary.sol",
-    "IBeneficiary",
-  ],
+  ["contracts/token/PartialCommonOwnership.sol", "PartialCommonOwnership"],
+  ["contracts/token/modules/interfaces/IBeneficiary.sol", "IBeneficiary"],
   ["contracts/token/modules/interfaces/ILease.sol", "ILease"],
   ["contracts/token/modules/interfaces/IRemittance.sol", "IRemittance"],
   ["contracts/token/modules/interfaces/ITaxation.sol", "ITaxation"],
@@ -147,7 +144,9 @@ function run(command, args, options = {}) {
   if (result.status !== 0) {
     const output = `${result.stdout || ""}${result.stderr || ""}`.trim();
     throw new Error(
-      `${command} ${args.join(" ")} failed with status ${result.status}\n${output}`
+      `${command} ${args.join(" ")} failed with status ${
+        result.status
+      }\n${output}`
     );
   }
 
@@ -177,6 +176,10 @@ function stableJson(value) {
   return `${JSON.stringify(sorted(value), null, 2)}\n`;
 }
 
+function sha256(value) {
+  return crypto.createHash("sha256").update(value).digest("hex");
+}
+
 function findBuildInfo() {
   const directory = path.join(ROOT, "artifacts", "build-info");
   const candidates = fs
@@ -199,7 +202,9 @@ function findBuildInfo() {
     if (hasTargets) return buildInfo;
   }
 
-  throw new Error("No Hardhat build-info file contains every compatibility target");
+  throw new Error(
+    "No Hardhat build-info file contains every compatibility target"
+  );
 }
 
 function normalizeCompilerInput(buildInfo) {
@@ -296,7 +301,9 @@ function ethersId(value) {
 function canonicalAbiType(parameter) {
   if (!parameter.type.startsWith("tuple")) return parameter.type;
   const suffix = parameter.type.slice("tuple".length);
-  return `(${(parameter.components || []).map(canonicalAbiType).join(",")})${suffix}`;
+  return `(${(parameter.components || [])
+    .map(canonicalAbiType)
+    .join(",")})${suffix}`;
 }
 
 function abiSignature(entry) {
@@ -341,8 +348,13 @@ function normalizeStorageLayout(layout) {
         normalized[key] = value;
       }
     }
-    if (types[normalizedId] && stableJson(types[normalizedId]) !== stableJson(normalized)) {
-      throw new Error(`Storage type normalization collision for ${normalizedId}`);
+    if (
+      types[normalizedId] &&
+      stableJson(types[normalizedId]) !== stableJson(normalized)
+    ) {
+      throw new Error(
+        `Storage type normalization collision for ${normalizedId}`
+      );
     }
     types[normalizedId] = normalized;
   }
@@ -371,7 +383,8 @@ function disassemble(hex) {
   const instructions = [];
   for (let pc = 0; pc < bytes.length; pc += 1) {
     const opcode = bytes[pc];
-    const name = OPCODES[opcode] || `UNKNOWN_0x${opcode.toString(16).padStart(2, "0")}`;
+    const name =
+      OPCODES[opcode] || `UNKNOWN_0x${opcode.toString(16).padStart(2, "0")}`;
     if (opcode >= 0x60 && opcode <= 0x7f) {
       const width = opcode - 0x5f;
       const immediate = bytes.subarray(pc + 1, pc + 1 + width).toString("hex");
@@ -428,7 +441,10 @@ function selectorsFor(contractOutput) {
 
 function abiDetails(abi, contractOutput) {
   const selectors = new Map(
-    selectorsFor(contractOutput).map((entry) => [entry.signature, entry.selector])
+    selectorsFor(contractOutput).map((entry) => [
+      entry.signature,
+      entry.selector,
+    ])
   );
   const functions = [];
   const events = [];
@@ -455,7 +471,8 @@ function abiDetails(abi, contractOutput) {
 
 function contractSummary(output, source, contractName) {
   const contractOutput = output.contracts[source]?.[contractName];
-  if (!contractOutput) throw new Error(`Missing compiler output ${source}:${contractName}`);
+  if (!contractOutput)
+    throw new Error(`Missing compiler output ${source}:${contractName}`);
   const abi = normalizeAbi(contractOutput.abi || []);
 
   const summary = {
@@ -483,7 +500,10 @@ function walkAst(value, visitor) {
 function enumSummary(output) {
   const enums = [];
   for (const [source, sourceOutput] of Object.entries(output.sources || {})) {
-    if (source !== "contracts/Wrapper.sol" && !source.startsWith("contracts/token/")) {
+    if (
+      source !== "contracts/Wrapper.sol" &&
+      !source.startsWith("contracts/token/")
+    ) {
       continue;
     }
     walkAst(sourceOutput.ast, (node) => {
@@ -498,12 +518,15 @@ function enumSummary(output) {
       });
     });
   }
-  return enums.sort((a, b) => `${a.source}:${a.name}`.localeCompare(`${b.source}:${b.name}`));
+  return enums.sort((a, b) =>
+    `${a.source}:${a.name}`.localeCompare(`${b.source}:${b.name}`)
+  );
 }
 
 function xorInterfaceId(selectors) {
   let value = 0;
-  for (const selector of selectors) value ^= Number.parseInt(selector.slice(2), 16);
+  for (const selector of selectors)
+    value ^= Number.parseInt(selector.slice(2), 16);
   return `0x${(value >>> 0).toString(16).padStart(8, "0")}`;
 }
 
@@ -523,18 +546,18 @@ function interfaceSummary(output) {
 function temporaryFile(name) {
   return path.join(
     os.tmpdir(),
-    `partial-common-ownership-${process.pid}-${crypto.randomBytes(6).toString("hex")}-${name}`
+    `partial-common-ownership-${process.pid}-${crypto
+      .randomBytes(6)
+      .toString("hex")}-${name}`
   );
 }
 
 function captureHardhatTests() {
   const outputPath = temporaryFile("hardhat-tests.json");
   try {
-    run(
-      hardhatBinary(),
-      ["--config", HARDHAT_CONFIG, "test", "--no-compile"],
-      { env: { COMPAT_HARDHAT_RESULTS: outputPath } }
-    );
+    run(hardhatBinary(), ["--config", HARDHAT_CONFIG, "test", "--no-compile"], {
+      env: { COMPAT_HARDHAT_RESULTS: outputPath },
+    });
     const results = JSON.parse(fs.readFileSync(outputPath, "utf8"));
     if (results.failed.length > 0 || results.pending.length > 0) {
       throw new Error(
@@ -552,8 +575,11 @@ function captureHardhatTests() {
 
 function parseJsonAfterCompilerOutput(stdout) {
   const lines = stdout.split(/\r?\n/);
-  const firstJsonLine = lines.findIndex((line) => line.trimStart().startsWith("{"));
-  if (firstJsonLine < 0) throw new Error("Forge did not emit JSON test discovery output");
+  const firstJsonLine = lines.findIndex((line) =>
+    line.trimStart().startsWith("{")
+  );
+  if (firstJsonLine < 0)
+    throw new Error("Forge did not emit JSON test discovery output");
   return JSON.parse(lines.slice(firstJsonLine).join("\n"));
 }
 
@@ -576,13 +602,7 @@ function captureForgeTests() {
 function captureGasSnapshot() {
   const outputPath = temporaryFile("gas-snapshot.txt");
   try {
-    run(FORGE_BIN, [
-      "snapshot",
-      "--fuzz-seed",
-      "0x721",
-      "--snap",
-      outputPath,
-    ]);
+    run(FORGE_BIN, ["snapshot", "--fuzz-seed", "0x721", "--snap", outputPath]);
     return {
       fuzzSeed: "0x721",
       entries: fs
@@ -606,7 +626,9 @@ function captureErc165(interfaces) {
       interfaceId: description.interfaceId,
     })),
     { name: "invalid", interfaceId: "0xffffffff" },
-  ].sort((a, b) => `${a.name}:${a.interfaceId}`.localeCompare(`${b.name}:${b.interfaceId}`));
+  ].sort((a, b) =>
+    `${a.name}:${a.interfaceId}`.localeCompare(`${b.name}:${b.interfaceId}`)
+  );
 
   const outputPath = temporaryFile("erc165.json");
   try {
@@ -680,17 +702,30 @@ function preview(value) {
   return rendered.length <= 180 ? rendered : `${rendered.slice(0, 177)}...`;
 }
 
-function collectDifferences(expected, actual, location = "$", differences = []) {
-  if (differences.length >= 50) return differences;
+function collectDifferences(
+  expected,
+  actual,
+  location = "$",
+  differences = []
+) {
   if (Object.is(expected, actual)) return differences;
 
   if (Array.isArray(expected) && Array.isArray(actual)) {
     if (expected.length !== actual.length) {
-      differences.push(`${location}.length: ${expected.length} != ${actual.length}`);
+      differences.push({
+        path: `${location}.length`,
+        baselineValue: expected.length,
+        candidateValue: actual.length,
+      });
     }
     const length = Math.min(expected.length, actual.length);
     for (let i = 0; i < length; i += 1) {
-      collectDifferences(expected[i], actual[i], `${location}[${i}]`, differences);
+      collectDifferences(
+        expected[i],
+        actual[i],
+        `${location}[${i}]`,
+        differences
+      );
     }
     return differences;
   }
@@ -707,13 +742,238 @@ function collectDifferences(expected, actual, location = "$", differences = []) 
       new Set([...Object.keys(expected), ...Object.keys(actual)])
     ).sort();
     for (const key of keys) {
-      collectDifferences(expected[key], actual[key], `${location}.${key}`, differences);
+      collectDifferences(
+        expected[key],
+        actual[key],
+        `${location}.${key}`,
+        differences
+      );
     }
     return differences;
   }
 
-  differences.push(`${location}: ${preview(expected)} != ${preview(actual)}`);
+  differences.push({
+    path: location,
+    baselineValue: expected,
+    candidateValue: actual,
+  });
   return differences;
+}
+
+function formatDifference(difference) {
+  return `${difference.path}: ${preview(difference.baselineValue)} != ${preview(
+    difference.candidateValue
+  )}`;
+}
+
+function valuesEqual(left, right) {
+  return stableJson(left) === stableJson(right);
+}
+
+function readReviewedDifferences() {
+  if (!fs.existsSync(REVIEW_PATH)) return null;
+  const review = JSON.parse(fs.readFileSync(REVIEW_PATH, "utf8"));
+  if (review.schemaVersion !== 1) {
+    throw new Error(
+      `Unsupported compatibility review schema in ${REVIEW_PATH}`
+    );
+  }
+  if (!Array.isArray(review.allowedDifferences)) {
+    throw new Error("Compatibility review must contain allowedDifferences");
+  }
+  if (!review.candidate || typeof review.candidate !== "string") {
+    throw new Error("Compatibility review must name its candidate");
+  }
+  return review;
+}
+
+function validateReviewedDifferences(review, baselineBytes, differences) {
+  if (!review) return;
+
+  const baselineDigest = sha256(baselineBytes);
+  if (review.baselineSha256 !== baselineDigest) {
+    throw new Error(
+      `Compatibility review targets baseline ${review.baselineSha256}, but the checked-in baseline is ${baselineDigest}`
+    );
+  }
+
+  const allowedByPath = new Map();
+  for (const allowance of review.allowedDifferences) {
+    if (!allowance.path || typeof allowance.path !== "string") {
+      throw new Error("Every reviewed difference must have an exact path");
+    }
+    if (allowedByPath.has(allowance.path)) {
+      throw new Error(`Duplicate reviewed difference path: ${allowance.path}`);
+    }
+    if (!Object.prototype.hasOwnProperty.call(allowance, "baselineValue")) {
+      throw new Error(
+        `Reviewed difference ${allowance.path} is missing baselineValue`
+      );
+    }
+    if (!Object.prototype.hasOwnProperty.call(allowance, "candidateValue")) {
+      throw new Error(
+        `Reviewed difference ${allowance.path} is missing candidateValue`
+      );
+    }
+    if (!allowance.reason || typeof allowance.reason !== "string") {
+      throw new Error(
+        `Reviewed difference ${allowance.path} is missing its reason`
+      );
+    }
+    allowedByPath.set(allowance.path, allowance);
+  }
+
+  const usedPaths = new Set();
+  const rejected = [];
+  for (const difference of differences) {
+    const allowance = allowedByPath.get(difference.path);
+    if (!allowance) {
+      rejected.push(`unreviewed: ${formatDifference(difference)}`);
+      continue;
+    }
+    usedPaths.add(difference.path);
+    if (
+      !valuesEqual(allowance.baselineValue, difference.baselineValue) ||
+      !valuesEqual(allowance.candidateValue, difference.candidateValue)
+    ) {
+      rejected.push(
+        `review does not match exact old/new values: ${formatDifference(
+          difference
+        )}`
+      );
+    }
+  }
+
+  for (const allowance of review.allowedDifferences) {
+    if (!usedPaths.has(allowance.path)) {
+      rejected.push(`unused reviewed difference: ${allowance.path}`);
+    }
+  }
+
+  if (rejected.length > 0) {
+    throw new Error(
+      `Compatibility candidate ${
+        review.candidate
+      } did not match its review:\n${rejected
+        .map((entry) => `- ${entry}`)
+        .join("\n")}`
+    );
+  }
+}
+
+function reviewedOpcodeEvidence(review, baseline, candidate) {
+  const configuration = review.opcodeEvidence;
+  if (!configuration) return null;
+  if (configuration.mode !== "metadata-stripped-equality") {
+    throw new Error(`Unsupported opcode evidence mode: ${configuration.mode}`);
+  }
+  if (
+    !Array.isArray(configuration.contracts) ||
+    configuration.contracts.length === 0
+  ) {
+    throw new Error("Opcode evidence must list at least one contract");
+  }
+
+  const contracts = {};
+  for (const qualifiedName of configuration.contracts) {
+    const baselineContract = baseline.contracts[qualifiedName];
+    const candidateContract = candidate.contracts[qualifiedName];
+    if (!baselineContract || !candidateContract) {
+      throw new Error(`Opcode evidence contract is missing: ${qualifiedName}`);
+    }
+
+    const contractEvidence = {};
+    for (const bytecodeKind of ["creationBytecode", "runtimeBytecode"]) {
+      const baselineBytecode = baselineContract[bytecodeKind];
+      const candidateBytecode = candidateContract[bytecodeKind];
+      const opcodesEqual =
+        baselineBytecode.metadataStrippedOpcodes ===
+        candidateBytecode.metadataStrippedOpcodes;
+      if (!opcodesEqual) {
+        throw new Error(
+          `${qualifiedName} ${bytecodeKind} has a metadata-stripped opcode change; the equality evidence cannot approve it`
+        );
+      }
+      contractEvidence[bytecodeKind] = {
+        rawKeccak256: {
+          baseline: baselineBytecode.keccak256,
+          candidate: candidateBytecode.keccak256,
+          changed: baselineBytecode.keccak256 !== candidateBytecode.keccak256,
+        },
+        metadataStrippedKeccak256: {
+          baseline: baselineBytecode.metadataStrippedKeccak256,
+          candidate: candidateBytecode.metadataStrippedKeccak256,
+          equal:
+            baselineBytecode.metadataStrippedKeccak256 ===
+            candidateBytecode.metadataStrippedKeccak256,
+        },
+        metadataStrippedSizeBytes: {
+          baseline: baselineBytecode.metadataStrippedSizeBytes,
+          candidate: candidateBytecode.metadataStrippedSizeBytes,
+          equal:
+            baselineBytecode.metadataStrippedSizeBytes ===
+            candidateBytecode.metadataStrippedSizeBytes,
+        },
+        metadataStrippedOpcodes: {
+          baselineSha256: sha256(baselineBytecode.metadataStrippedOpcodes),
+          candidateSha256: sha256(candidateBytecode.metadataStrippedOpcodes),
+          equal: opcodesEqual,
+          diff: [],
+        },
+      };
+    }
+
+    const baselineRuntimeSize = baselineContract.runtimeBytecode.sizeBytes;
+    const candidateRuntimeSize = candidateContract.runtimeBytecode.sizeBytes;
+    contractEvidence.eip170 = {
+      limitBytes: 24_576,
+      baselineRuntimeSizeBytes: baselineRuntimeSize,
+      candidateRuntimeSizeBytes: candidateRuntimeSize,
+      baselineWithinLimit: baselineRuntimeSize <= 24_576,
+      candidateWithinLimit: candidateRuntimeSize <= 24_576,
+    };
+    contracts[qualifiedName] = contractEvidence;
+  }
+
+  return sorted({
+    schemaVersion: 1,
+    candidate: review.candidate,
+    baselineSha256: review.baselineSha256,
+    mode: configuration.mode,
+    contracts,
+  });
+}
+
+function validateOpcodeEvidence(review, baseline, candidate) {
+  const evidence = reviewedOpcodeEvidence(review, baseline, candidate);
+  if (!evidence) return;
+  if (
+    !review.opcodeEvidence.path ||
+    typeof review.opcodeEvidence.path !== "string"
+  ) {
+    throw new Error(
+      "Opcode evidence configuration must name its checked-in path"
+    );
+  }
+
+  const evidencePath = path.resolve(ROOT, review.opcodeEvidence.path);
+  const compatibilityRoot = `${path.join(ROOT, "compatibility")}${path.sep}`;
+  if (!evidencePath.startsWith(compatibilityRoot)) {
+    throw new Error("Opcode evidence must be stored under compatibility/");
+  }
+  if (!fs.existsSync(evidencePath)) {
+    throw new Error(`Checked-in opcode evidence is missing: ${evidencePath}`);
+  }
+  const checkedInEvidence = JSON.parse(fs.readFileSync(evidencePath, "utf8"));
+  if (!valuesEqual(checkedInEvidence, evidence)) {
+    const evidenceDifferences = collectDifferences(checkedInEvidence, evidence);
+    throw new Error(
+      `Checked-in opcode evidence is stale:\n${evidenceDifferences
+        .slice(0, 20)
+        .map((difference) => `- ${formatDifference(difference)}`)
+        .join("\n")}`
+    );
+  }
 }
 
 async function main() {
@@ -724,29 +984,52 @@ async function main() {
     return;
   }
 
+  if (command === "capture" && fs.existsSync(BASELINE_PATH)) {
+    throw new Error(
+      `Refusing to overwrite the compatibility baseline at ${BASELINE_PATH}`
+    );
+  }
+
   const manifest = await generateManifest();
   if (command === "capture") {
     fs.writeFileSync(BASELINE_PATH, stableJson(manifest));
     console.log(
-      `Captured ${manifest.tests.hardhat.count} Hardhat and ${manifest.tests.forge.count} Forge tests in ${path.relative(ROOT, BASELINE_PATH)}`
+      `Captured ${manifest.tests.hardhat.count} Hardhat and ${
+        manifest.tests.forge.count
+      } Forge tests in ${path.relative(ROOT, BASELINE_PATH)}`
     );
     return;
   }
 
   if (!fs.existsSync(BASELINE_PATH)) {
-    throw new Error("Compatibility baseline is missing; run the capture command once");
+    throw new Error(
+      "Compatibility baseline is missing; run the capture command once"
+    );
   }
-  const baseline = JSON.parse(fs.readFileSync(BASELINE_PATH, "utf8"));
+  const baselineBytes = fs.readFileSync(BASELINE_PATH);
+  const baseline = JSON.parse(baselineBytes);
   const differences = collectDifferences(baseline, manifest);
-  if (differences.length > 0) {
+  const review = readReviewedDifferences();
+  if (differences.length > 0 && !review) {
     console.error("Compatibility check failed. First differences:");
-    for (const difference of differences) console.error(`- ${difference}`);
+    for (const difference of differences.slice(0, 50)) {
+      console.error(`- ${formatDifference(difference)}`);
+    }
     process.exitCode = 1;
     return;
   }
 
+  validateReviewedDifferences(review, baselineBytes, differences);
+  if (review) validateOpcodeEvidence(review, baseline, manifest);
+
   console.log(
-    `Compatibility check passed: ${manifest.tests.hardhat.count} Hardhat + ${manifest.tests.forge.count} Forge tests`
+    `Compatibility check passed: ${manifest.tests.hardhat.count} Hardhat + ${
+      manifest.tests.forge.count
+    } Forge tests${
+      review
+        ? `; ${differences.length} exact reviewed differences for ${review.candidate}`
+        : ""
+    }`
   );
 }
 
