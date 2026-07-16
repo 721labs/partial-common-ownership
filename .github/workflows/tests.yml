@@ -25,11 +25,10 @@ jobs:
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "24.18.0"
-      - name: "Cache Dependencies"
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: "**/node_modules"
-          key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
+          cache: "yarn"
+          cache-dependency-path: "yarn.lock"
+      - name: "Enable Corepack"
+        run: "corepack enable"
       - name: "Install JS Dependencies"
         run: "yarn install --frozen-lockfile --dev"
       - name: "Run solidity-coverage"
@@ -47,11 +46,10 @@ jobs:
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "24.18.0"
-      - name: "Cache Dependencies"
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: "**/node_modules"
-          key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
+          cache: "yarn"
+          cache-dependency-path: "yarn.lock"
+      - name: "Enable Corepack"
+        run: "corepack enable"
       - name: "Install JS Dependencies"
         run: "yarn install --frozen-lockfile --dev"
       - name: "Run solhint"
@@ -69,11 +67,10 @@ jobs:
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "24.18.0"
-      - name: "Cache Dependencies"
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: "**/node_modules"
-          key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
+          cache: "yarn"
+          cache-dependency-path: "yarn.lock"
+      - name: "Enable Corepack"
+        run: "corepack enable"
       - name: "Install JS Dependencies"
         run: "yarn install --frozen-lockfile --dev"
       - name: "Run tests"
@@ -91,6 +88,8 @@ jobs:
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "24.18.0"
+      - name: "Enable Corepack"
+        run: "corepack enable"
       - name: "Install Foundry"
         uses: foundry-rs/foundry-toolchain@b00af27efadbc7b4ca8b82abbd903b17cc874d2a # v1.9.0
         with:
