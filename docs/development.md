@@ -23,6 +23,26 @@ $ corepack install --global pnpm@11.13.1
 $ pnpm install --frozen-lockfile
 ```
 
+## Behavior tests and compatibility
+
+Run both behavior suites with the pinned toolchains:
+
+```console
+$ pnpm test:hardhat
+$ pnpm test:forge
+```
+
+The Forge command also enforces the checked-in 104-entry parity map: all 89
+legacy Hardhat scenarios and the 15 original Forge scenarios must map to one
+unique, successful Forge regression. The immutable public-compatibility and
+packed-consumer gates run separately:
+
+```console
+$ pnpm parity:check
+$ pnpm compatibility
+$ pnpm test:package
+```
+
 ## Gas
 
 The Partial Common Ownership business logic is fairly complex and, in alignment with best practices, you should consider gas usage during development. To make this easier, `hardhat-gas-reporter` is included.

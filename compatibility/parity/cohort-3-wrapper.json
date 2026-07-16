@@ -1,0 +1,168 @@
+{
+  "schemaVersion": 1,
+  "cohort": "wrapper",
+  "legacySuite": "hardhat",
+  "expectedCount": 20,
+  "entries": [
+    {
+      "legacyId": "hardhat-wrapper-001",
+      "legacyFile": "tests/Wrapper.ts",
+      "legacyTitle": "Wrapper.sol #onERC721Received fails cannot be called directly",
+      "forgeFile": "test/solidity/parity/WrapperParity.t.sol",
+      "forgeContract": "WrapperParityTest",
+      "forgeTest": "test_onERC721Received_directSafeTransferReverts"
+    },
+    {
+      "legacyId": "hardhat-wrapper-002",
+      "legacyFile": "tests/Wrapper.ts",
+      "legacyTitle": "Wrapper.sol #tokenURI fails when token does not exist",
+      "forgeFile": "test/solidity/parity/WrapperParity.t.sol",
+      "forgeContract": "WrapperParityTest",
+      "forgeTest": "test_tokenURI_nonexistentTokenReverts"
+    },
+    {
+      "legacyId": "hardhat-wrapper-003",
+      "legacyFile": "tests/Wrapper.ts",
+      "legacyTitle": "Wrapper.sol #tokenURI succeeds returns token's uri",
+      "forgeFile": "test/solidity/parity/WrapperParity.t.sol",
+      "forgeContract": "WrapperParityTest",
+      "forgeTest": "test_tokenURI_returnsUnderlyingTokenURI"
+    },
+    {
+      "legacyId": "hardhat-wrapper-004",
+      "legacyFile": "tests/Wrapper.ts",
+      "legacyTitle": "Wrapper.sol #unwrap fails only the address that wrapped the token can unwrap it",
+      "forgeFile": "test/solidity/parity/WrapperParity.t.sol",
+      "forgeContract": "WrapperParityTest",
+      "forgeTest": "test_unwrap_nonOriginatorReverts"
+    },
+    {
+      "legacyId": "hardhat-wrapper-005",
+      "legacyFile": "tests/Wrapper.ts",
+      "legacyTitle": "Wrapper.sol #unwrap fails token must exist",
+      "forgeFile": "test/solidity/parity/WrapperParity.t.sol",
+      "forgeContract": "WrapperParityTest",
+      "forgeTest": "test_unwrap_nonexistentTokenReverts"
+    },
+    {
+      "legacyId": "hardhat-wrapper-006",
+      "legacyFile": "tests/Wrapper.ts",
+      "legacyTitle": "Wrapper.sol #unwrap succeeds can be unwrapped after being wrapped by beneficiary",
+      "forgeFile": "test/solidity/parity/WrapperParity.t.sol",
+      "forgeContract": "WrapperParityTest",
+      "forgeTest": "test_unwrap_afterBeneficiaryWrap"
+    },
+    {
+      "legacyId": "hardhat-wrapper-007",
+      "legacyFile": "tests/Wrapper.ts",
+      "legacyTitle": "Wrapper.sol #unwrap succeeds can be unwrapped after being wrapped by non-beneficiary",
+      "forgeFile": "test/solidity/parity/WrapperParity.t.sol",
+      "forgeContract": "WrapperParityTest",
+      "forgeTest": "test_unwrap_afterNonBeneficiaryWrap"
+    },
+    {
+      "legacyId": "hardhat-wrapper-008",
+      "legacyFile": "tests/Wrapper.ts",
+      "legacyTitle": "Wrapper.sol #unwrap succeeds collects taxes and returns deposit",
+      "forgeFile": "test/solidity/parity/WrapperParity.t.sol",
+      "forgeContract": "WrapperParityTest",
+      "forgeTest": "test_unwrap_collectsTaxAndReturnsDeposit"
+    },
+    {
+      "legacyId": "hardhat-wrapper-009",
+      "legacyFile": "tests/Wrapper.ts",
+      "legacyTitle": "Wrapper.sol #wrap fails beneficiary is zero address",
+      "forgeFile": "test/solidity/parity/WrapperParity.t.sol",
+      "forgeContract": "WrapperParityTest",
+      "forgeTest": "test_wrap_zeroBeneficiaryReverts"
+    },
+    {
+      "legacyId": "hardhat-wrapper-010",
+      "legacyFile": "tests/Wrapper.ts",
+      "legacyTitle": "Wrapper.sol #wrap fails if operator is beneficiary and included deposit",
+      "forgeFile": "test/solidity/parity/WrapperParity.t.sol",
+      "forgeContract": "WrapperParityTest",
+      "forgeTest": "test_wrap_beneficiaryCannotIncludeDeposit"
+    },
+    {
+      "legacyId": "hardhat-wrapper-011",
+      "legacyFile": "tests/Wrapper.ts",
+      "legacyTitle": "Wrapper.sol #wrap fails if operator is not beneficiary and didn't include deposit",
+      "forgeFile": "test/solidity/parity/WrapperParity.t.sol",
+      "forgeContract": "WrapperParityTest",
+      "forgeTest": "test_wrap_nonBeneficiaryMustIncludeDeposit"
+    },
+    {
+      "legacyId": "hardhat-wrapper-012",
+      "legacyFile": "tests/Wrapper.ts",
+      "legacyTitle": "Wrapper.sol #wrap fails if owner has not approved wrapper",
+      "forgeFile": "test/solidity/parity/WrapperParity.t.sol",
+      "forgeContract": "WrapperParityTest",
+      "forgeTest": "test_wrap_unapprovedOwnerRevertsAndRollsBack"
+    },
+    {
+      "legacyId": "hardhat-wrapper-013",
+      "legacyFile": "tests/Wrapper.ts",
+      "legacyTitle": "Wrapper.sol #wrap fails tax period is 0",
+      "forgeFile": "test/solidity/parity/WrapperParity.t.sol",
+      "forgeContract": "WrapperParityTest",
+      "forgeTest": "test_wrap_zeroTaxPeriodReverts"
+    },
+    {
+      "legacyId": "hardhat-wrapper-014",
+      "legacyFile": "tests/Wrapper.ts",
+      "legacyTitle": "Wrapper.sol #wrap fails tax rate is 0",
+      "forgeFile": "test/solidity/parity/WrapperParity.t.sol",
+      "forgeContract": "WrapperParityTest",
+      "forgeTest": "test_wrap_zeroTaxRateReverts"
+    },
+    {
+      "legacyId": "hardhat-wrapper-015",
+      "legacyFile": "tests/Wrapper.ts",
+      "legacyTitle": "Wrapper.sol #wrap fails valuation is 0",
+      "forgeFile": "test/solidity/parity/WrapperParity.t.sol",
+      "forgeContract": "WrapperParityTest",
+      "forgeTest": "test_wrap_zeroValuationReverts"
+    },
+    {
+      "legacyId": "hardhat-wrapper-016",
+      "legacyFile": "tests/Wrapper.ts",
+      "legacyTitle": "Wrapper.sol #wrap fails when non-owner tries to wrap",
+      "forgeFile": "test/solidity/parity/WrapperParity.t.sol",
+      "forgeContract": "WrapperParityTest",
+      "forgeTest": "test_wrap_nonOwnerRevertsAndRollsBack"
+    },
+    {
+      "legacyId": "hardhat-wrapper-017",
+      "legacyFile": "tests/Wrapper.ts",
+      "legacyTitle": "Wrapper.sol #wrap succeeds can be unwrapped and then re-wrapped",
+      "forgeFile": "test/solidity/parity/WrapperParity.t.sol",
+      "forgeContract": "WrapperParityTest",
+      "forgeTest": "test_wrap_canUnwrapAndRewrap"
+    },
+    {
+      "legacyId": "hardhat-wrapper-018",
+      "legacyFile": "tests/Wrapper.ts",
+      "legacyTitle": "Wrapper.sol #wrap succeeds can be wrapped by token owner",
+      "forgeFile": "test/solidity/parity/WrapperParity.t.sol",
+      "forgeContract": "WrapperParityTest",
+      "forgeTest": "test_wrap_tokenOwnerCanWrap"
+    },
+    {
+      "legacyId": "hardhat-wrapper-019",
+      "legacyFile": "tests/Wrapper.ts",
+      "legacyTitle": "Wrapper.sol #wrappedTokenId() succeeds Deterministically generates wrapped token IDs",
+      "forgeFile": "test/solidity/parity/WrapperParity.t.sol",
+      "forgeContract": "WrapperParityTest",
+      "forgeTest": "test_wrappedTokenId_deterministicallyGeneratesIds"
+    },
+    {
+      "legacyId": "hardhat-wrapper-020",
+      "legacyFile": "tests/Wrapper.ts",
+      "legacyTitle": "Wrapper.sol TestNFT.sol Sets up properly",
+      "forgeFile": "test/solidity/parity/WrapperParity.t.sol",
+      "forgeContract": "WrapperParityTest",
+      "forgeTest": "test_testNFT_setsUpProperly"
+    }
+  ]
+}
