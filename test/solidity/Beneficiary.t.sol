@@ -1,9 +1,10 @@
-// contracts/token/modules/Beneficiary.t.sol
+// test/solidity/Beneficiary.t.sol
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.12;
 
 import {Test} from "forge-std/Test.sol";
-import {Beneficiary} from "./Beneficiary.sol";
+import {Beneficiary} from "../../contracts/token/modules/Beneficiary.sol";
+import {BeneficiaryHarness} from "./helpers/BeneficiaryHarness.sol";
 
 /* solhint-disable func-name-mixedcase */
 contract BeneficiaryTest is Test, Beneficiary {
@@ -61,7 +62,9 @@ contract BeneficiaryTest is Test, Beneficiary {
     uint256 tokenId_,
     address address_
   ) public {
+    BeneficiaryHarness harness = new BeneficiaryHarness();
+
     vm.expectRevert(BeneficiaryOnly.selector);
-    setBeneficiary(tokenId_, payable(address_));
+    harness.setBeneficiary(tokenId_, payable(address_));
   }
 }

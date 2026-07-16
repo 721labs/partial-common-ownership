@@ -60,10 +60,4 @@ contract EnhancedTest is Test {
       revert UnsupportedChain();
     }
   }
-
-  /// @dev Returns an address that will throw an error when sending Ether to it.
-  /// Currently using precompiled contract addresses
-  function getUnsendableAddress() internal pure returns (address) {
-    return address(1);
-  }
 }
