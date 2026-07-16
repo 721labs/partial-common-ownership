@@ -6,6 +6,7 @@ import {Vm} from "forge-std/Vm.sol";
 import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import {TestNFT} from "../../../contracts/test/TestNFT.sol";
 import {TestWrapper} from "../../../contracts/test/TestWrapper.sol";
+import {Remittance} from "../../../contracts/token/modules/Remittance.sol";
 
 contract WrapperFuzzValidReceiver is IERC721Receiver {
     receive() external payable {}
@@ -57,6 +58,20 @@ contract WrapperFuzzTest is Test {
         uint256 carolTokens;
         uint256 wrapperTokens;
         bytes32 lock;
+    }
+
+    struct UnwrapGuardSnapshot {
+        TakeoverSnapshot wrapped;
+        address beneficiary;
+        uint256 taxRate;
+        uint256 collectionFrequency;
+        address underlyingOwner;
+        address underlyingApproval;
+        uint256 underlyingAliceTokens;
+        uint256 underlyingBobTokens;
+        uint256 underlyingCarolTokens;
+        uint256 underlyingWrapperTokens;
+        bytes32 rawStorageHash;
     }
 
     uint256 private constant TOKEN_COUNT = 3;
@@ -628,12 +643,11 @@ contract WrapperFuzzTest is Test {
         return bytes32(uint256(uint160(value_)));
     }
 
-    /// @dev DEFERRED CUSTODY-LOSS FINDING: if foreclosure is collected before
-    /// the originator unwraps, Wrapper is the wrapped token's current owner.
-    /// unwrap burns and clears the wrapper record, then transfers the underlying
-    /// from Wrapper back to Wrapper. The underlying is left in custody with no
-    /// live wrapper record and no remaining unwrap path. This is frozen as
-    /// legacy behavior pending separately authorized semantic remediation.
+    /// @dev The legacy identifier is retained for compatibility-inventory
+    /// stability. A self-destination unwrap now reverts before deleting or
+    /// burning any state. Canonical foreclosure can be recovered by takeover,
+    /// after which the original operator can deliver the underlying to the new
+    /// wrapped-token owner.
     function test_regression_deferredForeclosedUnwrapLeavesUnderlyingWithoutWrapperRecord() public {
         uint256 wrappedId = _wrapAsAlice(1, 1 ether, BOB, MAX_TAX_RATE, 1, 1 ether);
         assertTrue(wrapper.foreclosureTime(wrappedId) < block.timestamp);
@@ -643,11 +657,115 @@ contract WrapperFuzzTest is Test {
         assertEq(wrapper.valuationOf(wrappedId), 0);
         assertEq(wrapper.depositOf(wrappedId), 0);
 
+        _assertUnwrapGuardRevertsAndRollsBack(wrappedId, 1, CAROL, _error("Wrap originator only"));
+        _assertUnwrapGuardRevertsAndRollsBack(
+            wrappedId, 1, ALICE, abi.encodeWithSelector(Remittance.DestinationContractAddress.selector)
+        );
+
+        uint256 carolEtherBeforeRecovery = CAROL.balance;
+        vm.prank(CAROL);
+        wrapper.takeoverLease{value: 1 ether}(wrappedId, 1 ether, 0);
+
+        assertEq(wrapper.ownerOf(wrappedId), CAROL);
+        assertEq(wrapper.valuationOf(wrappedId), 1 ether);
+        assertEq(wrapper.depositOf(wrappedId), 1 ether);
+
         vm.prank(ALICE);
         wrapper.unwrap(wrappedId);
 
-        assertEq(underlying.ownerOf(1), address(wrapper));
+        assertEq(underlying.ownerOf(1), CAROL);
+        assertEq(CAROL.balance, carolEtherBeforeRecovery);
+        assertEq(address(wrapper).balance, 0);
         _assertBurnedAndCleared(wrappedId);
+
+        // A raw, non-safe transfer of a live wrapped token to Wrapper creates
+        // the same invalid self-destination. The guard prevents custody loss,
+        // but this test does not classify or repair the transfer's economics.
+        uint256 directlyTransferredId = _wrapAsAlice(2, 1 ether, ALICE, MAX_TAX_RATE, 1, 0);
+        vm.prank(ALICE);
+        wrapper.transferFrom(ALICE, address(wrapper), directlyTransferredId);
+
+        assertEq(wrapper.ownerOf(directlyTransferredId), address(wrapper));
+        assertEq(wrapper.valuationOf(directlyTransferredId), 1 ether);
+        assertEq(wrapper.depositOf(directlyTransferredId), 0);
+        _assertUnwrapGuardRevertsAndRollsBack(
+            directlyTransferredId, 2, ALICE, abi.encodeWithSelector(Remittance.DestinationContractAddress.selector)
+        );
+    }
+
+    function _assertUnwrapGuardRevertsAndRollsBack(
+        uint256 wrappedId_,
+        uint256 underlyingId_,
+        address caller_,
+        bytes memory expectedRevert_
+    ) private {
+        UnwrapGuardSnapshot memory before_ = _unwrapGuardSnapshot(wrappedId_, underlyingId_);
+
+        vm.recordLogs();
+        vm.prank(caller_);
+        (bool success, bytes memory returnData) =
+            address(wrapper).call(abi.encodeWithSelector(wrapper.unwrap.selector, wrappedId_));
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+
+        assertFalse(success);
+        assertEq(returnData, expectedRevert_);
+        assertEq(logs.length, 0);
+        _assertUnwrapGuardStateUnchanged(wrappedId_, underlyingId_, before_);
+    }
+
+    function _unwrapGuardSnapshot(uint256 wrappedId_, uint256 underlyingId_)
+        private
+        view
+        returns (UnwrapGuardSnapshot memory snapshot_)
+    {
+        snapshot_.wrapped = _takeoverSnapshot(wrappedId_);
+        snapshot_.beneficiary = wrapper.beneficiaryOf(wrappedId_);
+        snapshot_.taxRate = wrapper.taxRateOf(wrappedId_);
+        snapshot_.collectionFrequency = wrapper.collectionFrequencyOf(wrappedId_);
+        snapshot_.underlyingOwner = underlying.ownerOf(underlyingId_);
+        snapshot_.underlyingApproval = underlying.getApproved(underlyingId_);
+        snapshot_.underlyingAliceTokens = underlying.balanceOf(ALICE);
+        snapshot_.underlyingBobTokens = underlying.balanceOf(BOB);
+        snapshot_.underlyingCarolTokens = underlying.balanceOf(CAROL);
+        snapshot_.underlyingWrapperTokens = underlying.balanceOf(address(wrapper));
+        snapshot_.rawStorageHash = _unwrapGuardStorageHash(wrappedId_);
+    }
+
+    function _assertUnwrapGuardStateUnchanged(
+        uint256 wrappedId_,
+        uint256 underlyingId_,
+        UnwrapGuardSnapshot memory before_
+    ) private view {
+        _assertTakeoverStateUnchanged(wrappedId_, before_.wrapped);
+        assertEq(wrapper.beneficiaryOf(wrappedId_), before_.beneficiary);
+        assertEq(wrapper.taxRateOf(wrappedId_), before_.taxRate);
+        assertEq(wrapper.collectionFrequencyOf(wrappedId_), before_.collectionFrequency);
+        assertEq(underlying.ownerOf(underlyingId_), before_.underlyingOwner);
+        assertEq(underlying.getApproved(underlyingId_), before_.underlyingApproval);
+        assertEq(underlying.balanceOf(ALICE), before_.underlyingAliceTokens);
+        assertEq(underlying.balanceOf(BOB), before_.underlyingBobTokens);
+        assertEq(underlying.balanceOf(CAROL), before_.underlyingCarolTokens);
+        assertEq(underlying.balanceOf(address(wrapper)), before_.underlyingWrapperTokens);
+        assertEq(_unwrapGuardStorageHash(wrappedId_), before_.rawStorageHash);
+    }
+
+    function _unwrapGuardStorageHash(uint256 wrappedId_) private view returns (bytes32) {
+        bytes32[11] memory slots;
+        slots[0] = vm.load(address(wrapper), _mappingSlot(wrappedId_, OWNERS_SLOT));
+        slots[1] = vm.load(address(wrapper), _mappingSlot(wrappedId_, TOKEN_APPROVALS_SLOT));
+        slots[2] = vm.load(address(wrapper), _mappingSlot(wrappedId_, VALUATIONS_SLOT));
+        slots[3] = vm.load(address(wrapper), _mappingSlot(wrappedId_, BENEFICIARIES_SLOT));
+        slots[4] = vm.load(address(wrapper), _mappingSlot(wrappedId_, TAX_RATES_SLOT));
+        slots[5] = vm.load(address(wrapper), _mappingSlot(wrappedId_, COLLECTION_FREQUENCIES_SLOT));
+        slots[6] = vm.load(address(wrapper), _mappingSlot(wrappedId_, DEPOSITS_SLOT));
+        slots[7] = vm.load(address(wrapper), _mappingSlot(wrappedId_, LOCKED_SLOT));
+
+        bytes32 baseSlot = _mappingSlot(wrappedId_, WRAPPED_TOKEN_MAP_SLOT);
+        slots[8] = vm.load(address(wrapper), baseSlot);
+        slots[9] = vm.load(address(wrapper), _offsetSlot(baseSlot, 1));
+        slots[10] = vm.load(address(wrapper), _offsetSlot(baseSlot, 2));
+
+        return keccak256(abi.encode(slots));
     }
 
     function _wrapAsAlice(

@@ -4,6 +4,7 @@ pragma solidity 0.8.36;
 import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {TestWrapper} from "../../../../contracts/test/TestWrapper.sol";
+import {Remittance} from "../../../../contracts/token/modules/Remittance.sol";
 
 interface WrapperInvariantVm {
     function deal(address account_, uint256 balance_) external;
@@ -103,7 +104,7 @@ contract WrapperInvariantHandler {
     mapping(uint256 => address) public ghostOperator;
     mapping(uint256 => address) public ghostLastUnwrapOwner;
     mapping(uint256 => bool) public ghostWasUnwrapped;
-    mapping(uint256 => bool) public ghostForeclosedUnwrap;
+    mapping(uint256 => bool) public ghostSelfDestinationUnwrapRejected;
 
     uint256 public ghostSuccessfulWraps;
     uint256 public ghostSuccessfulUnwraps;
@@ -111,7 +112,7 @@ contract WrapperInvariantHandler {
     uint256 public ghostCrossingForeclosureTakeovers;
     uint256 public ghostSuccessfulTransfers;
     uint256 public ghostFailedCalls;
-    uint256 public ghostForeclosedUnwraps;
+    uint256 public ghostSelfDestinationUnwrapRejections;
     bool public ghostUnexpectedValidCallFailure;
     bool public ghostUnexpectedInvalidCallSuccess;
 
@@ -198,7 +199,7 @@ contract WrapperInvariantHandler {
         if (success) {
             ghostOperator[tokenId] = owner;
             ghostWasUnwrapped[tokenId] = false;
-            ghostForeclosedUnwrap[tokenId] = false;
+            ghostSelfDestinationUnwrapRejected[tokenId] = false;
             ghostSuccessfulWraps++;
         } else {
             ghostUnexpectedValidCallFailure = true;
@@ -221,6 +222,9 @@ contract WrapperInvariantHandler {
             )
         );
         if (success) {
+            if (terms.currentOwner == address(wrapper)) {
+                ghostSelfDestinationUnwrapRejected[tokenId] = false;
+            }
             ghostSuccessfulTakeovers++;
             if (terms.crossesForeclosure) ghostCrossingForeclosureTakeovers++;
         } else {
@@ -386,23 +390,35 @@ contract WrapperInvariantHandler {
         (uint256 taxDue,) = wrapper.taxOwed(_wrappedId(tokenId));
         if (taxDue > 0 && wrapper.depositOf(_wrappedId(tokenId)) == 0) return;
 
-        (bool success,) = _execute(
+        (bool success, bytes memory returnData) = _execute(
             operator, address(wrapper), 0, abi.encodeWithSelector(wrapper.unwrap.selector, _wrappedId(tokenId))
         );
-        if (success) {
-            ghostLastUnwrapOwner[tokenId] = finalWrappedOwner;
-            ghostWasUnwrapped[tokenId] = true;
-            ghostOperator[tokenId] = address(0);
-            if (finalWrappedOwner == address(wrapper)) {
-                ghostForeclosedUnwrap[tokenId] = true;
-                ghostForeclosedUnwraps++;
+
+        if (finalWrappedOwner == address(wrapper)) {
+            if (success) {
+                ghostUnexpectedInvalidCallSuccess = true;
+            } else if (
+                keccak256(returnData)
+                    != keccak256(abi.encodeWithSelector(Remittance.DestinationContractAddress.selector))
+            ) {
+                ghostUnexpectedValidCallFailure = true;
             } else {
-                ghostForeclosedUnwrap[tokenId] = false;
-                ghostSuccessfulUnwraps++;
+                ghostSelfDestinationUnwrapRejected[tokenId] = true;
+                ghostSelfDestinationUnwrapRejections++;
             }
-        } else {
-            ghostUnexpectedValidCallFailure = true;
+            return;
         }
+
+        if (!success) {
+            ghostUnexpectedValidCallFailure = true;
+            return;
+        }
+
+        ghostLastUnwrapOwner[tokenId] = finalWrappedOwner;
+        ghostWasUnwrapped[tokenId] = true;
+        ghostOperator[tokenId] = address(0);
+        ghostSelfDestinationUnwrapRejected[tokenId] = false;
+        ghostSuccessfulUnwraps++;
     }
 
     function failedCall(uint256 tokenSeed_, uint256 callerSeed_, uint256 failureSeed_) external {

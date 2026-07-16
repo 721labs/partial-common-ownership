@@ -41,6 +41,12 @@ contract WrapperInvariantTest is Test {
         handler.wrap(1, 2, 1 ether, 999_999_999_999, 0, 0);
         handler.takeover(1, 2, 0, 0);
 
+        // Materialize foreclosure on the remaining token, then prove that an
+        // originator unwrap cannot burn its live metadata into self-custody.
+        handler.wrap(2, 0, 20 ether - 1, 999_999_999_999, 0, 0);
+        handler.warpAndCollect(2, 0);
+        handler.unwrap(2);
+
         targetContract(address(handler));
     }
 
@@ -125,7 +131,7 @@ contract WrapperInvariantTest is Test {
 
     function invariant_successfulUnwrapTransfersUnderlyingToCapturedFinalOwner() public {
         for (uint256 tokenId = 1; tokenId <= TOKEN_COUNT; tokenId++) {
-            if (!handler.ghostWasUnwrapped(tokenId) || handler.ghostForeclosedUnwrap(tokenId)) continue;
+            if (!handler.ghostWasUnwrapped(tokenId)) continue;
 
             (bool live,) = _wrappedOwner(tokenId);
             assertFalse(live, "unwrapped token reminted without ghost reset");
@@ -137,21 +143,38 @@ contract WrapperInvariantTest is Test {
         }
     }
 
-    /// @dev A wrapper that was already foreclosed before unwrap captures
-    /// Wrapper itself as the final wrapped owner. Burning the record then
-    /// transfers the underlying from Wrapper to Wrapper, leaving custody with no
-    /// live wrapper record. This deferred legacy finding is classified
-    /// separately and is never counted as a successful delivery.
+    /// @dev The legacy identifier is retained for compatibility-inventory
+    /// stability. A rejected self-destination unwrap must leave the wrapped
+    /// token, its metadata, and the underlying custody live and recoverable.
     function invariant_deferredForeclosedUnwrapCustodyLossIsClassified() public {
         for (uint256 tokenId = 1; tokenId <= TOKEN_COUNT; tokenId++) {
-            if (!handler.ghostForeclosedUnwrap(tokenId)) continue;
+            if (!handler.ghostSelfDestinationUnwrapRejected(tokenId)) continue;
 
-            (bool live,) = _wrappedOwner(tokenId);
-            assertFalse(live, "foreclosed unwrap burned wrapper record");
+            (bool live, address owner) = _wrappedOwner(tokenId);
+            assertTrue(live, "self-destination rejection preserves wrapper record");
+            assertEq(owner, address(handler.wrapper()), "self-destination owner remains Wrapper");
             assertEq(
                 handler.underlying().ownerOf(tokenId),
                 address(handler.wrapper()),
-                "foreclosed unwrap leaves underlying in Wrapper"
+                "self-destination rejection preserves underlying custody"
+            );
+
+            uint256 wrappedId = _wrappedId(tokenId);
+            bytes32 baseSlot = _mappingSlot(wrappedId, WRAPPED_TOKEN_MAP_SLOT);
+            assertEq(
+                address(uint160(uint256(vm.load(address(handler.wrapper()), baseSlot)))),
+                address(handler.underlying()),
+                "self-destination rejection preserves contract metadata"
+            );
+            assertEq(
+                uint256(vm.load(address(handler.wrapper()), _offsetSlot(baseSlot, 1))),
+                tokenId,
+                "self-destination rejection preserves token metadata"
+            );
+            assertEq(
+                address(uint160(uint256(vm.load(address(handler.wrapper()), _offsetSlot(baseSlot, 2))))),
+                handler.ghostOperator(tokenId),
+                "self-destination rejection preserves operator metadata"
             );
         }
     }
@@ -198,6 +221,7 @@ contract WrapperInvariantTest is Test {
         assertGe(handler.ghostCrossingForeclosureTakeovers(), 1, "crossing-foreclosure takeover reached");
         assertGe(handler.ghostSuccessfulTransfers(), 1, "wrapped transfer reached");
         assertGe(handler.ghostSuccessfulUnwraps(), 1, "non-foreclosed unwrap reached");
+        assertGe(handler.ghostSelfDestinationUnwrapRejections(), 1, "self-destination unwrap rejection reached");
         assertGe(handler.ghostFailedCalls(), 1, "expected rejection reached");
     }
 
