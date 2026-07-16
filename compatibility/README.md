@@ -37,6 +37,30 @@ named-policy evidence file under `evidence/`. Changing a baseline therefore
 requires an explicit compatibility-policy review; updating the artifact and
 its adjacent manifest alone cannot make the gate pass.
 
+Stage 8's Solidity 0.8.36 compiler change uses the named
+`stage-08-solidity-0-8-36-compiler` policy. The policy requires exact equality
+for the ABI, selectors, events, errors, storage, interfaces, enums, ERC165
+answers, compiler settings, and behavior-test inventory. Its checked-in
+`evidence/stage-08-solidity-0-8-36.json` contains deterministic, complete
+instruction-level diffs for the metadata-stripped creation and runtime
+bytecode of `Wrapper` and `PartialCommonOwnership`, raw and normalized hashes
+and sizes, EIP-170 checks, and the 12 key-flow gas comparisons. Reproduce the
+candidate review and evidence with the pinned toolchains:
+
+```console
+node scripts/compatibility.js write-stage-08-review
+node scripts/compatibility.js write-evidence
+node scripts/compatibility.js check
+```
+
+The original baseline predated explicit revert-literal extraction.
+`project-revert-strings.json` is a SHA-256-bound supplement derived from the
+unchanged production sources at the recorded baseline commit. It binds all 35
+project-owned `require`/`revert` strings to their source contract, callable,
+call kind, and ordinal. The compatibility runner injects that supplement as a
+non-waivable field, so compiler-bytecode review cannot authorize a changed
+project revert payload.
+
 Do not overwrite these files to make a dependency or compiler upgrade pass.
 For an intentional compiler change, generate a separate candidate manifest and
 review the ABI, selector, event, storage, opcode, bytecode-size, and gas deltas.

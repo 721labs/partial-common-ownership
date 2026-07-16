@@ -33,6 +33,9 @@
   "scripts": {
     "console": "hardhat console",
     "compile": "hardhat compile",
+    "compiler-warnings:hardhat": "hardhat compile --force && node scripts/check-compiler-warnings.js hardhat",
+    "compiler-warnings:forge": "node scripts/check-compiler-warnings.js forge",
+    "compiler-warnings:check": "pnpm run compiler-warnings:hardhat && pnpm run compiler-warnings:forge",
     "test:hardhat": "hardhat typechain && hardhat --network hardhat test",
     "test:forge": "node scripts/check-parity.js",
     "test:safety": "cross-env FOUNDRY_PROFILE=ci node scripts/check-parity.js",
@@ -53,6 +56,7 @@
     "gas:check": "node scripts/check-gas.js",
     "safety-baselines:check": "node scripts/check-safety-baselines.js",
     "size:check": "node scripts/check-contract-sizes.js",
+    "slither": "node scripts/run-slither.js",
     "typechain": "hardhat typechain"
   },
   "devDependencies": {

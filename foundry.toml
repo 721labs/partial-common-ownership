@@ -3,7 +3,7 @@ src = 'contracts'
 test = 'test/solidity'
 out = 'out'
 libs = ['lib']
-solc_version = "0.8.12"
+solc_version = "0.8.36"
 auto_detect_solc = false
 evm_version = "london"
 optimizer = false
@@ -12,6 +12,7 @@ via_ir = false
 bytecode_hash = "ipfs"
 cbor_metadata = true
 use_literal_content = false
+ignored_error_codes = []
 allow_internal_expect_revert = false
 
 [profile.default.fuzz]

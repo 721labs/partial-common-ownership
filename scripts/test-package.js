@@ -9,7 +9,7 @@ const PACKAGE_NAME = "@721labs/partial-common-ownership";
 const PNPM_VERSION = "11.13.1";
 const HARDHAT_VERSION = "2.28.6";
 const FOUNDRY_VERSION = "1.7.1";
-const SOLC_VERSION = "0.8.12";
+const SOLC_VERSION = "0.8.36";
 
 const pnpm =
   process.env.PNPM_BIN || (process.platform === "win32" ? "pnpm.cmd" : "pnpm");
@@ -220,7 +220,7 @@ function inspectTarball(tarball, extractionDirectory) {
 
 function consumerSource() {
   return `// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.12;
+pragma solidity 0.8.36;
 
 import {Wrapper} from "${PACKAGE_NAME}/contracts/Wrapper.sol";
 import {PartialCommonOwnership} from "${PACKAGE_NAME}/contracts/token/PartialCommonOwnership.sol";

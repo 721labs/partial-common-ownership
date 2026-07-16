@@ -1,0 +1,10 @@
+{
+  "compile_force_framework": "solc",
+  "detectors_to_run": "all",
+  "disable_color": true,
+  "exclude_dependencies": true,
+  "fail_on": "medium",
+  "filter_paths": "(^|/)(node_modules|lib)/",
+  "solc_args": "--evm-version london --optimize-runs 200",
+  "solc_remaps": "@openzeppelin/=node_modules/@openzeppelin/"
+}

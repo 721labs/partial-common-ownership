@@ -44,7 +44,7 @@ export default {
   // defaultNetwork: "",
   // networks: {},
   solidity: {
-    version: "0.8.12",
+    version: "0.8.36",
     settings: {
       evmVersion: "london",
       optimizer: {

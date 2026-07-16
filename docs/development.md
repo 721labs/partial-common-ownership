@@ -43,6 +43,36 @@ $ pnpm compatibility
 $ pnpm test:package
 ```
 
+Repository tool configurations compile with exactly Solidity 0.8.36 while
+retaining the London EVM target, disabled optimizer with 200 configured runs,
+`viaIR = false`, and the existing metadata mode. Production sources continue
+to advertise the compatible `^0.8.12` range until the separately reviewed
+OpenZeppelin 5 upgrade. Test and fixture pragmas are pinned to exact 0.8.36.
+
+The compiler warning gates perform forced builds and require the complete,
+exact reviewed warning inventories from both compiler entry points. Hardhat
+currently emits 10 Solidity warnings and Forge emits 28, including warnings
+from tests and dependencies and test-contract code-size warnings. Forge lint
+diagnostics are captured separately from the compiler JSON and are not counted
+as Solidity compiler warnings.
+
+```console
+$ pnpm compiler-warnings:hardhat
+$ pnpm compiler-warnings:forge
+$ pnpm compiler-warnings:check
+```
+
+The first two commands let the separate Hardhat and Forge CI jobs enforce only
+the toolchain installed in that job. The combined command is the local full
+gate. Each gate verifies the exact tool and Solidity versions, compiler
+settings, warning source bytes and byte ranges, and rejects duplicate, new, or
+missing warnings.
+
+Warnings may be changed only by reviewing and updating
+`compatibility/compiler-warning-allowlist.json`; the gate rejects both new and
+missing warnings, stale build metadata, source or pragma drift, and
+compiler-setting drift.
+
 The default and CI Foundry profile uses seed `0x721`, 512 fuzz runs, and 128
 stateful invariant runs at depth 64. The scheduled profile uses 10,000 fuzz
 runs and 2,000 invariant runs at depth 128; CI supplies and records a rotating
@@ -66,15 +96,35 @@ production artifact must remain within EIP-170's 24,576-byte limit.
 The gas and LCOV artifacts are SHA-256-bound through the compatibility review;
 they must never be refreshed merely to make a candidate pass.
 
+## Static analysis
+
+CI runs exactly Slither 0.11.5 with solc 0.8.36 over the production import
+closure. To reproduce it, install those exact Python/compiler versions and run:
+
+```console
+$ pnpm slither
+```
+
+The runner rejects version drift, unreviewed suppression comments, and every
+untriaged high- or medium-impact finding. The reviewed findings and their
+dispositions are documented in
+`docs/security/slither-0.11.5-triage.md`.
+
 ## Gas
 
 The Partial Common Ownership business logic is fairly complex and, in alignment with best practices, you should consider gas usage during development. To make this easier, `hardhat-gas-reporter` is included.
 
 When tests are run, it calculates the average gas usage of frequently used methods and prints these figures to stdout. Viewing gas costs as USD requires setting the `COINMARKETCAP_API_KEY` environment variable in `.env`.
 
-## "Unused function parameter" Warnings
+## Compiler warnings
 
-The Solidity compiler will raise "unused function parameter" warnings because we are overriding the ERC721 public transfer methods to ensure that purchasing and foreclosure are the only way tokens can be transferred. _These warnings are to be expected and ignored_.
+The Solidity compiler reports unused parameters because the ERC721 transfer
+methods are overridden to ensure purchasing and foreclosure remain the only
+transfer paths. It also reports the deliberately deferred `send`/`transfer`
+deprecations, upstream OpenZeppelin and forge-std assembly annotations, a
+test-only unchecked call, and expected oversized test harnesses. These warnings
+are reviewed by the exact complete allowlist above; they must not be ignored
+globally.
 
 ## Modules
 

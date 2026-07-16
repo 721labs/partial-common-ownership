@@ -31,6 +31,7 @@ contract PartialCommonOwnership is Lease {
     uint256 taxRate_,
     uint256 collectionFrequency_
   ) internal {
+    // slither-disable-next-line reentrancy-eth
     _safeMint(leasee_, tokenId_);
     _setDeposit(tokenId_, deposit_);
     _setValuation(tokenId_, valuation_);
