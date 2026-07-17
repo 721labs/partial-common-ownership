@@ -1,0 +1,134 @@
+{
+  "actions": {
+    "actions/cache": {
+      "commit": "0057852bfaa89a56745cba8c7296529d2fc39830",
+      "count": 10,
+      "tag": "v4.3.0"
+    },
+    "actions/checkout": {
+      "commit": "9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0",
+      "count": 10,
+      "tag": "v7.0.0"
+    },
+    "actions/setup-node": {
+      "commit": "820762786026740c76f36085b0efc47a31fe5020",
+      "count": 10,
+      "tag": "v7.0.0"
+    },
+    "actions/setup-python": {
+      "commit": "ece7cb06caefa5fff74198d8649806c4678c61a1",
+      "count": 1,
+      "tag": "v6.3.0"
+    },
+    "actions/upload-artifact": {
+      "commit": "ea165f8d65b6e75b540449e92b4886f43607fa02",
+      "count": 1,
+      "tag": "v4.6.2"
+    },
+    "foundry-rs/foundry-toolchain": {
+      "commit": "b00af27efadbc7b4ca8b82abbd903b17cc874d2a",
+      "count": 7,
+      "tag": "v1.9.0"
+    }
+  },
+  "baseCommit": "b38530b54f4f1005f13c12feccaa679a9ec28f4d",
+  "boundFiles": {
+    ".github/dependabot.yml": "b5e19b671186ac4e3541664d00a0ad13d4c30e64610847a0b59eaa71b40f77b4",
+    ".github/workflows/tests.yml": "cdd4ea1d1c03b6b1734302f2291fb267aaa9e96301e2445cf2f28138c215ab52",
+    ".gitmodules": "ff4ebffecc8ab2a2a7320aa95762463fe80a4bc8acf0a4664d90d7c1adae75df",
+    ".nvmrc": "8f9258d5e9da5443c42966a661aee09292b49d1c64e718dcc5f72976500bac48",
+    "compatibility/audit-ratchet.json": "fc4fa90ddd1e9976339866df8497a5f4f697c79e4e28e66fe1d8f44e63845ffc",
+    "compatibility/baseline.json": "4ec069e1cdb046198456b1db9179522b604d8dab062838c79e4cf8aa1e9df55c",
+    "compatibility/compiler-warning-allowlist.json": "9cae9f479731aba3a55a50418f66f1cb66fd59c6dbe19a44fed7415c9adf0763",
+    "compatibility/evidence/stage-13-ci-security-maintenance.json": "c7df59ea50e3a374723dd44cd061dc4b9ddd2722d3f3c8f67f8a437b702b5d07",
+    "compatibility/forge-lint-allowlist.json": "13f6a34e3b6fc4c9295ae578f24b1cebdea96a45cb01b69acf5996f5ee986ef7",
+    "compatibility/reviewed-differences.json": "d2cf786e11a28d1a2e661087c2ff4db7bb3accde6302f0e4fa46b550d0032123",
+    "compatibility/safety-baselines.json": "d70fb57f2dbf4671178fee515a583cb48ea5ea8e263a187dc0dec9a229ea4b5c",
+    "compatibility/safety-test-inventory.json": "52f7c77b9ebec5093ad484f6695e46194b3ed0b9e737943946843e4f19c4d83a",
+    "compatibility/stage-13-ci-maintenance-inventory.json": "1ddf58ff2c58832c82c903b71180add027a18598633f9e39d81e5dffb5f9d420",
+    "coverage/lcov.info": "699bec5254479d496dd7fdf6366be2c5f1afe386585bfa4f2f4be0304735f575",
+    "docs/development.md": "26cfbbcbc40713083d3132654259b2779adc148a41ac5075492d1db1b286c899",
+    "foundry.toml": "15356b92e608367cc58458371448d51172a39ebc03fe461cd6fe77b21b3584a4",
+    "gas/key-flows.snap": "c57e387d3a71141ce69078dc051608e8eb1f5bccbddf5745f6d478d709b575f7",
+    "hardhat.config.ts": "8a01d6013e117f9d6dfbc230ec8d639e0fac0793404483c2c5ae775cebeec91c",
+    "package.json": "5fc4d4382bda9e03f94e826de4f21f318e38649a74ba0c8981e749d56edbf6bc",
+    "pnpm-lock.yaml": "c3498cc86b99ace2ab1810b24e886565aebf089fb35edc8132b0d774cc2a3ab5",
+    "pnpm-workspace.yaml": "6cf3f83b7611f5b240d4f3d86d230ab61fb48d989260d4fbec3d3f60f7ed763c",
+    "remappings.txt": "ff6af4f5f016d740713659bae831093a516370283d19a66bc5f2c43147772b42",
+    "scripts/audit-ratchet.cjs": "d52d7c69861b35dba286c99764c00b86da1be7505931c267d4ea7a8e87905128",
+    "scripts/check-ci-policy.cjs": "3a9faa55b451edf624ba13dbf3e3fafcb8c61d94899d882914ca8de7163bf840",
+    "scripts/check-compiler-warnings.cjs": "3f082e607c7abed11b822e767e14e7415a50671ec033e6655c10053686490b50",
+    "scripts/check-contract-sizes.cjs": "0c5e3e258c12fca1d946d0ecae7d36ad4ebbade97c3977179484977cd2cee6f7",
+    "scripts/check-coverage.cjs": "ec9d23cf30156793958b88fff8677170fd16cd8963515f30184df6ecc2216ee0",
+    "scripts/check-forge-lint.cjs": "409e188118effff4a0c4a25b1497b94adb779b9088c5a4fd2d859a98515a8416",
+    "scripts/check-gas.cjs": "22d9e8538b9e94379f80740cb054a1d48b2a5a1ee38d92b66583a6ef6876f3e8",
+    "scripts/check-parity.cjs": "f58a945d4236d61826a90c1954cecaa43ef1b3dc6602877eda8fd087eb292f21",
+    "scripts/check-safety-baselines.cjs": "9b2621e171cbad70df9badd72daaed38e50ba989b9ec3aa1917feef5df16b149",
+    "scripts/compatibility.cjs": "88d2b28b06e95150987637bd0bc5d11c7cb1a8ce15b2cfc1a003fe981646bcec",
+    "scripts/dependency-inventory.cjs": "6de23d7136ccef1dab89a1eefb082a07d542e50d54166c7641dfb032523e35e7",
+    "scripts/install.sh": "045b06f3d2f9705248aed669a252b41b5bd3285f44faf441127dbd62005a7b47",
+    "scripts/maintenance-policy.cjs": "30618c7c81a2a6fd4ba8b879d12c4ef6a931a3388b0f5d0996005305cdf0d27d",
+    "scripts/run-coverage.cjs": "03a4faf4616791c7ad306eef27ad85e9c7505a6d8ea63e474e1ab7b03913ccd7",
+    "scripts/run-slither.cjs": "f69835d298e6e5a373be883a966e2a6ea8d89eb3055ee1095c908a5b1b50f4fd",
+    "scripts/test-package.cjs": "505ee382e0869f9c04fbbb2fbcf0714ab459c06735ed3a747dba01fa7811bffe",
+    "slither.config.json": "cb2e3107f3f00d822eea68f92ab56b03b8efac79870017fbc94702232299add1",
+    "tsconfig.json": "d86cc63a05114438abb25258863b937cbc2a2b7433b6fe0ef83d274cec35a2b5"
+  },
+  "category": "github-actions",
+  "changedFiles": [
+    ".github/workflows/tests.yml"
+  ],
+  "id": "setup-node-7",
+  "packages": {
+    "dependencies": {
+      "@openzeppelin/contracts": "5.6.1"
+    },
+    "devDependencies": {
+      "@nomicfoundation/hardhat-ethers": "4.0.14",
+      "@types/node": "24.13.3",
+      "ethers": "6.17.0",
+      "hardhat": "3.9.1",
+      "tsx": "4.23.1",
+      "typescript": "7.0.2"
+    },
+    "packageManager": "pnpm@11.13.1"
+  },
+  "previous": {
+    "file": "0002-checkout-7.json",
+    "kind": "maintenance",
+    "sha256": "abccfadee57dae9bff096130c72d778ec0c27041a233ffdd385c24d04da310db"
+  },
+  "productionImpact": "none",
+  "schemaVersion": 1,
+  "sequence": 3,
+  "sourcePullRequests": [
+    102
+  ],
+  "summary": "Upgrade actions/setup-node from v4.4.0 to v7.0.0 with its exact immutable release commit.",
+  "toolchain": {
+    "bytecodeHash": "\"ipfs\"",
+    "cborMetadata": "true",
+    "evmVersion": "london",
+    "forgeStd": "bf647bd6046f2f7da30d0c2bf435e5c76a780c1b",
+    "node": "24.18.0",
+    "optimizer": "false",
+    "optimizerRuns": "200",
+    "pnpm": "11.13.1",
+    "solidity": "0.8.36",
+    "useLiteralContent": "false",
+    "viaIR": "false"
+  },
+  "transition": {
+    "action": "actions/setup-node",
+    "from": {
+      "commit": "49933ea5288caeca8642d1e84afbd3f7d6820020",
+      "tag": "v4.4.0"
+    },
+    "kind": "github-actions",
+    "occurrences": 10,
+    "to": {
+      "commit": "820762786026740c76f36085b0efc47a31fe5020",
+      "tag": "v7.0.0"
+    }
+  }
+}
