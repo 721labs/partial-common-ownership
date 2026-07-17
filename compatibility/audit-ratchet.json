@@ -3,13 +3,13 @@
   "capturedWith": "pnpm 11.13.1",
   "counts": {
     "info": 0,
-    "low": 26,
-    "moderate": 43,
-    "high": 59,
-    "critical": 10
+    "low": 0,
+    "moderate": 0,
+    "high": 0,
+    "critical": 0
   },
   "policy": {
-    "high": 59,
-    "critical": 10
+    "high": 0,
+    "critical": 0
   }
 }

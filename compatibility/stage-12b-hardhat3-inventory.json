@@ -1,0 +1,140 @@
+{
+  "schemaVersion": 1,
+  "candidate": "stage-12b-hardhat-3",
+  "stage12aCheckpoint": {
+    "commit": "9a86ff5d001a4d3a06823712d0e70ad011987ecd",
+    "evidencePath": "compatibility/evidence/stage-12a-ethers-6.json",
+    "evidenceSha256": "183eee1da9cab1bbfff5d7f4eb8b2271f25a37d4ff3517b910e1b288bacd0b6f",
+    "reviewPath": "compatibility/reviewed-differences.json",
+    "reviewSha256": "7a81410a18e677c44cf92d111e9899c9a600eb7f512dd84b66c04a1bb805d6e0",
+    "inventoryPath": "compatibility/stage-12a-ethers6-inventory.json",
+    "inventorySha256": "f9f3e23ccd84236ffca10d2eb79b3c0f737e83efd0692f8a57ea3a0ac98f0cc2"
+  },
+  "package": {
+    "type": "module",
+    "packageManager": "pnpm@11.13.1",
+    "runtimeDependencies": {
+      "@openzeppelin/contracts": "5.6.1"
+    },
+    "devDependencies": {
+      "@nomicfoundation/hardhat-ethers": "4.0.14",
+      "@types/node": "24.13.3",
+      "ethers": "6.17.0",
+      "hardhat": "3.9.1",
+      "tsx": "4.23.1",
+      "typescript": "7.0.2"
+    },
+    "removedDevDependencies": [
+      "@ethersproject/abi",
+      "@ethersproject/contracts",
+      "@ethersproject/providers",
+      "@nomiclabs/hardhat-ethers",
+      "@nomiclabs/hardhat-waffle",
+      "@nomiclabs/hardhat-web3",
+      "@openzeppelin/test-helpers",
+      "@typechain/ethers-v5",
+      "@typechain/hardhat",
+      "@types/chai",
+      "@types/js-yaml",
+      "@types/mocha",
+      "chai",
+      "cross-env",
+      "dotenv",
+      "ethereum-waffle",
+      "hardhat-gas-reporter",
+      "js-yaml",
+      "prettier",
+      "prettier-plugin-solidity",
+      "solhint",
+      "solhint-plugin-prettier",
+      "solidity-coverage",
+      "ts-node",
+      "typechain",
+      "web3"
+    ],
+    "smokeRunner": "hardhat build && node --import tsx --test tests/Interoperability.smoke.ts",
+    "testRunner": "pnpm run test:forge && pnpm run test:hardhat:smoke"
+  },
+  "activeTests": {
+    "hardhat": {
+      "count": 3,
+      "names": [
+        "Hardhat interoperability smokes acquires, collects tax, and exits with ordered events and conserved balances",
+        "Hardhat interoperability smokes approves, wraps, takes over, and unwraps with custody and metadata cleanup",
+        "Hardhat interoperability smokes deploys and reads deterministic PCO configuration"
+      ],
+      "namesSha256": "e82ce4a1063d5334c8a0962747e9bb0797c9e5e82ef6e40dc1905452fb78714f",
+      "sourcePath": "tests/Interoperability.smoke.ts",
+      "sourceSha256": "80bc8ba664ae11d9081e73427cde09652cfc7da03bbfa87fd61767400ca9f696"
+    },
+    "forge": {
+      "count": 140,
+      "namesSha256": "09b141a8c69c4522288cfdbf67373661052764ab019c865ea850dc5eb645f173"
+    }
+  },
+  "helperMove": {
+    "from": "contracts/test/EnhancedTest.sol",
+    "to": "test/solidity/helpers/EnhancedTest.sol",
+    "sha256": "8f0f905bceafb2003604984b4b2cfc8fef7a3e63b832bfbe36e848b01712bb08",
+    "consumer": "test/solidity/Remittance.t.sol",
+    "consumerSha256": "3d4181126ca51fd7a58fd02ea0594465407f83c361f553c97ad549e0492320f8"
+  },
+  "removedFiles": [
+    ".env.sample",
+    ".prettierrc",
+    ".solcover.js",
+    ".solhint.json",
+    "compatibility/hardhat.capture.config.ts",
+    "compatibility/hardhat.reporter.js",
+    "hardhat.config.d.ts",
+    "scripts/check-pnpm-lock.js",
+    "tests/PartialCommonOwnership/types.ts",
+    "tests/helpers/EVM.ts",
+    "tests/helpers/Numeric.ts",
+    "tests/helpers/Time.ts",
+    "tests/helpers/Wallet.ts",
+    "tests/helpers/constants.ts",
+    "tests/helpers/types.ts",
+    "tests/helpers/utils.ts",
+    "utils/deploy.ts"
+  ],
+  "commonJsRenames": [
+    "audit-ratchet",
+    "check-compiler-warnings",
+    "check-contract-sizes",
+    "check-coverage",
+    "check-gas",
+    "check-parity",
+    "check-safety-baselines",
+    "compatibility",
+    "run-coverage",
+    "run-slither",
+    "test-package"
+  ],
+  "boundFiles": {
+    ".github/workflows/tests.yml": "c0540a355281fe7531a5fbd150f880814e4ecae862412252beb1986ecd0cf7ae",
+    ".gitignore": "ed7875806319cbc511ca44c3b685e793346c6d6085559e7554817622c6f1cfc2",
+    "README.md": "d73a1678a21b8cdaa97d0d2c7a7e0faf1f03e0d2d9d233e9e9b50d1f7144bd3c",
+    "compatibility/audit-ratchet.json": "fc4fa90ddd1e9976339866df8497a5f4f697c79e4e28e66fe1d8f44e63845ffc",
+    "compatibility/safety-baselines.json": "d70fb57f2dbf4671178fee515a583cb48ea5ea8e263a187dc0dec9a229ea4b5c",
+    "coverage/lcov.info": "699bec5254479d496dd7fdf6366be2c5f1afe386585bfa4f2f4be0304735f575",
+    "docs/development.md": "ab326c2967a8739c4fedc844b1fefc9938b83faef2b2cdbf4b4db80dc1d95953",
+    "gas/README.md": "0d530cfa47569cadbf24dee83ffc0039e221e8b2da2f370c4a3a69c635dfc83e",
+    "hardhat.config.ts": "8a01d6013e117f9d6dfbc230ec8d639e0fac0793404483c2c5ae775cebeec91c",
+    "package.json": "3b4b5ca92aba7337e02f3fabb0cd0df250754ce624f5438f33817b2df6dabd12",
+    "pnpm-lock.yaml": "c3498cc86b99ace2ab1810b24e886565aebf089fb35edc8132b0d774cc2a3ab5",
+    "pnpm-workspace.yaml": "6cf3f83b7611f5b240d4f3d86d230ab61fb48d989260d4fbec3d3f60f7ed763c",
+    "scripts/audit-ratchet.cjs": "52ab6c99635bd55419944314c535420ecd7657f60b0dbdc578e1bc76025b2149",
+    "scripts/check-contract-sizes.cjs": "0c5e3e258c12fca1d946d0ecae7d36ad4ebbade97c3977179484977cd2cee6f7",
+    "scripts/check-coverage.cjs": "ec9d23cf30156793958b88fff8677170fd16cd8963515f30184df6ecc2216ee0",
+    "scripts/check-gas.cjs": "22d9e8538b9e94379f80740cb054a1d48b2a5a1ee38d92b66583a6ef6876f3e8",
+    "scripts/check-safety-baselines.cjs": "9b2621e171cbad70df9badd72daaed38e50ba989b9ec3aa1917feef5df16b149",
+    "scripts/run-coverage.cjs": "03a4faf4616791c7ad306eef27ad85e9c7505a6d8ea63e474e1ab7b03913ccd7",
+    "scripts/run-slither.cjs": "f69835d298e6e5a373be883a966e2a6ea8d89eb3055ee1095c908a5b1b50f4fd",
+    "scripts/test-package.cjs": "505ee382e0869f9c04fbbb2fbcf0714ab459c06735ed3a747dba01fa7811bffe",
+    "test/solidity/Remittance.t.sol": "3d4181126ca51fd7a58fd02ea0594465407f83c361f553c97ad549e0492320f8",
+    "test/solidity/helpers/EnhancedTest.sol": "8f0f905bceafb2003604984b4b2cfc8fef7a3e63b832bfbe36e848b01712bb08",
+    "tests/Interoperability.smoke.ts": "80bc8ba664ae11d9081e73427cde09652cfc7da03bbfa87fd61767400ca9f696",
+    "tsconfig.json": "d86cc63a05114438abb25258863b937cbc2a2b7433b6fe0ef83d274cec35a2b5"
+  }
+}

@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+"use strict";
+
 const childProcess = require("child_process");
 const crypto = require("crypto");
 const fs = require("fs");
@@ -301,6 +303,92 @@ function hardhatSourceBytes(buildInfo, source) {
   return bytes;
 }
 
+function hardhatLogicalSource(source, userSourceNameMap) {
+  for (const [logical, canonical] of Object.entries(userSourceNameMap || {})) {
+    if (canonical === source) return logical;
+  }
+  const dependency = source.match(
+    /^npm\/@openzeppelin\/contracts@5\.6\.1\/(.+)$/
+  );
+  if (dependency) return `@openzeppelin/contracts/${dependency[1]}`;
+  if (source.startsWith("project/") || source.startsWith("npm/")) {
+    throw new Error(`Unreviewed Hardhat 3 canonical source: ${source}`);
+  }
+  return source;
+}
+
+function normalizeHardhat3BuildInfo(inputBuildInfo, outputBuildInfo) {
+  if (
+    inputBuildInfo._format !== "hh3-sol-build-info-1" ||
+    outputBuildInfo._format !== "hh3-sol-build-info-output-1" ||
+    inputBuildInfo.id !== outputBuildInfo.id
+  ) {
+    throw new Error("Hardhat 3 build-info input/output identity mismatch");
+  }
+  const rename = (value) =>
+    Object.fromEntries(
+      Object.entries(value || {}).map(([source, description]) => [
+        hardhatLogicalSource(source, inputBuildInfo.userSourceNameMap),
+        description,
+      ])
+    );
+  const output = {
+    ...outputBuildInfo.output,
+    contracts: rename(outputBuildInfo.output.contracts),
+    sources: rename(outputBuildInfo.output.sources),
+    errors: (outputBuildInfo.output.errors || []).map((diagnostic) => ({
+      ...diagnostic,
+      sourceLocation: diagnostic.sourceLocation
+        ? {
+            ...diagnostic.sourceLocation,
+            file: hardhatLogicalSource(
+              diagnostic.sourceLocation.file,
+              inputBuildInfo.userSourceNameMap
+            ),
+          }
+        : diagnostic.sourceLocation,
+    })),
+  };
+  const rawSettings = inputBuildInfo.input.settings;
+  const settings = {
+    evmVersion: rawSettings.evmVersion,
+    optimizer: rawSettings.optimizer,
+    viaIR: rawSettings.viaIR,
+    metadata: rawSettings.metadata,
+    outputSelection: {
+    "*": {
+      "*": [
+        "storageLayout",
+        "abi",
+        "evm.bytecode",
+        "evm.deployedBytecode",
+        "evm.methodIdentifiers",
+        "metadata",
+      ],
+      "": ["ast"],
+    },
+    },
+  };
+  if (
+    rawSettings.remappings !== undefined &&
+    JSON.stringify(rawSettings.remappings) !==
+    JSON.stringify([
+      "project/:@openzeppelin/contracts/=npm/@openzeppelin/contracts@5.6.1/",
+    ])
+  ) {
+    throw new Error("Hardhat 3 native package remapping changed");
+  }
+  return {
+    ...inputBuildInfo,
+    input: {
+      ...inputBuildInfo.input,
+      settings,
+      sources: rename(inputBuildInfo.input.sources),
+    },
+    output,
+  };
+}
+
 function loadHardhatBuildInfo(allowlist) {
   if (!fs.existsSync(BUILD_INFO_DIRECTORY)) {
     throw new Error(
@@ -310,11 +398,20 @@ function loadHardhatBuildInfo(allowlist) {
 
   const candidates = fs
     .readdirSync(BUILD_INFO_DIRECTORY)
-    .filter((file) => file.endsWith(".json"))
+    .filter(
+      (file) => file.endsWith(".json") && !file.endsWith(".output.json")
+    )
     .map((file) => {
-      const value = JSON.parse(
-        fs.readFileSync(path.join(BUILD_INFO_DIRECTORY, file), "utf8")
-      );
+      const inputPath = path.join(BUILD_INFO_DIRECTORY, file);
+      const inputValue = JSON.parse(fs.readFileSync(inputPath, "utf8"));
+      const outputPath = inputPath.replace(/\.json$/, ".output.json");
+      const value =
+        inputValue._format === "hh3-sol-build-info-1"
+          ? normalizeHardhat3BuildInfo(
+              inputValue,
+              JSON.parse(fs.readFileSync(outputPath, "utf8"))
+            )
+          : inputValue;
       return { file, value };
     })
     .filter(
@@ -619,7 +716,7 @@ function main() {
   const target = process.argv[2];
   if (target !== "hardhat" && target !== "forge") {
     throw new Error(
-      "Usage: node scripts/check-compiler-warnings.js <hardhat|forge>"
+      "Usage: node scripts/check-compiler-warnings.cjs <hardhat|forge>"
     );
   }
 

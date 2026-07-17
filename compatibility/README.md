@@ -8,9 +8,9 @@ Capture once, then run the check with the pinned Foundry 1.7.1 binaries on
 `PATH`:
 
 ```console
-node scripts/compatibility.js capture
-node scripts/compatibility.js check
-node scripts/compatibility.js diff
+node scripts/compatibility.cjs capture
+node scripts/compatibility.cjs check
+node scripts/compatibility.cjs diff
 ```
 
 The contract manifest includes canonical ABIs, method and error selectors,
@@ -48,9 +48,9 @@ and sizes, EIP-170 checks, and the 12 key-flow gas comparisons. Reproduce the
 candidate review and evidence with the pinned toolchains:
 
 ```console
-node scripts/compatibility.js write-stage-08-review
-node scripts/compatibility.js write-evidence
-node scripts/compatibility.js check
+node scripts/compatibility.cjs write-stage-08-review
+node scripts/compatibility.cjs write-evidence
+node scripts/compatibility.cjs check
 ```
 
 Stage 9 upgrades only the forge-std submodule and test helpers. Its named
@@ -68,9 +68,9 @@ shallow clone.
 Reproduce it with the pinned toolchains:
 
 ```console
-node scripts/compatibility.js write-stage-09-review
-node scripts/compatibility.js write-evidence
-node scripts/compatibility.js check
+node scripts/compatibility.cjs write-stage-09-review
+node scripts/compatibility.cjs write-evidence
+node scripts/compatibility.cjs check
 ```
 
 Security remediation 01 uses the named
@@ -98,10 +98,10 @@ identifier, the owner/approval/transfer-overload behavior matrix, and all 12
 key-flow gas comparisons. Reproduce it with:
 
 ```console
-node scripts/compatibility.js write-security-01-review
-node scripts/compatibility.js write-evidence
-node scripts/compatibility.js check
-node scripts/compatibility.js security-01-negative-probes
+node scripts/compatibility.cjs write-security-01-review
+node scripts/compatibility.cjs write-evidence
+node scripts/compatibility.cjs check
+node scripts/compatibility.cjs security-01-negative-probes
 ```
 
 Security remediation 02 uses the named
@@ -129,10 +129,10 @@ payload in the existing PCO `_mint` callable. Reproduce the review, evidence,
 and adversarial policy probes with:
 
 ```console
-node scripts/compatibility.js write-security-02-review
-node scripts/compatibility.js write-evidence
-node scripts/compatibility.js check
-node scripts/compatibility.js security-02-negative-probes
+node scripts/compatibility.cjs write-security-02-review
+node scripts/compatibility.cjs write-evidence
+node scripts/compatibility.cjs check
+node scripts/compatibility.cjs security-02-negative-probes
 ```
 
 Security remediation 03 uses the named
@@ -160,10 +160,10 @@ all four post-tax mutations and three authorization modes, and successful
 cross-foreclosure takeover accounting and event order. Reproduce it with:
 
 ```console
-node scripts/compatibility.js write-security-03-review
-node scripts/compatibility.js write-evidence
-node scripts/compatibility.js check
-node scripts/compatibility.js security-03-negative-probes
+node scripts/compatibility.cjs write-security-03-review
+node scripts/compatibility.cjs write-evidence
+node scripts/compatibility.cjs check
+node scripts/compatibility.cjs security-03-negative-probes
 ```
 
 Security remediation 04 uses the named
@@ -187,10 +187,10 @@ equal Security 03 exactly. Reproduce the review, evidence, and adversarial
 policy probes with:
 
 ```console
-node scripts/compatibility.js write-security-04-review
-node scripts/compatibility.js write-evidence
-node scripts/compatibility.js check
-node scripts/compatibility.js security-04-negative-probes
+node scripts/compatibility.cjs write-security-04-review
+node scripts/compatibility.cjs write-evidence
+node scripts/compatibility.cjs check
+node scripts/compatibility.cjs security-04-negative-probes
 ```
 
 Stage 10 upgrades only `@openzeppelin/contracts` to exact 5.6.1 and raises the
@@ -229,10 +229,10 @@ Reproduce the Stage 10 review, evidence, gate, and adversarial policy probes
 with:
 
 ```console
-node scripts/compatibility.js write-stage-10-review
-node scripts/compatibility.js write-evidence
-node scripts/compatibility.js check
-node scripts/compatibility.js stage-10-negative-probes
+node scripts/compatibility.cjs write-stage-10-review
+node scripts/compatibility.cjs write-evidence
+node scripts/compatibility.cjs check
+node scripts/compatibility.cjs stage-10-negative-probes
 ```
 
 Stage 11 uses the named `stage-11-foundry-first-cutover` policy. It anchors the
@@ -262,10 +262,10 @@ Reproduce the Stage 11 review, evidence, gate, and adversarial policy probes
 with:
 
 ```console
-node scripts/compatibility.js write-stage-11-review
-node scripts/compatibility.js write-evidence
-node scripts/compatibility.js check
-node scripts/compatibility.js stage-11-negative-probes
+node scripts/compatibility.cjs write-stage-11-review
+node scripts/compatibility.cjs write-evidence
+node scripts/compatibility.cjs check
+node scripts/compatibility.cjs stage-11-negative-probes
 ```
 
 Stage 12a uses the named `stage-12a-ethers-6-stage-11-equality` policy. It
@@ -298,10 +298,45 @@ Reproduce the Stage 12a review, evidence, gate, and adversarial policy probes
 with:
 
 ```console
-node scripts/compatibility.js write-stage-12a-review
-node scripts/compatibility.js write-evidence
-node scripts/compatibility.js check
-node scripts/compatibility.js stage-12a-negative-probes
+node scripts/compatibility.cjs write-stage-12a-review
+node scripts/compatibility.cjs write-evidence
+node scripts/compatibility.cjs check
+node scripts/compatibility.cjs stage-12a-negative-probes
+```
+
+Stage 12b uses the named `stage-12b-hardhat-3-stage-12a-metadata-only`
+policy. It anchors merged Stage 12a commit
+`9a86ff5d001a4d3a06823712d0e70ad011987ecd`, its immutable evidence and
+review digests, and the exact Stage 12a dependency, smoke, Forge, compiler,
+bytecode, and gas identities. The migration installs exact Hardhat 3.9.1 and
+`@nomicfoundation/hardhat-ethers` 4.0.14, adopts ESM and Hardhat's declarative
+configuration, removes the dormant Hardhat 2/Waffle/Web3/TypeChain toolchain,
+and uses Node's built-in test runner for the same three interoperability
+smokes.
+
+Hardhat 3 records compiler input and output separately and uses canonical
+`project/` and versioned `npm/` source names. The compatibility runner binds
+the split records and target artifacts by one build-info ID, then maps those
+names back to the public Solidity import paths before comparing ABI, storage,
+AST, and executable bytecode. Only the exact native package-resolution
+remapping and four full bytecode hashes are reviewable. Metadata length, raw
+size, metadata-stripped size and hash, complete stripped opcodes, EIP-170
+results, interfaces, reverts, and test names remain hard equal.
+
+The immutable Stage 12a 15-entry fuzz gas snapshot is reconstructed through
+the complete checkpoint chain and replayed from an isolated checkout of the
+exact Stage 12a commit under the pinned Forge, forge-std, and solc binaries.
+Stage 12b requires the frozen snapshot, detached replay, and candidate capture
+to remain byte-for-byte equal. All 12 deterministic production key-flow gas
+entries also remain exactly equal to Stage 12a.
+
+Reproduce the review, evidence, gate, and adversarial probes with:
+
+```console
+node scripts/compatibility.cjs write-stage-12b-review
+node scripts/compatibility.cjs write-evidence
+node scripts/compatibility.cjs check
+node scripts/compatibility.cjs stage-12b-negative-probes
 ```
 
 The original baseline predated explicit revert-literal extraction.

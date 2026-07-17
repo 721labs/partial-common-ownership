@@ -1,20 +1,38 @@
 #!/usr/bin/env node
 
+"use strict";
+
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const { spawnSync } = require("child_process");
-const { verifySafetyBaselines } = require("./check-safety-baselines");
+const { verifySafetyBaselines } = require("./check-safety-baselines.cjs");
 
 const ROOT = path.resolve(__dirname, "..");
 const FORGE_BIN = process.env.FORGE_BIN || "forge";
 const BASELINE = path.join(ROOT, "coverage", "lcov.info");
+const profileArgument = process.argv.slice(2).find((value) =>
+  value.startsWith("--profile=")
+);
+const requestedProfile = profileArgument?.slice("--profile=".length);
+if (
+  process.argv.slice(2).some((value) => value !== profileArgument) ||
+  (requestedProfile !== undefined &&
+    !["default", "ci", "scheduled"].includes(requestedProfile))
+) {
+  throw new Error(
+    "Usage: node scripts/run-coverage.cjs [--profile=default|ci|scheduled]"
+  );
+}
+const FORGE_ENV = requestedProfile
+  ? { ...process.env, FOUNDRY_PROFILE: requestedProfile }
+  : process.env;
 
 function run(command, args) {
   const result = spawnSync(command, args, {
     cwd: ROOT,
     encoding: "utf8",
-    env: process.env,
+    env: FORGE_ENV,
     stdio: "inherit",
   });
   if (result.error) throw result.error;
@@ -44,7 +62,7 @@ function main() {
       "--exclude-tests",
     ]);
     run(process.execPath, [
-      path.join(ROOT, "scripts", "check-coverage.js"),
+      path.join(ROOT, "scripts", "check-coverage.cjs"),
       BASELINE,
       current,
     ]);

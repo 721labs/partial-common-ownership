@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+"use strict";
+
 const fs = require("fs");
 const crypto = require("crypto");
 const path = require("path");
@@ -14,6 +16,22 @@ const SAFETY_INVENTORY_PATH = path.join(
   "safety-test-inventory.json"
 );
 const FORGE_BIN = process.env.FORGE_BIN || "forge";
+const profileArgument = process.argv.slice(2).find((value) =>
+  value.startsWith("--profile=")
+);
+const requestedProfile = profileArgument?.slice("--profile=".length);
+if (
+  process.argv.slice(2).some((value) => value !== profileArgument) ||
+  (requestedProfile !== undefined &&
+    !["default", "ci", "scheduled"].includes(requestedProfile))
+) {
+  throw new Error(
+    "Usage: node scripts/check-parity.cjs [--profile=default|ci|scheduled]"
+  );
+}
+const FORGE_ENV = requestedProfile
+  ? { ...process.env, FOUNDRY_PROFILE: requestedProfile }
+  : process.env;
 const STAGE_11_INVENTORY_PATH = path.join(
   ROOT,
   "compatibility",
@@ -24,6 +42,15 @@ const STAGE_12A_INVENTORY_PATH = path.join(
   "compatibility",
   "stage-12a-ethers6-inventory.json"
 );
+const STAGE_12B_INVENTORY_PATH = path.join(
+  ROOT,
+  "compatibility",
+  "stage-12b-hardhat3-inventory.json"
+);
+const STAGE_12B_INVENTORY_SHA256 =
+  "ce37ec6e86d25aa8bb947a5b62f1885ff7c6541fda0ca2c2560e034b5c682e9e";
+const STAGE_12B_CANDIDATE = "stage-12b-hardhat-3";
+const STAGE_12B_BASE_COMMIT = "9a86ff5d001a4d3a06823712d0e70ad011987ecd";
 const STAGE_12A_CANDIDATE = "stage-12a-ethers-6";
 const STAGE_12A_BASE_COMMIT = "c84870955d77e82e91ed70591f010233675a6880";
 const STAGE_12A_INVENTORY_SHA256 =
@@ -185,16 +212,23 @@ function stage12aInventory(stage11) {
   ) {
     fail("Stage 12a ethers 6 smoke/tooling inventory has an invalid schema");
   }
-  const smokePath = resolveUnder(
-    inventory.activeHardhat.sourcePath,
-    "tests",
-    "Stage 12a Hardhat smoke source"
-  );
+  const checkpointFile = (relativePath) => {
+    const result = spawnSync(
+      "git",
+      ["show", `${STAGE_12B_BASE_COMMIT}:${relativePath}`],
+      { cwd: ROOT, encoding: null, maxBuffer: 128 * 1024 * 1024 }
+    );
+    if (result.error) throw result.error;
+    if (result.status !== 0) {
+      fail(`Unable to read Stage 12a checkpoint file: ${relativePath}`);
+    }
+    return result.stdout;
+  };
   if (
-    !fs.existsSync(smokePath) ||
-    sha256(fs.readFileSync(smokePath)) !== inventory.activeHardhat.sourceSha256
+    sha256(checkpointFile(inventory.activeHardhat.sourcePath)) !==
+    inventory.activeHardhat.sourceSha256
   ) {
-    fail("Stage 12a Hardhat smoke source digest changed");
+    fail("Stage 12a checkpoint smoke source digest changed");
   }
   const expectedToolingFiles = [
     "hardhat.config.d.ts",
@@ -211,11 +245,75 @@ function stage12aInventory(stage11) {
   }
   for (const relativePath of expectedToolingFiles) {
     if (
-      sha256(fs.readFileSync(path.join(ROOT, relativePath))) !==
+      sha256(checkpointFile(relativePath)) !==
       inventory.tooling.files[relativePath]
     ) {
       fail(`Stage 12a tooling source digest changed: ${relativePath}`);
     }
+  }
+  return inventory;
+}
+
+function stage12bInventory(stage12a) {
+  if (!fs.existsSync(STAGE_12B_INVENTORY_PATH)) {
+    fail("Missing checked-in Stage 12b Hardhat 3 inventory");
+  }
+  const bytes = fs.readFileSync(STAGE_12B_INVENTORY_PATH);
+  const inventory = JSON.parse(bytes);
+  if (
+    sha256(bytes) !== STAGE_12B_INVENTORY_SHA256 ||
+    inventory.schemaVersion !== 1 ||
+    inventory.candidate !== STAGE_12B_CANDIDATE ||
+    inventory.stage12aCheckpoint?.commit !== STAGE_12B_BASE_COMMIT ||
+    inventory.stage12aCheckpoint?.inventorySha256 !==
+      STAGE_12A_INVENTORY_SHA256 ||
+    inventory.activeTests?.hardhat?.count !== 3 ||
+    !valuesEqual(
+      inventory.activeTests.hardhat.names,
+      stage12a.activeHardhat.names
+    ) ||
+    inventory.activeTests.hardhat.namesSha256 !==
+      STAGE_11_SMOKE_NAMES_SHA256 ||
+    inventory.activeTests?.forge?.count !== 140 ||
+    inventory.activeTests.forge.namesSha256 !== STAGE_11_FORGE_NAMES_SHA256
+  ) {
+    fail("Stage 12b Hardhat 3 inventory has an invalid schema");
+  }
+  const packageJson = readJson(path.join(ROOT, "package.json"));
+  if (
+    packageJson.type !== inventory.package.type ||
+    packageJson.packageManager !== inventory.package.packageManager ||
+    !valuesEqual(packageJson.dependencies, inventory.package.runtimeDependencies) ||
+    !valuesEqual(packageJson.devDependencies, inventory.package.devDependencies) ||
+    packageJson.scripts["test:hardhat:smoke"] !== inventory.package.smokeRunner ||
+    packageJson.scripts.test !== inventory.package.testRunner
+  ) {
+    fail("Stage 12b package/tooling inventory changed");
+  }
+  for (const relativePath of inventory.removedFiles) {
+    if (fs.existsSync(path.join(ROOT, relativePath))) {
+      fail(`Stage 12b retired file still exists: ${relativePath}`);
+    }
+  }
+  for (const script of inventory.commonJsRenames) {
+    if (
+      fs.existsSync(path.join(ROOT, "scripts", `${script}.js`)) ||
+      !fs.existsSync(path.join(ROOT, "scripts", `${script}.cjs`))
+    ) {
+      fail(`Stage 12b CommonJS rename changed: ${script}`);
+    }
+  }
+  for (const [relativePath, expected] of Object.entries(inventory.boundFiles)) {
+    if (sha256(fs.readFileSync(path.join(ROOT, relativePath))) !== expected) {
+      fail(`Stage 12b bound file changed: ${relativePath}`);
+    }
+  }
+  if (
+    fs.existsSync(path.join(ROOT, inventory.helperMove.from)) ||
+    sha256(fs.readFileSync(path.join(ROOT, inventory.helperMove.to))) !==
+      inventory.helperMove.sha256
+  ) {
+    fail("Stage 12b Forge helper move changed");
   }
   return inventory;
 }
@@ -275,7 +373,7 @@ function discoverForgeTests() {
   const result = spawnSync(FORGE_BIN, ["test", "--list", "--json"], {
     cwd: ROOT,
     encoding: "utf8",
-    env: process.env,
+    env: FORGE_ENV,
     maxBuffer: 128 * 1024 * 1024,
   });
   if (result.error) throw result.error;
@@ -303,7 +401,7 @@ function executeForgeTests() {
   const result = spawnSync(FORGE_BIN, ["test", "--json"], {
     cwd: ROOT,
     encoding: "utf8",
-    env: process.env,
+    env: FORGE_ENV,
     maxBuffer: 128 * 1024 * 1024,
   });
   if (result.error) throw result.error;
@@ -384,6 +482,7 @@ function main() {
   const baseline = readJson(BASELINE_PATH);
   const stage11 = stage11Inventory(baseline);
   const stage12a = stage12aInventory(stage11);
+  const stage12b = stage12bInventory(stage12a);
   if (map.schemaVersion !== 1) fail("Unsupported parity-map schema");
   if (!Array.isArray(map.fragments) || map.fragments.length === 0) {
     fail("Parity map must list its cohort fragments");
@@ -560,11 +659,11 @@ function main() {
     executedForgeTests
   );
   if (
-    discoveredForgeTests.length !== stage12a.forge.count ||
+    discoveredForgeTests.length !== stage12b.activeTests.forge.count ||
     sha256(stableJson([...discoveredForgeTests].sort())) !==
-      stage12a.forge.namesSha256 ||
+      stage12b.activeTests.forge.namesSha256 ||
     sha256(stableJson([...executedForgeTests].sort())) !==
-      stage12a.forge.namesSha256
+      stage12b.activeTests.forge.namesSha256
   ) {
     fail("Stage 11 active 140-Forge inventory digest changed");
   }

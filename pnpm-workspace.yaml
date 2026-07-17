@@ -1,21 +1,6 @@
-# Temporary compatibility exception for ethereumjs-abi in the legacy
-# Waffle/Ganache graph. Remove with Waffle in Stage 12.
-blockExoticSubdeps: false
-
-overrides:
-  colors: 1.4.0
-
-# Preserve Yarn's install behavior while refusing scripts from any new or
-# upgraded package until it is explicitly reviewed.
+# Refuse dependency build scripts except the exact esbuild installer used by
+# tsx for the retained TypeScript interoperability smokes.
 allowBuilds:
-  bufferutil@4.0.6: true
-  core-js-pure@3.21.1: true
-  core-js@2.6.12: true
-  es5-ext@0.10.59: true
-  keccak@3.0.2: true
-  postinstall-postinstall@2.1.0: true
-  secp256k1@4.0.3: true
-  utf-8-validate@5.0.9: true
-  "web3-bzz@1.5.3 || 1.7.1": true
-  "web3-shh@1.5.3 || 1.7.1": true
-  "web3@1.2.11 || 1.5.3 || 1.7.1": true
+  bufferutil@4.0.6: false
+  esbuild@0.28.1: true
+  utf-8-validate@5.0.9: false

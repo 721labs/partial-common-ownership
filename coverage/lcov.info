@@ -96,7 +96,7 @@ BRF:1
 BRH:0
 end_of_record
 TN:
-SF:contracts/test/EnhancedTest.sol
+SF:test/solidity/helpers/EnhancedTest.sol
 DA:14,8
 FN:14,EnhancedTest.setUp
 FNDA:8,EnhancedTest.setUp

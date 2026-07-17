@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+"use strict";
+
 const fs = require("fs");
 const path = require("path");
 
@@ -152,7 +154,7 @@ function main() {
   const [baselineArgument, currentArgument] = process.argv.slice(2);
   if (!baselineArgument || !currentArgument) {
     throw new Error(
-      "Usage: node scripts/check-coverage.js <baseline.lcov> <current.lcov>"
+      "Usage: node scripts/check-coverage.cjs <baseline.lcov> <current.lcov>"
     );
   }
   const baseline = parseLcov(path.resolve(ROOT, baselineArgument));

@@ -11,13 +11,13 @@ This project establishes standard, open source implementations of Partial Common
 #### npm
 
 ```shell
-$ npm i @721labs/partial-common-ownership --save-dev
+$ npm install --save-dev @721labs/partial-common-ownership
 ```
 
-#### yarn
+#### pnpm
 
 ```shell
-$ yarn add @721labs/partial-common-ownership --dev
+$ pnpm add --save-dev @721labs/partial-common-ownership
 ```
 
 ## Documentation

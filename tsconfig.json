@@ -1,15 +1,19 @@
 {
   "compilerOptions": {
-    "target": "es2018",
-    "module": "commonjs",
+    "lib": ["es2023"],
+    "module": "node20",
+    "target": "es2023",
     "strict": true,
-    "esModuleInterop": true,
-    "outDir": "dist"
+    "skipLibCheck": true,
+    "outDir": "dist",
+    "types": ["node"],
+    "verbatimModuleSyntax": true
   },
-  "include": ["./scripts", "./tests/Interoperability.smoke.ts"],
-  "exclude": ["node_modules"],
-  "files": ["./hardhat.config.ts"],
-  "typeAcquisition": {
-    "include": ["./hardhat.config.d.ts"]
-  }
+  "include": [
+    "./compatibility/**/*.ts",
+    "./hardhat.config.ts",
+    "./scripts/**/*.ts",
+    "./tests/Interoperability.smoke.ts"
+  ],
+  "exclude": ["node_modules"]
 }
