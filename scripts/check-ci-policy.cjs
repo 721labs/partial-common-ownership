@@ -5,43 +5,32 @@
 const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
+const {
+  validateMaintenanceLedger,
+} = require("./maintenance-policy.cjs");
 
 const ROOT = path.resolve(__dirname, "..");
+const MAINTENANCE = validateMaintenanceLedger({ root: ROOT });
+const CURRENT_MAINTENANCE = MAINTENANCE.latest;
 const WORKFLOW_DIRECTORY = path.join(ROOT, ".github", "workflows");
 const WORKFLOW_PATH = path.join(WORKFLOW_DIRECTORY, "tests.yml");
 const DEPENDABOT_PATH = path.join(ROOT, ".github", "dependabot.yml");
 const GITMODULES_PATH = path.join(ROOT, ".gitmodules");
 const EXPECTED_WORKFLOW_SHA256 =
-  "1e58f24d752da7e9a2e68a89113d53b37898bc046896ca968b32ce7c535d4195";
+  CURRENT_MAINTENANCE.boundFiles[".github/workflows/tests.yml"];
 const EXPECTED_DEPENDABOT_SHA256 =
-  "b5e19b671186ac4e3541664d00a0ad13d4c30e64610847a0b59eaa71b40f77b4";
+  CURRENT_MAINTENANCE.boundFiles[".github/dependabot.yml"];
 
-const EXPECTED_ACTIONS = new Map([
-  [
-    "actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5",
-    { count: 10, tag: "v4.3.1" },
-  ],
-  [
-    "actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
-    { count: 10, tag: "v4.4.0" },
-  ],
-  [
-    "actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830",
-    { count: 10, tag: "v4.3.0" },
-  ],
-  [
-    "actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1",
-    { count: 1, tag: "v6.3.0" },
-  ],
-  [
-    "foundry-rs/foundry-toolchain@b00af27efadbc7b4ca8b82abbd903b17cc874d2a",
-    { count: 7, tag: "v1.9.0" },
-  ],
-  [
-    "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
-    { count: 1, tag: "v4.6.2" },
-  ],
-]);
+const EXPECTED_ACTIONS = new Map(
+  Object.entries(CURRENT_MAINTENANCE.actions).map(([name, pin]) => [
+    `${name}@${pin.commit}`,
+    { count: pin.count, tag: pin.tag },
+  ])
+);
+const UPLOAD_ARTIFACT = CURRENT_MAINTENANCE.actions["actions/upload-artifact"];
+if (!UPLOAD_ARTIFACT) {
+  throw new Error("The maintenance record must bind actions/upload-artifact.");
+}
 
 const EXPECTED_JOBS = new Map([
   ["forge-tests", 15],
@@ -61,6 +50,12 @@ const FOUNDRY_JOBS = new Set([
   "coverage",
   "gas",
   "package-consumers",
+  "forge-quality",
+  "foundry-scheduled",
+]);
+const HISTORY_JOBS = new Set([
+  "forge-tests",
+  "compatibility",
   "forge-quality",
   "foundry-scheduled",
 ]);
@@ -216,7 +211,7 @@ const REQUIRED_STEPS = new Map([
       exactStep(
         "Upload minimized failures, seed, and log",
         `        if: \${{ always() }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@${UPLOAD_ARTIFACT.commit} # ${UPLOAD_ARTIFACT.tag}
         with:
           name: foundry-scheduled-\${{ github.run_id }}-\${{ github.run_attempt }}
           path: |
@@ -323,7 +318,7 @@ function checkWorkflow() {
     .split("\n")
     .filter((line) => /^\s+if\s*:/.test(line));
   const expectedConditionalLines = [
-    "    if: ${{ github.event_name == 'schedule' }}",
+    "    if: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.run_scheduled_safety) }}",
     "        if: ${{ always() }}",
   ];
   if (
@@ -334,6 +329,19 @@ function checkWorkflow() {
       `Workflow condition inventory changed: ${conditionalLines.join(" | ")}.`
     );
   }
+  const manualScheduledInput = `  workflow_dispatch:
+    inputs:
+      run_scheduled_safety:
+        description: "Run the 45-minute scheduled fuzz/invariant profile and upload its evidence"
+        required: false
+        default: false
+        type: boolean`;
+  assertCount(
+    workflow,
+    new RegExp(manualScheduledInput.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g"),
+    1,
+    "opt-in manual scheduled-safety input"
+  );
 
   const permissions = workflow.match(
     /^permissions:\n((?:  [a-z-]+:\s*[^\n]+\n)+)/m
@@ -496,6 +504,12 @@ function checkWorkflow() {
       /^          persist-credentials: false$/gm,
       1,
       `${job} disabled checkout credentials`
+    );
+    assertCount(
+      checkout,
+      /^          fetch-depth: 0$/gm,
+      HISTORY_JOBS.has(job) ? 1 : 0,
+      `${job} immutable-checkpoint history`
     );
 
     const steps = parseSteps(job, body);

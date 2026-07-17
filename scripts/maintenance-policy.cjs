@@ -1,0 +1,964 @@
+#!/usr/bin/env node
+
+"use strict";
+
+const crypto = require("crypto");
+const fs = require("fs");
+const path = require("path");
+const { spawnSync } = require("child_process");
+
+const STAGE_13_ANCHOR = Object.freeze({
+  commit: "26e1082a21e2ef184253542c1bc8c10b87924d53",
+  files: Object.freeze({
+    "compatibility/baseline.json":
+      "4ec069e1cdb046198456b1db9179522b604d8dab062838c79e4cf8aa1e9df55c",
+    "compatibility/evidence/stage-13-ci-security-maintenance.json":
+      "c7df59ea50e3a374723dd44cd061dc4b9ddd2722d3f3c8f67f8a437b702b5d07",
+    "compatibility/reviewed-differences.json":
+      "d2cf786e11a28d1a2e661087c2ff4db7bb3accde6302f0e4fa46b550d0032123",
+    "compatibility/stage-13-ci-maintenance-inventory.json":
+      "1ddf58ff2c58832c82c903b71180add027a18598633f9e39d81e5dffb5f9d420",
+    "scripts/check-ci-policy.cjs":
+      "007bf6e8b21f1939b1c54c2f032645988dc32c597bcc6b95101514956f805b1c",
+    "scripts/check-parity.cjs":
+      "7a5cf2140d8fa5e246a064f2dbc69b69ad0353aa1b7fb9ad1653907355222df1",
+    "scripts/compatibility.cjs":
+      "58f4f84f1fd8b8ab54d98d6c7f8d9364d45fca4dabc3c40382729d1050f4d8ff",
+  }),
+});
+
+const IMMUTABLE_STAGE_13_FILES = Object.freeze([
+  "compatibility/baseline.json",
+  "compatibility/evidence/stage-13-ci-security-maintenance.json",
+  "compatibility/reviewed-differences.json",
+  "compatibility/stage-13-ci-maintenance-inventory.json",
+]);
+
+const MANAGED_FILES = Object.freeze([
+  ".github/dependabot.yml",
+  ".github/workflows/tests.yml",
+  ".gitmodules",
+  ".nvmrc",
+  "compatibility/audit-ratchet.json",
+  "compatibility/baseline.json",
+  "compatibility/compiler-warning-allowlist.json",
+  "compatibility/evidence/stage-13-ci-security-maintenance.json",
+  "compatibility/forge-lint-allowlist.json",
+  "compatibility/reviewed-differences.json",
+  "compatibility/safety-baselines.json",
+  "compatibility/safety-test-inventory.json",
+  "compatibility/stage-13-ci-maintenance-inventory.json",
+  "coverage/lcov.info",
+  "docs/development.md",
+  "foundry.toml",
+  "gas/key-flows.snap",
+  "hardhat.config.ts",
+  "package.json",
+  "pnpm-lock.yaml",
+  "pnpm-workspace.yaml",
+  "remappings.txt",
+  "scripts/audit-ratchet.cjs",
+  "scripts/check-ci-policy.cjs",
+  "scripts/check-compiler-warnings.cjs",
+  "scripts/check-contract-sizes.cjs",
+  "scripts/check-coverage.cjs",
+  "scripts/check-forge-lint.cjs",
+  "scripts/check-gas.cjs",
+  "scripts/check-parity.cjs",
+  "scripts/check-safety-baselines.cjs",
+  "scripts/compatibility.cjs",
+  "scripts/dependency-inventory.cjs",
+  "scripts/install.sh",
+  "scripts/maintenance-policy.cjs",
+  "scripts/run-coverage.cjs",
+  "scripts/run-slither.cjs",
+  "scripts/test-package.cjs",
+  "slither.config.json",
+  "tsconfig.json",
+]);
+
+const BOOTSTRAP_CHANGED_FILES = Object.freeze([
+  ".github/workflows/tests.yml",
+  "scripts/check-ci-policy.cjs",
+  "scripts/check-parity.cjs",
+  "scripts/compatibility.cjs",
+  "scripts/maintenance-policy.cjs",
+]);
+
+const EXPECTED_ACTION_COUNTS = Object.freeze({
+  "actions/cache": 10,
+  "actions/checkout": 10,
+  "actions/setup-node": 10,
+  "actions/setup-python": 1,
+  "actions/upload-artifact": 1,
+  "foundry-rs/foundry-toolchain": 7,
+});
+
+const RECORD_DIRECTORY = "compatibility/maintenance";
+const RECORD_NAME = /^([0-9]{4})-([a-z0-9]+(?:-[a-z0-9]+)*)\.json$/;
+const EXACT_SEMVER = /^[0-9]+\.[0-9]+\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$/;
+const EXACT_ACTION_TAG = /^v[0-9]+\.[0-9]+\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$/;
+
+function fail(message) {
+  throw new Error(message);
+}
+
+function sha256(value) {
+  return crypto.createHash("sha256").update(value).digest("hex");
+}
+
+function sorted(value) {
+  if (Array.isArray(value)) return value.map(sorted);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.keys(value)
+        .sort()
+        .map((key) => [key, sorted(value[key])])
+    );
+  }
+  return value;
+}
+
+function stableJson(value) {
+  return `${JSON.stringify(sorted(value), null, 2)}\n`;
+}
+
+function valuesEqual(left, right) {
+  return stableJson(left) === stableJson(right);
+}
+
+function exactKeys(value, expected, label) {
+  if (
+    !value ||
+    typeof value !== "object" ||
+    Array.isArray(value) ||
+    !valuesEqual(Object.keys(value).sort(), [...expected].sort())
+  ) {
+    fail(`${label} has unexpected or missing fields`);
+  }
+}
+
+function runGit(root, args, { allowFailure = false } = {}) {
+  const result = spawnSync("git", args, {
+    cwd: root,
+    encoding: null,
+    maxBuffer: 64 * 1024 * 1024,
+  });
+  if (result.error) throw result.error;
+  if (result.status !== 0 && !allowFailure) {
+    fail(
+      `git ${args.join(" ")} failed: ${Buffer.from(
+        result.stderr || ""
+      ).toString("utf8")}`
+    );
+  }
+  return result;
+}
+
+function checkedPath(root, relativePath) {
+  if (
+    typeof relativePath !== "string" ||
+    relativePath.length === 0 ||
+    path.isAbsolute(relativePath) ||
+    relativePath.split("/").includes("..")
+  ) {
+    fail(`Maintenance path must be repository-relative: ${relativePath}`);
+  }
+  const absolutePath = path.resolve(root, relativePath);
+  const rootPrefix = `${path.resolve(root)}${path.sep}`;
+  if (!absolutePath.startsWith(rootPrefix)) {
+    fail(`Maintenance path escaped the repository: ${relativePath}`);
+  }
+  return absolutePath;
+}
+
+function currentFileBytes(root, relativePath) {
+  const absolutePath = checkedPath(root, relativePath);
+  const stat = fs.lstatSync(absolutePath);
+  if (!stat.isFile() || stat.isSymbolicLink()) {
+    fail(`Maintenance-bound path must be a regular file: ${relativePath}`);
+  }
+  return fs.readFileSync(absolutePath);
+}
+
+function checkpointBytes(root, commit, relativePath, allowMissing = false) {
+  const result = runGit(root, ["show", `${commit}:${relativePath}`], {
+    allowFailure: allowMissing,
+  });
+  if (result.status !== 0) return null;
+  return Buffer.from(result.stdout);
+}
+
+function repositoryFileBytes(root, relativePath, reference = null) {
+  return reference === null
+    ? currentFileBytes(root, relativePath)
+    : checkpointBytes(root, reference, relativePath);
+}
+
+function fileSha256(root, relativePath, reference = null) {
+  return sha256(repositoryFileBytes(root, relativePath, reference));
+}
+
+function validateStage13Anchor(root) {
+  runGit(root, [
+    "merge-base",
+    "--is-ancestor",
+    STAGE_13_ANCHOR.commit,
+    "HEAD",
+  ]);
+  for (const [relativePath, expected] of Object.entries(
+    STAGE_13_ANCHOR.files
+  )) {
+    const bytes = checkpointBytes(root, STAGE_13_ANCHOR.commit, relativePath);
+    if (sha256(bytes) !== expected) {
+      fail(`Stage 13 anchor changed: ${relativePath}`);
+    }
+  }
+  for (const relativePath of IMMUTABLE_STAGE_13_FILES) {
+    if (fileSha256(root, relativePath) !== STAGE_13_ANCHOR.files[relativePath]) {
+      fail(`Checked-in Stage 13 evidence changed: ${relativePath}`);
+    }
+  }
+  return sorted(STAGE_13_ANCHOR);
+}
+
+function stage13AnchorSha256() {
+  return sha256(stableJson(STAGE_13_ANCHOR));
+}
+
+function boundFiles(root, reference = null, { allowMissing = false } = {}) {
+  return Object.fromEntries(
+    MANAGED_FILES.map((relativePath) => {
+      const bytes =
+        reference === null
+          ? repositoryFileBytes(root, relativePath)
+          : checkpointBytes(root, reference, relativePath, allowMissing);
+      if (bytes === null && !allowMissing) {
+        fail(`Maintenance-bound path is missing: ${relativePath}`);
+      }
+      return [relativePath, bytes === null ? null : sha256(bytes)];
+    })
+  );
+}
+
+function currentBoundFiles(root) {
+  return boundFiles(root);
+}
+
+function stage13BoundFiles(root) {
+  return boundFiles(root, STAGE_13_ANCHOR.commit, { allowMissing: true });
+}
+
+function parseActionSnapshot(workflowBytes) {
+  const workflow = workflowBytes.toString("utf8");
+  const actions = {};
+  for (const match of workflow.matchAll(
+    /^[ \t]*(?:-[ \t]+)?uses:\s*([^\s#]+)(?:\s+#\s*([^\n]+))?$/gm
+  )) {
+    const specification = match[1];
+    if (specification.startsWith("./")) continue;
+    const parsed = specification.match(/^([^@]+)@([0-9a-f]{40})$/);
+    if (!parsed) {
+      fail(`Action is not pinned by full commit SHA: ${specification}`);
+    }
+    const name = parsed[1];
+    if (!(name in EXPECTED_ACTION_COUNTS)) {
+      fail(`Workflow contains an unreviewed external action: ${name}`);
+    }
+    const tag = (match[2] || "").trim();
+    if (!EXACT_ACTION_TAG.test(tag)) {
+      fail(`Action pin is missing an exact release comment: ${specification}`);
+    }
+    const existing = actions[name];
+    if (existing && (existing.commit !== parsed[2] || existing.tag !== tag)) {
+      fail(`Action uses multiple pins: ${name}`);
+    }
+    actions[name] = {
+      commit: parsed[2],
+      count: (existing?.count || 0) + 1,
+      tag,
+    };
+  }
+  if (!valuesEqual(Object.keys(actions).sort(), Object.keys(EXPECTED_ACTION_COUNTS).sort())) {
+    fail("Workflow action-name inventory changed");
+  }
+  for (const [name, count] of Object.entries(EXPECTED_ACTION_COUNTS)) {
+    if (actions[name].count !== count) {
+      fail(`Workflow action count changed for ${name}`);
+    }
+  }
+  return sorted(actions);
+}
+
+function actionSnapshot(root, reference = null) {
+  return parseActionSnapshot(
+    repositoryFileBytes(root, ".github/workflows/tests.yml", reference)
+  );
+}
+
+function readPackage(root, reference = null) {
+  return JSON.parse(
+    repositoryFileBytes(root, "package.json", reference).toString("utf8")
+  );
+}
+
+function packageSnapshot(root, reference = null) {
+  const packageJson = readPackage(root, reference);
+  if (!/^pnpm@[0-9]+\.[0-9]+\.[0-9]+$/.test(packageJson.packageManager)) {
+    fail("packageManager must pin one exact pnpm release");
+  }
+  for (const group of ["dependencies", "devDependencies"]) {
+    for (const [name, version] of Object.entries(packageJson[group] || {})) {
+      if (!EXACT_SEMVER.test(version)) {
+        fail(`${group}.${name} is not pinned exactly: ${version}`);
+      }
+    }
+  }
+  const node = repositoryFileBytes(root, ".nvmrc", reference)
+    .toString("utf8")
+    .trim()
+    .replace(/^v/, "");
+  const nodeTypes = packageJson.devDependencies?.["@types/node"];
+  if (
+    nodeTypes &&
+    Number(nodeTypes.split(".")[0]) !== Number(node.split(".")[0])
+  ) {
+    fail(`@types/node ${nodeTypes} does not match the Node ${node} runtime major`);
+  }
+  return sorted({
+    dependencies: packageJson.dependencies || {},
+    devDependencies: packageJson.devDependencies || {},
+    packageManager: packageJson.packageManager,
+  });
+}
+
+function currentForgeStdGitlink(root) {
+  const index = runGit(root, ["ls-files", "-s", "--", "lib/forge-std"])
+    .stdout.toString("utf8")
+    .trim();
+  const match = index.match(/^160000 ([0-9a-f]{40}) 0\tlib\/forge-std$/);
+  if (!match) fail("forge-std must be a mode-160000 gitlink");
+  const submoduleHead = runGit(root, [
+    "-C",
+    "lib/forge-std",
+    "rev-parse",
+    "HEAD",
+  ])
+    .stdout.toString("utf8")
+    .trim();
+  const submoduleStatus = runGit(root, [
+    "-C",
+    "lib/forge-std",
+    "status",
+    "--porcelain",
+  ])
+    .stdout.toString("utf8")
+    .trim();
+  if (submoduleHead !== match[1] || submoduleStatus) {
+    fail("forge-std checkout must exactly match its clean gitlink");
+  }
+  return match[1];
+}
+
+function toolchainSnapshot(root, reference = null) {
+  const node = repositoryFileBytes(root, ".nvmrc", reference)
+    .toString("utf8")
+    .trim()
+    .replace(/^v/, "");
+  if (!EXACT_SEMVER.test(node)) {
+    fail(".nvmrc must pin one exact Node release");
+  }
+  const foundry = repositoryFileBytes(root, "foundry.toml", reference).toString(
+    "utf8"
+  );
+  const setting = (name) =>
+    foundry.match(new RegExp(`^${name}\\s*=\\s*([^\\n]+)$`, "m"))?.[1].trim();
+  const solidity = setting("solc_version")?.replace(/^"|"$/g, "");
+  const evmVersion = setting("evm_version")?.replace(/^"|"$/g, "");
+  if (!solidity || !evmVersion) fail("Foundry compiler settings are incomplete");
+  const forgeStd =
+    reference === null
+      ? currentForgeStdGitlink(root)
+      : runGit(root, ["rev-parse", `${reference}:lib/forge-std`])
+          .stdout.toString("utf8")
+          .trim();
+  if (!/^[0-9a-f]{40}$/.test(forgeStd)) {
+    fail("forge-std must be pinned to one gitlink commit");
+  }
+  return sorted({
+    bytecodeHash: setting("bytecode_hash"),
+    cborMetadata: setting("cbor_metadata"),
+    evmVersion,
+    forgeStd,
+    node,
+    optimizer: setting("optimizer"),
+    optimizerRuns: setting("optimizer_runs"),
+    pnpm: packageSnapshot(root, reference).packageManager.slice("pnpm@".length),
+    solidity,
+    useLiteralContent: setting("use_literal_content"),
+    viaIR: setting("via_ir"),
+  });
+}
+
+function expectedChangedFiles(previousBoundFiles, nextBoundFiles) {
+  return MANAGED_FILES.filter(
+    (relativePath) =>
+      previousBoundFiles[relativePath] !== nextBoundFiles[relativePath]
+  );
+}
+
+function changedPathsBetween(root, baseCommit, targetCommit) {
+  return runGit(root, [
+    "diff",
+    "--no-renames",
+    "--name-only",
+    baseCommit,
+    targetCommit,
+  ])
+    .stdout.toString("utf8")
+    .split(/\r?\n/)
+    .filter(Boolean)
+    .sort();
+}
+
+function currentChangedPaths(root, baseCommit) {
+  const changed = new Set(
+    runGit(root, ["diff", "--no-renames", "--name-only", baseCommit])
+      .stdout.toString("utf8")
+      .split(/\r?\n/)
+      .filter(Boolean)
+  );
+  for (const relativePath of runGit(root, [
+    "ls-files",
+    "--others",
+    "--exclude-standard",
+  ])
+    .stdout.toString("utf8")
+    .split(/\r?\n/)
+    .filter(Boolean)) {
+    changed.add(relativePath);
+  }
+  return [...changed].sort();
+}
+
+function recordFilesAt(root, reference) {
+  return runGit(root, [
+    "ls-tree",
+    "-r",
+    "--name-only",
+    reference,
+    "--",
+    RECORD_DIRECTORY,
+  ])
+    .stdout.toString("utf8")
+    .split(/\r?\n/)
+    .filter((relativePath) => relativePath.startsWith(`${RECORD_DIRECTORY}/`))
+    .map((relativePath) => relativePath.slice(RECORD_DIRECTORY.length + 1))
+    .sort();
+}
+
+function maintenanceHistory(root, currentFilenames) {
+  const commits = [
+    STAGE_13_ANCHOR.commit,
+    ...runGit(root, [
+      "rev-list",
+      "--first-parent",
+      "--reverse",
+      `${STAGE_13_ANCHOR.commit}..HEAD`,
+    ])
+      .stdout.toString("utf8")
+      .split(/\r?\n/)
+      .filter(Boolean),
+  ];
+  const historicalFilenames = new Set();
+  for (const commit of commits) {
+    for (const filename of recordFilesAt(root, commit)) {
+      historicalFilenames.add(filename);
+    }
+  }
+  const missing = [...historicalFilenames]
+    .filter((filename) => !currentFilenames.includes(filename))
+    .sort();
+  if (missing.length > 0) {
+    fail(`Append-only maintenance records were removed: ${missing.join(", ")}`);
+  }
+
+  const introductions = new Map();
+  for (const filename of currentFilenames) {
+    const relativePath = `${RECORD_DIRECTORY}/${filename}`;
+    let previous = null;
+    let introduction = null;
+    for (const commit of commits) {
+      const current = checkpointBytes(root, commit, relativePath, true);
+      if (previous === null && current !== null) {
+        if (introduction !== null) {
+          fail(`Maintenance record was reintroduced: ${relativePath}`);
+        }
+        introduction = commit;
+      } else if (previous !== null && current === null) {
+        fail(`Maintenance record was deleted: ${relativePath}`);
+      } else if (
+        previous !== null &&
+        current !== null &&
+        !previous.equals(current)
+      ) {
+        fail(`Maintenance record was modified after introduction: ${relativePath}`);
+      }
+      previous = current;
+    }
+    introductions.set(filename, introduction);
+  }
+
+  const introductionCommits = new Set(
+    [...introductions.values()].filter((commit) => commit !== null)
+  );
+  for (const commit of commits.slice(1)) {
+    const firstParent = runGit(root, ["rev-parse", `${commit}^1`])
+      .stdout.toString("utf8")
+      .trim();
+    const scopedPaths = maintenanceScopedPaths(
+      changedPathsBetween(root, firstParent, commit)
+    );
+    if (scopedPaths.length > 0 && !introductionCommits.has(commit)) {
+      fail(
+        `Managed files changed without a maintenance record in ${commit}: ${scopedPaths.join(", ")}`
+      );
+    }
+  }
+  return introductions;
+}
+
+function maintenanceScopedPaths(paths) {
+  const managed = new Set(MANAGED_FILES);
+  return paths.filter(
+    (relativePath) =>
+      managed.has(relativePath) ||
+      relativePath.startsWith(`${RECORD_DIRECTORY}/`)
+  );
+}
+
+function validateRecordSchema(record, filename, sequence) {
+  exactKeys(
+    record,
+    [
+      "actions",
+      "baseCommit",
+      "boundFiles",
+      "category",
+      "changedFiles",
+      "id",
+      "packages",
+      "previous",
+      "productionImpact",
+      "schemaVersion",
+      "sequence",
+      "sourcePullRequests",
+      "summary",
+      "toolchain",
+      "transition",
+    ],
+    `Maintenance record ${filename}`
+  );
+  if (
+    record.schemaVersion !== 1 ||
+    record.sequence !== sequence ||
+    record.id !== filename.replace(/^[0-9]{4}-|\.json$/g, "") ||
+    !/^[0-9a-f]{40}$/.test(record.baseCommit) ||
+    !["bootstrap", "github-actions", "javascript"].includes(record.category) ||
+    record.transition?.kind !== record.category ||
+    typeof record.summary !== "string" ||
+    record.summary.trim().length < 12 ||
+    record.productionImpact !== "none" ||
+    !Array.isArray(record.sourcePullRequests) ||
+    record.sourcePullRequests.some(
+      (number) => !Number.isInteger(number) || number <= 0
+    ) ||
+    !valuesEqual(
+      record.sourcePullRequests,
+      [...new Set(record.sourcePullRequests)].sort((left, right) => left - right)
+    )
+  ) {
+    fail(`Maintenance record has an invalid schema: ${filename}`);
+  }
+  if (sequence === 1) {
+    if (
+      record.category !== "bootstrap" ||
+      record.baseCommit !== STAGE_13_ANCHOR.commit ||
+      record.sourcePullRequests.length !== 0
+    ) {
+      fail("Record 0001 must be the exact post-Stage-13 bootstrap");
+    }
+  } else if (
+    record.category === "bootstrap" ||
+    record.sourcePullRequests.length === 0
+  ) {
+    fail("Routine maintenance records require PR provenance and cannot bootstrap");
+  }
+  if (
+    !valuesEqual(
+      Object.keys(record.boundFiles).sort(),
+      [...MANAGED_FILES].sort()
+    ) ||
+    Object.values(record.boundFiles).some(
+      (digest) => typeof digest !== "string" || !/^[0-9a-f]{64}$/.test(digest)
+    )
+  ) {
+    fail(`Maintenance record has an invalid bound-file snapshot: ${filename}`);
+  }
+  if (
+    !Array.isArray(record.changedFiles) ||
+    record.changedFiles.length === 0 ||
+    !valuesEqual(record.changedFiles, [...new Set(record.changedFiles)].sort())
+  ) {
+    fail(`Maintenance record changed-file inventory is invalid: ${filename}`);
+  }
+}
+
+function validateBootstrapTransition(record) {
+  exactKeys(record.transition, ["kind"], "Bootstrap transition");
+  if (!valuesEqual(record.changedFiles, BOOTSTRAP_CHANGED_FILES)) {
+    fail("Bootstrap may change only the workflow and four maintenance support scripts");
+  }
+}
+
+function validateActionDescriptor(value, label) {
+  exactKeys(value, ["commit", "tag"], label);
+  if (!/^[0-9a-f]{40}$/.test(value.commit) || !EXACT_ACTION_TAG.test(value.tag)) {
+    fail(`${label} must contain an exact action commit and release`);
+  }
+}
+
+function validateGithubActionTransition(
+  record,
+  beforeWorkflow,
+  afterWorkflow,
+  beforeActions,
+  afterActions
+) {
+  exactKeys(
+    record.transition,
+    ["action", "from", "kind", "occurrences", "to"],
+    "GitHub Actions transition"
+  );
+  const transition = record.transition;
+  if (
+    !valuesEqual(record.changedFiles, [".github/workflows/tests.yml"]) ||
+    !(transition.action in EXPECTED_ACTION_COUNTS) ||
+    !Number.isInteger(transition.occurrences) ||
+    transition.occurrences <= 0
+  ) {
+    fail("GitHub Actions maintenance must update one existing action pin only");
+  }
+  validateActionDescriptor(transition.from, "GitHub Action source");
+  validateActionDescriptor(transition.to, "GitHub Action target");
+  if (valuesEqual(transition.from, transition.to)) {
+    fail("GitHub Action transition is a no-op");
+  }
+  const beforePin = beforeActions[transition.action];
+  const afterPin = afterActions[transition.action];
+  if (
+    !beforePin ||
+    !afterPin ||
+    beforePin.commit !== transition.from.commit ||
+    beforePin.tag !== transition.from.tag ||
+    afterPin.commit !== transition.to.commit ||
+    afterPin.tag !== transition.to.tag ||
+    beforePin.count !== transition.occurrences ||
+    afterPin.count !== transition.occurrences
+  ) {
+    fail("GitHub Action transition does not match the bound action snapshots");
+  }
+  const expectedActions = structuredClone(beforeActions);
+  expectedActions[transition.action] = afterPin;
+  if (!valuesEqual(expectedActions, afterActions)) {
+    fail("GitHub Actions maintenance changed more than one action pin");
+  }
+  const source = `${transition.action}@${transition.from.commit} # ${transition.from.tag}`;
+  const replacement = `${transition.action}@${transition.to.commit} # ${transition.to.tag}`;
+  const beforeText = beforeWorkflow.toString("utf8");
+  const actualOccurrences = beforeText.split(source).length - 1;
+  if (
+    actualOccurrences !== transition.occurrences ||
+    beforeText.split(source).join(replacement) !== afterWorkflow.toString("utf8")
+  ) {
+    fail("Workflow changed outside the exact reviewed action-pin replacement");
+  }
+}
+
+function validateJavascriptTransition(record, beforePackage, afterPackage) {
+  exactKeys(
+    record.transition,
+    ["devDependencies", "kind"],
+    "JavaScript transition"
+  );
+  const changes = record.transition.devDependencies;
+  if (
+    !valuesEqual(record.changedFiles, ["package.json", "pnpm-lock.yaml"]) ||
+    !Array.isArray(changes) ||
+    changes.length === 0
+  ) {
+    fail("JavaScript maintenance must update package.json and pnpm-lock.yaml");
+  }
+  const names = [];
+  const expectedPackage = structuredClone(beforePackage);
+  for (const change of changes) {
+    exactKeys(change, ["from", "name", "to"], "Development dependency transition");
+    if (
+      typeof change.name !== "string" ||
+      !EXACT_SEMVER.test(change.from) ||
+      !EXACT_SEMVER.test(change.to) ||
+      change.from === change.to ||
+      beforePackage.devDependencies?.[change.name] !== change.from ||
+      afterPackage.devDependencies?.[change.name] !== change.to
+    ) {
+      fail(`Invalid existing development dependency transition: ${change.name}`);
+    }
+    names.push(change.name);
+    expectedPackage.devDependencies[change.name] = change.to;
+  }
+  if (!valuesEqual(names, [...new Set(names)].sort())) {
+    fail("Development dependency transitions must be unique and sorted");
+  }
+  if (!valuesEqual(expectedPackage, afterPackage)) {
+    fail("package.json changed outside declared existing devDependencies");
+  }
+}
+
+function validateTransition(
+  root,
+  record,
+  baseCommit,
+  targetReference,
+  beforeActions,
+  afterActions,
+  beforePackages,
+  afterPackages,
+  beforeToolchain,
+  afterToolchain
+) {
+  if (record.category === "bootstrap") {
+    validateBootstrapTransition(record);
+    return;
+  }
+  if (!valuesEqual(beforeToolchain, afterToolchain)) {
+    fail("Routine dependency maintenance may not change the pinned toolchain");
+  }
+  if (record.category === "github-actions") {
+    if (!valuesEqual(beforePackages, afterPackages)) {
+      fail("GitHub Actions maintenance may not change JavaScript packages");
+    }
+    validateGithubActionTransition(
+      record,
+      repositoryFileBytes(root, ".github/workflows/tests.yml", baseCommit),
+      repositoryFileBytes(root, ".github/workflows/tests.yml", targetReference),
+      beforeActions,
+      afterActions
+    );
+    return;
+  }
+  if (!valuesEqual(beforeActions, afterActions)) {
+    fail("JavaScript maintenance may not change GitHub Actions");
+  }
+  validateJavascriptTransition(
+    record,
+    readPackage(root, baseCommit),
+    readPackage(root, targetReference)
+  );
+}
+
+function validateMaintenanceLedger({ root = path.resolve(__dirname, "..") } = {}) {
+  root = path.resolve(root);
+  const stage13 = validateStage13Anchor(root);
+  const directory = checkedPath(root, RECORD_DIRECTORY);
+  if (!fs.existsSync(directory) || !fs.lstatSync(directory).isDirectory()) {
+    fail("The append-only maintenance record directory is missing");
+  }
+  const entries = fs.readdirSync(directory, { withFileTypes: true });
+  if (entries.some((entry) => !entry.isFile() || entry.isSymbolicLink())) {
+    fail("Maintenance record directory may contain regular JSON files only");
+  }
+  const filenames = entries.map((entry) => entry.name).sort();
+  if (filenames.length === 0 || filenames.some((name) => !RECORD_NAME.test(name))) {
+    fail("Maintenance records must use zero-padded immutable JSON filenames");
+  }
+  const introductions = maintenanceHistory(root, filenames);
+
+  const records = [];
+  let previousBytes = null;
+  let previousBoundFiles = stage13BoundFiles(root);
+  let previousActions = actionSnapshot(root, STAGE_13_ANCHOR.commit);
+  let previousPackages = packageSnapshot(root, STAGE_13_ANCHOR.commit);
+  let previousToolchain = toolchainSnapshot(root, STAGE_13_ANCHOR.commit);
+
+  for (const [index, filename] of filenames.entries()) {
+    const sequence = index + 1;
+    const match = filename.match(RECORD_NAME);
+    if (Number(match[1]) !== sequence) {
+      fail(`Maintenance record sequence has a gap: ${filename}`);
+    }
+    const relativePath = `${RECORD_DIRECTORY}/${filename}`;
+    const bytes = currentFileBytes(root, relativePath);
+    const record = JSON.parse(bytes);
+    if (bytes.toString("utf8") !== stableJson(record)) {
+      fail(`Maintenance record is not canonical JSON: ${filename}`);
+    }
+    validateRecordSchema(record, filename, sequence);
+
+    const expectedPrevious =
+      sequence === 1
+        ? { file: null, kind: "stage13", sha256: stage13AnchorSha256() }
+        : {
+            file: filenames[index - 1],
+            kind: "maintenance",
+            sha256: sha256(previousBytes),
+          };
+    if (!valuesEqual(record.previous, expectedPrevious)) {
+      fail(`Maintenance record predecessor changed: ${filename}`);
+    }
+
+    runGit(root, ["merge-base", "--is-ancestor", record.baseCommit, "HEAD"]);
+    if (
+      sequence > 1 &&
+      maintenanceScopedPaths(
+        changedPathsBetween(
+          root,
+          records[index - 1].introduction,
+          record.baseCommit
+        )
+      ).length !== 0
+    ) {
+      fail(`Maintenance base contains unrecorded managed changes: ${filename}`);
+    }
+    if (!valuesEqual(recordFilesAt(root, record.baseCommit), filenames.slice(0, index))) {
+      fail(`Maintenance base has an invalid record history: ${filename}`);
+    }
+    if (!valuesEqual(boundFiles(root, record.baseCommit, { allowMissing: true }), previousBoundFiles)) {
+      fail(`Maintenance base does not match its predecessor snapshot: ${filename}`);
+    }
+    if (
+      !valuesEqual(actionSnapshot(root, record.baseCommit), previousActions) ||
+      !valuesEqual(packageSnapshot(root, record.baseCommit), previousPackages) ||
+      !valuesEqual(toolchainSnapshot(root, record.baseCommit), previousToolchain)
+    ) {
+      fail(`Maintenance base toolchain does not match its predecessor: ${filename}`);
+    }
+
+    const introduction = introductions.get(filename);
+    if (introduction !== null) {
+      const introducedBytes = checkpointBytes(root, introduction, relativePath);
+      if (!introducedBytes.equals(bytes)) {
+        fail(`Maintenance record history is not append-only: ${relativePath}`);
+      }
+      runGit(root, [
+        "merge-base",
+        "--is-ancestor",
+        record.baseCommit,
+        introduction,
+      ]);
+      const firstParent = runGit(root, ["rev-parse", `${introduction}^1`])
+        .stdout.toString("utf8")
+        .trim();
+      if (record.baseCommit !== firstParent) {
+        fail(`Maintenance record must be based on its introduction's first parent: ${filename}`);
+      }
+    } else {
+      const head = runGit(root, ["rev-parse", "HEAD"])
+        .stdout.toString("utf8")
+        .trim();
+      if (index !== filenames.length - 1 || record.baseCommit !== head) {
+        fail(`Only one latest local record may be uncommitted: ${filename}`);
+      }
+    }
+    const targetReference = introduction;
+    const targetBoundFiles = boundFiles(root, targetReference);
+    const targetActions = actionSnapshot(root, targetReference);
+    const targetPackages = packageSnapshot(root, targetReference);
+    const targetToolchain = toolchainSnapshot(root, targetReference);
+    if (
+      !valuesEqual(record.boundFiles, targetBoundFiles) ||
+      !valuesEqual(record.actions, targetActions) ||
+      !valuesEqual(record.packages, targetPackages) ||
+      !valuesEqual(record.toolchain, targetToolchain)
+    ) {
+      fail(`Maintenance record does not bind its introduction tree: ${filename}`);
+    }
+    const changedFiles = expectedChangedFiles(previousBoundFiles, targetBoundFiles);
+    if (!valuesEqual(record.changedFiles, changedFiles)) {
+      fail(`Maintenance record changed-file inventory is stale: ${filename}`);
+    }
+    const actualPaths =
+      targetReference === null
+        ? currentChangedPaths(root, record.baseCommit)
+        : changedPathsBetween(root, record.baseCommit, targetReference);
+    const expectedPaths = [...record.changedFiles, relativePath].sort();
+    if (!valuesEqual(actualPaths, expectedPaths)) {
+      fail(`Maintenance repository delta is not exact: ${filename}`);
+    }
+    validateTransition(
+      root,
+      record,
+      record.baseCommit,
+      targetReference,
+      previousActions,
+      targetActions,
+      previousPackages,
+      targetPackages,
+      previousToolchain,
+      targetToolchain
+    );
+
+    records.push({
+      ...record,
+      filename,
+      introduction,
+      sha256: sha256(bytes),
+    });
+    previousBytes = bytes;
+    previousBoundFiles = targetBoundFiles;
+    previousActions = targetActions;
+    previousPackages = targetPackages;
+    previousToolchain = targetToolchain;
+  }
+
+  const latest = records.at(-1);
+  if (
+    !valuesEqual(currentBoundFiles(root), latest.boundFiles) ||
+    !valuesEqual(actionSnapshot(root), latest.actions) ||
+    !valuesEqual(packageSnapshot(root), latest.packages) ||
+    !valuesEqual(toolchainSnapshot(root), latest.toolchain)
+  ) {
+    fail("Current managed files do not match the latest maintenance record");
+  }
+  if (latest.introduction !== null) {
+    const unrecorded = maintenanceScopedPaths(
+      currentChangedPaths(root, latest.introduction)
+    );
+    if (unrecorded.length !== 0) {
+      fail(`Managed files changed after the latest maintenance record: ${unrecorded.join(", ")}`);
+    }
+  }
+  return sorted({ latest, records, stage13 });
+}
+
+module.exports = Object.freeze({
+  BOOTSTRAP_CHANGED_FILES,
+  MANAGED_FILES,
+  STAGE_13_ANCHOR,
+  actionSnapshot,
+  currentBoundFiles,
+  packageSnapshot,
+  sha256,
+  stableJson,
+  stage13AnchorSha256,
+  toolchainSnapshot,
+  validateGithubActionTransition,
+  validateJavascriptTransition,
+  validateMaintenanceLedger,
+});
+
+if (require.main === module) {
+  const result = validateMaintenanceLedger();
+  console.log(
+    `Maintenance policy passed: ${result.records.length} append-only record(s), latest ${result.latest.filename}.`
+  );
+}
