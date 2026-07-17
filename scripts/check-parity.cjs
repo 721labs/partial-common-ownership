@@ -48,7 +48,7 @@ const STAGE_12B_INVENTORY_PATH = path.join(
   "stage-12b-hardhat3-inventory.json"
 );
 const STAGE_12B_INVENTORY_SHA256 =
-  "c1772719ce446dc577a491f0683fdbdf5b39ab91f011344b0ee34ab90ad55a19";
+  "ce37ec6e86d25aa8bb947a5b62f1885ff7c6541fda0ca2c2560e034b5c682e9e";
 const STAGE_12B_CANDIDATE = "stage-12b-hardhat-3";
 const STAGE_12B_BASE_COMMIT = "9a86ff5d001a4d3a06823712d0e70ad011987ecd";
 const STAGE_12A_CANDIDATE = "stage-12a-ethers-6";

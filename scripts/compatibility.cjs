@@ -992,7 +992,7 @@ const STAGE_12B_STAGE_12A_REVIEW_SHA256 =
 const STAGE_12B_INVENTORY_PATH =
   "compatibility/stage-12b-hardhat3-inventory.json";
 const STAGE_12B_INVENTORY_SHA256 =
-  "c1772719ce446dc577a491f0683fdbdf5b39ab91f011344b0ee34ab90ad55a19";
+  "ce37ec6e86d25aa8bb947a5b62f1885ff7c6541fda0ca2c2560e034b5c682e9e";
 const STAGE_12B_HARDHAT_VERSION = "3.9.1";
 const STAGE_12B_HARDHAT_ETHERS_VERSION = "4.0.14";
 const STAGE_12B_REMAPPING =
@@ -1330,7 +1330,9 @@ function validateExactChangedPaths(actual, expected, label) {
 
 function repositoryChangedPaths(baseCommit) {
   const changed = new Set(
-    run("git", ["diff", "--name-only", baseCommit])
+    // Keep the evidence stable before and after commit: renamed paths must be
+    // represented by both the deleted source and added destination.
+    run("git", ["diff", "--no-renames", "--name-only", baseCommit])
       .stdout.split(/\r?\n/)
       .filter(Boolean)
   );

@@ -112,7 +112,7 @@
     "test-package"
   ],
   "boundFiles": {
-    ".github/workflows/tests.yml": "fe2015b6f812d5ffa224c2a957c1ee448ffabfa2b457c3c725497655fe37daf4",
+    ".github/workflows/tests.yml": "c0540a355281fe7531a5fbd150f880814e4ecae862412252beb1986ecd0cf7ae",
     ".gitignore": "ed7875806319cbc511ca44c3b685e793346c6d6085559e7554817622c6f1cfc2",
     "README.md": "d73a1678a21b8cdaa97d0d2c7a7e0faf1f03e0d2d9d233e9e9b50d1f7144bd3c",
     "compatibility/audit-ratchet.json": "fc4fa90ddd1e9976339866df8497a5f4f697c79e4e28e66fe1d8f44e63845ffc",
