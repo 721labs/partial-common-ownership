@@ -4242,6 +4242,11 @@ function stage12bToolIdentityEvidence() {
     STAGE_08_COMPILER_VERSION,
     `solc-${STAGE_08_COMPILER_VERSION}`
   );
+  // A fresh Foundry install has no solc binary until Forge performs a build.
+  // Force that pinned download once before proving the platform-specific hash.
+  if (!fs.existsSync(solcPath)) {
+    run(FORGE_BIN, ["build", "--force", "--quiet"]);
+  }
   if (
     sha256(fs.readFileSync(forgePath)) !== expectedForgeHash ||
     sha256(fs.readFileSync(solcPath)) !== expectedSolcHash

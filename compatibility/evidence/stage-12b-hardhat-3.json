@@ -511,7 +511,7 @@
         "sha256": "7a81410a18e677c44cf92d111e9899c9a600eb7f512dd84b66c04a1bb805d6e0"
       }
     },
-    "compatibilityRunnerSha256": "a11d95295c3ae4b17c3189f1f7dc8633e562fa6ce6001fe268b2f1619974872f",
+    "compatibilityRunnerSha256": "566aa520a9efd86ad54cc03fc5f032f5feb56265f965af9feb16bce82d185e01",
     "compilerSources": {
       "logical": {
         "closureSha256": "38d2428df3ed7472afb28ad76273ea14ed05c89bbfcc165a9540378b9ca317df",
