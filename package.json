@@ -62,7 +62,7 @@
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-ethers": "4.0.14",
-    "@types/node": "24.13.3",
+    "@types/node": "26.1.1",
     "ethers": "6.17.0",
     "hardhat": "3.9.1",
     "tsx": "4.23.1",
