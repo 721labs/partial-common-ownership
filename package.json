@@ -37,7 +37,7 @@
     "compiler-warnings:forge": "node scripts/check-compiler-warnings.js forge",
     "compiler-warnings:check": "pnpm run compiler-warnings:hardhat && pnpm run compiler-warnings:forge",
     "test:hardhat": "pnpm run test:hardhat:smoke",
-    "test:hardhat:smoke": "hardhat typechain && hardhat --network hardhat test tests/Interoperability.smoke.ts",
+    "test:hardhat:smoke": "hardhat --network hardhat test tests/Interoperability.smoke.ts",
     "test:forge": "node scripts/check-parity.js",
     "test:safety": "cross-env FOUNDRY_PROFILE=ci node scripts/check-parity.js",
     "test:safety:scheduled": "cross-env FOUNDRY_PROFILE=scheduled node scripts/check-parity.js",
@@ -57,13 +57,13 @@
     "gas:check": "node scripts/check-gas.js",
     "safety-baselines:check": "node scripts/check-safety-baselines.js",
     "size:check": "node scripts/check-contract-sizes.js",
-    "slither": "node scripts/run-slither.js",
-    "typechain": "hardhat typechain"
+    "slither": "node scripts/run-slither.js"
   },
   "devDependencies": {
     "@ethersproject/abi": "5.6.0",
     "@ethersproject/contracts": "5.6.0",
     "@ethersproject/providers": "5.6.2",
+    "@nomicfoundation/hardhat-ethers": "3.1.3",
     "@nomiclabs/hardhat-ethers": "2.0.5",
     "@nomiclabs/hardhat-waffle": "2.0.3",
     "@nomiclabs/hardhat-web3": "2.0.0",
@@ -78,7 +78,7 @@
     "cross-env": "7.0.3",
     "dotenv": "10.0.0",
     "ethereum-waffle": "3.4.4",
-    "ethers": "5.6.2",
+    "ethers": "6.17.0",
     "hardhat": "2.28.6",
     "hardhat-gas-reporter": "1.0.8",
     "js-yaml": "4.1.0",

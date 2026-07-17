@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "candidate": "stage-12a-ethers-6",
+  "stage11Checkpoint": "c84870955d77e82e91ed70591f010233675a6880",
+  "inheritedStage11": {
+    "inventoryPath": "compatibility/stage-11-hardhat-smoke-inventory.json",
+    "inventorySha256": "abea926d3e3cf7928a7693565aa01c2e59c22e442ce97c4a0271c7be46095cf4",
+    "hardhatNamesSha256": "e82ce4a1063d5334c8a0962747e9bb0797c9e5e82ef6e40dc1905452fb78714f",
+    "smokeSourceSha256": "7fe9df8fca7273886e8eb8cbe96cd8053a9d4061c4034cb46a34831b59ae065a"
+  },
+  "activeHardhat": {
+    "count": 3,
+    "names": [
+      "Hardhat interoperability smokes acquires, collects tax, and exits with ordered events and conserved balances",
+      "Hardhat interoperability smokes approves, wraps, takes over, and unwraps with custody and metadata cleanup",
+      "Hardhat interoperability smokes deploys and reads deterministic PCO configuration"
+    ],
+    "sourcePath": "tests/Interoperability.smoke.ts",
+    "sourceSha256": "2cfc8c3fe6599499433874440ed885b19f6ec39e6510eae0c881b19c5aed3350"
+  },
+  "forge": {
+    "count": 140,
+    "namesSha256": "09b141a8c69c4522288cfdbf67373661052764ab019c865ea850dc5eb645f173"
+  },
+  "tooling": {
+    "hardhat": "2.28.6",
+    "ethers": "6.17.0",
+    "hardhatEthers": "3.1.3",
+    "files": {
+      "hardhat.config.d.ts": "279ba3be547bf4369a358eafee9bf89d2f6733813010c588f70164512a8158a4",
+      "hardhat.config.ts": "a1fe8c8ee149838e99cd8a93a249a50a1655777589c1341ce6c2e93c8fe1e2ab",
+      "package.json": "fa57c6f6ac2429bcd3b4dcf5c3d8c3121d926999f902baea190488aff854d7a7",
+      "pnpm-lock.yaml": "7ee226b9a5f69123376f1f7429dd7e34b5262c3673a776d1c6cc4ee7ff9e46b4",
+      "tsconfig.json": "79498bc723d15551590dfcc9ce33d2e69f1023895b24d4d680be6c67e97cd488"
+    }
+  },
+  "parity": {
+    "mappedBehaviorCount": 104,
+    "safetyCount": 36,
+    "files": {
+      "compatibility/parity-map.json": "72f66deac5693d553a681afa755856cc87f2d52d4b109938862ba731da9443b4",
+      "compatibility/parity/cohort-0-existing-forge.json": "3384ae9039fad21bb7800d61f181bd4ca6b68a8e1e8525815c3cc8ecd434df69",
+      "compatibility/parity/cohort-1-pco-read-tax.json": "632c07354ab5f4e0d71290e2631da59bacad8cc3c0bc1d22cc129674098891fc",
+      "compatibility/parity/cohort-2-pco-mutations.json": "47b93d5ecd3734b09533c8af0c514274ad4ff3c90185a6724364060bf5eef5c1",
+      "compatibility/parity/cohort-3-wrapper.json": "4932bd7dd4da1cf55b2723e98cbe865737c9e735528ad70f05f8de85c2baecca",
+      "compatibility/safety-test-inventory.json": "52f7c77b9ebec5093ad484f6695e46194b3ed0b9e737943946843e4f19c4d83a"
+    }
+  }
+}

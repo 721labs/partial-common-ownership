@@ -46,6 +46,13 @@ configuration; acquire, collect tax, and exit while decoding events; and
 approve, wrap, takeover, and unwrap while verifying custody. It is an
 interoperability signal, not a second behavior oracle.
 
+The smokes use exactly ethers 6.17.0 through
+`@nomicfoundation/hardhat-ethers` 3.1.3 while Hardhat remains pinned to 2.28.6.
+The installed ethers 5 Waffle, NomicLabs ethers, and TypeChain packages are
+dormant in this bridge stage: none is loaded or invoked. They are retained only
+so their removal stays isolated in the subsequent Hardhat 3 tooling PR. The
+unrelated Web3 plugin remains active until that same cleanup.
+
 The Forge command enforces the checked-in 104-entry parity map. The 89 legacy
 Hardhat behavior scenarios and 15 original Forge scenarios each map to one
 unique, successful Forge regression. The 89 TypeScript behavior tests were

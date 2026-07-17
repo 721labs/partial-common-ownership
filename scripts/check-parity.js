@@ -19,6 +19,21 @@ const STAGE_11_INVENTORY_PATH = path.join(
   "compatibility",
   "stage-11-hardhat-smoke-inventory.json"
 );
+const STAGE_12A_INVENTORY_PATH = path.join(
+  ROOT,
+  "compatibility",
+  "stage-12a-ethers6-inventory.json"
+);
+const STAGE_12A_CANDIDATE = "stage-12a-ethers-6";
+const STAGE_12A_BASE_COMMIT = "c84870955d77e82e91ed70591f010233675a6880";
+const STAGE_12A_INVENTORY_SHA256 =
+  "f9f3e23ccd84236ffca10d2eb79b3c0f737e83efd0692f8a57ea3a0ac98f0cc2";
+const STAGE_11_INVENTORY_SHA256 =
+  "abea926d3e3cf7928a7693565aa01c2e59c22e442ce97c4a0271c7be46095cf4";
+const STAGE_11_SMOKE_NAMES_SHA256 =
+  "e82ce4a1063d5334c8a0962747e9bb0797c9e5e82ef6e40dc1905452fb78714f";
+const STAGE_11_SMOKE_SOURCE_SHA256 =
+  "7fe9df8fca7273886e8eb8cbe96cd8053a9d4061c4034cb46a34831b59ae065a";
 const STAGE_11_CANDIDATE = "stage-11-foundry-first-cutover";
 const STAGE_11_BASE_COMMIT = "14720718787046af58be50c110be40c18f5b1364";
 const STAGE_11_HARDHAT_NAMES_SHA256 =
@@ -62,12 +77,18 @@ function stableJson(value) {
   return `${JSON.stringify(value, null, 2)}\n`;
 }
 
+function valuesEqual(left, right) {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
+
 function stage11Inventory(baseline) {
   if (!fs.existsSync(STAGE_11_INVENTORY_PATH)) {
     fail("Missing checked-in Stage 11 Hardhat smoke inventory");
   }
   const inventory = readJson(STAGE_11_INVENTORY_PATH);
   if (
+    sha256(fs.readFileSync(STAGE_11_INVENTORY_PATH)) !==
+      STAGE_11_INVENTORY_SHA256 ||
     inventory.schemaVersion !== 1 ||
     inventory.candidate !== STAGE_11_CANDIDATE ||
     inventory.stage10Checkpoint !== STAGE_11_BASE_COMMIT ||
@@ -78,6 +99,9 @@ function stage11Inventory(baseline) {
     !Array.isArray(inventory.activeHardhat?.names) ||
     inventory.activeHardhat.names.length !== 3 ||
     inventory.activeHardhat.sourcePath !== "tests/Interoperability.smoke.ts" ||
+    inventory.activeHardhat.sourceSha256 !== STAGE_11_SMOKE_SOURCE_SHA256 ||
+    sha256(stableJson(inventory.activeHardhat.names)) !==
+      STAGE_11_SMOKE_NAMES_SHA256 ||
     inventory.forge?.count !== 140 ||
     inventory.forge?.namesSha256 !== STAGE_11_FORGE_NAMES_SHA256 ||
     inventory.parity?.mappedBehaviorCount !== 104 ||
@@ -97,18 +121,6 @@ function stage11Inventory(baseline) {
     fail(
       "Stage 11 Hardhat smoke names must be exactly three unique sorted IDs"
     );
-  }
-  const smokePath = resolveUnder(
-    inventory.activeHardhat.sourcePath,
-    "tests",
-    "Stage 11 Hardhat smoke source"
-  );
-  if (!fs.existsSync(smokePath))
-    fail("Stage 11 Hardhat smoke source is missing");
-  if (
-    sha256(fs.readFileSync(smokePath)) !== inventory.activeHardhat.sourceSha256
-  ) {
-    fail("Stage 11 Hardhat smoke source digest changed");
   }
   if (
     baseline.tests.hardhat.count !== 89 ||
@@ -135,6 +147,74 @@ function stage11Inventory(baseline) {
       sha256(fs.readFileSync(path.join(ROOT, relativePath))) !== expectedSha256
     ) {
       fail(`Frozen parity/safety provenance changed: ${relativePath}`);
+    }
+  }
+  return inventory;
+}
+
+function stage12aInventory(stage11) {
+  if (!fs.existsSync(STAGE_12A_INVENTORY_PATH)) {
+    fail("Missing checked-in Stage 12a ethers 6 smoke/tooling inventory");
+  }
+  const bytes = fs.readFileSync(STAGE_12A_INVENTORY_PATH);
+  const inventory = JSON.parse(bytes);
+  if (
+    sha256(bytes) !== STAGE_12A_INVENTORY_SHA256 ||
+    inventory.schemaVersion !== 1 ||
+    inventory.candidate !== STAGE_12A_CANDIDATE ||
+    inventory.stage11Checkpoint !== STAGE_12A_BASE_COMMIT ||
+    inventory.inheritedStage11?.inventoryPath !==
+      "compatibility/stage-11-hardhat-smoke-inventory.json" ||
+    inventory.inheritedStage11?.inventorySha256 !== STAGE_11_INVENTORY_SHA256 ||
+    inventory.inheritedStage11?.hardhatNamesSha256 !==
+      STAGE_11_SMOKE_NAMES_SHA256 ||
+    inventory.inheritedStage11?.smokeSourceSha256 !==
+      STAGE_11_SMOKE_SOURCE_SHA256 ||
+    inventory.activeHardhat?.count !== 3 ||
+    !valuesEqual(inventory.activeHardhat?.names, stage11.activeHardhat.names) ||
+    inventory.activeHardhat.sourcePath !== "tests/Interoperability.smoke.ts" ||
+    inventory.forge?.count !== 140 ||
+    inventory.forge?.namesSha256 !== STAGE_11_FORGE_NAMES_SHA256 ||
+    inventory.tooling?.hardhat !== "2.28.6" ||
+    inventory.tooling?.ethers !== "6.17.0" ||
+    inventory.tooling?.hardhatEthers !== "3.1.3" ||
+    inventory.parity?.mappedBehaviorCount !== 104 ||
+    inventory.parity?.safetyCount !== 36 ||
+    JSON.stringify(inventory.parity?.files) !==
+      JSON.stringify(STAGE_11_PARITY_FILES)
+  ) {
+    fail("Stage 12a ethers 6 smoke/tooling inventory has an invalid schema");
+  }
+  const smokePath = resolveUnder(
+    inventory.activeHardhat.sourcePath,
+    "tests",
+    "Stage 12a Hardhat smoke source"
+  );
+  if (
+    !fs.existsSync(smokePath) ||
+    sha256(fs.readFileSync(smokePath)) !== inventory.activeHardhat.sourceSha256
+  ) {
+    fail("Stage 12a Hardhat smoke source digest changed");
+  }
+  const expectedToolingFiles = [
+    "hardhat.config.d.ts",
+    "hardhat.config.ts",
+    "package.json",
+    "pnpm-lock.yaml",
+    "tsconfig.json",
+  ];
+  if (
+    JSON.stringify(Object.keys(inventory.tooling.files).sort()) !==
+    JSON.stringify(expectedToolingFiles)
+  ) {
+    fail("Stage 12a tooling inventory paths changed");
+  }
+  for (const relativePath of expectedToolingFiles) {
+    if (
+      sha256(fs.readFileSync(path.join(ROOT, relativePath))) !==
+      inventory.tooling.files[relativePath]
+    ) {
+      fail(`Stage 12a tooling source digest changed: ${relativePath}`);
     }
   }
   return inventory;
@@ -303,6 +383,7 @@ function main() {
   const map = readJson(MAP_PATH);
   const baseline = readJson(BASELINE_PATH);
   const stage11 = stage11Inventory(baseline);
+  const stage12a = stage12aInventory(stage11);
   if (map.schemaVersion !== 1) fail("Unsupported parity-map schema");
   if (!Array.isArray(map.fragments) || map.fragments.length === 0) {
     fail("Parity map must list its cohort fragments");
@@ -479,11 +560,11 @@ function main() {
     executedForgeTests
   );
   if (
-    discoveredForgeTests.length !== stage11.forge.count ||
+    discoveredForgeTests.length !== stage12a.forge.count ||
     sha256(stableJson([...discoveredForgeTests].sort())) !==
-      stage11.forge.namesSha256 ||
+      stage12a.forge.namesSha256 ||
     sha256(stableJson([...executedForgeTests].sort())) !==
-      stage11.forge.namesSha256
+      stage12a.forge.namesSha256
   ) {
     fail("Stage 11 active 140-Forge inventory digest changed");
   }
