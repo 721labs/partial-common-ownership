@@ -6,12 +6,33 @@ Development is pinned to Node 24.18.0 and pnpm 11.13.1. The Node version is a
 repository development requirement, not a consumer-facing package engine
 restriction.
 
+Start from a recursive checkout so the exact forge-std v1.16.2 gitlink is
+present:
+
+```console
+$ git clone --recurse-submodules git@github.com:721labs/partial-common-ownership.git
+$ cd partial-common-ownership
+$ git submodule update --init --recursive
+```
+
 The bootstrap script installs the version in `.nvmrc`, activates the exact pnpm
 release through Corepack, performs a frozen dependency install, and installs
-Foundry 1.7.1:
+Foundry 1.7.1 from its platform-specific official release archive. It stops on
+the first failed command and verifies both the pinned forge-std commit and the
+hard-coded Foundry archive SHA-256 before installing those tools:
 
 ```console
 $ ./scripts/install.sh
+```
+
+The script cannot change its parent shell. Activate the pinned Node version and
+the newly installed Foundry binaries before running the commands below in the
+same terminal session:
+
+```console
+$ source "$HOME/.nvm/nvm.sh"
+$ nvm use 24.18.0
+$ export PATH="$HOME/.foundry/bin:$PATH"
 ```
 
 For an existing checkout, the equivalent dependency commands are:
@@ -22,6 +43,24 @@ $ corepack enable pnpm
 $ corepack install --global pnpm@11.13.1
 $ pnpm install --frozen-lockfile
 ```
+
+Verify every development runtime explicitly with:
+
+```console
+$ test "$(node --version)" = "v24.18.0"
+$ test "$(pnpm --version)" = "11.13.1"
+$ forge --version | grep -Fqx "forge Version: 1.7.1"
+$ forge --version | grep -Fqx "Commit SHA: 4072e48705af9d93e3c0f6e29e93b5e9a40caed8"
+$ test "$(git -C lib/forge-std rev-parse HEAD)" = "bf647bd6046f2f7da30d0c2bf435e5c76a780c1b"
+$ test -z "$(git -C lib/forge-std status --porcelain --untracked-files=all)"
+$ forge config --json | grep -Fqx '  "solc": "0.8.36",'
+$ slither --version | grep -Fxq '0.11.5'
+```
+
+To reproduce a clean install without deleting the working tree, clone into a
+temporary directory with recursive submodules and run the frozen install plus
+the commands below. Never regenerate a compatibility, gas, coverage, or warning
+baseline merely because a clean candidate differs.
 
 ## Behavior tests and compatibility
 
@@ -60,10 +99,15 @@ retired only after 104/104 Forge parity, the fuzz and invariant gates, and a
 final green dual run; the map remains the machine-readable record of their
 replacement coverage.
 
-CI preserves the same division: the Forge job runs the complete fixed-seed
-safety profile, while the Hardhat job compiles and runs only the three
-interoperability smokes. The immutable public-compatibility and packed-consumer
-gates run separately:
+CI preserves the same division with independent required jobs for Forge tests,
+Hardhat integration, the compatibility manifest, coverage, gas, package
+consumers, Forge formatting/linting, Slither, and dependency audit. Every job
+starts from an immutable frozen pnpm install; jobs that replay a historical
+compatibility checkpoint fetch the complete read-only Git history. The weekly
+scheduled Foundry profile remains a separate 45-minute job and always uploads
+its seed, log, and minimized failure corpus.
+
+Run the public-compatibility and packed-consumer gates locally with:
 
 ```console
 $ pnpm parity:check
@@ -120,11 +164,24 @@ The remaining Foundry safety gates are:
 ```console
 $ pnpm test:safety
 $ pnpm fmt:forge
+$ pnpm lint:forge
+$ pnpm ci:policy
 $ pnpm safety-baselines:check
 $ pnpm coverage:forge
 $ pnpm gas:check
 $ pnpm size:check
 ```
+
+`fmt:forge` intentionally checks the fuzz and invariant suites. Formatting the
+historical production and parity sources would change compatibility-bound
+source and compiler-metadata bytes, so widening that scope requires its own
+reviewed compatibility change. `lint:forge` covers all contracts and tests and
+requires exact equality with the reviewed high, medium, and low diagnostic
+inventory; Forge returning exit status zero is not treated as sufficient.
+`ci:policy` verifies the exact required-job inventory, pinned runners and
+timeouts, read-only workflow permissions, full-SHA Action pins, checkout
+credential isolation, frozen tool installs, weekly Dependabot ecosystems, and
+the forge-std `v1` update fence.
 
 Coverage cannot regress from the checked-in LCOV baseline. New production
 files must reach at least 90% line/function and 80% branch coverage. Key-flow
@@ -164,6 +221,72 @@ transfer paths. It also reports the deliberately deferred `send`/`transfer`
 deprecations, compiler mutability suggestions, a test-only unchecked call, and
 expected oversized test harnesses. These warnings are reviewed by the exact
 complete allowlist above; they must not be ignored globally.
+
+## Dependency security and maintenance
+
+The final audit policy is absolute: critical and high findings must both remain
+zero. The runner rejects malformed audit output and any attempt to weaken the
+checked-in policy before evaluating the registry result:
+
+```console
+$ pnpm audit:ratchet
+```
+
+Dependabot checks npm-compatible dependencies, GitHub Actions, and the
+forge-std git submodule every Monday. Minor and patch updates are grouped by
+ecosystem; major upgrades are never included in those groups and must be
+reviewed in isolated pull requests. GitHub Actions remain pinned to complete
+40-character commit SHAs, and forge-std updates are fenced to its `v1` branch.
+
+The repository intentionally uses pnpm 11.13.1. GitHub's current Dependabot
+[options reference](https://docs.github.com/en/code-security/reference/supply-chain-security/dependabot-options-reference)
+documents pnpm support only through v10, and
+[pnpm 11 support remains open upstream](https://github.com/dependabot/dependabot-core/issues/14794).
+Do not downgrade the development runtime to make Dependabot accept the lockfile.
+Confirm the first run in Repository Insights and keep the independent exact-pnpm
+audit job required. Until GitHub adds pnpm 11 support, the weekly scheduled job
+also uploads an exact dependency inventory alongside its seed and safety logs.
+That inventory contains `pnpm outdated --format json`, every pinned Action's
+latest stable same-major and overall tags, and the forge-std `v1` branch head,
+so suppressed major discovery cannot silently disappear.
+
+Dependabot documents unmatched majors as individual updates, but an
+[open grouping issue](https://github.com/dependabot/dependabot-core/issues/14202)
+can suppress major discovery for minor/patch groups. Reproduce the scheduled
+inventory locally as needed and open each reported major as a separate upgrade:
+
+```console
+$ pnpm outdated --format json
+$ pnpm --silent maintenance:inventory
+```
+
+That command exits with status 1 when updates exist; its JSON is still the
+expected inventory in that case.
+
+## Full local release gate
+
+From a clean recursive checkout, run:
+
+```console
+$ pnpm install --frozen-lockfile
+$ pnpm typecheck
+$ pnpm compiler-warnings:check
+$ pnpm test
+$ pnpm compatibility
+$ pnpm test:safety
+$ pnpm coverage:forge
+$ pnpm gas:check
+$ pnpm size:check
+$ pnpm fmt:forge
+$ pnpm lint:forge
+$ pnpm ci:policy
+$ pnpm test:package
+$ pnpm slither
+$ pnpm audit:ratchet
+```
+
+No publication, deployment, tag, optimizer change, EVM-target change, or
+compatibility-baseline regeneration is part of this maintenance workflow.
 
 ## Modules
 

@@ -1028,6 +1028,42 @@ const STAGE_12B_CHECKPOINT_BINDING = Object.freeze({
     sha256: STAGE_12B_STAGE_12A_REVIEW_SHA256,
   }),
 });
+const STAGE_13_CANDIDATE = "stage-13-ci-security-maintenance";
+const STAGE_13_POLICY = "stage-13-stage-12b-exact-equality";
+const STAGE_13_EVIDENCE_PATH =
+  "compatibility/evidence/stage-13-ci-security-maintenance.json";
+const STAGE_13_BASE_COMMIT = "bfdbcfaf84bd681c823487d1267139353df7ec37";
+const STAGE_13_STAGE_12B_EVIDENCE_SHA256 =
+  "d5e4e569dd9698e5dad1326b29461b0fe01d25c13bc8ad72075e5a084bd0e998";
+const STAGE_13_STAGE_12B_REVIEW_SHA256 =
+  "0429ef8df0361120e485ac8f0ade6f6b4892e3a162287ec61bb8dc69de4b9402";
+const STAGE_13_STAGE_12B_INVENTORY_SHA256 =
+  "ce37ec6e86d25aa8bb947a5b62f1885ff7c6541fda0ca2c2560e034b5c682e9e";
+const STAGE_13_STAGE_12B_RUNNER_SHA256 =
+  "f8c1a26d90ec696c2b7d317813210dc903cd831d8e978e1861135a1dbfdddab9";
+const STAGE_13_INVENTORY_PATH =
+  "compatibility/stage-13-ci-maintenance-inventory.json";
+const STAGE_13_INVENTORY_SHA256 =
+  "1ddf58ff2c58832c82c903b71180add027a18598633f9e39d81e5dffb5f9d420";
+const STAGE_13_CHECKPOINT_BINDING = Object.freeze({
+  commit: STAGE_13_BASE_COMMIT,
+  evidence: Object.freeze({
+    path: STAGE_12B_EVIDENCE_PATH,
+    sha256: STAGE_13_STAGE_12B_EVIDENCE_SHA256,
+  }),
+  review: Object.freeze({
+    path: "compatibility/reviewed-differences.json",
+    sha256: STAGE_13_STAGE_12B_REVIEW_SHA256,
+  }),
+  inventory: Object.freeze({
+    path: STAGE_12B_INVENTORY_PATH,
+    sha256: STAGE_13_STAGE_12B_INVENTORY_SHA256,
+  }),
+  compatibilityRunner: Object.freeze({
+    path: "scripts/compatibility.cjs",
+    sha256: STAGE_13_STAGE_12B_RUNNER_SHA256,
+  }),
+});
 const PROJECT_REVERT_STRINGS_PATH = path.join(
   ROOT,
   "compatibility",
@@ -1563,7 +1599,11 @@ function validateStage12aCandidate(baseline, candidate) {
   stage12aLegacyGasEqualityEvidence(candidate, checkpoint);
 }
 
-function stage12bHardCompatibilityEvidence(baseline, candidate) {
+function stage12bHardCompatibilityEvidence(
+  baseline,
+  candidate,
+  inventoryOverride
+) {
   const contracts = {};
   for (const qualifiedName of Object.keys(baseline.contracts).sort()) {
     contracts[qualifiedName] = {};
@@ -1635,7 +1675,10 @@ function stage12bHardCompatibilityEvidence(baseline, candidate) {
       count: candidate.projectRevertStrings.length,
       sha256: sha256(stableJson(candidate.projectRevertStrings)),
     },
-    tests: stage12bTestInventory(candidate),
+    tests: stage12bTestInventory(
+      candidate,
+      inventoryOverride || stage12bInventory()
+    ),
   });
 }
 
@@ -2104,6 +2147,20 @@ const REVIEW_POLICIES = Object.freeze({
       );
     },
     validateCandidate: validateStage12bCandidate,
+  }),
+  [STAGE_13_POLICY]: Object.freeze({
+    candidate: STAGE_13_CANDIDATE,
+    requiredOpcodeEvidence: Object.freeze({
+      mode: "stage-13-stage-12b-exact-equality",
+      path: STAGE_13_EVIDENCE_PATH,
+      contracts: STAGE_08_PRODUCTION_CONTRACTS,
+    }),
+    requiredStage12bCheckpoint: STAGE_13_CHECKPOINT_BINDING,
+    requiresStage13MaintenanceEvidence: true,
+    permits() {
+      return false;
+    },
+    validateCandidate: validateStage13Candidate,
   }),
 });
 
@@ -3998,6 +4055,86 @@ function stage12bCheckpointAnchor() {
   };
 }
 
+function stage13CheckpointAnchor() {
+  run("git", ["merge-base", "--is-ancestor", STAGE_13_BASE_COMMIT, "HEAD"]);
+  const readCheckpoint = (relativePath) =>
+    Buffer.from(
+      run("git", ["show", `${STAGE_13_BASE_COMMIT}:${relativePath}`]).stdout
+    );
+  const evidenceBytes = readCheckpoint(STAGE_12B_EVIDENCE_PATH);
+  const reviewBytes = readCheckpoint("compatibility/reviewed-differences.json");
+  const inventoryBytes = readCheckpoint(STAGE_12B_INVENTORY_PATH);
+  const runnerBytes = readCheckpoint("scripts/compatibility.cjs");
+  if (
+    sha256(evidenceBytes) !== STAGE_13_STAGE_12B_EVIDENCE_SHA256 ||
+    sha256(reviewBytes) !== STAGE_13_STAGE_12B_REVIEW_SHA256 ||
+    sha256(inventoryBytes) !== STAGE_13_STAGE_12B_INVENTORY_SHA256 ||
+    sha256(runnerBytes) !== STAGE_13_STAGE_12B_RUNNER_SHA256
+  ) {
+    throw new Error("Stage 13 Stage 12b checkpoint digest changed");
+  }
+  const evidence = JSON.parse(evidenceBytes);
+  const review = JSON.parse(reviewBytes);
+  const inventory = JSON.parse(inventoryBytes);
+  const reviewedPaths = review.allowedDifferences
+    .map((difference) => difference.path)
+    .sort();
+  const expectedReviewedPaths = [
+    "$.compiler.settings.remappings",
+    ...STAGE_12B_RAW_HASH_PATHS,
+  ].sort();
+  if (
+    evidence.schemaVersion !== 1 ||
+    evidence.candidate !== STAGE_12B_CANDIDATE ||
+    evidence.mode !== "stage-12b-stage-12a-metadata-only" ||
+    evidence.toolingAndMigration?.compatibilityRunnerSha256 !==
+      STAGE_13_STAGE_12B_RUNNER_SHA256 ||
+    evidence.toolingAndMigration?.migration?.inventory?.sha256 !==
+      STAGE_13_STAGE_12B_INVENTORY_SHA256 ||
+    review.schemaVersion !== 1 ||
+    review.candidate !== STAGE_12B_CANDIDATE ||
+    review.policy !== STAGE_12B_POLICY ||
+    review.opcodeEvidence?.path !== STAGE_12B_EVIDENCE_PATH ||
+    review.migrationEvidence?.inventory?.sha256 !==
+      STAGE_13_STAGE_12B_INVENTORY_SHA256 ||
+    !valuesEqual(reviewedPaths, expectedReviewedPaths) ||
+    inventory.schemaVersion !== 1 ||
+    inventory.candidate !== STAGE_12B_CANDIDATE
+  ) {
+    throw new Error("Stage 13 inherited an invalid Stage 12b checkpoint");
+  }
+  if (
+    sha256(fs.readFileSync(path.join(ROOT, STAGE_12B_EVIDENCE_PATH))) !==
+      STAGE_13_STAGE_12B_EVIDENCE_SHA256 ||
+    sha256(fs.readFileSync(path.join(ROOT, STAGE_12B_INVENTORY_PATH))) !==
+      STAGE_13_STAGE_12B_INVENTORY_SHA256
+  ) {
+    throw new Error("Stage 13 may not rewrite Stage 12b evidence or inventory");
+  }
+  return {
+    commit: STAGE_13_BASE_COMMIT,
+    evidence: {
+      path: STAGE_12B_EVIDENCE_PATH,
+      sha256: sha256(evidenceBytes),
+      value: evidence,
+    },
+    review: {
+      path: "compatibility/reviewed-differences.json",
+      sha256: sha256(reviewBytes),
+      value: review,
+    },
+    inventory: {
+      path: STAGE_12B_INVENTORY_PATH,
+      sha256: sha256(inventoryBytes),
+      value: inventory,
+    },
+    compatibilityRunner: {
+      path: "scripts/compatibility.cjs",
+      sha256: sha256(runnerBytes),
+    },
+  };
+}
+
 function stage12bInventory() {
   const inventoryPath = path.join(ROOT, STAGE_12B_INVENTORY_PATH);
   const bytes = fs.readFileSync(inventoryPath);
@@ -4605,6 +4742,285 @@ function stage12bSourceEvidence(candidate) {
       fs.readFileSync(path.join(ROOT, "scripts", "compatibility.cjs"))
     ),
   });
+}
+
+function stage13Inventory() {
+  const inventoryPath = path.join(ROOT, STAGE_13_INVENTORY_PATH);
+  const bytes = fs.readFileSync(inventoryPath);
+  const inventory = JSON.parse(bytes);
+  if (
+    sha256(bytes) !== STAGE_13_INVENTORY_SHA256 ||
+    inventory.schemaVersion !== 1 ||
+    inventory.candidate !== STAGE_13_CANDIDATE ||
+    inventory.baseCommit !== STAGE_13_BASE_COMMIT ||
+    !valuesEqual(inventory.stage12bCheckpoint, {
+      commit: STAGE_13_BASE_COMMIT,
+      evidenceSha256: STAGE_13_STAGE_12B_EVIDENCE_SHA256,
+      reviewSha256: STAGE_13_STAGE_12B_REVIEW_SHA256,
+      inventorySha256: STAGE_13_STAGE_12B_INVENTORY_SHA256,
+      compatibilityRunnerSha256: STAGE_13_STAGE_12B_RUNNER_SHA256,
+    })
+  ) {
+    throw new Error("Stage 13 maintenance inventory is invalid");
+  }
+  const classified = [
+    ...inventory.addedFiles,
+    ...inventory.modifiedFiles,
+  ].sort();
+  const bound = Object.keys(inventory.boundFiles).sort();
+  if (
+    new Set(classified).size !== classified.length ||
+    !valuesEqual(classified, bound)
+  ) {
+    throw new Error("Stage 13 maintenance file classification changed");
+  }
+  validateExactFileDigests(
+    fileDigestEvidence(inventory.boundFiles),
+    inventory.boundFiles,
+    "stage13MaintenanceFiles"
+  );
+  for (const relativePath of inventory.addedFiles) {
+    const result = spawnSync(
+      "git",
+      ["cat-file", "-e", `${STAGE_13_BASE_COMMIT}:${relativePath}`],
+      { cwd: ROOT, encoding: "utf8" }
+    );
+    if (result.status === 0 || !fs.existsSync(path.join(ROOT, relativePath))) {
+      throw new Error(
+        `Stage 13 added-file classification changed: ${relativePath}`
+      );
+    }
+  }
+  for (const relativePath of inventory.modifiedFiles) {
+    run("git", ["cat-file", "-e", `${STAGE_13_BASE_COMMIT}:${relativePath}`]);
+    if (!fs.existsSync(path.join(ROOT, relativePath))) {
+      throw new Error(`Stage 13 modified file is missing: ${relativePath}`);
+    }
+  }
+
+  const basePackage = JSON.parse(
+    run("git", ["show", `${STAGE_13_BASE_COMMIT}:package.json`]).stdout
+  );
+  const candidatePackage = JSON.parse(
+    fs.readFileSync(path.join(ROOT, "package.json"), "utf8")
+  );
+  const baseWithoutScripts = deepClone(basePackage);
+  const candidateWithoutScripts = deepClone(candidatePackage);
+  delete baseWithoutScripts.scripts;
+  delete candidateWithoutScripts.scripts;
+  const changedScripts = [
+    ...new Set([
+      ...Object.keys(basePackage.scripts),
+      ...Object.keys(candidatePackage.scripts),
+    ]),
+  ]
+    .filter(
+      (name) => basePackage.scripts[name] !== candidatePackage.scripts[name]
+    )
+    .sort();
+  if (
+    !valuesEqual(baseWithoutScripts, candidateWithoutScripts) ||
+    sha256(stableJson(baseWithoutScripts)) !==
+      inventory.package.unchangedPackageWithoutScriptsSha256 ||
+    !valuesEqual(
+      changedScripts,
+      Object.keys(inventory.package.changedScripts).sort()
+    )
+  ) {
+    throw new Error(
+      "Stage 13 package changed outside reviewed maintenance scripts"
+    );
+  }
+  for (const name of changedScripts) {
+    const previous = basePackage.scripts[name] ?? null;
+    if (
+      previous !== inventory.package.previousScripts[name] ||
+      candidatePackage.scripts[name] !== inventory.package.changedScripts[name]
+    ) {
+      throw new Error(`Stage 13 package script changed: ${name}`);
+    }
+  }
+
+  const baseForgeStd = run("git", [
+    "rev-parse",
+    `${STAGE_13_BASE_COMMIT}:lib/forge-std`,
+  ]).stdout.trim();
+  const candidateForgeStd = run("git", [
+    "-C",
+    "lib/forge-std",
+    "rev-parse",
+    "HEAD",
+  ]).stdout.trim();
+  if (
+    baseForgeStd !== inventory.forgeStd.commit ||
+    candidateForgeStd !== inventory.forgeStd.commit ||
+    inventory.forgeStd.branch !== "v1"
+  ) {
+    throw new Error("Stage 13 may not change the forge-std gitlink");
+  }
+  return sorted({
+    ...inventory,
+    path: STAGE_13_INVENTORY_PATH,
+    sha256: sha256(bytes),
+  });
+}
+
+function stage13CoreChangedPaths(inventory = stage13Inventory()) {
+  return [
+    ...new Set([
+      ...Object.keys(inventory.boundFiles),
+      "compatibility/README.md",
+      STAGE_13_INVENTORY_PATH,
+      "scripts/compatibility.cjs",
+    ]),
+  ].sort();
+}
+
+function validateStage13ChangedPaths(actual, inventory = stage13Inventory()) {
+  const core = stage13CoreChangedPaths(inventory);
+  const permitted = [
+    core,
+    [...core, "compatibility/reviewed-differences.json"].sort(),
+    [
+      ...core,
+      "compatibility/reviewed-differences.json",
+      STAGE_13_EVIDENCE_PATH,
+    ].sort(),
+  ];
+  const normalized = [...new Set(actual)].sort();
+  if (!permitted.some((expected) => valuesEqual(expected, normalized))) {
+    throw new Error(
+      `Stage 13 repository paths changed:\n${collectDifferences(
+        permitted[permitted.length - 1],
+        normalized,
+        "$.stage13ChangedPaths"
+      )
+        .slice(0, 40)
+        .map((difference) => `- ${formatDifference(difference)}`)
+        .join("\n")}`
+    );
+  }
+  return permitted[permitted.length - 1];
+}
+
+function stage13MaintenanceEvidence() {
+  const checkpoint = stage13CheckpointAnchor();
+  const inventory = stage13Inventory();
+  return sorted({
+    checkpoint: STAGE_13_CHECKPOINT_BINDING,
+    inventory: {
+      path: STAGE_13_INVENTORY_PATH,
+      sha256: STAGE_13_INVENTORY_SHA256,
+    },
+    changedPaths: validateStage13ChangedPaths(
+      repositoryChangedPaths(STAGE_13_BASE_COMMIT),
+      inventory
+    ),
+    addedFiles: inventory.addedFiles,
+    modifiedFiles: inventory.modifiedFiles,
+    boundFiles: inventory.boundFiles,
+    package: inventory.package,
+    forgeStd: inventory.forgeStd,
+    immutableStage12bEvidence: {
+      path: checkpoint.evidence.path,
+      sha256: checkpoint.evidence.sha256,
+    },
+    compatibilityRunnerSha256: sha256(
+      fs.readFileSync(path.join(ROOT, "scripts", "compatibility.cjs"))
+    ),
+  });
+}
+
+function requireStage13CheckpointEquality(label, actual, expected) {
+  if (!valuesEqual(actual, expected)) {
+    throw new Error(
+      `Stage 13 changed Stage 12b ${label}:\n${collectDifferences(
+        expected,
+        actual,
+        `$.stage13.${label}`
+      )
+        .slice(0, 20)
+        .map((difference) => `- ${formatDifference(difference)}`)
+        .join("\n")}`
+    );
+  }
+  return actual;
+}
+
+function stage13CheckpointEqualityEvidence(baseline, candidate) {
+  const checkpoint = stage13CheckpointAnchor();
+  const stage12aCheckpoint = stage12bCheckpointAnchor();
+  const expected = checkpoint.evidence.value;
+  const hardCompatibility = stage12bHardCompatibilityEvidence(
+    baseline,
+    candidate,
+    checkpoint.inventory.value
+  );
+  const productionMetadataOnly = stage12bProductionMetadataEvidence(
+    baseline,
+    candidate,
+    stage12aCheckpoint
+  );
+  const legacyGasCheckpointReplay = stage12bGasReplayEvidence(
+    candidate,
+    stage12aCheckpoint
+  );
+  const keyFlowGasEquality = stage12bKeyFlowGasEvidence(stage12aCheckpoint);
+  const compilerSources = stage12bCompilerSourceEvidence(stage12aCheckpoint);
+  const productionSources =
+    stage12bProductionSourceEvidence(stage12aCheckpoint);
+  const tools = stage12bToolIdentityEvidence();
+  requireStage13CheckpointEquality(
+    "hard compatibility",
+    hardCompatibility,
+    expected.hardCompatibility
+  );
+  requireStage13CheckpointEquality(
+    "metadata and opcodes",
+    productionMetadataOnly,
+    expected.productionMetadataOnly
+  );
+  requireStage13CheckpointEquality(
+    "legacy gas",
+    legacyGasCheckpointReplay,
+    expected.legacyGasCheckpointReplay
+  );
+  requireStage13CheckpointEquality(
+    "key-flow gas",
+    keyFlowGasEquality,
+    expected.keyFlowGasEquality
+  );
+  requireStage13CheckpointEquality(
+    "compiler source closure",
+    compilerSources,
+    expected.toolingAndMigration.compilerSources
+  );
+  requireStage13CheckpointEquality(
+    "production sources",
+    productionSources,
+    expected.toolingAndMigration.productionSources
+  );
+  requireStage13CheckpointEquality(
+    "pinned tools",
+    tools,
+    expected.toolingAndMigration.migration.tools
+  );
+  return sorted({
+    checkpointEvidenceSha256: checkpoint.evidence.sha256,
+    hardCompatibility,
+    productionMetadataOnly,
+    legacyGasCheckpointReplay,
+    keyFlowGasEquality,
+    compilerSources,
+    productionSources,
+    tools,
+    exactStage12bEquality: true,
+  });
+}
+
+function validateStage13Candidate(baseline, candidate) {
+  stage13MaintenanceEvidence();
+  stage13CheckpointEqualityEvidence(baseline, candidate);
 }
 
 function validateSecurity01CompilerSourceEvidence(evidence) {
@@ -6455,6 +6871,17 @@ function reviewPolicy(review) {
       );
     }
   }
+  if (policy.requiredStage12bCheckpoint) {
+    const supplied = review.stage12bCheckpoint;
+    if (
+      !supplied ||
+      !valuesEqual(supplied, policy.requiredStage12bCheckpoint)
+    ) {
+      throw new Error(
+        `Compatibility review policy ${review.policy} requires the exact Stage 12b checkpoint`
+      );
+    }
+  }
   if (policy.requiresStage10ReceiverEvidence) {
     const expected = stage10ReceiverReviewEvidence();
     if (!valuesEqual(review.receiverEvidence, expected)) {
@@ -6484,6 +6911,14 @@ function reviewPolicy(review) {
     if (!valuesEqual(review.migrationEvidence, expected)) {
       throw new Error(
         `Compatibility review policy ${review.policy} requires the exact Stage 12b dependency, ESM, config, runner, and removal evidence`
+      );
+    }
+  }
+  if (policy.requiresStage13MaintenanceEvidence) {
+    const expected = stage13MaintenanceEvidence();
+    if (!valuesEqual(review.maintenanceEvidence, expected)) {
+      throw new Error(
+        `Compatibility review policy ${review.policy} requires the exact Stage 13 CI and maintenance evidence`
       );
     }
   }
@@ -7127,6 +7562,32 @@ function stage12bReview(baselineBytes, differences, candidate) {
     },
     stage12aCheckpoint: STAGE_12B_CHECKPOINT_BINDING,
     migrationEvidence: stage12bMigrationReviewEvidence(),
+  };
+}
+
+function stage13Review(baselineBytes, differences, candidate) {
+  stage13CheckpointAnchor();
+  if (differences.length !== 0) {
+    throw new Error(
+      `Stage 13 may not review any compatibility-manifest difference:\n${differences
+        .slice(0, 20)
+        .map((difference) => `- ${formatDifference(difference)}`)
+        .join("\n")}`
+    );
+  }
+  return {
+    schemaVersion: 1,
+    candidate: STAGE_13_CANDIDATE,
+    policy: STAGE_13_POLICY,
+    baselineSha256: sha256(baselineBytes),
+    allowedDifferences: [],
+    opcodeEvidence: {
+      mode: "stage-13-stage-12b-exact-equality",
+      path: STAGE_13_EVIDENCE_PATH,
+      contracts: [...STAGE_08_PRODUCTION_CONTRACTS],
+    },
+    stage12bCheckpoint: STAGE_13_CHECKPOINT_BINDING,
+    maintenanceEvidence: stage13MaintenanceEvidence(),
   };
 }
 
@@ -10502,6 +10963,21 @@ function stage12bEvidence(review, baseline, candidate) {
   });
 }
 
+function stage13Evidence(review, baseline, candidate) {
+  return sorted({
+    schemaVersion: 1,
+    candidate: review.candidate,
+    baselineSha256: review.baselineSha256,
+    mode: review.opcodeEvidence.mode,
+    inheritedStage12bCheckpoint: STAGE_13_CHECKPOINT_BINDING,
+    maintenance: stage13MaintenanceEvidence(),
+    exactStage12bEquality: stage13CheckpointEqualityEvidence(
+      baseline,
+      candidate
+    ),
+  });
+}
+
 function security01ComparisonBaseline(baseline, candidate) {
   validateSecurity01Inventory(candidate);
   security01SourceEvidence();
@@ -10910,6 +11386,11 @@ function stage12bComparisonBaseline(baseline, candidate) {
     }
   }
   return comparison;
+}
+
+function stage13ComparisonBaseline(baseline, candidate) {
+  validateStage13Candidate(baseline, candidate);
+  return deepClone(candidate);
 }
 
 function expectStage09Rejection(name, operation) {
@@ -12616,6 +13097,155 @@ function stage12bNegativeProbes(baseline, candidate, review) {
   return probes;
 }
 
+function expectStage13Rejection(name, operation) {
+  try {
+    operation();
+  } catch (_error) {
+    return name;
+  }
+  throw new Error(`Stage 13 negative probe unexpectedly passed: ${name}`);
+}
+
+function stage13NegativeProbes(baseline, candidate, review) {
+  const probes = [];
+  const reject = (name, operation) =>
+    probes.push(expectStage13Rejection(name, operation));
+  const checkpoint = stage13CheckpointAnchor();
+  const stage12aCheckpoint = stage12bCheckpointAnchor();
+  const wrapper = "contracts/Wrapper.sol:Wrapper";
+
+  const checkpointDrift = deepClone(review);
+  checkpointDrift.stage12bCheckpoint.evidence.sha256 = "0".repeat(64);
+  reject("Stage 12b checkpoint drift", () => reviewPolicy(checkpointDrift));
+  const inventoryDrift = deepClone(review);
+  inventoryDrift.maintenanceEvidence.inventory.sha256 = "0".repeat(64);
+  reject("maintenance inventory drift", () => reviewPolicy(inventoryDrift));
+
+  const hardhatDrift = deepClone(candidate);
+  hardhatDrift.tests.hardhat.names[0] += " drift";
+  reject("Hardhat identifier drift", () =>
+    stage12bHardCompatibilityEvidence(
+      baseline,
+      hardhatDrift,
+      checkpoint.inventory.value
+    )
+  );
+  const forgeDrift = deepClone(candidate);
+  forgeDrift.tests.forge.names.pop();
+  forgeDrift.tests.forge.count -= 1;
+  forgeDrift.tests.total -= 1;
+  reject("Forge identifier drift", () =>
+    stage12bHardCompatibilityEvidence(
+      baseline,
+      forgeDrift,
+      checkpoint.inventory.value
+    )
+  );
+  const abiDrift = deepClone(candidate);
+  abiDrift.contracts[wrapper].abi.pop();
+  reject("ABI drift", () =>
+    stage12bHardCompatibilityEvidence(
+      baseline,
+      abiDrift,
+      checkpoint.inventory.value
+    )
+  );
+  const compilerDrift = deepClone(candidate);
+  compilerDrift.compiler.settings.optimizer.enabled = true;
+  reject("compiler settings drift", () =>
+    stage12bHardCompatibilityEvidence(
+      baseline,
+      compilerDrift,
+      checkpoint.inventory.value
+    )
+  );
+
+  const opcodeDrift = deepClone(candidate);
+  opcodeDrift.contracts[wrapper].runtimeBytecode.metadataStrippedOpcodes +=
+    " STOP";
+  reject("opcode drift", () =>
+    stage12bProductionMetadataEvidence(
+      baseline,
+      opcodeDrift,
+      stage12aCheckpoint
+    )
+  );
+  const rawHashDrift = deepClone(candidate);
+  rawHashDrift.contracts[wrapper].runtimeBytecode.keccak256 = `0x${"00".repeat(
+    32
+  )}`;
+  reject("full bytecode hash drift", () =>
+    stage12bProductionMetadataEvidence(
+      baseline,
+      rawHashDrift,
+      stage12aCheckpoint
+    )
+  );
+
+  const frozenGas = stage12bCheckpointLegacyGasEntries(stage12aCheckpoint);
+  const legacyGasDrift = deepClone(candidate);
+  legacyGasDrift.gasSnapshot.entries[0] += " drift";
+  reject("legacy gas drift", () =>
+    stage12bGasReplayEvidence(legacyGasDrift, stage12aCheckpoint, frozenGas)
+  );
+  const keyFlowDrift = deepClone(stage08GasEvidence());
+  const keyFlowGroup = Object.keys(keyFlowDrift.groups)[0];
+  keyFlowDrift.groups[keyFlowGroup][0].candidateGas += 1;
+  reject("key-flow gas drift", () =>
+    stage12bKeyFlowGasEvidence(stage12aCheckpoint, keyFlowDrift)
+  );
+
+  const checkpointEvidenceDrift = deepClone(
+    checkpoint.evidence.value.hardCompatibility
+  );
+  checkpointEvidenceDrift.tests.total += 1;
+  reject("checkpoint equality drift", () =>
+    requireStage13CheckpointEquality(
+      "hard compatibility",
+      stage12bHardCompatibilityEvidence(
+        baseline,
+        candidate,
+        checkpoint.inventory.value
+      ),
+      checkpointEvidenceDrift
+    )
+  );
+  reject("unexpected maintenance path", () =>
+    validateStage13ChangedPaths([
+      ...stage13CoreChangedPaths(),
+      "unexpected-stage-13-file",
+    ])
+  );
+  reject("missing maintenance path", () =>
+    validateStage13ChangedPaths(stage13CoreChangedPaths().slice(1))
+  );
+
+  const protectedReview = deepClone(review);
+  const unauthorizedDifference = {
+    path: `$.contracts.${wrapper}.abi[0]`,
+    baselineValue: null,
+    candidateValue: null,
+    reason: "probe",
+  };
+  protectedReview.allowedDifferences.push(unauthorizedDifference);
+  reject("compatibility difference waiver", () =>
+    validateReviewedDifferences(
+      protectedReview,
+      fs.readFileSync(BASELINE_PATH),
+      [unauthorizedDifference]
+    )
+  );
+
+  const evidencePath = opcodeEvidencePath(review);
+  const checkedInEvidence = JSON.parse(fs.readFileSync(evidencePath, "utf8"));
+  const staleEvidence = deepClone(checkedInEvidence);
+  staleEvidence.exactStage12bEquality.exactStage12bEquality = false;
+  reject("stale Stage 13 evidence", () =>
+    validateExactOpcodeEvidence(staleEvidence, checkedInEvidence)
+  );
+  return probes;
+}
+
 function reviewedOpcodeEvidence(review, baseline, candidate) {
   const configuration = review.opcodeEvidence;
   if (!configuration) return null;
@@ -12632,6 +13262,7 @@ function reviewedOpcodeEvidence(review, baseline, candidate) {
       "stage-11-stage-10-production-equality",
       "stage-12a-stage-11-production-equality",
       "stage-12b-stage-12a-metadata-only",
+      "stage-13-stage-12b-exact-equality",
     ].includes(configuration.mode)
   ) {
     throw new Error(`Unsupported opcode evidence mode: ${configuration.mode}`);
@@ -12668,6 +13299,9 @@ function reviewedOpcodeEvidence(review, baseline, candidate) {
   }
   if (configuration.mode === "stage-12b-stage-12a-metadata-only") {
     return stage12bEvidence(review, baseline, candidate);
+  }
+  if (configuration.mode === "stage-13-stage-12b-exact-equality") {
+    return stage13Evidence(review, baseline, candidate);
   }
 
   const contracts = {};
@@ -12887,6 +13521,7 @@ function expectedProjectRevertStrings(command, protectedRevertStrings) {
   if (command === "write-stage-11-review") return security04Candidate;
   if (command === "write-stage-12a-review") return security04Candidate;
   if (command === "write-stage-12b-review") return security04Candidate;
+  if (command === "write-stage-13-review") return security04Candidate;
   if (command === "diff") {
     return {
       baseline: protectedRevertStrings,
@@ -12908,6 +13543,7 @@ function expectedProjectRevertStrings(command, protectedRevertStrings) {
       "stage-11-negative-probes",
       "stage-12a-negative-probes",
       "stage-12b-negative-probes",
+      "stage-13-negative-probes",
     ].includes(command) &&
     fs.existsSync(REVIEW_PATH)
   ) {
@@ -12920,6 +13556,7 @@ function expectedProjectRevertStrings(command, protectedRevertStrings) {
     if (review.policy === STAGE_11_POLICY) return security04Candidate;
     if (review.policy === STAGE_12A_POLICY) return security04Candidate;
     if (review.policy === STAGE_12B_POLICY) return security04Candidate;
+    if (review.policy === STAGE_13_POLICY) return security04Candidate;
   }
   return protectedRevertStrings;
 }
@@ -12941,6 +13578,7 @@ async function main() {
       "stage-11-negative-probes",
       "stage-12a-negative-probes",
       "stage-12b-negative-probes",
+      "stage-13-negative-probes",
       "write-stage-08-review",
       "write-stage-09-review",
       "write-security-01-review",
@@ -12951,11 +13589,12 @@ async function main() {
       "write-stage-11-review",
       "write-stage-12a-review",
       "write-stage-12b-review",
+      "write-stage-13-review",
       "write-evidence",
     ].includes(command)
   ) {
     console.error(
-      "Usage: node scripts/compatibility.cjs <capture|check|diff|revert-strings|stage-09-negative-probes|security-01-negative-probes|security-02-negative-probes|security-03-negative-probes|security-04-negative-probes|stage-10-negative-probes|stage-11-negative-probes|stage-12a-negative-probes|stage-12b-negative-probes|write-stage-08-review|write-stage-09-review|write-security-01-review|write-security-02-review|write-security-03-review|write-security-04-review|write-stage-10-review|write-stage-11-review|write-stage-12a-review|write-stage-12b-review|write-evidence>"
+      "Usage: node scripts/compatibility.cjs <capture|check|diff|revert-strings|stage-09-negative-probes|security-01-negative-probes|security-02-negative-probes|security-03-negative-probes|security-04-negative-probes|stage-10-negative-probes|stage-11-negative-probes|stage-12a-negative-probes|stage-12b-negative-probes|stage-13-negative-probes|write-stage-08-review|write-stage-09-review|write-security-01-review|write-security-02-review|write-security-03-review|write-security-04-review|write-stage-10-review|write-stage-11-review|write-stage-12a-review|write-stage-12b-review|write-stage-13-review|write-evidence>"
     );
     process.exitCode = 2;
     return;
@@ -13042,6 +13681,7 @@ async function main() {
     "stage-11-negative-probes",
     "stage-12a-negative-probes",
     "stage-12b-negative-probes",
+    "stage-13-negative-probes",
   ].includes(command);
   const security01ReviewActive =
     command === "write-security-01-review" ||
@@ -13067,7 +13707,12 @@ async function main() {
   const stage12bReviewActive =
     command === "write-stage-12b-review" ||
     (inheritedReviewCommand && existingReview?.policy === STAGE_12B_POLICY);
-  const comparisonBaseline = stage12bReviewActive
+  const stage13ReviewActive =
+    command === "write-stage-13-review" ||
+    (inheritedReviewCommand && existingReview?.policy === STAGE_13_POLICY);
+  const comparisonBaseline = stage13ReviewActive
+    ? stage13ComparisonBaseline(baseline, manifest)
+    : stage12bReviewActive
     ? stage12bComparisonBaseline(baseline, manifest)
     : stage12aReviewActive
     ? stage12aComparisonBaseline(baseline, manifest)
@@ -13265,6 +13910,23 @@ async function main() {
     );
     return;
   }
+  if (command === "write-stage-13-review") {
+    const review = stage13Review(baselineBytes, differences, manifest);
+    validateReviewedDifferences(review, baselineBytes, differences);
+    const policy = reviewPolicy(review);
+    policy.validateCandidate(baseline, manifest);
+    validateSafetyEvidence(review);
+    fs.writeFileSync(REVIEW_PATH, stableJson(review));
+    console.log(
+      `Wrote ${
+        differences.length
+      } exact Stage 13 reviewed differences to ${path.relative(
+        ROOT,
+        REVIEW_PATH
+      )}`
+    );
+    return;
+  }
   if (command === "stage-09-negative-probes") {
     const probes = stage09NegativeProbes(baseline, manifest);
     console.log(`Stage 9 negative probes passed: ${probes.join("; ")}`);
@@ -13392,6 +14054,22 @@ async function main() {
     validateOpcodeEvidence(review, baseline, manifest);
     const probes = stage12bNegativeProbes(baseline, manifest, review);
     console.log(`Stage 12b negative probes passed: ${probes.join("; ")}`);
+    return;
+  }
+  if (command === "stage-13-negative-probes") {
+    const review = readReviewedDifferences();
+    if (!review || review.policy !== STAGE_13_POLICY) {
+      throw new Error(
+        "Stage 13 negative probes require the exact Stage 13 review"
+      );
+    }
+    validateReviewedDifferences(review, baselineBytes, differences);
+    const policy = reviewPolicy(review);
+    policy.validateCandidate(baseline, manifest);
+    validateSafetyEvidence(review);
+    validateOpcodeEvidence(review, baseline, manifest);
+    const probes = stage13NegativeProbes(baseline, manifest, review);
+    console.log(`Stage 13 negative probes passed: ${probes.join("; ")}`);
     return;
   }
   const review = existingReview;

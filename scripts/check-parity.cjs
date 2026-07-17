@@ -16,9 +16,9 @@ const SAFETY_INVENTORY_PATH = path.join(
   "safety-test-inventory.json"
 );
 const FORGE_BIN = process.env.FORGE_BIN || "forge";
-const profileArgument = process.argv.slice(2).find((value) =>
-  value.startsWith("--profile=")
-);
+const profileArgument = process.argv
+  .slice(2)
+  .find((value) => value.startsWith("--profile="));
 const requestedProfile = profileArgument?.slice("--profile=".length);
 if (
   process.argv.slice(2).some((value) => value !== profileArgument) ||
@@ -50,6 +50,32 @@ const STAGE_12B_INVENTORY_PATH = path.join(
 const STAGE_12B_INVENTORY_SHA256 =
   "ce37ec6e86d25aa8bb947a5b62f1885ff7c6541fda0ca2c2560e034b5c682e9e";
 const STAGE_12B_CANDIDATE = "stage-12b-hardhat-3";
+const STAGE_13_CANDIDATE = "stage-13-ci-security-maintenance";
+const STAGE_13_POLICY = "stage-13-stage-12b-exact-equality";
+const STAGE_13_BASE_COMMIT = "bfdbcfaf84bd681c823487d1267139353df7ec37";
+const STAGE_13_INVENTORY_PATH = path.join(
+  ROOT,
+  "compatibility",
+  "stage-13-ci-maintenance-inventory.json"
+);
+const STAGE_13_EVIDENCE_PATH = path.join(
+  ROOT,
+  "compatibility",
+  "evidence",
+  "stage-13-ci-security-maintenance.json"
+);
+const STAGE_13_REVIEW_PATH = path.join(
+  ROOT,
+  "compatibility",
+  "reviewed-differences.json"
+);
+const STAGE_13_STAGE_12B_EVIDENCE_SHA256 =
+  "d5e4e569dd9698e5dad1326b29461b0fe01d25c13bc8ad72075e5a084bd0e998";
+const STAGE_13_STAGE_12B_REVIEW_SHA256 =
+  "0429ef8df0361120e485ac8f0ade6f6b4892e3a162287ec61bb8dc69de4b9402";
+const STAGE_13_STAGE_12B_INVENTORY_SHA256 = STAGE_12B_INVENTORY_SHA256;
+const STAGE_13_STAGE_12B_RUNNER_SHA256 =
+  "f8c1a26d90ec696c2b7d317813210dc903cd831d8e978e1861135a1dbfdddab9";
 const STAGE_12B_BASE_COMMIT = "9a86ff5d001a4d3a06823712d0e70ad011987ecd";
 const STAGE_12A_CANDIDATE = "stage-12a-ethers-6";
 const STAGE_12A_BASE_COMMIT = "c84870955d77e82e91ed70591f010233675a6880";
@@ -94,6 +120,49 @@ function fail(message) {
 
 function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
+}
+
+function checkpointFile(commit, relativePath) {
+  const result = spawnSync("git", ["show", `${commit}:${relativePath}`], {
+    cwd: ROOT,
+    encoding: null,
+    maxBuffer: 128 * 1024 * 1024,
+  });
+  if (result.error) throw result.error;
+  if (result.status !== 0) {
+    fail(`Unable to read checkpoint file ${commit}:${relativePath}`);
+  }
+  return result.stdout;
+}
+
+function checkpointPathExists(commit, relativePath) {
+  const result = spawnSync(
+    "git",
+    ["cat-file", "-e", `${commit}:${relativePath}`],
+    { cwd: ROOT, encoding: "utf8" }
+  );
+  if (result.error) throw result.error;
+  return result.status === 0;
+}
+
+function repositoryChangedPaths(baseCommit) {
+  const changed = new Set();
+  for (const args of [
+    ["diff", "--no-renames", "--name-only", baseCommit],
+    ["ls-files", "--others", "--exclude-standard"],
+  ]) {
+    const result = spawnSync("git", args, {
+      cwd: ROOT,
+      encoding: "utf8",
+      maxBuffer: 128 * 1024 * 1024,
+    });
+    if (result.error) throw result.error;
+    if (result.status !== 0) fail(`git ${args.join(" ")} failed`);
+    for (const relativePath of result.stdout.split(/\r?\n/).filter(Boolean)) {
+      changed.add(relativePath);
+    }
+  }
+  return sorted(changed);
 }
 
 function sha256(value) {
@@ -255,13 +324,13 @@ function stage12aInventory(stage11) {
 }
 
 function stage12bInventory(stage12a) {
-  if (!fs.existsSync(STAGE_12B_INVENTORY_PATH)) {
-    fail("Missing checked-in Stage 12b Hardhat 3 inventory");
-  }
-  const bytes = fs.readFileSync(STAGE_12B_INVENTORY_PATH);
+  const relativeInventoryPath = path.relative(ROOT, STAGE_12B_INVENTORY_PATH);
+  const bytes = checkpointFile(STAGE_13_BASE_COMMIT, relativeInventoryPath);
   const inventory = JSON.parse(bytes);
   if (
     sha256(bytes) !== STAGE_12B_INVENTORY_SHA256 ||
+    sha256(fs.readFileSync(STAGE_12B_INVENTORY_PATH)) !==
+      STAGE_12B_INVENTORY_SHA256 ||
     inventory.schemaVersion !== 1 ||
     inventory.candidate !== STAGE_12B_CANDIDATE ||
     inventory.stage12aCheckpoint?.commit !== STAGE_12B_BASE_COMMIT ||
@@ -272,48 +341,245 @@ function stage12bInventory(stage12a) {
       inventory.activeTests.hardhat.names,
       stage12a.activeHardhat.names
     ) ||
-    inventory.activeTests.hardhat.namesSha256 !==
-      STAGE_11_SMOKE_NAMES_SHA256 ||
+    inventory.activeTests.hardhat.namesSha256 !== STAGE_11_SMOKE_NAMES_SHA256 ||
     inventory.activeTests?.forge?.count !== 140 ||
     inventory.activeTests.forge.namesSha256 !== STAGE_11_FORGE_NAMES_SHA256
   ) {
     fail("Stage 12b Hardhat 3 inventory has an invalid schema");
   }
-  const packageJson = readJson(path.join(ROOT, "package.json"));
+  const packageJson = JSON.parse(
+    checkpointFile(STAGE_13_BASE_COMMIT, "package.json")
+  );
   if (
     packageJson.type !== inventory.package.type ||
     packageJson.packageManager !== inventory.package.packageManager ||
-    !valuesEqual(packageJson.dependencies, inventory.package.runtimeDependencies) ||
-    !valuesEqual(packageJson.devDependencies, inventory.package.devDependencies) ||
-    packageJson.scripts["test:hardhat:smoke"] !== inventory.package.smokeRunner ||
+    !valuesEqual(
+      packageJson.dependencies,
+      inventory.package.runtimeDependencies
+    ) ||
+    !valuesEqual(
+      packageJson.devDependencies,
+      inventory.package.devDependencies
+    ) ||
+    packageJson.scripts["test:hardhat:smoke"] !==
+      inventory.package.smokeRunner ||
     packageJson.scripts.test !== inventory.package.testRunner
   ) {
     fail("Stage 12b package/tooling inventory changed");
   }
   for (const relativePath of inventory.removedFiles) {
-    if (fs.existsSync(path.join(ROOT, relativePath))) {
-      fail(`Stage 12b retired file still exists: ${relativePath}`);
+    if (checkpointPathExists(STAGE_13_BASE_COMMIT, relativePath)) {
+      fail(`Stage 12b checkpoint retained retired file: ${relativePath}`);
     }
   }
   for (const script of inventory.commonJsRenames) {
     if (
-      fs.existsSync(path.join(ROOT, "scripts", `${script}.js`)) ||
-      !fs.existsSync(path.join(ROOT, "scripts", `${script}.cjs`))
+      checkpointPathExists(STAGE_13_BASE_COMMIT, `scripts/${script}.js`) ||
+      !checkpointPathExists(STAGE_13_BASE_COMMIT, `scripts/${script}.cjs`)
     ) {
-      fail(`Stage 12b CommonJS rename changed: ${script}`);
+      fail(`Stage 12b checkpoint CommonJS rename changed: ${script}`);
     }
   }
   for (const [relativePath, expected] of Object.entries(inventory.boundFiles)) {
-    if (sha256(fs.readFileSync(path.join(ROOT, relativePath))) !== expected) {
-      fail(`Stage 12b bound file changed: ${relativePath}`);
+    if (
+      sha256(checkpointFile(STAGE_13_BASE_COMMIT, relativePath)) !== expected
+    ) {
+      fail(`Stage 12b checkpoint bound file changed: ${relativePath}`);
     }
   }
   if (
-    fs.existsSync(path.join(ROOT, inventory.helperMove.from)) ||
-    sha256(fs.readFileSync(path.join(ROOT, inventory.helperMove.to))) !==
+    checkpointPathExists(STAGE_13_BASE_COMMIT, inventory.helperMove.from) ||
+    sha256(checkpointFile(STAGE_13_BASE_COMMIT, inventory.helperMove.to)) !==
       inventory.helperMove.sha256
   ) {
-    fail("Stage 12b Forge helper move changed");
+    fail("Stage 12b checkpoint Forge helper move changed");
+  }
+  return inventory;
+}
+
+function stage13CheckpointBinding() {
+  return {
+    commit: STAGE_13_BASE_COMMIT,
+    compatibilityRunner: {
+      path: "scripts/compatibility.cjs",
+      sha256: STAGE_13_STAGE_12B_RUNNER_SHA256,
+    },
+    evidence: {
+      path: "compatibility/evidence/stage-12b-hardhat-3.json",
+      sha256: STAGE_13_STAGE_12B_EVIDENCE_SHA256,
+    },
+    inventory: {
+      path: "compatibility/stage-12b-hardhat3-inventory.json",
+      sha256: STAGE_13_STAGE_12B_INVENTORY_SHA256,
+    },
+    review: {
+      path: "compatibility/reviewed-differences.json",
+      sha256: STAGE_13_STAGE_12B_REVIEW_SHA256,
+    },
+  };
+}
+
+function stage13Inventory(stage12b) {
+  for (const requiredPath of [
+    STAGE_13_INVENTORY_PATH,
+    STAGE_13_EVIDENCE_PATH,
+    STAGE_13_REVIEW_PATH,
+  ]) {
+    if (!fs.existsSync(requiredPath)) {
+      fail(
+        `Missing checked-in Stage 13 evidence: ${path.relative(
+          ROOT,
+          requiredPath
+        )}`
+      );
+    }
+  }
+
+  const inventoryBytes = fs.readFileSync(STAGE_13_INVENTORY_PATH);
+  const inventory = JSON.parse(inventoryBytes);
+  const inventorySha256 = sha256(inventoryBytes);
+  const review = readJson(STAGE_13_REVIEW_PATH);
+  const evidence = readJson(STAGE_13_EVIDENCE_PATH);
+  const checkpoint = stage13CheckpointBinding();
+  const flattenedCheckpoint = {
+    commit: STAGE_13_BASE_COMMIT,
+    evidenceSha256: STAGE_13_STAGE_12B_EVIDENCE_SHA256,
+    reviewSha256: STAGE_13_STAGE_12B_REVIEW_SHA256,
+    inventorySha256: STAGE_13_STAGE_12B_INVENTORY_SHA256,
+    compatibilityRunnerSha256: STAGE_13_STAGE_12B_RUNNER_SHA256,
+  };
+
+  for (const [relativePath, expectedSha256] of [
+    [checkpoint.evidence.path, checkpoint.evidence.sha256],
+    [checkpoint.review.path, checkpoint.review.sha256],
+    [checkpoint.inventory.path, checkpoint.inventory.sha256],
+    [
+      checkpoint.compatibilityRunner.path,
+      checkpoint.compatibilityRunner.sha256,
+    ],
+  ]) {
+    if (
+      sha256(checkpointFile(STAGE_13_BASE_COMMIT, relativePath)) !==
+      expectedSha256
+    ) {
+      fail(`Stage 13 inherited checkpoint changed: ${relativePath}`);
+    }
+  }
+
+  if (
+    inventory.schemaVersion !== 1 ||
+    inventory.candidate !== STAGE_13_CANDIDATE ||
+    inventory.baseCommit !== STAGE_13_BASE_COMMIT ||
+    !valuesEqual(inventory.stage12bCheckpoint, flattenedCheckpoint) ||
+    review.schemaVersion !== 1 ||
+    review.candidate !== STAGE_13_CANDIDATE ||
+    review.policy !== STAGE_13_POLICY ||
+    !Array.isArray(review.allowedDifferences) ||
+    review.allowedDifferences.length !== 0 ||
+    !valuesEqual(review.stage12bCheckpoint, checkpoint) ||
+    review.opcodeEvidence?.mode !== "stage-13-stage-12b-exact-equality" ||
+    review.opcodeEvidence?.path !==
+      "compatibility/evidence/stage-13-ci-security-maintenance.json" ||
+    evidence.schemaVersion !== 1 ||
+    evidence.candidate !== STAGE_13_CANDIDATE ||
+    evidence.mode !== "stage-13-stage-12b-exact-equality" ||
+    !valuesEqual(evidence.inheritedStage12bCheckpoint, checkpoint) ||
+    evidence.baselineSha256 !== review.baselineSha256 ||
+    evidence.exactStage12bEquality?.exactStage12bEquality !== true
+  ) {
+    fail("Stage 13 compatibility review/evidence has an invalid schema");
+  }
+
+  if (
+    review.maintenanceEvidence?.inventory?.path !==
+      "compatibility/stage-13-ci-maintenance-inventory.json" ||
+    review.maintenanceEvidence.inventory.sha256 !== inventorySha256 ||
+    evidence.maintenance?.inventory?.sha256 !== inventorySha256 ||
+    !valuesEqual(review.maintenanceEvidence, evidence.maintenance) ||
+    review.maintenanceEvidence.compatibilityRunnerSha256 !==
+      sha256(fs.readFileSync(path.join(ROOT, "scripts", "compatibility.cjs")))
+  ) {
+    fail("Stage 13 maintenance evidence is stale");
+  }
+
+  const classified = sorted([
+    ...inventory.addedFiles,
+    ...inventory.modifiedFiles,
+  ]);
+  const boundPaths = sorted(Object.keys(inventory.boundFiles));
+  if (
+    duplicateValues(classified).length > 0 ||
+    !valuesEqual(classified, boundPaths)
+  ) {
+    fail("Stage 13 maintenance file classification changed");
+  }
+  for (const relativePath of inventory.addedFiles) {
+    if (
+      checkpointPathExists(STAGE_13_BASE_COMMIT, relativePath) ||
+      !fs.existsSync(path.join(ROOT, relativePath))
+    ) {
+      fail(`Stage 13 added-file classification changed: ${relativePath}`);
+    }
+  }
+  for (const relativePath of inventory.modifiedFiles) {
+    if (
+      !checkpointPathExists(STAGE_13_BASE_COMMIT, relativePath) ||
+      !fs.existsSync(path.join(ROOT, relativePath))
+    ) {
+      fail(`Stage 13 modified-file classification changed: ${relativePath}`);
+    }
+  }
+  for (const [relativePath, expectedSha256] of Object.entries(
+    inventory.boundFiles
+  )) {
+    if (
+      sha256(fs.readFileSync(path.join(ROOT, relativePath))) !== expectedSha256
+    ) {
+      fail(`Stage 13 maintenance file changed: ${relativePath}`);
+    }
+  }
+
+  const expectedChangedPaths = [
+    ...boundPaths,
+    "compatibility/README.md",
+    "compatibility/reviewed-differences.json",
+    "compatibility/stage-13-ci-maintenance-inventory.json",
+    "compatibility/evidence/stage-13-ci-security-maintenance.json",
+    "scripts/compatibility.cjs",
+  ].sort();
+  compareExact(
+    "Stage 13 repository path inventory",
+    expectedChangedPaths,
+    repositoryChangedPaths(STAGE_13_BASE_COMMIT)
+  );
+  if (
+    !valuesEqual(
+      review.maintenanceEvidence.changedPaths,
+      expectedChangedPaths
+    ) ||
+    !valuesEqual(review.maintenanceEvidence.addedFiles, inventory.addedFiles) ||
+    !valuesEqual(
+      review.maintenanceEvidence.modifiedFiles,
+      inventory.modifiedFiles
+    ) ||
+    !valuesEqual(review.maintenanceEvidence.boundFiles, inventory.boundFiles)
+  ) {
+    fail("Stage 13 reviewed maintenance inventory changed");
+  }
+
+  const checkpointEvidence = JSON.parse(
+    checkpointFile(STAGE_13_BASE_COMMIT, checkpoint.evidence.path)
+  );
+  const tests = evidence.exactStage12bEquality?.hardCompatibility?.tests;
+  if (
+    !valuesEqual(tests, checkpointEvidence.hardCompatibility?.tests) ||
+    tests?.hardhat?.count !== stage12b.activeTests.hardhat.count ||
+    tests.hardhat.namesSha256 !== stage12b.activeTests.hardhat.namesSha256 ||
+    tests?.forge?.count !== stage12b.activeTests.forge.count ||
+    tests.forge.namesSha256 !== stage12b.activeTests.forge.namesSha256 ||
+    tests.total !== 143
+  ) {
+    fail("Stage 13 changed the inherited 3-Hardhat/140-Forge identity");
   }
   return inventory;
 }
@@ -483,6 +749,7 @@ function main() {
   const stage11 = stage11Inventory(baseline);
   const stage12a = stage12aInventory(stage11);
   const stage12b = stage12bInventory(stage12a);
+  stage13Inventory(stage12b);
   if (map.schemaVersion !== 1) fail("Unsupported parity-map schema");
   if (!Array.isArray(map.fragments) || map.fragments.length === 0) {
     fail("Parity map must list its cohort fragments");

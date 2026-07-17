@@ -7,24 +7,158 @@ on:
     - cron: "17 6 * * 1"
   push:
     branches:
-      - "**" # All branches, including slash-named upgrade branches
+      - "main"
 
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'schedule' }}
+
+env:
+  CI: "true"
+  COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
+
 jobs:
-  coverage:
-    name: "Forge Coverage"
-    runs-on: ubuntu-latest
-    needs: []
+  forge-tests:
+    name: "Forge Build and Tests"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      FOUNDRY_PROFILE: ci
+    steps:
+      - name: "Checkout Repo"
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          submodules: recursive
+          persist-credentials: false
+          # The parity gate verifies immutable historical checkpoints.
+          fetch-depth: 0
+      - name: "Install Node"
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "24.18.0"
+      - name: "Enable Corepack"
+        run: |
+          corepack enable pnpm
+          corepack install --global pnpm@11.13.1
+          test "$(pnpm --version)" = "11.13.1"
+      - name: "Resolve pnpm Store"
+        id: pnpm-cache
+        run: 'echo "store=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"'
+      - name: "Cache pnpm Store"
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ${{ steps.pnpm-cache.outputs.store }}
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+      - name: "Install JS Dependencies"
+        run: "pnpm install --frozen-lockfile"
+      - name: "Install Foundry"
+        uses: foundry-rs/foundry-toolchain@b00af27efadbc7b4ca8b82abbd903b17cc874d2a # v1.9.0
+        with:
+          version: v1.7.1
+      - name: "Build and enforce Forge compiler warnings"
+        run: "pnpm run compiler-warnings:forge"
+      - name: "Run fixed-seed Forge safety suite"
+        run: "pnpm run test:safety"
+      - name: "Enforce EIP-170 contract sizes"
+        run: "pnpm run size:check"
+
+  hardhat-integration:
+    name: "Hardhat Compile and Integration"
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - name: "Checkout Repo"
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           submodules: recursive
+          persist-credentials: false
       - name: "Install Node"
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "24.18.0"
+      - name: "Enable Corepack"
+        run: |
+          corepack enable pnpm
+          corepack install --global pnpm@11.13.1
+          test "$(pnpm --version)" = "11.13.1"
+      - name: "Resolve pnpm Store"
+        id: pnpm-cache
+        run: 'echo "store=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"'
+      - name: "Cache pnpm Store"
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ${{ steps.pnpm-cache.outputs.store }}
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+      - name: "Install JS Dependencies"
+        run: "pnpm install --frozen-lockfile"
+      - name: "Type-check Hardhat configuration and smokes"
+        run: "pnpm run typecheck"
+      - name: "Build and enforce Hardhat compiler warnings"
+        run: "pnpm run compiler-warnings:hardhat"
+      - name: "Run three interoperability smokes"
+        run: "pnpm run test:hardhat:smoke"
+
+  compatibility:
+    name: "Compatibility Manifest"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: "Checkout Repo"
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          submodules: recursive
+          persist-credentials: false
+          # Compatibility reconstructs and compares historical checkpoints.
+          fetch-depth: 0
+      - name: "Install Node"
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "24.18.0"
+      - name: "Enable Corepack"
+        run: |
+          corepack enable pnpm
+          corepack install --global pnpm@11.13.1
+          test "$(pnpm --version)" = "11.13.1"
+      - name: "Resolve pnpm Store"
+        id: pnpm-cache
+        run: 'echo "store=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"'
+      - name: "Cache pnpm Store"
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ${{ steps.pnpm-cache.outputs.store }}
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+      - name: "Install JS Dependencies"
+        run: "pnpm install --frozen-lockfile"
+      - name: "Install Foundry"
+        uses: foundry-rs/foundry-toolchain@b00af27efadbc7b4ca8b82abbd903b17cc874d2a # v1.9.0
+        with:
+          version: v1.7.1
+      - name: "Enforce reviewed safety-baseline bindings"
+        run: "pnpm run safety-baselines:check"
+      - name: "Enforce compatibility manifest"
+        run: "pnpm run compatibility"
+
+  coverage:
+    name: "Forge Coverage"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: "Checkout Repo"
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - name: "Install Node"
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: "24.18.0"
       - name: "Enable Corepack"
@@ -50,17 +184,19 @@ jobs:
           version: v1.7.1
       - name: "Enforce Forge LCOV baseline"
         run: "pnpm run coverage:forge"
-  forge-lint:
-    name: "Forge Lint"
-    runs-on: ubuntu-latest
-    needs: []
+
+  gas:
+    name: "Forge Gas Snapshot"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
       - name: "Checkout Repo"
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           submodules: recursive
+          persist-credentials: false
       - name: "Install Node"
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: "24.18.0"
       - name: "Enable Corepack"
@@ -84,26 +220,105 @@ jobs:
         uses: foundry-rs/foundry-toolchain@b00af27efadbc7b4ca8b82abbd903b17cc874d2a # v1.9.0
         with:
           version: v1.7.1
-      - name: "Run Forge lint"
-        run: "pnpm run lint:forge"
-  slither:
-    name: "Slither"
-    runs-on: ubuntu-latest
-    needs: []
-    timeout-minutes: 15
-    permissions:
-      contents: read
+      - name: "Enforce key-flow gas baseline"
+        run: "pnpm run gas:check"
+
+  package-consumers:
+    name: "Package Consumers"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
     steps:
       - name: "Checkout Repo"
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           submodules: recursive
+          persist-credentials: false
       - name: "Install Node"
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "24.18.0"
+      - name: "Enable Corepack"
+        run: |
+          corepack enable pnpm
+          corepack install --global pnpm@11.13.1
+          test "$(pnpm --version)" = "11.13.1"
+      - name: "Resolve pnpm Store"
+        id: pnpm-cache
+        run: 'echo "store=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"'
+      - name: "Cache pnpm Store"
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ${{ steps.pnpm-cache.outputs.store }}
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+      - name: "Install JS Dependencies"
+        run: "pnpm install --frozen-lockfile"
+      - name: "Install Foundry"
+        uses: foundry-rs/foundry-toolchain@b00af27efadbc7b4ca8b82abbd903b17cc874d2a # v1.9.0
+        with:
+          version: v1.7.1
+      - name: "Test packed package consumers"
+        run: "pnpm run test:package"
+
+  forge-quality:
+    name: "Forge Formatting and Linting"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: "Checkout Repo"
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - name: "Install Node"
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "24.18.0"
+      - name: "Enable Corepack"
+        run: |
+          corepack enable pnpm
+          corepack install --global pnpm@11.13.1
+          test "$(pnpm --version)" = "11.13.1"
+      - name: "Resolve pnpm Store"
+        id: pnpm-cache
+        run: 'echo "store=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"'
+      - name: "Cache pnpm Store"
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ${{ steps.pnpm-cache.outputs.store }}
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+      - name: "Install JS Dependencies"
+        run: "pnpm install --frozen-lockfile"
+      - name: "Install Foundry"
+        uses: foundry-rs/foundry-toolchain@b00af27efadbc7b4ca8b82abbd903b17cc874d2a # v1.9.0
+        with:
+          version: v1.7.1
+      - name: "Check Solidity formatting"
+        run: "pnpm run fmt:forge"
+      - name: "Run Forge lint"
+        run: "pnpm run lint:forge"
+      - name: "Enforce immutable CI and maintenance policy"
+        run: "pnpm run ci:policy"
+
+  slither:
+    name: "Slither"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: "Checkout Repo"
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - name: "Install Node"
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: "24.18.0"
       - name: "Install Python"
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: "3.11"
       - name: "Enable Corepack"
@@ -111,6 +326,16 @@ jobs:
           corepack enable pnpm
           corepack install --global pnpm@11.13.1
           test "$(pnpm --version)" = "11.13.1"
+      - name: "Resolve pnpm Store"
+        id: pnpm-cache
+        run: 'echo "store=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"'
+      - name: "Cache pnpm Store"
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ${{ steps.pnpm-cache.outputs.store }}
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
       - name: "Install JS Dependencies"
         run: "pnpm install --frozen-lockfile"
       - name: "Install Slither and Solidity compiler"
@@ -122,17 +347,19 @@ jobs:
           solc --version | grep -Eq '^Version: 0\.8\.36\+'
       - name: "Run Slither"
         run: "pnpm run slither"
-  tests:
-    name: "Hardhat Integration Smokes"
-    runs-on: ubuntu-latest
-    needs: []
+
+  dependency-audit:
+    name: "Dependency Audit"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
       - name: "Checkout Repo"
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           submodules: recursive
+          persist-credentials: false
       - name: "Install Node"
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: "24.18.0"
       - name: "Enable Corepack"
@@ -152,118 +379,35 @@ jobs:
             ${{ runner.os }}-pnpm-
       - name: "Install JS Dependencies"
         run: "pnpm install --frozen-lockfile"
-      - name: "Type-check Hardhat configuration and smokes"
-        run: "pnpm run typecheck"
-      - name: "Enforce Hardhat compiler warning allowlist"
-        run: "pnpm run compiler-warnings:hardhat"
-      - name: "Run three interoperability smokes"
-        run: "pnpm run test:hardhat:smoke"
-      - name: "Enforce dependency audit ratchet"
+      - name: "Enforce zero critical and high findings"
         run: "pnpm run audit:ratchet"
-  forge-tests:
-    name: "Forge Tests"
-    runs-on: ubuntu-latest
-    needs: []
-    timeout-minutes: 15
-    env:
-      FOUNDRY_PROFILE: ci
-    steps:
-      - name: "Checkout Repo"
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-        with:
-          submodules: recursive
-          # The parity gate verifies the immutable Stage 12a checkpoint.
-          fetch-depth: 0
-      - name: "Install Node"
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
-        with:
-          node-version: "24.18.0"
-      - name: "Enable Corepack"
-        run: |
-          corepack enable pnpm
-          corepack install --global pnpm@11.13.1
-          test "$(pnpm --version)" = "11.13.1"
-      - name: "Resolve pnpm Store"
-        id: pnpm-cache
-        run: 'echo "store=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"'
-      - name: "Cache pnpm Store"
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
-        with:
-          path: ${{ steps.pnpm-cache.outputs.store }}
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
-      - name: "Install JS Dependencies"
-        run: "pnpm install --frozen-lockfile"
-      - name: "Install Foundry"
-        uses: foundry-rs/foundry-toolchain@b00af27efadbc7b4ca8b82abbd903b17cc874d2a # v1.9.0
-        with:
-          version: v1.7.1
-      - name: "Enforce Forge compiler warning allowlist"
-        run: "pnpm run compiler-warnings:forge"
-      - name: "Check Solidity formatting"
-        run: "pnpm run fmt:forge"
-      - name: "Run tests"
-        run: "pnpm run test:safety"
-      - name: "Enforce key-flow gas baseline"
-        run: "pnpm run gas:check"
-      - name: "Enforce EIP-170 contract sizes"
-        run: "pnpm run size:check"
-  package-consumers:
-    name: "Compatibility and Package Consumers"
-    runs-on: ubuntu-latest
-    needs: []
-    steps:
-      - name: "Checkout Repo"
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-        with:
-          submodules: recursive
-          # Stage 9 verifies the forge-std tag, ancestry, and exact commit count.
-          fetch-depth: 0
-      - name: "Install Node"
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
-        with:
-          node-version: "24.18.0"
-      - name: "Enable Corepack"
-        run: |
-          corepack enable pnpm
-          corepack install --global pnpm@11.13.1
-          test "$(pnpm --version)" = "11.13.1"
-      - name: "Resolve pnpm Store"
-        id: pnpm-cache
-        run: 'echo "store=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"'
-      - name: "Cache pnpm Store"
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
-        with:
-          path: ${{ steps.pnpm-cache.outputs.store }}
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
-      - name: "Install JS Dependencies"
-        run: "pnpm install --frozen-lockfile"
-      - name: "Install Foundry"
-        uses: foundry-rs/foundry-toolchain@b00af27efadbc7b4ca8b82abbd903b17cc874d2a # v1.9.0
-        with:
-          version: v1.7.1
-      - name: "Enforce compatibility manifest"
-        run: "pnpm run compatibility"
-      - name: "Test packed package consumers"
-        run: "pnpm run test:package"
+
   foundry-scheduled:
     name: "Scheduled Foundry Safety"
-    if: github.event_name == 'schedule'
-    runs-on: ubuntu-latest
-    needs: []
+    if: ${{ github.event_name == 'schedule' }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
       FOUNDRY_PROFILE: scheduled
     steps:
+      - name: "Generate and log rotating seed"
+        id: seed
+        shell: bash
+        run: |
+          seed="0x$(printf '%s' "${GITHUB_RUN_ID}:${GITHUB_RUN_ATTEMPT}" | sha256sum | cut -d ' ' -f 1)"
+          echo "FOUNDRY_FUZZ_SEED=$seed" >> "$GITHUB_ENV"
+          echo "seed=$seed" >> "$GITHUB_OUTPUT"
+          printf '%s\n' "$seed" > "$RUNNER_TEMP/foundry-seed.txt"
+          echo "Foundry seed: \`$seed\`" >> "$GITHUB_STEP_SUMMARY"
       - name: "Checkout Repo"
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           submodules: recursive
+          persist-credentials: false
+          # The scheduled parity run verifies immutable historical checkpoints.
+          fetch-depth: 0
       - name: "Install Node"
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: "24.18.0"
       - name: "Enable Corepack"
@@ -271,32 +415,40 @@ jobs:
           corepack enable pnpm
           corepack install --global pnpm@11.13.1
           test "$(pnpm --version)" = "11.13.1"
+      - name: "Resolve pnpm Store"
+        id: pnpm-cache
+        run: 'echo "store=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"'
+      - name: "Cache pnpm Store"
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ${{ steps.pnpm-cache.outputs.store }}
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
       - name: "Install JS Dependencies"
         run: "pnpm install --frozen-lockfile"
+      - name: "Record exact dependency update inventory"
+        run: "pnpm --silent maintenance:inventory > $RUNNER_TEMP/dependency-inventory.json"
       - name: "Install Foundry"
         uses: foundry-rs/foundry-toolchain@b00af27efadbc7b4ca8b82abbd903b17cc874d2a # v1.9.0
         with:
           version: v1.7.1
-      - name: "Generate and log rotating seed"
-        id: seed
+      - name: "Run scheduled fuzz and invariant profile"
+        timeout-minutes: 40
         shell: bash
         run: |
-          seed=$(printf '0x%064x' "$GITHUB_RUN_ID")
-          echo "FOUNDRY_FUZZ_SEED=$seed" >> "$GITHUB_ENV"
-          echo "seed=$seed" >> "$GITHUB_OUTPUT"
-          printf '%s\n' "$seed" > "$RUNNER_TEMP/foundry-seed.txt"
-          echo "Foundry seed: \`$seed\`" >> "$GITHUB_STEP_SUMMARY"
-      - name: "Run scheduled fuzz and invariant profile"
-        timeout-minutes: 42
-        run: "pnpm run test:safety:scheduled"
-      - name: "Upload minimized failures and seed"
-        if: always()
+          set -o pipefail
+          pnpm run test:safety:scheduled 2>&1 | tee "$RUNNER_TEMP/foundry-scheduled.log"
+      - name: "Upload minimized failures, seed, and log"
+        if: ${{ always() }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: foundry-scheduled-${{ github.run_id }}-${{ steps.seed.outputs.seed }}
+          name: foundry-scheduled-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             cache/fuzz
             cache/invariant
             ${{ runner.temp }}/foundry-seed.txt
-          if-no-files-found: warn
+            ${{ runner.temp }}/foundry-scheduled.log
+            ${{ runner.temp }}/dependency-inventory.json
+          if-no-files-found: error
           retention-days: 14
