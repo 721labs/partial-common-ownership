@@ -1,302 +1,101 @@
 {
-  "allowedDifferences": [
-    {
-      "baselineValue": null,
-      "candidateValue": [
-        "project/:@openzeppelin/contracts/=npm/@openzeppelin/contracts@5.6.1/"
-      ],
-      "path": "$.compiler.settings.remappings",
-      "reason": "Hardhat 3 native package resolution records one exact project-to-versioned-npm remapping; logical source names and complete source bytes remain equal to Stage 12a."
-    },
-    {
-      "baselineValue": "0xdb202e3981d93a859cdf7facab93b56e4f926fe495d04abff07b74d1ab3c0bf0",
-      "candidateValue": "0x0983450c69a51bc7c15a8425e0cdff4522e37c1acfa67415354c500f3735c2c5",
-      "path": "$.contracts.contracts/Wrapper.sol:Wrapper.creationBytecode.keccak256",
-      "reason": "Hardhat 3 canonical project/npm source names change only the compiler IPFS CBOR payload; checked-in evidence proves exact raw size, metadata length, metadata-stripped hash, size, and complete opcode equality."
-    },
-    {
-      "baselineValue": "0x037291189f7b8a51cfb8f98b83517e98539c37fa434ee65c6f6453bb71318d2e",
-      "candidateValue": "0x6f8fd661d8e5dc58e512f0991add7e34b0de04857b9d3099d104fe26e3f1bc12",
-      "path": "$.contracts.contracts/Wrapper.sol:Wrapper.runtimeBytecode.keccak256",
-      "reason": "Hardhat 3 canonical project/npm source names change only the compiler IPFS CBOR payload; checked-in evidence proves exact raw size, metadata length, metadata-stripped hash, size, and complete opcode equality."
-    },
-    {
-      "baselineValue": "0x2f4aac7e45c14b4bd099b2bb4d0117c077570f0f1bdd30fe4ef61d3c88a124af",
-      "candidateValue": "0x871b51e184e505533495b9e485386ebd7424f8ab11b267ba89b90ce39202d80e",
-      "path": "$.contracts.contracts/token/PartialCommonOwnership.sol:PartialCommonOwnership.creationBytecode.keccak256",
-      "reason": "Hardhat 3 canonical project/npm source names change only the compiler IPFS CBOR payload; checked-in evidence proves exact raw size, metadata length, metadata-stripped hash, size, and complete opcode equality."
-    },
-    {
-      "baselineValue": "0xdd3b276639e0b97a93744e77f3608c7e080b2cdad97a349ca94004590d4d6072",
-      "candidateValue": "0x3fc865e0e4bf2bc950c419f2bd65f7a4923d4bdd58c4fd4229073cf0e5037008",
-      "path": "$.contracts.contracts/token/PartialCommonOwnership.sol:PartialCommonOwnership.runtimeBytecode.keccak256",
-      "reason": "Hardhat 3 canonical project/npm source names change only the compiler IPFS CBOR payload; checked-in evidence proves exact raw size, metadata length, metadata-stripped hash, size, and complete opcode equality."
-    }
-  ],
+  "allowedDifferences": [],
   "baselineSha256": "4ec069e1cdb046198456b1db9179522b604d8dab062838c79e4cf8aa1e9df55c",
-  "candidate": "stage-12b-hardhat-3",
-  "migrationEvidence": {
+  "candidate": "stage-13-ci-security-maintenance",
+  "maintenanceEvidence": {
+    "addedFiles": [
+      ".github/dependabot.yml",
+      "compatibility/forge-lint-allowlist.json",
+      "scripts/check-ci-policy.cjs",
+      "scripts/check-forge-lint.cjs",
+      "scripts/dependency-inventory.cjs"
+    ],
     "boundFiles": {
-      ".github/workflows/tests.yml": "c0540a355281fe7531a5fbd150f880814e4ecae862412252beb1986ecd0cf7ae",
-      ".gitignore": "ed7875806319cbc511ca44c3b685e793346c6d6085559e7554817622c6f1cfc2",
-      "README.md": "d73a1678a21b8cdaa97d0d2c7a7e0faf1f03e0d2d9d233e9e9b50d1f7144bd3c",
-      "compatibility/audit-ratchet.json": "fc4fa90ddd1e9976339866df8497a5f4f697c79e4e28e66fe1d8f44e63845ffc",
-      "compatibility/safety-baselines.json": "d70fb57f2dbf4671178fee515a583cb48ea5ea8e263a187dc0dec9a229ea4b5c",
-      "coverage/lcov.info": "699bec5254479d496dd7fdf6366be2c5f1afe386585bfa4f2f4be0304735f575",
-      "docs/development.md": "ab326c2967a8739c4fedc844b1fefc9938b83faef2b2cdbf4b4db80dc1d95953",
-      "gas/README.md": "0d530cfa47569cadbf24dee83ffc0039e221e8b2da2f370c4a3a69c635dfc83e",
-      "hardhat.config.ts": "8a01d6013e117f9d6dfbc230ec8d639e0fac0793404483c2c5ae775cebeec91c",
-      "package.json": "3b4b5ca92aba7337e02f3fabb0cd0df250754ce624f5438f33817b2df6dabd12",
-      "pnpm-lock.yaml": "c3498cc86b99ace2ab1810b24e886565aebf089fb35edc8132b0d774cc2a3ab5",
-      "pnpm-workspace.yaml": "6cf3f83b7611f5b240d4f3d86d230ab61fb48d989260d4fbec3d3f60f7ed763c",
-      "scripts/audit-ratchet.cjs": "52ab6c99635bd55419944314c535420ecd7657f60b0dbdc578e1bc76025b2149",
-      "scripts/check-contract-sizes.cjs": "0c5e3e258c12fca1d946d0ecae7d36ad4ebbade97c3977179484977cd2cee6f7",
-      "scripts/check-coverage.cjs": "ec9d23cf30156793958b88fff8677170fd16cd8963515f30184df6ecc2216ee0",
-      "scripts/check-gas.cjs": "22d9e8538b9e94379f80740cb054a1d48b2a5a1ee38d92b66583a6ef6876f3e8",
-      "scripts/check-safety-baselines.cjs": "9b2621e171cbad70df9badd72daaed38e50ba989b9ec3aa1917feef5df16b149",
-      "scripts/run-coverage.cjs": "03a4faf4616791c7ad306eef27ad85e9c7505a6d8ea63e474e1ab7b03913ccd7",
-      "scripts/run-slither.cjs": "f69835d298e6e5a373be883a966e2a6ea8d89eb3055ee1095c908a5b1b50f4fd",
-      "scripts/test-package.cjs": "505ee382e0869f9c04fbbb2fbcf0714ab459c06735ed3a747dba01fa7811bffe",
-      "test/solidity/Remittance.t.sol": "3d4181126ca51fd7a58fd02ea0594465407f83c361f553c97ad549e0492320f8",
-      "test/solidity/helpers/EnhancedTest.sol": "8f0f905bceafb2003604984b4b2cfc8fef7a3e63b832bfbe36e848b01712bb08",
-      "tests/Interoperability.smoke.ts": "80bc8ba664ae11d9081e73427cde09652cfc7da03bbfa87fd61767400ca9f696",
-      "tsconfig.json": "d86cc63a05114438abb25258863b937cbc2a2b7433b6fe0ef83d274cec35a2b5"
+      ".github/dependabot.yml": "b5e19b671186ac4e3541664d00a0ad13d4c30e64610847a0b59eaa71b40f77b4",
+      ".github/workflows/tests.yml": "1e58f24d752da7e9a2e68a89113d53b37898bc046896ca968b32ce7c535d4195",
+      ".gitmodules": "ff4ebffecc8ab2a2a7320aa95762463fe80a4bc8acf0a4664d90d7c1adae75df",
+      "compatibility/forge-lint-allowlist.json": "13f6a34e3b6fc4c9295ae578f24b1cebdea96a45cb01b69acf5996f5ee986ef7",
+      "docs/development.md": "26cfbbcbc40713083d3132654259b2779adc148a41ac5075492d1db1b286c899",
+      "package.json": "5fc4d4382bda9e03f94e826de4f21f318e38649a74ba0c8981e749d56edbf6bc",
+      "scripts/audit-ratchet.cjs": "d52d7c69861b35dba286c99764c00b86da1be7505931c267d4ea7a8e87905128",
+      "scripts/check-ci-policy.cjs": "007bf6e8b21f1939b1c54c2f032645988dc32c597bcc6b95101514956f805b1c",
+      "scripts/check-forge-lint.cjs": "409e188118effff4a0c4a25b1497b94adb779b9088c5a4fd2d859a98515a8416",
+      "scripts/check-parity.cjs": "7a5cf2140d8fa5e246a064f2dbc69b69ad0353aa1b7fb9ad1653907355222df1",
+      "scripts/dependency-inventory.cjs": "6de23d7136ccef1dab89a1eefb082a07d542e50d54166c7641dfb032523e35e7",
+      "scripts/install.sh": "045b06f3d2f9705248aed669a252b41b5bd3285f44faf441127dbd62005a7b47"
     },
     "changedPaths": [
-      ".env.sample",
+      ".github/dependabot.yml",
       ".github/workflows/tests.yml",
-      ".gitignore",
-      ".prettierrc",
-      ".solcover.js",
-      ".solhint.json",
-      "README.md",
+      ".gitmodules",
       "compatibility/README.md",
-      "compatibility/audit-ratchet.json",
-      "compatibility/compiler-warning-allowlist.json",
-      "compatibility/erc165.capture.ts",
-      "compatibility/evidence/stage-12b-hardhat-3.json",
-      "compatibility/hardhat.capture.config.ts",
-      "compatibility/hardhat.reporter.js",
+      "compatibility/evidence/stage-13-ci-security-maintenance.json",
+      "compatibility/forge-lint-allowlist.json",
       "compatibility/reviewed-differences.json",
-      "compatibility/safety-baselines.json",
-      "compatibility/stage-12b-hardhat3-inventory.json",
-      "contracts/test/EnhancedTest.sol",
-      "coverage/lcov.info",
+      "compatibility/stage-13-ci-maintenance-inventory.json",
       "docs/development.md",
-      "gas/README.md",
-      "hardhat.config.d.ts",
-      "hardhat.config.ts",
       "package.json",
-      "pnpm-lock.yaml",
-      "pnpm-workspace.yaml",
       "scripts/audit-ratchet.cjs",
-      "scripts/audit-ratchet.js",
-      "scripts/check-compiler-warnings.cjs",
-      "scripts/check-compiler-warnings.js",
-      "scripts/check-contract-sizes.cjs",
-      "scripts/check-contract-sizes.js",
-      "scripts/check-coverage.cjs",
-      "scripts/check-coverage.js",
-      "scripts/check-gas.cjs",
-      "scripts/check-gas.js",
+      "scripts/check-ci-policy.cjs",
+      "scripts/check-forge-lint.cjs",
       "scripts/check-parity.cjs",
-      "scripts/check-parity.js",
-      "scripts/check-pnpm-lock.js",
-      "scripts/check-safety-baselines.cjs",
-      "scripts/check-safety-baselines.js",
       "scripts/compatibility.cjs",
-      "scripts/compatibility.js",
-      "scripts/run-coverage.cjs",
-      "scripts/run-coverage.js",
-      "scripts/run-slither.cjs",
-      "scripts/run-slither.js",
-      "scripts/test-package.cjs",
-      "scripts/test-package.js",
-      "test/solidity/Remittance.t.sol",
-      "test/solidity/helpers/EnhancedTest.sol",
-      "tests/Interoperability.smoke.ts",
-      "tests/PartialCommonOwnership/types.ts",
-      "tests/helpers/EVM.ts",
-      "tests/helpers/Numeric.ts",
-      "tests/helpers/Time.ts",
-      "tests/helpers/Wallet.ts",
-      "tests/helpers/constants.ts",
-      "tests/helpers/types.ts",
-      "tests/helpers/utils.ts",
-      "tsconfig.json",
-      "utils/deploy.ts"
+      "scripts/dependency-inventory.cjs",
+      "scripts/install.sh"
     ],
     "checkpoint": {
-      "commit": "9a86ff5d001a4d3a06823712d0e70ad011987ecd",
+      "commit": "bfdbcfaf84bd681c823487d1267139353df7ec37",
+      "compatibilityRunner": {
+        "path": "scripts/compatibility.cjs",
+        "sha256": "f8c1a26d90ec696c2b7d317813210dc903cd831d8e978e1861135a1dbfdddab9"
+      },
       "evidence": {
-        "path": "compatibility/evidence/stage-12a-ethers-6.json",
-        "sha256": "183eee1da9cab1bbfff5d7f4eb8b2271f25a37d4ff3517b910e1b288bacd0b6f"
+        "path": "compatibility/evidence/stage-12b-hardhat-3.json",
+        "sha256": "d5e4e569dd9698e5dad1326b29461b0fe01d25c13bc8ad72075e5a084bd0e998"
+      },
+      "inventory": {
+        "path": "compatibility/stage-12b-hardhat3-inventory.json",
+        "sha256": "ce37ec6e86d25aa8bb947a5b62f1885ff7c6541fda0ca2c2560e034b5c682e9e"
       },
       "review": {
         "path": "compatibility/reviewed-differences.json",
-        "sha256": "7a81410a18e677c44cf92d111e9899c9a600eb7f512dd84b66c04a1bb805d6e0"
+        "sha256": "0429ef8df0361120e485ac8f0ade6f6b4892e3a162287ec61bb8dc69de4b9402"
       }
     },
-    "commonJsRenames": [
-      "audit-ratchet",
-      "check-compiler-warnings",
-      "check-contract-sizes",
-      "check-coverage",
-      "check-gas",
-      "check-parity",
-      "check-safety-baselines",
-      "compatibility",
-      "run-coverage",
-      "run-slither",
-      "test-package"
-    ],
-    "coverageHelperRelocation": {
-      "historicalStage07Evidence": {
-        "path": "compatibility/evidence/stage-07-safety-artifacts.json",
-        "sha256": "0065814caec6e3044951f80c891c9948454e90138d016513ed07d0fcfb7c67d8",
-        "unchanged": true
-      },
-      "lcov": {
-        "baselineSha256": "ff3da920a30fcb3661376d4d94f549eb81d14831618d7d324c0fd240668ad969",
-        "baselineSizeBytes": 21117,
-        "candidateSha256": "699bec5254479d496dd7fdf6366be2c5f1afe386585bfa4f2f4be0304735f575",
-        "candidateSizeBytes": 21124,
-        "onlySourcePathChanged": true,
-        "path": "coverage/lcov.info",
-        "sourcePathAfter": "test/solidity/helpers/EnhancedTest.sol",
-        "sourcePathBefore": "contracts/test/EnhancedTest.sol"
-      },
-      "safetyManifest": {
-        "baselineSha256": "ee7e262b81e032ceff85278780fee0544792ee9b44e64d8c058d8bbb12d0839e",
-        "candidateSha256": "d70fb57f2dbf4671178fee515a583cb48ea5ea8e263a187dc0dec9a229ea4b5c",
-        "onlyLcovBindingChanged": true,
-        "path": "compatibility/safety-baselines.json"
-      }
+    "compatibilityRunnerSha256": "58f4f84f1fd8b8ab54d98d6c7f8d9364d45fca4dabc3c40382729d1050f4d8ff",
+    "forgeStd": {
+      "branch": "v1",
+      "commit": "bf647bd6046f2f7da30d0c2bf435e5c76a780c1b"
     },
-    "helperMove": {
-      "consumer": "test/solidity/Remittance.t.sol",
-      "consumerSha256": "3d4181126ca51fd7a58fd02ea0594465407f83c361f553c97ad549e0492320f8",
-      "from": "contracts/test/EnhancedTest.sol",
-      "sha256": "8f0f905bceafb2003604984b4b2cfc8fef7a3e63b832bfbe36e848b01712bb08",
-      "to": "test/solidity/helpers/EnhancedTest.sol"
+    "immutableStage12bEvidence": {
+      "path": "compatibility/evidence/stage-12b-hardhat-3.json",
+      "sha256": "d5e4e569dd9698e5dad1326b29461b0fe01d25c13bc8ad72075e5a084bd0e998"
     },
     "inventory": {
-      "path": "compatibility/stage-12b-hardhat3-inventory.json",
-      "sha256": "ce37ec6e86d25aa8bb947a5b62f1885ff7c6541fda0ca2c2560e034b5c682e9e"
+      "path": "compatibility/stage-13-ci-maintenance-inventory.json",
+      "sha256": "1ddf58ff2c58832c82c903b71180add027a18598633f9e39d81e5dffb5f9d420"
     },
-    "ownedFileSha256": {
-      "compatibility/README.md": "76636221da5c6e836860592141e372cd36fe78757e13acc480008ad498481ba8",
-      "compatibility/compiler-warning-allowlist.json": "9cae9f479731aba3a55a50418f66f1cb66fd59c6dbe19a44fed7415c9adf0763",
-      "compatibility/erc165.capture.ts": "f77e3c7309c4f7c4367bd5419dddf27865c15d53ed98afe418e6a8fbe3ab24b6",
-      "scripts/check-compiler-warnings.cjs": "3f082e607c7abed11b822e767e14e7415a50671ec033e6655c10053686490b50",
-      "scripts/check-parity.cjs": "4a9e500bbc609a97b2ba1a6e2842c23644ead8444c219f04ff1a717637019fda"
-    },
-    "package": {
-      "devDependencies": {
-        "@nomicfoundation/hardhat-ethers": "4.0.14",
-        "@types/node": "24.13.3",
-        "ethers": "6.17.0",
-        "hardhat": "3.9.1",
-        "tsx": "4.23.1",
-        "typescript": "7.0.2"
-      },
-      "packageManager": "pnpm@11.13.1",
-      "removedDevDependencies": [
-        "@ethersproject/abi",
-        "@ethersproject/contracts",
-        "@ethersproject/providers",
-        "@nomiclabs/hardhat-ethers",
-        "@nomiclabs/hardhat-waffle",
-        "@nomiclabs/hardhat-web3",
-        "@openzeppelin/test-helpers",
-        "@typechain/ethers-v5",
-        "@typechain/hardhat",
-        "@types/chai",
-        "@types/js-yaml",
-        "@types/mocha",
-        "chai",
-        "cross-env",
-        "dotenv",
-        "ethereum-waffle",
-        "hardhat-gas-reporter",
-        "js-yaml",
-        "prettier",
-        "prettier-plugin-solidity",
-        "solhint",
-        "solhint-plugin-prettier",
-        "solidity-coverage",
-        "ts-node",
-        "typechain",
-        "web3"
-      ],
-      "runtimeDependencies": {
-        "@openzeppelin/contracts": "5.6.1"
-      },
-      "smokeRunner": "hardhat build && node --import tsx --test tests/Interoperability.smoke.ts",
-      "testRunner": "pnpm run test:forge && pnpm run test:hardhat:smoke",
-      "type": "module"
-    },
-    "removedFiles": [
-      ".env.sample",
-      ".prettierrc",
-      ".solcover.js",
-      ".solhint.json",
-      "compatibility/hardhat.capture.config.ts",
-      "compatibility/hardhat.reporter.js",
-      "hardhat.config.d.ts",
-      "scripts/check-pnpm-lock.js",
-      "tests/PartialCommonOwnership/types.ts",
-      "tests/helpers/EVM.ts",
-      "tests/helpers/Numeric.ts",
-      "tests/helpers/Time.ts",
-      "tests/helpers/Wallet.ts",
-      "tests/helpers/constants.ts",
-      "tests/helpers/types.ts",
-      "tests/helpers/utils.ts",
-      "utils/deploy.ts"
+    "modifiedFiles": [
+      ".github/workflows/tests.yml",
+      ".gitmodules",
+      "docs/development.md",
+      "package.json",
+      "scripts/audit-ratchet.cjs",
+      "scripts/check-parity.cjs",
+      "scripts/install.sh"
     ],
-    "tools": {
-      "allowedPlatformBinarySha256": {
-        "forge": {
-          "darwin-arm64": "e729589084ca2f1479354353d1ec3d4789451b577f4cdee4e7dc57cae64a38fa",
-          "linux-x64": "4f77da0810de94325734855d0ad58d70640aa8a5b2a837608ddf8c26da34355c"
-        },
-        "solc": {
-          "darwin-arm64": "d4abcf0b3e24b7948ddfd64c374d26c3214648717777790ecb936979054a129d",
-          "linux-x64": "c8d35afdddc3cd2743ee88b8f25e0fecd16e2bdd5f2120f37e52cd9cc45ae0e6"
-        }
+    "package": {
+      "changedScripts": {
+        "ci:policy": "node scripts/check-ci-policy.cjs",
+        "lint:forge": "node scripts/check-forge-lint.cjs",
+        "maintenance:inventory": "node scripts/dependency-inventory.cjs"
       },
-      "config": {
-        "autoDetectSolc": false,
-        "bytecodeHash": "ipfs",
-        "cborMetadata": true,
-        "evmVersion": "london",
-        "fuzz": {
-          "gasReportSamples": 256,
-          "runs": 512,
-          "seed": "0x721"
-        },
-        "libs": [
-          "lib"
-        ],
-        "optimizer": false,
-        "optimizerRuns": 200,
-        "solc": "0.8.36",
-        "src": "contracts",
-        "test": "test/solidity",
-        "useLiteralContent": false,
-        "viaIR": false
+      "previousScripts": {
+        "ci:policy": null,
+        "lint:forge": "forge lint",
+        "maintenance:inventory": null
       },
-      "currentPlatformValidated": true,
-      "forge": {
-        "buildProfile": "dist",
-        "commitSha": "4072e48705af9d93e3c0f6e29e93b5e9a40caed8",
-        "version": "1.7.1"
-      },
-      "solc": {
-        "longVersion": "0.8.36+commit.8a079791",
-        "version": "0.8.36"
-      }
+      "unchangedPackageWithoutScriptsSha256": "5561e1047df932a65a9a04f0347de7088c6667ff8abd41a180504ca80e6ce8b5"
     }
   },
   "opcodeEvidence": {
@@ -304,20 +103,28 @@
       "contracts/Wrapper.sol:Wrapper",
       "contracts/token/PartialCommonOwnership.sol:PartialCommonOwnership"
     ],
-    "mode": "stage-12b-stage-12a-metadata-only",
-    "path": "compatibility/evidence/stage-12b-hardhat-3.json"
+    "mode": "stage-13-stage-12b-exact-equality",
+    "path": "compatibility/evidence/stage-13-ci-security-maintenance.json"
   },
-  "policy": "stage-12b-hardhat-3-stage-12a-metadata-only",
+  "policy": "stage-13-stage-12b-exact-equality",
   "schemaVersion": 1,
-  "stage12aCheckpoint": {
-    "commit": "9a86ff5d001a4d3a06823712d0e70ad011987ecd",
+  "stage12bCheckpoint": {
+    "commit": "bfdbcfaf84bd681c823487d1267139353df7ec37",
+    "compatibilityRunner": {
+      "path": "scripts/compatibility.cjs",
+      "sha256": "f8c1a26d90ec696c2b7d317813210dc903cd831d8e978e1861135a1dbfdddab9"
+    },
     "evidence": {
-      "path": "compatibility/evidence/stage-12a-ethers-6.json",
-      "sha256": "183eee1da9cab1bbfff5d7f4eb8b2271f25a37d4ff3517b910e1b288bacd0b6f"
+      "path": "compatibility/evidence/stage-12b-hardhat-3.json",
+      "sha256": "d5e4e569dd9698e5dad1326b29461b0fe01d25c13bc8ad72075e5a084bd0e998"
+    },
+    "inventory": {
+      "path": "compatibility/stage-12b-hardhat3-inventory.json",
+      "sha256": "ce37ec6e86d25aa8bb947a5b62f1885ff7c6541fda0ca2c2560e034b5c682e9e"
     },
     "review": {
       "path": "compatibility/reviewed-differences.json",
-      "sha256": "7a81410a18e677c44cf92d111e9899c9a600eb7f512dd84b66c04a1bb805d6e0"
+      "sha256": "0429ef8df0361120e485ac8f0ade6f6b4892e3a162287ec61bb8dc69de4b9402"
     }
   }
 }

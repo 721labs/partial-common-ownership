@@ -339,6 +339,38 @@ node scripts/compatibility.cjs check
 node scripts/compatibility.cjs stage-12b-negative-probes
 ```
 
+Stage 13 uses the named `stage-13-stage-12b-exact-equality` policy. It anchors
+the merged Stage 12b commit `bfdbcfaf84bd681c823487d1267139353df7ec37`
+and the exact Stage 12b evidence, review, inventory, and compatibility-runner
+digests. The gate reconstructs the checkpoint rather than interpreting the
+live maintenance files as Stage 12b inputs.
+
+This stage is limited to CI, dependency-maintenance, audit, Forge-lint,
+bootstrap, and development-documentation tooling. Its inventory classifies
+every added or modified maintenance file and binds its final digest. It also
+proves that the `package.json` change is limited to the three reviewed maintenance
+scripts, the forge-std gitlink remains pinned, and the repository contains no
+unreviewed path relative to the checkpoint. The parity runner reads the
+immutable Stage 12b inventory from the checkpoint and separately binds the live
+Stage 13 inventory, preserving the exact three Hardhat and 140 Forge test
+identities.
+
+No compatibility-manifest difference is reviewable. ABI, selectors, events,
+errors, storage, interfaces, enum ordinals, ERC165 answers, revert callsites,
+compiler settings and source closure, raw and metadata-stripped bytecode,
+opcodes, sizes, all 15 legacy gas entries, all 12 key-flow gas entries, and all
+143 active test identifiers must equal Stage 12b exactly. The checked-in Stage
+13 evidence records that replay without rewriting any Stage 12b artifact.
+
+Reproduce the Stage 13 review, evidence, gate, and adversarial probes with:
+
+```console
+node scripts/compatibility.cjs write-stage-13-review
+node scripts/compatibility.cjs write-evidence
+node scripts/compatibility.cjs check
+node scripts/compatibility.cjs stage-13-negative-probes
+```
+
 The original baseline predated explicit revert-literal extraction.
 `project-revert-strings.json` is a SHA-256-bound supplement derived from the
 unchanged production sources at the recorded baseline commit. It binds all 35

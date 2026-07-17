@@ -11,8 +11,28 @@ const baseline = require(path.join(
 ));
 
 const pnpm = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
+const FINAL_POLICY = Object.freeze({ critical: 0, high: 0 });
 let report;
 const failures = [];
+
+if (
+  baseline.schemaVersion !== 1 ||
+  baseline.capturedWith !== "pnpm 11.13.1" ||
+  JSON.stringify(Object.keys(baseline.policy).sort()) !==
+    JSON.stringify(Object.keys(FINAL_POLICY).sort())
+) {
+  console.error("The checked-in audit policy has an invalid final schema.");
+  process.exit(2);
+}
+
+for (const [severity, expected] of Object.entries(FINAL_POLICY)) {
+  if (baseline.policy[severity] !== expected) {
+    console.error(
+      `Audit policy must remain ${severity}=${expected}; checked-in policy was ${baseline.policy[severity]}.`
+    );
+    process.exit(2);
+  }
+}
 
 // npm is retiring its legacy audit endpoint and intermittently returns HTTP
 // 410 while pnpm retries through the bulk advisory endpoint. Retry the command
@@ -47,19 +67,27 @@ if (!report) {
 }
 
 const counts = report.metadata.vulnerabilities;
+const severities = ["critical", "high", "moderate", "low", "info"];
+
+for (const severity of severities) {
+  if (!Number.isInteger(counts[severity]) || counts[severity] < 0) {
+    console.error(`pnpm audit returned an invalid ${severity} count.`);
+    process.exit(2);
+  }
+}
 
 console.log(
   `Audit counts: critical=${counts.critical}, high=${counts.high}, moderate=${counts.moderate}, low=${counts.low}, info=${counts.info}`
 );
 
-const regressions = ["critical", "high"].filter(
-  (severity) => counts[severity] > baseline.policy[severity]
+const blocked = Object.keys(FINAL_POLICY).filter(
+  (severity) => counts[severity] !== FINAL_POLICY[severity]
 );
 
-if (regressions.length > 0) {
-  for (const severity of regressions) {
+if (blocked.length > 0) {
+  for (const severity of blocked) {
     console.error(
-      `${severity} vulnerabilities increased from ${baseline.policy[severity]} to ${counts[severity]}`
+      `${severity} vulnerabilities must remain zero; audit reported ${counts[severity]}`
     );
   }
   process.exit(1);

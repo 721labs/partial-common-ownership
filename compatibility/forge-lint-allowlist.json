@@ -1,0 +1,133 @@
+{
+  "schemaVersion": 1,
+  "tool": {
+    "version": "1.7.1",
+    "commitSha": "4072e48705af9d93e3c0f6e29e93b5e9a40caed8",
+    "buildProfile": "dist"
+  },
+  "scope": {
+    "roots": [
+      "contracts",
+      "test/solidity"
+    ],
+    "severities": [
+      "high",
+      "med",
+      "low"
+    ]
+  },
+  "sourceSha256": {
+    "contracts/test/Blocker.sol": "aca41aa8d3aac9a0470992486b2332ebe60fef1f68733ea1796eb928a11192e9",
+    "contracts/token/modules/Taxation.sol": "72aa02e63d76e28e6f04e29ea49e81a764f2211955e032a907fe0a7e524b0027",
+    "test/solidity/fuzz/WrapperFuzz.t.sol": "ecd22eec5c14af50f0837f45b8ec72714729bf449645d82752ab430b7b4a8795",
+    "test/solidity/invariant/PCOInvariant.t.sol": "8a1f76de69c21233608992678ace76e8a72225d5361d50063bcaa0c7069c4efb",
+    "test/solidity/parity/PCOMutationParity.t.sol": "3aee5877b76da7143bf3b678f86d76e670f7ce86b49ec9a8d13216cf4cd78aea",
+    "test/solidity/parity/PCOReadTaxParity.t.sol": "3e743560bff1f62eb359fcadfbca9b87022a9b6eb68c1c73d27e8051f3fbc8a8"
+  },
+  "diagnostics": [
+    {
+      "severity": "high",
+      "code": "unchecked-call",
+      "level": "warning",
+      "source": "contracts/test/Blocker.sol",
+      "start": 584,
+      "end": 792,
+      "lineStart": 27,
+      "lineEnd": 34,
+      "columnStart": 5,
+      "columnEnd": 6,
+      "message": "Low-level calls should check the success return value"
+    },
+    {
+      "severity": "med",
+      "code": "divide-before-multiply",
+      "level": "warning",
+      "source": "contracts/token/modules/Taxation.sol",
+      "start": 6045,
+      "end": 6130,
+      "lineStart": 205,
+      "lineEnd": 206,
+      "columnStart": 8,
+      "columnEnd": 28,
+      "message": "multiplication should occur before division to avoid loss of precision"
+    },
+    {
+      "severity": "med",
+      "code": "divide-before-multiply",
+      "level": "warning",
+      "source": "test/solidity/parity/PCOMutationParity.t.sol",
+      "start": 36631,
+      "end": 36720,
+      "lineStart": 822,
+      "lineEnd": 822,
+      "columnStart": 14,
+      "columnEnd": 103,
+      "message": "multiplication should occur before division to avoid loss of precision"
+    },
+    {
+      "severity": "med",
+      "code": "divide-before-multiply",
+      "level": "warning",
+      "source": "test/solidity/parity/PCOReadTaxParity.t.sol",
+      "start": 28678,
+      "end": 28771,
+      "lineStart": 667,
+      "lineEnd": 667,
+      "columnStart": 17,
+      "columnEnd": 110,
+      "message": "multiplication should occur before division to avoid loss of precision"
+    },
+    {
+      "severity": "low",
+      "code": "block-timestamp",
+      "level": "warning",
+      "source": "test/solidity/fuzz/WrapperFuzz.t.sol",
+      "start": 38759,
+      "end": 38811,
+      "lineStart": 871,
+      "lineEnd": 871,
+      "columnStart": 20,
+      "columnEnd": 72,
+      "message": "usage of `block.timestamp` in a comparison may be manipulated by validators"
+    },
+    {
+      "severity": "low",
+      "code": "block-timestamp",
+      "level": "warning",
+      "source": "test/solidity/invariant/PCOInvariant.t.sol",
+      "start": 8453,
+      "end": 8483,
+      "lineStart": 223,
+      "lineEnd": 223,
+      "columnStart": 13,
+      "columnEnd": 43,
+      "message": "usage of `block.timestamp` in a comparison may be manipulated by validators"
+    },
+    {
+      "severity": "low",
+      "code": "block-timestamp",
+      "level": "warning",
+      "source": "test/solidity/invariant/PCOInvariant.t.sol",
+      "start": 8994,
+      "end": 9024,
+      "lineStart": 237,
+      "lineEnd": 237,
+      "columnStart": 13,
+      "columnEnd": 43,
+      "message": "usage of `block.timestamp` in a comparison may be manipulated by validators"
+    },
+    {
+      "severity": "low",
+      "code": "block-timestamp",
+      "level": "warning",
+      "source": "test/solidity/parity/PCOMutationParity.t.sol",
+      "start": 32785,
+      "end": 32833,
+      "lineStart": 741,
+      "lineEnd": 741,
+      "columnStart": 73,
+      "columnEnd": 121,
+      "message": "usage of `block.timestamp` in a comparison may be manipulated by validators"
+    }
+  ]
+}
