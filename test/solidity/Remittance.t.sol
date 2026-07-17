@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.36;
 
-import {EnhancedTest} from "../../contracts/test/EnhancedTest.sol";
+import {EnhancedTest} from "./helpers/EnhancedTest.sol";
 import {Vm} from "forge-std/Vm.sol";
 import {Remittance, RemittanceTriggers} from "../../contracts/token/modules/Remittance.sol";
 import {RejectEther} from "./helpers/RejectEther.sol";

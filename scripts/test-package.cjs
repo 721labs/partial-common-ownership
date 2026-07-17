@@ -1,3 +1,5 @@
+"use strict";
+
 const { spawnSync } = require("child_process");
 const fs = require("fs");
 const os = require("os");
@@ -7,7 +9,7 @@ const { createRequire } = require("module");
 const PROJECT_ROOT = path.resolve(__dirname, "..");
 const PACKAGE_NAME = "@721labs/partial-common-ownership";
 const PNPM_VERSION = "11.13.1";
-const HARDHAT_VERSION = "2.28.6";
+const HARDHAT_VERSION = "3.9.1";
 const FOUNDRY_VERSION = "1.7.1";
 const SOLC_VERSION = "0.8.36";
 const OPENZEPPELIN_VERSION = "5.6.1";
@@ -339,6 +341,7 @@ function buildHardhatConsumer(directory, tarball) {
       name: "pco-hardhat-package-consumer",
       version: "0.0.0",
       private: true,
+      type: "module",
       packageManager: `pnpm@${PNPM_VERSION}`,
       dependencies: {
         [PACKAGE_NAME]: "file:./package.tgz",
@@ -347,13 +350,11 @@ function buildHardhatConsumer(directory, tarball) {
         hardhat: HARDHAT_VERSION,
       },
     },
-    // Hardhat 2 resolves Solidity libraries from the project root, so expose
-    // only the package's declared OpenZeppelin dependency there. Its legacy
-    // keccak dependency has a JS fallback and does not need a native build.
-    `publicHoistPattern:
-  - "@openzeppelin/contracts"
-allowBuilds:
-  keccak@3.0.4: false`
+    // Hardhat 3 executes TypeScript/ESM configuration through its exact tsx
+    // graph. Permit only that compiler build; dependency resolution remains
+    // strict and OpenZeppelin is intentionally not hoisted into the consumer.
+    `allowBuilds:
+  esbuild@0.28.1: true`
   );
 
   writeFile(
@@ -361,8 +362,10 @@ allowBuilds:
     consumerSource()
   );
   writeFile(
-    path.join(directory, "hardhat.config.cjs"),
-    `module.exports = {
+    path.join(directory, "hardhat.config.js"),
+    `import { defineConfig } from "hardhat/config";
+
+export default defineConfig({
   solidity: {
     version: "${SOLC_VERSION}",
     settings: {
@@ -377,10 +380,10 @@ allowBuilds:
     cache: "./cache",
     artifacts: "./artifacts"
   }
-};`
+});`
   );
 
-  run(pnpm, ["exec", "hardhat", "compile"], { cwd: directory });
+  run(pnpm, ["exec", "hardhat", "build"], { cwd: directory });
   assertArtifacts(
     directory,
     [

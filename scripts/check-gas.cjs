@@ -1,10 +1,12 @@
 #!/usr/bin/env node
 
+"use strict";
+
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const { spawnSync } = require("child_process");
-const { verifySafetyBaselines } = require("./check-safety-baselines");
+const { verifySafetyBaselines } = require("./check-safety-baselines.cjs");
 
 const ROOT = path.resolve(__dirname, "..");
 const BASELINE_PATH = path.join(ROOT, "gas", "key-flows.snap");

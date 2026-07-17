@@ -2,14 +2,10 @@
 out
 cache
 
-# Typechain
-types
-
 # Solidity Coverage
 /coverage/*
 !/coverage/README.md
 !/coverage/lcov.info
-coverage.json
 
 # Environment Variables
 .env

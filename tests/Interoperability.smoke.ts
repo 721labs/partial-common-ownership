@@ -1,6 +1,10 @@
-import { expect } from "chai";
-import { ethers, network } from "hardhat";
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
 
+import { ethers as ethersLibrary } from "ethers";
+import hre from "hardhat";
+
+import type { HardhatEthersProvider } from "@nomicfoundation/hardhat-ethers/types";
 import type {
   Contract,
   ContractTransactionReceipt,
@@ -20,11 +24,11 @@ type DecodedEvent = {
   args: LogDescription["args"];
 };
 
-const ZERO_ADDRESS = ethers.ZeroAddress;
+const ZERO_ADDRESS = ethersLibrary.ZeroAddress;
 const ZERO = BigInt(0);
-const ONE_ETHER = ethers.parseEther("1");
-const TWO_ETHER = ethers.parseEther("2");
-const THREE_ETHER = ethers.parseEther("3");
+const ONE_ETHER = ethersLibrary.parseEther("1");
+const TWO_ETHER = ethersLibrary.parseEther("2");
+const THREE_ETHER = ethersLibrary.parseEther("3");
 const NINETY_DAYS = 90 * 24 * 60 * 60;
 const TEN_YEARS = 3650 * 24 * 60 * 60;
 const TAX_DENOMINATOR = BigInt("1000000000000");
@@ -113,39 +117,44 @@ async function expectRevertReason(
   }
 
   if (caught === undefined) {
-    expect.fail(`Expected transaction to revert with: ${expectedReason}`);
+    assert.fail(`Expected transaction to revert with: ${expectedReason}`);
   }
-  if (ethers.isError(caught, "CALL_EXCEPTION") && caught.reason !== null) {
-    expect(caught.reason).to.equal(expectedReason);
+  if (
+    ethersLibrary.isError(caught, "CALL_EXCEPTION") &&
+    caught.reason !== null
+  ) {
+    assert.equal(caught.reason, expectedReason);
     return;
   }
   if (caught instanceof Error) {
-    expect(caught.message).to.include(expectedReason);
+    assert.ok(caught.message.includes(expectedReason));
     return;
   }
-  expect.fail(`Unexpected rejection value: ${String(caught)}`);
+  assert.fail(`Unexpected rejection value: ${String(caught)}`);
 }
 
 function eventNames(events: DecodedEvent[]): string[] {
   return events.map(({ source, name }) => `${source}.${name}`);
 }
 
-async function resetNetwork(): Promise<void> {
-  await network.provider.send("hardhat_reset");
-  await network.provider.send("evm_setNextBlockTimestamp", [NETWORK_START]);
-  await network.provider.send("evm_mine");
+async function initializeNetwork(
+  provider: HardhatEthersProvider
+): Promise<void> {
+  await provider.send("evm_setNextBlockTimestamp", [NETWORK_START]);
+  await provider.send("evm_mine", []);
 }
 
-async function setNextTimestamp(timestamp: number): Promise<void> {
-  await network.provider.send("evm_setNextBlockTimestamp", [timestamp]);
+async function setNextTimestamp(
+  provider: HardhatEthersProvider,
+  timestamp: number
+): Promise<void> {
+  await provider.send("evm_setNextBlockTimestamp", [timestamp]);
 }
 
 describe("Hardhat interoperability smokes", function () {
-  beforeEach(async function () {
-    await resetNetwork();
-  });
-
   it("deploys and reads deterministic PCO configuration", async function () {
+    const { ethers } = await hre.network.create("hardhat");
+    await initializeNetwork(ethers.provider);
     const [, beneficiary] = await ethers.getSigners();
     const beneficiaryAddress = await beneficiary.getAddress();
     const pcoFactory = await ethers.getContractFactory("TestPCOToken");
@@ -153,9 +162,9 @@ describe("Hardhat interoperability smokes", function () {
     await pco.waitForDeployment();
     const pcoAddress = await pco.getAddress();
 
-    expect(await pco.supportsInterface("0x01ffc9a7")).to.equal(true);
-    expect(await pco.supportsInterface("0x80ac58cd")).to.equal(true);
-    expect(await pco.supportsInterface("0x5b5e139f")).to.equal(false);
+    assert.equal(await pco.supportsInterface("0x01ffc9a7"), true);
+    assert.equal(await pco.supportsInterface("0x80ac58cd"), true);
+    assert.equal(await pco.supportsInterface("0x5b5e139f"), false);
 
     const expectedRates = [
       BigInt("50000000000"),
@@ -168,20 +177,23 @@ describe("Hardhat interoperability smokes", function () {
 
     for (let index = 0; index < 3; index++) {
       const tokenId = BigInt(index + 1);
-      expect(await pco.ownerOf(tokenId)).to.equal(pcoAddress);
-      expect(await pco.beneficiaryOf(tokenId)).to.equal(beneficiaryAddress);
-      expect(await pco.taxRateOf(tokenId)).to.equal(expectedRates[index]);
-      expect(await pco.collectionFrequencyOf(tokenId)).to.equal(
+      assert.equal(await pco.ownerOf(tokenId), pcoAddress);
+      assert.equal(await pco.beneficiaryOf(tokenId), beneficiaryAddress);
+      assert.equal(await pco.taxRateOf(tokenId), expectedRates[index]);
+      assert.equal(
+        await pco.collectionFrequencyOf(tokenId),
         expectedFrequencies[index]
       );
-      expect(await pco.valuationOf(tokenId)).to.equal(ZERO);
-      expect(await pco.depositOf(tokenId)).to.equal(ZERO);
-      expect(await pco.taxationCollected(tokenId)).to.equal(ZERO);
-      expect(await pco.lastCollectionTimeOf(tokenId)).to.equal(ZERO);
+      assert.equal(await pco.valuationOf(tokenId), ZERO);
+      assert.equal(await pco.depositOf(tokenId), ZERO);
+      assert.equal(await pco.taxationCollected(tokenId), ZERO);
+      assert.equal(await pco.lastCollectionTimeOf(tokenId), ZERO);
     }
   });
 
   it("acquires, collects tax, and exits with ordered events and conserved balances", async function () {
+    const { ethers } = await hre.network.create("hardhat");
+    await initializeNetwork(ethers.provider);
     const [collector, beneficiary, alice] = await ethers.getSigners();
     const beneficiaryAddress = await beneficiary.getAddress();
     const aliceAddress = await alice.getAddress();
@@ -190,10 +202,10 @@ describe("Hardhat interoperability smokes", function () {
     await pco.waitForDeployment();
     const pcoAddress = await pco.getAddress();
 
-    const valuation = ethers.parseEther("9");
+    const valuation = ethersLibrary.parseEther("9");
     const initialDeposit = TWO_ETHER;
 
-    await setNextTimestamp(ACQUISITION_TIME);
+    await setNextTimestamp(ethers.provider, ACQUISITION_TIME);
     const acquisition = await (pco.connect(alice) as Contract).takeoverLease(
       TOKEN_ID,
       valuation,
@@ -205,28 +217,30 @@ describe("Hardhat interoperability smokes", function () {
       await eventSource("pco", pco),
     ]);
 
-    expect(eventNames(acquisitionEvents)).to.deep.equal([
+    assert.deepEqual(eventNames(acquisitionEvents), [
       "pco.LogValuation",
       "pco.Approval",
       "pco.Transfer",
       "pco.LogLeaseTakeover",
     ]);
-    expect(acquisitionEvents[0].args.tokenId).to.equal(TOKEN_ID);
-    expect(acquisitionEvents[0].args.newValuation).to.equal(valuation);
-    expect(acquisitionEvents[1].args.owner).to.equal(pcoAddress);
-    expect(acquisitionEvents[1].args.approved).to.equal(ZERO_ADDRESS);
-    expect(acquisitionEvents[2].args.from).to.equal(pcoAddress);
-    expect(acquisitionEvents[2].args.to).to.equal(aliceAddress);
-    expect(acquisitionEvents[3].args.owner).to.equal(aliceAddress);
-    expect(acquisitionEvents[3].args.newValuation).to.equal(valuation);
+    assert.equal(acquisitionEvents[0].args.tokenId, TOKEN_ID);
+    assert.equal(acquisitionEvents[0].args.newValuation, valuation);
+    assert.equal(acquisitionEvents[1].args.owner, pcoAddress);
+    assert.equal(acquisitionEvents[1].args.approved, ZERO_ADDRESS);
+    assert.equal(acquisitionEvents[2].args.from, pcoAddress);
+    assert.equal(acquisitionEvents[2].args.to, aliceAddress);
+    assert.equal(acquisitionEvents[3].args.owner, aliceAddress);
+    assert.equal(acquisitionEvents[3].args.newValuation, valuation);
 
-    expect(await pco.ownerOf(TOKEN_ID)).to.equal(aliceAddress);
-    expect(await pco.valuationOf(TOKEN_ID)).to.equal(valuation);
-    expect(await pco.depositOf(TOKEN_ID)).to.equal(initialDeposit);
-    expect(await pco.lastCollectionTimeOf(TOKEN_ID)).to.equal(
+    assert.equal(await pco.ownerOf(TOKEN_ID), aliceAddress);
+    assert.equal(await pco.valuationOf(TOKEN_ID), valuation);
+    assert.equal(await pco.depositOf(TOKEN_ID), initialDeposit);
+    assert.equal(
+      await pco.lastCollectionTimeOf(TOKEN_ID),
       BigInt(ACQUISITION_TIME)
     );
-    expect(await ethers.provider.getBalance(pcoAddress)).to.equal(
+    assert.equal(
+      await ethers.provider.getBalance(pcoAddress),
       initialDeposit
     );
 
@@ -240,7 +254,7 @@ describe("Hardhat interoperability smokes", function () {
       beneficiaryAddress
     );
 
-    await setNextTimestamp(COLLECTION_TIME);
+    await setNextTimestamp(ethers.provider, COLLECTION_TIME);
     const collection = await (pco.connect(collector) as Contract).collectTax(
       TOKEN_ID
     );
@@ -249,29 +263,33 @@ describe("Hardhat interoperability smokes", function () {
       await eventSource("pco", pco),
     ]);
 
-    expect(eventNames(collectionEvents)).to.deep.equal([
+    assert.deepEqual(eventNames(collectionEvents), [
       "pco.LogCollection",
       "pco.LogRemittance",
     ]);
-    expect(collectionEvents[0].args.tokenId).to.equal(TOKEN_ID);
-    expect(collectionEvents[0].args.collected).to.equal(firstTax);
-    expect(collectionEvents[1].args.trigger).to.equal(BigInt(3));
-    expect(collectionEvents[1].args.recipient).to.equal(beneficiaryAddress);
-    expect(collectionEvents[1].args.amount).to.equal(firstTax);
+    assert.equal(collectionEvents[0].args.tokenId, TOKEN_ID);
+    assert.equal(collectionEvents[0].args.collected, firstTax);
+    assert.equal(collectionEvents[1].args.trigger, BigInt(3));
+    assert.equal(collectionEvents[1].args.recipient, beneficiaryAddress);
+    assert.equal(collectionEvents[1].args.amount, firstTax);
 
-    expect(
+    assert.equal(
       (await ethers.provider.getBalance(beneficiaryAddress)) -
-        beneficiaryBeforeCollection
-    ).to.equal(firstTax);
-    expect(await pco.depositOf(TOKEN_ID)).to.equal(initialDeposit - firstTax);
-    expect(await pco.taxationCollected(TOKEN_ID)).to.equal(firstTax);
-    expect(await pco.taxCollectedSinceLastTransferOf(TOKEN_ID)).to.equal(
+        beneficiaryBeforeCollection,
       firstTax
     );
-    expect(await pco.lastCollectionTimeOf(TOKEN_ID)).to.equal(
+    assert.equal(await pco.depositOf(TOKEN_ID), initialDeposit - firstTax);
+    assert.equal(await pco.taxationCollected(TOKEN_ID), firstTax);
+    assert.equal(
+      await pco.taxCollectedSinceLastTransferOf(TOKEN_ID),
+      firstTax
+    );
+    assert.equal(
+      await pco.lastCollectionTimeOf(TOKEN_ID),
       BigInt(COLLECTION_TIME)
     );
-    expect(await ethers.provider.getBalance(pcoAddress)).to.equal(
+    assert.equal(
+      await ethers.provider.getBalance(pcoAddress),
       initialDeposit - firstTax
     );
 
@@ -287,14 +305,14 @@ describe("Hardhat interoperability smokes", function () {
       beneficiaryAddress
     );
 
-    await setNextTimestamp(EXIT_TIME);
+    await setNextTimestamp(ethers.provider, EXIT_TIME);
     const exit = await (pco.connect(alice) as Contract).exit(TOKEN_ID);
     const exitReceipt = await requiredReceipt(exit);
     const exitEvents = decodeEvents(exitReceipt, [
       await eventSource("pco", pco),
     ]);
 
-    expect(eventNames(exitEvents)).to.deep.equal([
+    assert.deepEqual(eventNames(exitEvents), [
       "pco.LogCollection",
       "pco.LogRemittance",
       "pco.LogRemittance",
@@ -303,41 +321,46 @@ describe("Hardhat interoperability smokes", function () {
       "pco.Transfer",
       "pco.LogForeclosure",
     ]);
-    expect(exitEvents[0].args.collected).to.equal(exitTax);
-    expect(exitEvents[1].args.trigger).to.equal(BigInt(3));
-    expect(exitEvents[1].args.recipient).to.equal(beneficiaryAddress);
-    expect(exitEvents[1].args.amount).to.equal(exitTax);
-    expect(exitEvents[2].args.trigger).to.equal(BigInt(1));
-    expect(exitEvents[2].args.recipient).to.equal(aliceAddress);
-    expect(exitEvents[2].args.amount).to.equal(returnedDeposit);
-    expect(exitEvents[3].args.newValuation).to.equal(ZERO);
-    expect(exitEvents[4].args.owner).to.equal(aliceAddress);
-    expect(exitEvents[4].args.approved).to.equal(ZERO_ADDRESS);
-    expect(exitEvents[5].args.from).to.equal(aliceAddress);
-    expect(exitEvents[5].args.to).to.equal(pcoAddress);
-    expect(exitEvents[6].args.prevOwner).to.equal(aliceAddress);
+    assert.equal(exitEvents[0].args.collected, exitTax);
+    assert.equal(exitEvents[1].args.trigger, BigInt(3));
+    assert.equal(exitEvents[1].args.recipient, beneficiaryAddress);
+    assert.equal(exitEvents[1].args.amount, exitTax);
+    assert.equal(exitEvents[2].args.trigger, BigInt(1));
+    assert.equal(exitEvents[2].args.recipient, aliceAddress);
+    assert.equal(exitEvents[2].args.amount, returnedDeposit);
+    assert.equal(exitEvents[3].args.newValuation, ZERO);
+    assert.equal(exitEvents[4].args.owner, aliceAddress);
+    assert.equal(exitEvents[4].args.approved, ZERO_ADDRESS);
+    assert.equal(exitEvents[5].args.from, aliceAddress);
+    assert.equal(exitEvents[5].args.to, pcoAddress);
+    assert.equal(exitEvents[6].args.prevOwner, aliceAddress);
 
     const exitGas = exitReceipt.gasUsed * exitReceipt.gasPrice;
-    expect(await ethers.provider.getBalance(aliceAddress)).to.equal(
+    assert.equal(
+      await ethers.provider.getBalance(aliceAddress),
       aliceBeforeExit + returnedDeposit - exitGas
     );
-    expect(
+    assert.equal(
       (await ethers.provider.getBalance(beneficiaryAddress)) -
-        beneficiaryBeforeExit
-    ).to.equal(exitTax);
-    expect(await ethers.provider.getBalance(pcoAddress)).to.equal(ZERO);
-    expect(await pco.ownerOf(TOKEN_ID)).to.equal(pcoAddress);
-    expect(await pco.valuationOf(TOKEN_ID)).to.equal(ZERO);
-    expect(await pco.depositOf(TOKEN_ID)).to.equal(ZERO);
-    expect(await pco.taxationCollected(TOKEN_ID)).to.equal(firstTax + exitTax);
-    expect(await pco.taxCollectedSinceLastTransferOf(TOKEN_ID)).to.equal(ZERO);
-    expect(await pco.lastCollectionTimeOf(TOKEN_ID)).to.equal(
+        beneficiaryBeforeExit,
+      exitTax
+    );
+    assert.equal(await ethers.provider.getBalance(pcoAddress), ZERO);
+    assert.equal(await pco.ownerOf(TOKEN_ID), pcoAddress);
+    assert.equal(await pco.valuationOf(TOKEN_ID), ZERO);
+    assert.equal(await pco.depositOf(TOKEN_ID), ZERO);
+    assert.equal(await pco.taxationCollected(TOKEN_ID), firstTax + exitTax);
+    assert.equal(await pco.taxCollectedSinceLastTransferOf(TOKEN_ID), ZERO);
+    assert.equal(
+      await pco.lastCollectionTimeOf(TOKEN_ID),
       BigInt(EXIT_TIME)
     );
-    expect(await pco.foreclosed(TOKEN_ID)).to.equal(true);
+    assert.equal(await pco.foreclosed(TOKEN_ID), true);
   });
 
   it("approves, wraps, takes over, and unwraps with custody and metadata cleanup", async function () {
+    const { ethers } = await hre.network.create("hardhat");
+    await initializeNetwork(ethers.provider);
     const [originator, , buyer] = await ethers.getSigners();
     const originatorAddress = await originator.getAddress();
     const buyerAddress = await buyer.getAddress();
@@ -355,16 +378,16 @@ describe("Hardhat interoperability smokes", function () {
     const initialDeposit = THREE_ETHER;
     const wrappedId = await wrapper.wrappedTokenId(nftAddress, TOKEN_ID);
     const independentlyDerivedId = BigInt(
-      ethers.keccak256(
-        ethers.AbiCoder.defaultAbiCoder().encode(
+      ethersLibrary.keccak256(
+        ethersLibrary.AbiCoder.defaultAbiCoder().encode(
           ["address", "uint256"],
           [nftAddress, TOKEN_ID]
         )
       )
     );
-    expect(wrappedId).to.equal(independentlyDerivedId);
+    assert.equal(wrappedId, independentlyDerivedId);
 
-    await setNextTimestamp(APPROVAL_TIME);
+    await setNextTimestamp(ethers.provider, APPROVAL_TIME);
     const approval = await (nft.connect(originator) as Contract).approve(
       wrapperAddress,
       TOKEN_ID
@@ -373,12 +396,12 @@ describe("Hardhat interoperability smokes", function () {
     const approvalEvents = decodeEvents(approvalReceipt, [
       await eventSource("nft", nft),
     ]);
-    expect(eventNames(approvalEvents)).to.deep.equal(["nft.Approval"]);
-    expect(approvalEvents[0].args.owner).to.equal(originatorAddress);
-    expect(approvalEvents[0].args.approved).to.equal(wrapperAddress);
-    expect(approvalEvents[0].args.tokenId).to.equal(TOKEN_ID);
+    assert.deepEqual(eventNames(approvalEvents), ["nft.Approval"]);
+    assert.equal(approvalEvents[0].args.owner, originatorAddress);
+    assert.equal(approvalEvents[0].args.approved, wrapperAddress);
+    assert.equal(approvalEvents[0].args.tokenId, TOKEN_ID);
 
-    await setNextTimestamp(WRAP_TIME);
+    await setNextTimestamp(ethers.provider, WRAP_TIME);
     const wrap = await (wrapper.connect(originator) as Contract).wrap(
       nftAddress,
       TOKEN_ID,
@@ -394,36 +417,38 @@ describe("Hardhat interoperability smokes", function () {
       await eventSource("wrapper", wrapper),
     ]);
 
-    expect(eventNames(wrapEvents)).to.deep.equal([
+    assert.deepEqual(eventNames(wrapEvents), [
       "nft.Transfer",
       "wrapper.Transfer",
       "wrapper.LogValuation",
       "wrapper.LogBeneficiaryUpdated",
       "wrapper.LogTokenWrapped",
     ]);
-    expect(wrapEvents[0].args.from).to.equal(originatorAddress);
-    expect(wrapEvents[0].args.to).to.equal(wrapperAddress);
-    expect(wrapEvents[1].args.from).to.equal(ZERO_ADDRESS);
-    expect(wrapEvents[1].args.to).to.equal(originatorAddress);
-    expect(wrapEvents[2].args.newValuation).to.equal(initialValuation);
-    expect(wrapEvents[3].args.newBeneficiary).to.equal(buyerAddress);
-    expect(wrapEvents[4].args.contractAddress).to.equal(nftAddress);
-    expect(wrapEvents[4].args.tokenId).to.equal(TOKEN_ID);
-    expect(wrapEvents[4].args.wrappedTokenId).to.equal(wrappedId);
+    assert.equal(wrapEvents[0].args.from, originatorAddress);
+    assert.equal(wrapEvents[0].args.to, wrapperAddress);
+    assert.equal(wrapEvents[1].args.from, ZERO_ADDRESS);
+    assert.equal(wrapEvents[1].args.to, originatorAddress);
+    assert.equal(wrapEvents[2].args.newValuation, initialValuation);
+    assert.equal(wrapEvents[3].args.newBeneficiary, buyerAddress);
+    assert.equal(wrapEvents[4].args.contractAddress, nftAddress);
+    assert.equal(wrapEvents[4].args.tokenId, TOKEN_ID);
+    assert.equal(wrapEvents[4].args.wrappedTokenId, wrappedId);
 
-    expect(await nft.ownerOf(TOKEN_ID)).to.equal(wrapperAddress);
-    expect(await nft.getApproved(TOKEN_ID)).to.equal(ZERO_ADDRESS);
-    expect(await wrapper.ownerOf(wrappedId)).to.equal(originatorAddress);
-    expect(await wrapper.tokenURI(wrappedId)).to.equal("721.dev/1");
-    expect(await wrapper.valuationOf(wrappedId)).to.equal(initialValuation);
-    expect(await wrapper.depositOf(wrappedId)).to.equal(initialDeposit);
-    expect(await wrapper.beneficiaryOf(wrappedId)).to.equal(buyerAddress);
-    expect(await wrapper.taxRateOf(wrappedId)).to.equal(TAX_RATE_MINIMUM);
-    expect(await wrapper.collectionFrequencyOf(wrappedId)).to.equal(
+    assert.equal(await nft.ownerOf(TOKEN_ID), wrapperAddress);
+    assert.equal(await nft.getApproved(TOKEN_ID), ZERO_ADDRESS);
+    assert.equal(await wrapper.ownerOf(wrappedId), originatorAddress);
+    assert.equal(await wrapper.tokenURI(wrappedId), "721.dev/1");
+    assert.equal(await wrapper.valuationOf(wrappedId), initialValuation);
+    assert.equal(await wrapper.depositOf(wrappedId), initialDeposit);
+    assert.equal(await wrapper.beneficiaryOf(wrappedId), buyerAddress);
+    assert.equal(await wrapper.taxRateOf(wrappedId), TAX_RATE_MINIMUM);
+    assert.equal(
+      await wrapper.collectionFrequencyOf(wrappedId),
       BigInt(TEN_YEARS)
     );
-    expect(await wrapper.lastCollectionTimeOf(wrappedId)).to.equal(ZERO);
-    expect(await ethers.provider.getBalance(wrapperAddress)).to.equal(
+    assert.equal(await wrapper.lastCollectionTimeOf(wrappedId), ZERO);
+    assert.equal(
+      await ethers.provider.getBalance(wrapperAddress),
       initialDeposit
     );
 
@@ -439,7 +464,7 @@ describe("Hardhat interoperability smokes", function () {
     );
     const buyerBeforeTakeover = await ethers.provider.getBalance(buyerAddress);
 
-    await setNextTimestamp(TAKEOVER_TIME);
+    await setNextTimestamp(ethers.provider, TAKEOVER_TIME);
     const takeover = await (wrapper.connect(buyer) as Contract).takeoverLease(
       wrappedId,
       buyerValuation,
@@ -453,7 +478,7 @@ describe("Hardhat interoperability smokes", function () {
       await eventSource("wrapper", wrapper),
     ]);
 
-    expect(eventNames(takeoverEvents)).to.deep.equal([
+    assert.deepEqual(eventNames(takeoverEvents), [
       "wrapper.LogCollection",
       "wrapper.LogRemittance",
       "wrapper.LogRemittance",
@@ -462,44 +487,48 @@ describe("Hardhat interoperability smokes", function () {
       "wrapper.Transfer",
       "wrapper.LogLeaseTakeover",
     ]);
-    expect(takeoverEvents[0].args.collected).to.equal(takeoverTax);
-    expect(takeoverEvents[1].args.trigger).to.equal(BigInt(3));
-    expect(takeoverEvents[1].args.recipient).to.equal(buyerAddress);
-    expect(takeoverEvents[1].args.amount).to.equal(takeoverTax);
-    expect(takeoverEvents[2].args.trigger).to.equal(BigInt(0));
-    expect(takeoverEvents[2].args.recipient).to.equal(originatorAddress);
-    expect(takeoverEvents[2].args.amount).to.equal(takeoverRemittance);
-    expect(takeoverEvents[3].args.newValuation).to.equal(buyerValuation);
-    expect(takeoverEvents[4].args.owner).to.equal(originatorAddress);
-    expect(takeoverEvents[4].args.approved).to.equal(ZERO_ADDRESS);
-    expect(takeoverEvents[5].args.from).to.equal(originatorAddress);
-    expect(takeoverEvents[5].args.to).to.equal(buyerAddress);
-    expect(takeoverEvents[6].args.owner).to.equal(buyerAddress);
-    expect(takeoverEvents[6].args.newValuation).to.equal(buyerValuation);
+    assert.equal(takeoverEvents[0].args.collected, takeoverTax);
+    assert.equal(takeoverEvents[1].args.trigger, BigInt(3));
+    assert.equal(takeoverEvents[1].args.recipient, buyerAddress);
+    assert.equal(takeoverEvents[1].args.amount, takeoverTax);
+    assert.equal(takeoverEvents[2].args.trigger, BigInt(0));
+    assert.equal(takeoverEvents[2].args.recipient, originatorAddress);
+    assert.equal(takeoverEvents[2].args.amount, takeoverRemittance);
+    assert.equal(takeoverEvents[3].args.newValuation, buyerValuation);
+    assert.equal(takeoverEvents[4].args.owner, originatorAddress);
+    assert.equal(takeoverEvents[4].args.approved, ZERO_ADDRESS);
+    assert.equal(takeoverEvents[5].args.from, originatorAddress);
+    assert.equal(takeoverEvents[5].args.to, buyerAddress);
+    assert.equal(takeoverEvents[6].args.owner, buyerAddress);
+    assert.equal(takeoverEvents[6].args.newValuation, buyerValuation);
 
     const takeoverGas = takeoverReceipt.gasUsed * takeoverReceipt.gasPrice;
-    expect(
+    assert.equal(
       (await ethers.provider.getBalance(originatorAddress)) -
-        originatorBeforeTakeover
-    ).to.equal(takeoverRemittance);
-    expect(await ethers.provider.getBalance(buyerAddress)).to.equal(
+        originatorBeforeTakeover,
+      takeoverRemittance
+    );
+    assert.equal(
+      await ethers.provider.getBalance(buyerAddress),
       buyerBeforeTakeover - initialValuation + takeoverTax - takeoverGas
     );
-    expect(await ethers.provider.getBalance(wrapperAddress)).to.equal(ZERO);
-    expect(await wrapper.ownerOf(wrappedId)).to.equal(buyerAddress);
-    expect(await wrapper.valuationOf(wrappedId)).to.equal(buyerValuation);
-    expect(await wrapper.depositOf(wrappedId)).to.equal(ZERO);
-    expect(await wrapper.taxationCollected(wrappedId)).to.equal(takeoverTax);
-    expect(await wrapper.taxCollectedSinceLastTransferOf(wrappedId)).to.equal(
+    assert.equal(await ethers.provider.getBalance(wrapperAddress), ZERO);
+    assert.equal(await wrapper.ownerOf(wrappedId), buyerAddress);
+    assert.equal(await wrapper.valuationOf(wrappedId), buyerValuation);
+    assert.equal(await wrapper.depositOf(wrappedId), ZERO);
+    assert.equal(await wrapper.taxationCollected(wrappedId), takeoverTax);
+    assert.equal(
+      await wrapper.taxCollectedSinceLastTransferOf(wrappedId),
       ZERO
     );
-    expect(await wrapper.lastCollectionTimeOf(wrappedId)).to.equal(
+    assert.equal(
+      await wrapper.lastCollectionTimeOf(wrappedId),
       BigInt(TAKEOVER_TIME)
     );
-    expect(await nft.ownerOf(TOKEN_ID)).to.equal(wrapperAddress);
-    expect(await wrapper.tokenURI(wrappedId)).to.equal("721.dev/1");
+    assert.equal(await nft.ownerOf(TOKEN_ID), wrapperAddress);
+    assert.equal(await wrapper.tokenURI(wrappedId), "721.dev/1");
 
-    await setNextTimestamp(UNWRAP_TIME);
+    await setNextTimestamp(ethers.provider, UNWRAP_TIME);
     const unwrap = await (wrapper.connect(originator) as Contract).unwrap(
       wrappedId
     );
@@ -509,21 +538,21 @@ describe("Hardhat interoperability smokes", function () {
       await eventSource("nft", nft),
     ]);
 
-    expect(eventNames(unwrapEvents)).to.deep.equal([
+    assert.deepEqual(eventNames(unwrapEvents), [
       "wrapper.Approval",
       "wrapper.Transfer",
       "nft.Transfer",
     ]);
-    expect(unwrapEvents[0].args.owner).to.equal(buyerAddress);
-    expect(unwrapEvents[0].args.approved).to.equal(ZERO_ADDRESS);
-    expect(unwrapEvents[1].args.from).to.equal(buyerAddress);
-    expect(unwrapEvents[1].args.to).to.equal(ZERO_ADDRESS);
-    expect(unwrapEvents[2].args.from).to.equal(wrapperAddress);
-    expect(unwrapEvents[2].args.to).to.equal(buyerAddress);
-    expect(unwrapEvents[2].args.tokenId).to.equal(TOKEN_ID);
+    assert.equal(unwrapEvents[0].args.owner, buyerAddress);
+    assert.equal(unwrapEvents[0].args.approved, ZERO_ADDRESS);
+    assert.equal(unwrapEvents[1].args.from, buyerAddress);
+    assert.equal(unwrapEvents[1].args.to, ZERO_ADDRESS);
+    assert.equal(unwrapEvents[2].args.from, wrapperAddress);
+    assert.equal(unwrapEvents[2].args.to, buyerAddress);
+    assert.equal(unwrapEvents[2].args.tokenId, TOKEN_ID);
 
-    expect(await nft.ownerOf(TOKEN_ID)).to.equal(buyerAddress);
-    expect(await nft.getApproved(TOKEN_ID)).to.equal(ZERO_ADDRESS);
+    assert.equal(await nft.ownerOf(TOKEN_ID), buyerAddress);
+    assert.equal(await nft.getApproved(TOKEN_ID), ZERO_ADDRESS);
     await expectRevertReason(
       wrapper.ownerOf(wrappedId),
       "ERC721: owner query for nonexistent token"
@@ -544,10 +573,10 @@ describe("Hardhat interoperability smokes", function () {
       wrapper.collectionFrequencyOf(wrappedId),
       "ERC721: query for nonexistent token"
     );
-    expect(await wrapper.valuationOf(wrappedId)).to.equal(ZERO);
-    expect(await wrapper.beneficiaryOf(wrappedId)).to.equal(ZERO_ADDRESS);
-    expect(await wrapper.taxationCollected(wrappedId)).to.equal(takeoverTax);
-    expect(await wrapper.balanceOf(buyerAddress)).to.equal(ZERO);
-    expect(await ethers.provider.getBalance(wrapperAddress)).to.equal(ZERO);
+    assert.equal(await wrapper.valuationOf(wrappedId), ZERO);
+    assert.equal(await wrapper.beneficiaryOf(wrappedId), ZERO_ADDRESS);
+    assert.equal(await wrapper.taxationCollected(wrappedId), takeoverTax);
+    assert.equal(await wrapper.balanceOf(buyerAddress), ZERO);
+    assert.equal(await ethers.provider.getBalance(wrapperAddress), ZERO);
   });
 });

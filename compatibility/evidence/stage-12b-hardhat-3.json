@@ -1,0 +1,898 @@
+{
+  "baselineSha256": "4ec069e1cdb046198456b1db9179522b604d8dab062838c79e4cf8aa1e9df55c",
+  "candidate": "stage-12b-hardhat-3",
+  "hardCompatibility": {
+    "compiler": {
+      "longVersion": "0.8.36+commit.8a079791",
+      "nativeResolutionRemapping": [
+        "project/:@openzeppelin/contracts/=npm/@openzeppelin/contracts@5.6.1/"
+      ],
+      "normalizedSettingsSha256": "b7982e960bba84395082f2d7161fde9ce5a16f709623676b308065509484c7dd",
+      "version": "0.8.36"
+    },
+    "contracts": {
+      "contracts/Wrapper.sol:Wrapper": {
+        "abi": {
+          "equal": true,
+          "sha256": "58641c81e3de2df24c5b453d326c764e1179220ad22d9ecc78cea61780b013b0"
+        },
+        "errors": {
+          "equal": true,
+          "sha256": "8b2221f5c36a0c23b4ea0934ade8164581cb157241a3d2f00e27f1c40e456633"
+        },
+        "events": {
+          "equal": true,
+          "sha256": "e9b9291d1a85809068aef324f922e2f2be3b69c332737e983daffb07b4a53647"
+        },
+        "functions": {
+          "equal": true,
+          "sha256": "6c96a23e64194cb565af91ebc82f44371f7d144392e002a6d793bb42a7736c7a"
+        },
+        "storageLayout": {
+          "equal": true,
+          "sha256": "ca57141d71c85580db97654ce8ee71fae1ec0ab4311da22b3174e65fb60b4740"
+        }
+      },
+      "contracts/token/PartialCommonOwnership.sol:PartialCommonOwnership": {
+        "abi": {
+          "equal": true,
+          "sha256": "73e541c82c80dce85cb5881a03498136b78c9823ddd8597f457080116302453a"
+        },
+        "errors": {
+          "equal": true,
+          "sha256": "8b2221f5c36a0c23b4ea0934ade8164581cb157241a3d2f00e27f1c40e456633"
+        },
+        "events": {
+          "equal": true,
+          "sha256": "9c85551213eed0d74a4c1a2a353857446cbee45f9104d7fd62fafd5c1be992fb"
+        },
+        "functions": {
+          "equal": true,
+          "sha256": "4731b63a28a9f52c74b2c4a33e275065ab33f77dd40bc67b3a62786b18c6a411"
+        },
+        "storageLayout": {
+          "equal": true,
+          "sha256": "b6f31762e0e25890dab1e2cc0f90b59601bbbd39274614896a29f89a372709b8"
+        }
+      },
+      "contracts/token/modules/interfaces/IBeneficiary.sol:IBeneficiary": {
+        "abi": {
+          "equal": true,
+          "sha256": "208977a707ff530c243ce0126c48742dd107c23fd124c26ddb3b6603653257da"
+        },
+        "errors": {
+          "equal": true,
+          "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+        },
+        "events": {
+          "equal": true,
+          "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+        },
+        "functions": {
+          "equal": true,
+          "sha256": "35355acd8f91ce51a27db7c56d644350480fbe3e03b05c8c2502eb078341ac5f"
+        },
+        "storageLayout": {
+          "equal": true,
+          "sha256": "5007e3b784841c1839d50e1c7c327054fd93a236126542d5218ef7d82f30c563"
+        }
+      },
+      "contracts/token/modules/interfaces/ILease.sol:ILease": {
+        "abi": {
+          "equal": true,
+          "sha256": "1c308860ac89c9a081aa27a5e327ba0b9b154298f06f3ef2814b326ec4e8ca37"
+        },
+        "errors": {
+          "equal": true,
+          "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+        },
+        "events": {
+          "equal": true,
+          "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+        },
+        "functions": {
+          "equal": true,
+          "sha256": "e760b072b127f239f5f58a4a586efb569f9ca878686df829c17f4775afc4548a"
+        },
+        "storageLayout": {
+          "equal": true,
+          "sha256": "5007e3b784841c1839d50e1c7c327054fd93a236126542d5218ef7d82f30c563"
+        }
+      },
+      "contracts/token/modules/interfaces/IRemittance.sol:IRemittance": {
+        "abi": {
+          "equal": true,
+          "sha256": "43b794b5e465376ded9d6960c72693e2a08f09700d9930fe6ccc392be579053d"
+        },
+        "errors": {
+          "equal": true,
+          "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+        },
+        "events": {
+          "equal": true,
+          "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+        },
+        "functions": {
+          "equal": true,
+          "sha256": "ad568db3632233a2c772299fff9746241b9a3a4d40c4080dbd253ce6c52efa10"
+        },
+        "storageLayout": {
+          "equal": true,
+          "sha256": "5007e3b784841c1839d50e1c7c327054fd93a236126542d5218ef7d82f30c563"
+        }
+      },
+      "contracts/token/modules/interfaces/ITaxation.sol:ITaxation": {
+        "abi": {
+          "equal": true,
+          "sha256": "79377855a6e06cba6e2dc1974cc87f6f2e10e18d8bac29d8be30e4def1ef47af"
+        },
+        "errors": {
+          "equal": true,
+          "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+        },
+        "events": {
+          "equal": true,
+          "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+        },
+        "functions": {
+          "equal": true,
+          "sha256": "b9b67cc5b016c1db267bd8395285a87e9996959da21b6553e0ce6f4a302f8376"
+        },
+        "storageLayout": {
+          "equal": true,
+          "sha256": "5007e3b784841c1839d50e1c7c327054fd93a236126542d5218ef7d82f30c563"
+        }
+      },
+      "contracts/token/modules/interfaces/IValuation.sol:IValuation": {
+        "abi": {
+          "equal": true,
+          "sha256": "518777dff270449e9043dcc2799a18c53ba4eebee8623ca7cbfd9d92bc48e078"
+        },
+        "errors": {
+          "equal": true,
+          "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+        },
+        "events": {
+          "equal": true,
+          "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+        },
+        "functions": {
+          "equal": true,
+          "sha256": "1f1e43b88327d9bc7c6e5dcd004b453657c598a2fcc4d31bbd694c750d8683b5"
+        },
+        "storageLayout": {
+          "equal": true,
+          "sha256": "5007e3b784841c1839d50e1c7c327054fd93a236126542d5218ef7d82f30c563"
+        }
+      }
+    },
+    "enums": {
+      "equal": true,
+      "sha256": "d8825043487a38b00222b547329d1905a1142f6c80b8b4764d2db7697693f628"
+    },
+    "erc165": {
+      "equal": true,
+      "sha256": "357e067484da1a8a65e64868b2fda486200c575983af64817b9ccf5e6d24287f"
+    },
+    "interfaces": {
+      "equal": true,
+      "sha256": "5b5d1f2625e9b544ced655510b8302263afd9766dc55b8aee84dd3daae1cc0d0"
+    },
+    "projectRevertStrings": {
+      "count": 37,
+      "equal": true,
+      "sha256": "a5d2ca753e5d123ac138771623e491360c87e39e8d148f8e871a5d2b9fb73008"
+    },
+    "tests": {
+      "forge": {
+        "count": 140,
+        "mappedBehaviorCount": 104,
+        "namesSha256": "09b141a8c69c4522288cfdbf67373661052764ab019c865ea850dc5eb645f173",
+        "safetyCount": 36
+      },
+      "hardhat": {
+        "count": 3,
+        "names": [
+          "Hardhat interoperability smokes acquires, collects tax, and exits with ordered events and conserved balances",
+          "Hardhat interoperability smokes approves, wraps, takes over, and unwraps with custody and metadata cleanup",
+          "Hardhat interoperability smokes deploys and reads deterministic PCO configuration"
+        ],
+        "namesSha256": "e82ce4a1063d5334c8a0962747e9bb0797c9e5e82ef6e40dc1905452fb78714f"
+      },
+      "total": 143
+    }
+  },
+  "inheritedStage12aCheckpoint": {
+    "commit": "9a86ff5d001a4d3a06823712d0e70ad011987ecd",
+    "evidence": {
+      "path": "compatibility/evidence/stage-12a-ethers-6.json",
+      "sha256": "183eee1da9cab1bbfff5d7f4eb8b2271f25a37d4ff3517b910e1b288bacd0b6f"
+    },
+    "review": {
+      "path": "compatibility/reviewed-differences.json",
+      "sha256": "7a81410a18e677c44cf92d111e9899c9a600eb7f512dd84b66c04a1bb805d6e0"
+    }
+  },
+  "keyFlowGasEquality": {
+    "baselinePath": "gas/key-flows.snap",
+    "baselineSha256": "c57e387d3a71141ce69078dc051608e8eb1f5bccbddf5745f6d478d709b575f7",
+    "comparisons": [
+      {
+        "candidateGas": 313088,
+        "equal": true,
+        "group": "PartialCommonOwnership",
+        "name": "PCOMutationParityTest:test_deposit_succeeds_ownerCanDeposit()",
+        "stage12aGas": 313088
+      },
+      {
+        "candidateGas": 298684,
+        "equal": true,
+        "group": "PartialCommonOwnership",
+        "name": "PCOMutationParityTest:test_exit_succeeds_withdrawsEntireDeposit()",
+        "stage12aGas": 298684
+      },
+      {
+        "candidateGas": 312351,
+        "equal": true,
+        "group": "PartialCommonOwnership",
+        "name": "PCOMutationParityTest:test_selfAssess_succeeds_ownerIncreasesValuation()",
+        "stage12aGas": 312351
+      },
+      {
+        "candidateGas": 201930,
+        "equal": true,
+        "group": "PartialCommonOwnership",
+        "name": "PCOMutationParityTest:test_takeoverLease_succeeds_firstPurchaseFromContract()",
+        "stage12aGas": 201930
+      },
+      {
+        "candidateGas": 367097,
+        "equal": true,
+        "group": "PartialCommonOwnership",
+        "name": "PCOMutationParityTest:test_takeoverLease_succeeds_purchaseFromCurrentOwner()",
+        "stage12aGas": 367097
+      },
+      {
+        "candidateGas": 412840,
+        "equal": true,
+        "group": "PartialCommonOwnership",
+        "name": "PCOMutationParityTest:test_takeoverLease_succeeds_purchaseFromForeclosure()",
+        "stage12aGas": 412840
+      },
+      {
+        "candidateGas": 321433,
+        "equal": true,
+        "group": "PartialCommonOwnership",
+        "name": "PCOMutationParityTest:test_withdrawDeposit_succeeds_expectedAmount()",
+        "stage12aGas": 321433
+      },
+      {
+        "candidateGas": 299397,
+        "equal": true,
+        "group": "PartialCommonOwnership",
+        "name": "PCOReadTaxParityTest:test_parity_013_collectTax_collectsAfterTenMinutes()",
+        "stage12aGas": 299397
+      },
+      {
+        "candidateGas": 394324,
+        "equal": true,
+        "group": "Wrapper",
+        "name": "WrapperParityTest:test_unwrap_afterBeneficiaryWrap()",
+        "stage12aGas": 394324
+      },
+      {
+        "candidateGas": 557316,
+        "equal": true,
+        "group": "Wrapper",
+        "name": "WrapperParityTest:test_unwrap_afterNonBeneficiaryWrap()",
+        "stage12aGas": 557316
+      },
+      {
+        "candidateGas": 626621,
+        "equal": true,
+        "group": "Wrapper",
+        "name": "WrapperParityTest:test_unwrap_collectsTaxAndReturnsDeposit()",
+        "stage12aGas": 626621
+      },
+      {
+        "candidateGas": 385662,
+        "equal": true,
+        "group": "Wrapper",
+        "name": "WrapperParityTest:test_wrap_tokenOwnerCanWrap()",
+        "stage12aGas": 385662
+      }
+    ],
+    "fuzzSeed": "0x721"
+  },
+  "legacyGasCheckpointReplay": {
+    "candidate": {
+      "entriesSha256": "fa60702147fc72d701554d1956429bbef76c8c7186a08ee06fa06f01ade2da7d",
+      "equalToFrozenStage12a": true,
+      "equalToSamePlatformCheckpointReplay": true
+    },
+    "checkpointCommit": "9a86ff5d001a4d3a06823712d0e70ad011987ecd",
+    "command": [
+      "forge",
+      "snapshot",
+      "--fuzz-seed",
+      "0x721",
+      "--fuzz-runs",
+      "256",
+      "--match-contract",
+      "^(BeneficiaryTest|RemittanceTest|ValuationTest)$"
+    ],
+    "detachedCheckpointReplay": {
+      "entriesSha256": "fa60702147fc72d701554d1956429bbef76c8c7186a08ee06fa06f01ade2da7d",
+      "equalToFrozenStage12a": true
+    },
+    "frozenStage12a": {
+      "entriesSha256": "fa60702147fc72d701554d1956429bbef76c8c7186a08ee06fa06f01ade2da7d",
+      "evidenceSha256": "183eee1da9cab1bbfff5d7f4eb8b2271f25a37d4ff3517b910e1b288bacd0b6f",
+      "immutable": true,
+      "inventoryCount": 15
+    },
+    "measurementConclusion": "The immutable Stage 12a snapshot, its detached exact-commit replay, and the Stage 12b candidate are byte-for-byte equal for all 15 legacy gas entries."
+  },
+  "mode": "stage-12b-stage-12a-metadata-only",
+  "productionMetadataOnly": {
+    "compilerSourceMetadataOnly": true,
+    "contracts": {
+      "contracts/Wrapper.sol:Wrapper": {
+        "creationBytecode": {
+          "fullBytecode": {
+            "candidateKeccak256": "0x0983450c69a51bc7c15a8425e0cdff4522e37c1acfa67415354c500f3735c2c5",
+            "changed": true,
+            "reviewedCause": "Hardhat 3 canonical project/npm source names and native package remapping alter the IPFS CBOR metadata payload.",
+            "stage12aKeccak256": "0xdb202e3981d93a859cdf7facab93b56e4f926fe495d04abff07b74d1ab3c0bf0"
+          },
+          "metadataBytes": {
+            "candidate": 53,
+            "equal": true,
+            "stage12a": 53
+          },
+          "metadataStripped": {
+            "candidateKeccak256": "0xb233917e1fa224641a01e8c9fce9b04abeacd86f0e34680631748fec76d00a30",
+            "equal": true,
+            "opcodeInstructionCount": 10954,
+            "opcodesSha256": "b6cbcd4d450423db952e6ab2ecb92feacd0b55bd96aef04ef9cc3029884de7a2",
+            "sizeBytes": 22300,
+            "stage12aKeccak256": "0xb233917e1fa224641a01e8c9fce9b04abeacd86f0e34680631748fec76d00a30"
+          },
+          "rawSizeBytes": {
+            "candidate": 22353,
+            "equal": true,
+            "stage12a": 22353
+          }
+        },
+        "eip170": {
+          "limitBytes": 24576,
+          "runtimeSizeBytes": 22322,
+          "withinLimit": true
+        },
+        "runtimeBytecode": {
+          "fullBytecode": {
+            "candidateKeccak256": "0x6f8fd661d8e5dc58e512f0991add7e34b0de04857b9d3099d104fe26e3f1bc12",
+            "changed": true,
+            "reviewedCause": "Hardhat 3 canonical project/npm source names and native package remapping alter the IPFS CBOR metadata payload.",
+            "stage12aKeccak256": "0x037291189f7b8a51cfb8f98b83517e98539c37fa434ee65c6f6453bb71318d2e"
+          },
+          "metadataBytes": {
+            "candidate": 53,
+            "equal": true,
+            "stage12a": 53
+          },
+          "metadataStripped": {
+            "candidateKeccak256": "0x7b75f790a8f49d28a3a6630b6440319a85b2b4ea7334e0541902de557b332f21",
+            "equal": true,
+            "opcodeInstructionCount": 10933,
+            "opcodesSha256": "a05e38b7756afd9dc7a74f08745e0ce623880e0682f293ece04dc26514beef41",
+            "sizeBytes": 22269,
+            "stage12aKeccak256": "0x7b75f790a8f49d28a3a6630b6440319a85b2b4ea7334e0541902de557b332f21"
+          },
+          "rawSizeBytes": {
+            "candidate": 22322,
+            "equal": true,
+            "stage12a": 22322
+          }
+        }
+      },
+      "contracts/token/PartialCommonOwnership.sol:PartialCommonOwnership": {
+        "creationBytecode": {
+          "fullBytecode": {
+            "candidateKeccak256": "0x871b51e184e505533495b9e485386ebd7424f8ab11b267ba89b90ce39202d80e",
+            "changed": true,
+            "reviewedCause": "Hardhat 3 canonical project/npm source names and native package remapping alter the IPFS CBOR metadata payload.",
+            "stage12aKeccak256": "0x2f4aac7e45c14b4bd099b2bb4d0117c077570f0f1bdd30fe4ef61d3c88a124af"
+          },
+          "metadataBytes": {
+            "candidate": 53,
+            "equal": true,
+            "stage12a": 53
+          },
+          "metadataStripped": {
+            "candidateKeccak256": "0x0e4d2924927f4ac1a3d527344a408765800202bfcf24c8c7cd2cf3e088ea5bf9",
+            "equal": true,
+            "opcodeInstructionCount": 8060,
+            "opcodesSha256": "b2447a57ae59683de03cbcf9a6eeaec54e952402eefab5c445a4272732706c2b",
+            "sizeBytes": 16340,
+            "stage12aKeccak256": "0x0e4d2924927f4ac1a3d527344a408765800202bfcf24c8c7cd2cf3e088ea5bf9"
+          },
+          "rawSizeBytes": {
+            "candidate": 16393,
+            "equal": true,
+            "stage12a": 16393
+          }
+        },
+        "eip170": {
+          "limitBytes": 24576,
+          "runtimeSizeBytes": 16362,
+          "withinLimit": true
+        },
+        "runtimeBytecode": {
+          "fullBytecode": {
+            "candidateKeccak256": "0x3fc865e0e4bf2bc950c419f2bd65f7a4923d4bdd58c4fd4229073cf0e5037008",
+            "changed": true,
+            "reviewedCause": "Hardhat 3 canonical project/npm source names and native package remapping alter the IPFS CBOR metadata payload.",
+            "stage12aKeccak256": "0xdd3b276639e0b97a93744e77f3608c7e080b2cdad97a349ca94004590d4d6072"
+          },
+          "metadataBytes": {
+            "candidate": 53,
+            "equal": true,
+            "stage12a": 53
+          },
+          "metadataStripped": {
+            "candidateKeccak256": "0x1a9d3b31ab2c4772935c9f0794c75ef5909551948999a6977cea12f4872a319b",
+            "equal": true,
+            "opcodeInstructionCount": 8039,
+            "opcodesSha256": "938ea23081b2903035c1a7df77b86551b6c0447aed56548478462fdefb81fda7",
+            "sizeBytes": 16309,
+            "stage12aKeccak256": "0x1a9d3b31ab2c4772935c9f0794c75ef5909551948999a6977cea12f4872a319b"
+          },
+          "rawSizeBytes": {
+            "candidate": 16362,
+            "equal": true,
+            "stage12a": 16362
+          }
+        }
+      }
+    },
+    "nativeSourceResolution": {
+      "canonicalSourceNameMap": {
+        "@openzeppelin/contracts/token/ERC721/IERC721.sol": "npm/@openzeppelin/contracts@5.6.1/token/ERC721/IERC721.sol",
+        "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol": "npm/@openzeppelin/contracts@5.6.1/token/ERC721/IERC721Receiver.sol",
+        "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol": "npm/@openzeppelin/contracts@5.6.1/token/ERC721/extensions/IERC721Metadata.sol",
+        "@openzeppelin/contracts/utils/Context.sol": "npm/@openzeppelin/contracts@5.6.1/utils/Context.sol",
+        "@openzeppelin/contracts/utils/introspection/ERC165.sol": "npm/@openzeppelin/contracts@5.6.1/utils/introspection/ERC165.sol",
+        "@openzeppelin/contracts/utils/introspection/IERC165.sol": "npm/@openzeppelin/contracts@5.6.1/utils/introspection/IERC165.sol",
+        "contracts/Wrapper.sol": "project/contracts/Wrapper.sol",
+        "contracts/test/Blocker.sol": "project/contracts/test/Blocker.sol",
+        "contracts/test/PCOInitializationReceiver.sol": "project/contracts/test/PCOInitializationReceiver.sol",
+        "contracts/test/TestNFT.sol": "project/contracts/test/TestNFT.sol",
+        "contracts/test/TestPCOToken.sol": "project/contracts/test/TestPCOToken.sol",
+        "contracts/test/TestWrapper.sol": "project/contracts/test/TestWrapper.sol",
+        "contracts/token/PartialCommonOwnership.sol": "project/contracts/token/PartialCommonOwnership.sol",
+        "contracts/token/modules/Beneficiary.sol": "project/contracts/token/modules/Beneficiary.sol",
+        "contracts/token/modules/ERC721.sol": "project/contracts/token/modules/ERC721.sol",
+        "contracts/token/modules/Lease.sol": "project/contracts/token/modules/Lease.sol",
+        "contracts/token/modules/Remittance.sol": "project/contracts/token/modules/Remittance.sol",
+        "contracts/token/modules/Taxation.sol": "project/contracts/token/modules/Taxation.sol",
+        "contracts/token/modules/Valuation.sol": "project/contracts/token/modules/Valuation.sol",
+        "contracts/token/modules/interfaces/IBeneficiary.sol": "project/contracts/token/modules/interfaces/IBeneficiary.sol",
+        "contracts/token/modules/interfaces/ILease.sol": "project/contracts/token/modules/interfaces/ILease.sol",
+        "contracts/token/modules/interfaces/IRemittance.sol": "project/contracts/token/modules/interfaces/IRemittance.sol",
+        "contracts/token/modules/interfaces/ITaxation.sol": "project/contracts/token/modules/interfaces/ITaxation.sol",
+        "contracts/token/modules/interfaces/IValuation.sol": "project/contracts/token/modules/interfaces/IValuation.sol"
+      },
+      "format": "hh3-sol-build-info-1",
+      "id": "solc-0_8_36-261b762595e8f87e76f066e09842bcbf875bd2c2",
+      "inputPath": "artifacts/build-info/solc-0_8_36-261b762595e8f87e76f066e09842bcbf875bd2c2.json",
+      "inputSha256": "5d11098d5649cc2a2796c72ffaaee5d1bd377acf669001c3fc4f697302078f03",
+      "outputFormat": "hh3-sol-build-info-output-1",
+      "outputPath": "artifacts/build-info/solc-0_8_36-261b762595e8f87e76f066e09842bcbf875bd2c2.output.json",
+      "outputSha256": "51e692749245bec7fab8f8b5dc251e80a958d406f4144a85dd1d205925dd8d48"
+    },
+    "normalizedSourceClosure": {
+      "closureSha256": "38d2428df3ed7472afb28ad76273ea14ed05c89bbfcc165a9540378b9ca317df",
+      "equalToStage12a": true,
+      "sourceCount": 24,
+      "sourceNamesSha256": "c2b32297ccca42832b645845a77dc45bc2991141c7d7e2bc1244125c595dc805"
+    }
+  },
+  "schemaVersion": 1,
+  "toolingAndMigration": {
+    "checkpoint": {
+      "commit": "9a86ff5d001a4d3a06823712d0e70ad011987ecd",
+      "evidence": {
+        "path": "compatibility/evidence/stage-12a-ethers-6.json",
+        "sha256": "183eee1da9cab1bbfff5d7f4eb8b2271f25a37d4ff3517b910e1b288bacd0b6f"
+      },
+      "review": {
+        "path": "compatibility/reviewed-differences.json",
+        "sha256": "7a81410a18e677c44cf92d111e9899c9a600eb7f512dd84b66c04a1bb805d6e0"
+      }
+    },
+    "compatibilityRunnerSha256": "5d65ac5bce05080e2263d1e16a93a20b9800fdad1e17016394bd6b86443f5939",
+    "compilerSources": {
+      "logical": {
+        "closureSha256": "38d2428df3ed7472afb28ad76273ea14ed05c89bbfcc165a9540378b9ca317df",
+        "equalToStage12a": true,
+        "sourceCount": 24,
+        "sourceNamesSha256": "c2b32297ccca42832b645845a77dc45bc2991141c7d7e2bc1244125c595dc805"
+      },
+      "native": {
+        "canonicalSourceNameMap": {
+          "@openzeppelin/contracts/token/ERC721/IERC721.sol": "npm/@openzeppelin/contracts@5.6.1/token/ERC721/IERC721.sol",
+          "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol": "npm/@openzeppelin/contracts@5.6.1/token/ERC721/IERC721Receiver.sol",
+          "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol": "npm/@openzeppelin/contracts@5.6.1/token/ERC721/extensions/IERC721Metadata.sol",
+          "@openzeppelin/contracts/utils/Context.sol": "npm/@openzeppelin/contracts@5.6.1/utils/Context.sol",
+          "@openzeppelin/contracts/utils/introspection/ERC165.sol": "npm/@openzeppelin/contracts@5.6.1/utils/introspection/ERC165.sol",
+          "@openzeppelin/contracts/utils/introspection/IERC165.sol": "npm/@openzeppelin/contracts@5.6.1/utils/introspection/IERC165.sol",
+          "contracts/Wrapper.sol": "project/contracts/Wrapper.sol",
+          "contracts/test/Blocker.sol": "project/contracts/test/Blocker.sol",
+          "contracts/test/PCOInitializationReceiver.sol": "project/contracts/test/PCOInitializationReceiver.sol",
+          "contracts/test/TestNFT.sol": "project/contracts/test/TestNFT.sol",
+          "contracts/test/TestPCOToken.sol": "project/contracts/test/TestPCOToken.sol",
+          "contracts/test/TestWrapper.sol": "project/contracts/test/TestWrapper.sol",
+          "contracts/token/PartialCommonOwnership.sol": "project/contracts/token/PartialCommonOwnership.sol",
+          "contracts/token/modules/Beneficiary.sol": "project/contracts/token/modules/Beneficiary.sol",
+          "contracts/token/modules/ERC721.sol": "project/contracts/token/modules/ERC721.sol",
+          "contracts/token/modules/Lease.sol": "project/contracts/token/modules/Lease.sol",
+          "contracts/token/modules/Remittance.sol": "project/contracts/token/modules/Remittance.sol",
+          "contracts/token/modules/Taxation.sol": "project/contracts/token/modules/Taxation.sol",
+          "contracts/token/modules/Valuation.sol": "project/contracts/token/modules/Valuation.sol",
+          "contracts/token/modules/interfaces/IBeneficiary.sol": "project/contracts/token/modules/interfaces/IBeneficiary.sol",
+          "contracts/token/modules/interfaces/ILease.sol": "project/contracts/token/modules/interfaces/ILease.sol",
+          "contracts/token/modules/interfaces/IRemittance.sol": "project/contracts/token/modules/interfaces/IRemittance.sol",
+          "contracts/token/modules/interfaces/ITaxation.sol": "project/contracts/token/modules/interfaces/ITaxation.sol",
+          "contracts/token/modules/interfaces/IValuation.sol": "project/contracts/token/modules/interfaces/IValuation.sol"
+        },
+        "format": "hh3-sol-build-info-1",
+        "id": "solc-0_8_36-261b762595e8f87e76f066e09842bcbf875bd2c2",
+        "inputPath": "artifacts/build-info/solc-0_8_36-261b762595e8f87e76f066e09842bcbf875bd2c2.json",
+        "inputSha256": "5d11098d5649cc2a2796c72ffaaee5d1bd377acf669001c3fc4f697302078f03",
+        "outputFormat": "hh3-sol-build-info-output-1",
+        "outputPath": "artifacts/build-info/solc-0_8_36-261b762595e8f87e76f066e09842bcbf875bd2c2.output.json",
+        "outputSha256": "51e692749245bec7fab8f8b5dc251e80a958d406f4144a85dd1d205925dd8d48"
+      },
+      "remappings": [
+        "project/:@openzeppelin/contracts/=npm/@openzeppelin/contracts@5.6.1/"
+      ]
+    },
+    "migration": {
+      "boundFiles": {
+        ".github/workflows/tests.yml": "fe2015b6f812d5ffa224c2a957c1ee448ffabfa2b457c3c725497655fe37daf4",
+        ".gitignore": "ed7875806319cbc511ca44c3b685e793346c6d6085559e7554817622c6f1cfc2",
+        "README.md": "d73a1678a21b8cdaa97d0d2c7a7e0faf1f03e0d2d9d233e9e9b50d1f7144bd3c",
+        "compatibility/audit-ratchet.json": "fc4fa90ddd1e9976339866df8497a5f4f697c79e4e28e66fe1d8f44e63845ffc",
+        "compatibility/safety-baselines.json": "d70fb57f2dbf4671178fee515a583cb48ea5ea8e263a187dc0dec9a229ea4b5c",
+        "coverage/lcov.info": "699bec5254479d496dd7fdf6366be2c5f1afe386585bfa4f2f4be0304735f575",
+        "docs/development.md": "ab326c2967a8739c4fedc844b1fefc9938b83faef2b2cdbf4b4db80dc1d95953",
+        "gas/README.md": "0d530cfa47569cadbf24dee83ffc0039e221e8b2da2f370c4a3a69c635dfc83e",
+        "hardhat.config.ts": "8a01d6013e117f9d6dfbc230ec8d639e0fac0793404483c2c5ae775cebeec91c",
+        "package.json": "3b4b5ca92aba7337e02f3fabb0cd0df250754ce624f5438f33817b2df6dabd12",
+        "pnpm-lock.yaml": "c3498cc86b99ace2ab1810b24e886565aebf089fb35edc8132b0d774cc2a3ab5",
+        "pnpm-workspace.yaml": "6cf3f83b7611f5b240d4f3d86d230ab61fb48d989260d4fbec3d3f60f7ed763c",
+        "scripts/audit-ratchet.cjs": "52ab6c99635bd55419944314c535420ecd7657f60b0dbdc578e1bc76025b2149",
+        "scripts/check-contract-sizes.cjs": "0c5e3e258c12fca1d946d0ecae7d36ad4ebbade97c3977179484977cd2cee6f7",
+        "scripts/check-coverage.cjs": "ec9d23cf30156793958b88fff8677170fd16cd8963515f30184df6ecc2216ee0",
+        "scripts/check-gas.cjs": "22d9e8538b9e94379f80740cb054a1d48b2a5a1ee38d92b66583a6ef6876f3e8",
+        "scripts/check-safety-baselines.cjs": "9b2621e171cbad70df9badd72daaed38e50ba989b9ec3aa1917feef5df16b149",
+        "scripts/run-coverage.cjs": "03a4faf4616791c7ad306eef27ad85e9c7505a6d8ea63e474e1ab7b03913ccd7",
+        "scripts/run-slither.cjs": "f69835d298e6e5a373be883a966e2a6ea8d89eb3055ee1095c908a5b1b50f4fd",
+        "scripts/test-package.cjs": "505ee382e0869f9c04fbbb2fbcf0714ab459c06735ed3a747dba01fa7811bffe",
+        "test/solidity/Remittance.t.sol": "3d4181126ca51fd7a58fd02ea0594465407f83c361f553c97ad549e0492320f8",
+        "test/solidity/helpers/EnhancedTest.sol": "8f0f905bceafb2003604984b4b2cfc8fef7a3e63b832bfbe36e848b01712bb08",
+        "tests/Interoperability.smoke.ts": "80bc8ba664ae11d9081e73427cde09652cfc7da03bbfa87fd61767400ca9f696",
+        "tsconfig.json": "d86cc63a05114438abb25258863b937cbc2a2b7433b6fe0ef83d274cec35a2b5"
+      },
+      "changedPaths": [
+        ".env.sample",
+        ".github/workflows/tests.yml",
+        ".gitignore",
+        ".prettierrc",
+        ".solcover.js",
+        ".solhint.json",
+        "README.md",
+        "compatibility/README.md",
+        "compatibility/audit-ratchet.json",
+        "compatibility/compiler-warning-allowlist.json",
+        "compatibility/erc165.capture.ts",
+        "compatibility/evidence/stage-12b-hardhat-3.json",
+        "compatibility/hardhat.capture.config.ts",
+        "compatibility/hardhat.reporter.js",
+        "compatibility/reviewed-differences.json",
+        "compatibility/safety-baselines.json",
+        "compatibility/stage-12b-hardhat3-inventory.json",
+        "contracts/test/EnhancedTest.sol",
+        "coverage/lcov.info",
+        "docs/development.md",
+        "gas/README.md",
+        "hardhat.config.d.ts",
+        "hardhat.config.ts",
+        "package.json",
+        "pnpm-lock.yaml",
+        "pnpm-workspace.yaml",
+        "scripts/audit-ratchet.cjs",
+        "scripts/audit-ratchet.js",
+        "scripts/check-compiler-warnings.cjs",
+        "scripts/check-compiler-warnings.js",
+        "scripts/check-contract-sizes.cjs",
+        "scripts/check-contract-sizes.js",
+        "scripts/check-coverage.cjs",
+        "scripts/check-coverage.js",
+        "scripts/check-gas.cjs",
+        "scripts/check-gas.js",
+        "scripts/check-parity.cjs",
+        "scripts/check-parity.js",
+        "scripts/check-pnpm-lock.js",
+        "scripts/check-safety-baselines.cjs",
+        "scripts/check-safety-baselines.js",
+        "scripts/compatibility.cjs",
+        "scripts/compatibility.js",
+        "scripts/run-coverage.cjs",
+        "scripts/run-coverage.js",
+        "scripts/run-slither.cjs",
+        "scripts/run-slither.js",
+        "scripts/test-package.cjs",
+        "scripts/test-package.js",
+        "test/solidity/Remittance.t.sol",
+        "test/solidity/helpers/EnhancedTest.sol",
+        "tests/Interoperability.smoke.ts",
+        "tests/PartialCommonOwnership/types.ts",
+        "tests/helpers/EVM.ts",
+        "tests/helpers/Numeric.ts",
+        "tests/helpers/Time.ts",
+        "tests/helpers/Wallet.ts",
+        "tests/helpers/constants.ts",
+        "tests/helpers/types.ts",
+        "tests/helpers/utils.ts",
+        "tsconfig.json",
+        "utils/deploy.ts"
+      ],
+      "checkpoint": {
+        "commit": "9a86ff5d001a4d3a06823712d0e70ad011987ecd",
+        "evidence": {
+          "path": "compatibility/evidence/stage-12a-ethers-6.json",
+          "sha256": "183eee1da9cab1bbfff5d7f4eb8b2271f25a37d4ff3517b910e1b288bacd0b6f"
+        },
+        "review": {
+          "path": "compatibility/reviewed-differences.json",
+          "sha256": "7a81410a18e677c44cf92d111e9899c9a600eb7f512dd84b66c04a1bb805d6e0"
+        }
+      },
+      "commonJsRenames": [
+        "audit-ratchet",
+        "check-compiler-warnings",
+        "check-contract-sizes",
+        "check-coverage",
+        "check-gas",
+        "check-parity",
+        "check-safety-baselines",
+        "compatibility",
+        "run-coverage",
+        "run-slither",
+        "test-package"
+      ],
+      "coverageHelperRelocation": {
+        "historicalStage07Evidence": {
+          "path": "compatibility/evidence/stage-07-safety-artifacts.json",
+          "sha256": "0065814caec6e3044951f80c891c9948454e90138d016513ed07d0fcfb7c67d8",
+          "unchanged": true
+        },
+        "lcov": {
+          "baselineSha256": "ff3da920a30fcb3661376d4d94f549eb81d14831618d7d324c0fd240668ad969",
+          "baselineSizeBytes": 21117,
+          "candidateSha256": "699bec5254479d496dd7fdf6366be2c5f1afe386585bfa4f2f4be0304735f575",
+          "candidateSizeBytes": 21124,
+          "onlySourcePathChanged": true,
+          "path": "coverage/lcov.info",
+          "sourcePathAfter": "test/solidity/helpers/EnhancedTest.sol",
+          "sourcePathBefore": "contracts/test/EnhancedTest.sol"
+        },
+        "safetyManifest": {
+          "baselineSha256": "ee7e262b81e032ceff85278780fee0544792ee9b44e64d8c058d8bbb12d0839e",
+          "candidateSha256": "d70fb57f2dbf4671178fee515a583cb48ea5ea8e263a187dc0dec9a229ea4b5c",
+          "onlyLcovBindingChanged": true,
+          "path": "compatibility/safety-baselines.json"
+        }
+      },
+      "helperMove": {
+        "consumer": "test/solidity/Remittance.t.sol",
+        "consumerSha256": "3d4181126ca51fd7a58fd02ea0594465407f83c361f553c97ad549e0492320f8",
+        "from": "contracts/test/EnhancedTest.sol",
+        "sha256": "8f0f905bceafb2003604984b4b2cfc8fef7a3e63b832bfbe36e848b01712bb08",
+        "to": "test/solidity/helpers/EnhancedTest.sol"
+      },
+      "inventory": {
+        "path": "compatibility/stage-12b-hardhat3-inventory.json",
+        "sha256": "c1772719ce446dc577a491f0683fdbdf5b39ab91f011344b0ee34ab90ad55a19"
+      },
+      "ownedFileSha256": {
+        "compatibility/README.md": "76636221da5c6e836860592141e372cd36fe78757e13acc480008ad498481ba8",
+        "compatibility/compiler-warning-allowlist.json": "9cae9f479731aba3a55a50418f66f1cb66fd59c6dbe19a44fed7415c9adf0763",
+        "compatibility/erc165.capture.ts": "f77e3c7309c4f7c4367bd5419dddf27865c15d53ed98afe418e6a8fbe3ab24b6",
+        "scripts/check-compiler-warnings.cjs": "3f082e607c7abed11b822e767e14e7415a50671ec033e6655c10053686490b50",
+        "scripts/check-parity.cjs": "376ed399e95e9887072e5bf9921b570f658994139cbfbde56853ffff902ef96f"
+      },
+      "package": {
+        "devDependencies": {
+          "@nomicfoundation/hardhat-ethers": "4.0.14",
+          "@types/node": "24.13.3",
+          "ethers": "6.17.0",
+          "hardhat": "3.9.1",
+          "tsx": "4.23.1",
+          "typescript": "7.0.2"
+        },
+        "packageManager": "pnpm@11.13.1",
+        "removedDevDependencies": [
+          "@ethersproject/abi",
+          "@ethersproject/contracts",
+          "@ethersproject/providers",
+          "@nomiclabs/hardhat-ethers",
+          "@nomiclabs/hardhat-waffle",
+          "@nomiclabs/hardhat-web3",
+          "@openzeppelin/test-helpers",
+          "@typechain/ethers-v5",
+          "@typechain/hardhat",
+          "@types/chai",
+          "@types/js-yaml",
+          "@types/mocha",
+          "chai",
+          "cross-env",
+          "dotenv",
+          "ethereum-waffle",
+          "hardhat-gas-reporter",
+          "js-yaml",
+          "prettier",
+          "prettier-plugin-solidity",
+          "solhint",
+          "solhint-plugin-prettier",
+          "solidity-coverage",
+          "ts-node",
+          "typechain",
+          "web3"
+        ],
+        "runtimeDependencies": {
+          "@openzeppelin/contracts": "5.6.1"
+        },
+        "smokeRunner": "hardhat build && node --import tsx --test tests/Interoperability.smoke.ts",
+        "testRunner": "pnpm run test:forge && pnpm run test:hardhat:smoke",
+        "type": "module"
+      },
+      "removedFiles": [
+        ".env.sample",
+        ".prettierrc",
+        ".solcover.js",
+        ".solhint.json",
+        "compatibility/hardhat.capture.config.ts",
+        "compatibility/hardhat.reporter.js",
+        "hardhat.config.d.ts",
+        "scripts/check-pnpm-lock.js",
+        "tests/PartialCommonOwnership/types.ts",
+        "tests/helpers/EVM.ts",
+        "tests/helpers/Numeric.ts",
+        "tests/helpers/Time.ts",
+        "tests/helpers/Wallet.ts",
+        "tests/helpers/constants.ts",
+        "tests/helpers/types.ts",
+        "tests/helpers/utils.ts",
+        "utils/deploy.ts"
+      ],
+      "tools": {
+        "allowedPlatformBinarySha256": {
+          "forge": {
+            "darwin-arm64": "e729589084ca2f1479354353d1ec3d4789451b577f4cdee4e7dc57cae64a38fa",
+            "linux-x64": "4f77da0810de94325734855d0ad58d70640aa8a5b2a837608ddf8c26da34355c"
+          },
+          "solc": {
+            "darwin-arm64": "d4abcf0b3e24b7948ddfd64c374d26c3214648717777790ecb936979054a129d",
+            "linux-x64": "c8d35afdddc3cd2743ee88b8f25e0fecd16e2bdd5f2120f37e52cd9cc45ae0e6"
+          }
+        },
+        "config": {
+          "autoDetectSolc": false,
+          "bytecodeHash": "ipfs",
+          "cborMetadata": true,
+          "evmVersion": "london",
+          "fuzz": {
+            "gasReportSamples": 256,
+            "runs": 512,
+            "seed": "0x721"
+          },
+          "libs": [
+            "lib"
+          ],
+          "optimizer": false,
+          "optimizerRuns": 200,
+          "solc": "0.8.36",
+          "src": "contracts",
+          "test": "test/solidity",
+          "useLiteralContent": false,
+          "viaIR": false
+        },
+        "currentPlatformValidated": true,
+        "forge": {
+          "buildProfile": "dist",
+          "commitSha": "4072e48705af9d93e3c0f6e29e93b5e9a40caed8",
+          "version": "1.7.1"
+        },
+        "solc": {
+          "longVersion": "0.8.36+commit.8a079791",
+          "version": "0.8.36"
+        }
+      }
+    },
+    "productionSources": {
+      "contracts/Wrapper.sol": {
+        "equalToStage12a": true,
+        "sha256": "4d8766bd7baa0a1bd2b021c0de27a04c59219d86fd0c907973e7873e5b069915"
+      },
+      "contracts/token/PartialCommonOwnership.sol": {
+        "equalToStage12a": true,
+        "sha256": "5429da466a15811ce0196b99b710f247b3d6392c81cce2b84cab5ab83129c825"
+      },
+      "contracts/token/modules/Beneficiary.sol": {
+        "equalToStage12a": true,
+        "sha256": "91e507656ebd6ec2d5ae5dfe2fe24ba0e30cea87b3deb14dd5e6140479e61500"
+      },
+      "contracts/token/modules/ERC721.sol": {
+        "equalToStage12a": true,
+        "sha256": "7bcb9d453294af951005305c25003c0754643c1c53cb3f310436b31931192e1b"
+      },
+      "contracts/token/modules/Lease.sol": {
+        "equalToStage12a": true,
+        "sha256": "269ec676c2a8bdd8148b0e2ce8743da676c220109583df569f95673bfaaac34f"
+      },
+      "contracts/token/modules/Remittance.sol": {
+        "equalToStage12a": true,
+        "sha256": "3b9c9c0efea65e5256c7faad8061342b9764f58d5676550088b587d46d73bcc6"
+      },
+      "contracts/token/modules/Taxation.sol": {
+        "equalToStage12a": true,
+        "sha256": "72aa02e63d76e28e6f04e29ea49e81a764f2211955e032a907fe0a7e524b0027"
+      },
+      "contracts/token/modules/Valuation.sol": {
+        "equalToStage12a": true,
+        "sha256": "10b3450c7a2bc9c0b1f12f774c34abd70338480f908dc77d448d0de425adca02"
+      },
+      "contracts/token/modules/interfaces/IBeneficiary.sol": {
+        "equalToStage12a": true,
+        "sha256": "b65dfa02ee1a1a6d89694323bc5b621f6c5504d8d1ab640a9ae03189fb3dceff"
+      },
+      "contracts/token/modules/interfaces/ILease.sol": {
+        "equalToStage12a": true,
+        "sha256": "6373d8ce3d99fca346278de04dfedaaefc46ed7b4e4812b1b8737a03abbccfa1"
+      },
+      "contracts/token/modules/interfaces/IRemittance.sol": {
+        "equalToStage12a": true,
+        "sha256": "aec91c493f5b6482d97a55031a559ba8084e93c6112e49742dadc1c91af987eb"
+      },
+      "contracts/token/modules/interfaces/ITaxation.sol": {
+        "equalToStage12a": true,
+        "sha256": "78b7663a40929bfd7afc0c4315abf6365287fd17ca9986479c963aedfb28de42"
+      },
+      "contracts/token/modules/interfaces/IValuation.sol": {
+        "equalToStage12a": true,
+        "sha256": "d7fd7c28b9a78a1e194b20f7e1a1c8c0b13b47df237f1c7defa95e45f6201e06"
+      }
+    },
+    "tests": {
+      "forge": {
+        "count": 140,
+        "mappedBehaviorCount": 104,
+        "namesSha256": "09b141a8c69c4522288cfdbf67373661052764ab019c865ea850dc5eb645f173",
+        "safetyCount": 36
+      },
+      "hardhat": {
+        "count": 3,
+        "names": [
+          "Hardhat interoperability smokes acquires, collects tax, and exits with ordered events and conserved balances",
+          "Hardhat interoperability smokes approves, wraps, takes over, and unwraps with custody and metadata cleanup",
+          "Hardhat interoperability smokes deploys and reads deterministic PCO configuration"
+        ],
+        "namesSha256": "e82ce4a1063d5334c8a0962747e9bb0797c9e5e82ef6e40dc1905452fb78714f"
+      },
+      "total": 143
+    }
+  }
+}

@@ -47,11 +47,11 @@ approve, wrap, takeover, and unwrap while verifying custody. It is an
 interoperability signal, not a second behavior oracle.
 
 The smokes use exactly ethers 6.17.0 through
-`@nomicfoundation/hardhat-ethers` 3.1.3 while Hardhat remains pinned to 2.28.6.
-The installed ethers 5 Waffle, NomicLabs ethers, and TypeChain packages are
-dormant in this bridge stage: none is loaded or invoked. They are retained only
-so their removal stays isolated in the subsequent Hardhat 3 tooling PR. The
-unrelated Web3 plugin remains active until that same cleanup.
+`@nomicfoundation/hardhat-ethers` 4.0.14 and Hardhat 3.9.1. They run with
+Node's built-in test runner; each smoke creates a fresh declarative
+`edr-simulated` Hardhat network. Waffle, Web3, NomicLabs plugins, TypeChain,
+OpenZeppelin test helpers, and the legacy Hardhat 2 runner stack have been
+removed.
 
 The Forge command enforces the checked-in 104-entry parity map. The 89 legacy
 Hardhat behavior scenarios and 15 original Forge scenarios each map to one
@@ -151,9 +151,10 @@ The dependency-specific review is documented in
 
 ## Gas
 
-The Partial Common Ownership business logic is fairly complex and, in alignment with best practices, you should consider gas usage during development. To make this easier, `hardhat-gas-reporter` is included.
-
-When tests are run, it calculates the average gas usage of frequently used methods and prints these figures to stdout. Viewing gas costs as USD requires setting the `COINMARKETCAP_API_KEY` environment variable in `.env`.
+Forge records deterministic gas for the key PCO and Wrapper flows. Run
+`pnpm gas:check` to compare the current measurements with the reviewed
+snapshot. The gate rejects increases greater than the larger of 3% or 2,000
+gas; it does not depend on external price APIs or environment variables.
 
 ## Compiler warnings
 

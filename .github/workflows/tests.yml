@@ -50,8 +50,8 @@ jobs:
           version: v1.7.1
       - name: "Enforce Forge LCOV baseline"
         run: "pnpm run coverage:forge"
-  solhint:
-    name: "solhint"
+  forge-lint:
+    name: "Forge Lint"
     runs-on: ubuntu-latest
     needs: []
     steps:
@@ -80,8 +80,12 @@ jobs:
             ${{ runner.os }}-pnpm-
       - name: "Install JS Dependencies"
         run: "pnpm install --frozen-lockfile"
-      - name: "Run solhint"
-        run: "pnpm run solhint"
+      - name: "Install Foundry"
+        uses: foundry-rs/foundry-toolchain@b00af27efadbc7b4ca8b82abbd903b17cc874d2a # v1.9.0
+        with:
+          version: v1.7.1
+      - name: "Run Forge lint"
+        run: "pnpm run lint:forge"
   slither:
     name: "Slither"
     runs-on: ubuntu-latest
@@ -148,8 +152,8 @@ jobs:
             ${{ runner.os }}-pnpm-
       - name: "Install JS Dependencies"
         run: "pnpm install --frozen-lockfile"
-      - name: "Validate dependency sources"
-        run: "pnpm run lock:validate"
+      - name: "Type-check Hardhat configuration and smokes"
+        run: "pnpm run typecheck"
       - name: "Enforce Hardhat compiler warning allowlist"
         run: "pnpm run compiler-warnings:hardhat"
       - name: "Run three interoperability smokes"
