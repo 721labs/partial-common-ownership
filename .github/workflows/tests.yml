@@ -119,7 +119,7 @@ jobs:
       - name: "Run Slither"
         run: "pnpm run slither"
   tests:
-    name: "Hardhat Tests"
+    name: "Hardhat Integration Smokes"
     runs-on: ubuntu-latest
     needs: []
     steps:
@@ -152,8 +152,8 @@ jobs:
         run: "pnpm run lock:validate"
       - name: "Enforce Hardhat compiler warning allowlist"
         run: "pnpm run compiler-warnings:hardhat"
-      - name: "Run tests"
-        run: "pnpm run test:hardhat"
+      - name: "Run three interoperability smokes"
+        run: "pnpm run test:hardhat:smoke"
       - name: "Enforce dependency audit ratchet"
         run: "pnpm run audit:ratchet"
   forge-tests:

@@ -25,17 +25,38 @@ $ pnpm install --frozen-lockfile
 
 ## Behavior tests and compatibility
 
-Run both behavior suites with the pinned toolchains:
+The repository is Foundry-first. The default command runs the complete Forge
+behavior and parity gate first, then the three retained Hardhat interoperability
+smokes:
 
 ```console
-$ pnpm test:hardhat
-$ pnpm test:forge
+$ pnpm test
 ```
 
-The Forge command also enforces the checked-in 104-entry parity map: all 89
-legacy Hardhat scenarios and the 15 original Forge scenarios must map to one
-unique, successful Forge regression. The immutable public-compatibility and
-packed-consumer gates run separately:
+Run either side of that split directly with:
+
+```console
+$ pnpm test:forge
+$ pnpm test:hardhat:smoke
+```
+
+`pnpm test:hardhat` remains an alias for the explicit smoke command. That small
+suite contains exactly three integration checks: deploy and read
+configuration; acquire, collect tax, and exit while decoding events; and
+approve, wrap, takeover, and unwrap while verifying custody. It is an
+interoperability signal, not a second behavior oracle.
+
+The Forge command enforces the checked-in 104-entry parity map. The 89 legacy
+Hardhat behavior scenarios and 15 original Forge scenarios each map to one
+unique, successful Forge regression. The 89 TypeScript behavior tests were
+retired only after 104/104 Forge parity, the fuzz and invariant gates, and a
+final green dual run; the map remains the machine-readable record of their
+replacement coverage.
+
+CI preserves the same division: the Forge job runs the complete fixed-seed
+safety profile, while the Hardhat job compiles and runs only the three
+interoperability smokes. The immutable public-compatibility and packed-consumer
+gates run separately:
 
 ```console
 $ pnpm parity:check
