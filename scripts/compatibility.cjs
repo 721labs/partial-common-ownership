@@ -4228,6 +4228,24 @@ function resolveExecutable(command) {
   );
 }
 
+function stage12bSvmDataDirectory() {
+  const home = os.homedir();
+  const legacy = path.join(home, ".svm");
+  let dataDirectory;
+  if (process.platform === "darwin") {
+    dataDirectory = path.join(home, "Library", "Application Support");
+  } else if (process.platform === "linux") {
+    dataDirectory = process.env.XDG_DATA_HOME
+      ? path.resolve(process.env.XDG_DATA_HOME)
+      : path.join(home, ".local", "share");
+  } else {
+    throw new Error(`Stage 12b cannot resolve the SVM directory on ${process.platform}`);
+  }
+  return !fs.existsSync(legacy) && fs.existsSync(dataDirectory)
+    ? path.join(dataDirectory, "svm")
+    : legacy;
+}
+
 function stage12bToolIdentityEvidence() {
   const platform = stage12bPlatformKey();
   const expectedForgeHash = STAGE_12B_FORGE_BINARY_SHA256[platform];
@@ -4237,8 +4255,7 @@ function stage12bToolIdentityEvidence() {
   }
   const forgePath = resolveExecutable(FORGE_BIN);
   const solcPath = path.join(
-    os.homedir(),
-    ".svm",
+    stage12bSvmDataDirectory(),
     STAGE_08_COMPILER_VERSION,
     `solc-${STAGE_08_COMPILER_VERSION}`
   );
