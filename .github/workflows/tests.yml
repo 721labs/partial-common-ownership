@@ -2,6 +2,12 @@ name: "tests"
 
 on:
   workflow_dispatch:
+    inputs:
+      run_scheduled_safety:
+        description: "Run the 45-minute scheduled fuzz/invariant profile and upload its evidence"
+        required: false
+        default: false
+        type: boolean
   pull_request:
   schedule:
     - cron: "17 6 * * 1"
@@ -271,6 +277,8 @@ jobs:
         with:
           submodules: recursive
           persist-credentials: false
+          # The maintenance ledger verifies immutable historical checkpoints.
+          fetch-depth: 0
       - name: "Install Node"
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
@@ -384,7 +392,7 @@ jobs:
 
   foundry-scheduled:
     name: "Scheduled Foundry Safety"
-    if: ${{ github.event_name == 'schedule' }}
+    if: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.run_scheduled_safety) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:

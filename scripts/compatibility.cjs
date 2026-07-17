@@ -8,6 +8,9 @@ const os = require("os");
 const path = require("path");
 const { spawnSync } = require("child_process");
 const { verifySafetyBaselines } = require("./check-safety-baselines.cjs");
+const {
+  validateMaintenanceLedger,
+} = require("./maintenance-policy.cjs");
 
 const ROOT = path.resolve(__dirname, "..");
 const BASELINE_PATH = path.join(ROOT, "compatibility", "baseline.json");
@@ -1033,6 +1036,8 @@ const STAGE_13_POLICY = "stage-13-stage-12b-exact-equality";
 const STAGE_13_EVIDENCE_PATH =
   "compatibility/evidence/stage-13-ci-security-maintenance.json";
 const STAGE_13_BASE_COMMIT = "bfdbcfaf84bd681c823487d1267139353df7ec37";
+const STAGE_13_CHECKPOINT_COMMIT =
+  "26e1082a21e2ef184253542c1bc8c10b87924d53";
 const STAGE_13_STAGE_12B_EVIDENCE_SHA256 =
   "d5e4e569dd9698e5dad1326b29461b0fe01d25c13bc8ad72075e5a084bd0e998";
 const STAGE_13_STAGE_12B_REVIEW_SHA256 =
@@ -1380,6 +1385,19 @@ function repositoryChangedPaths(baseCommit) {
     if (relativePath) changed.add(relativePath);
   }
   return [...changed].sort();
+}
+
+function repositoryChangedPathsBetween(baseCommit, headCommit) {
+  return run("git", [
+    "diff",
+    "--no-renames",
+    "--name-only",
+    baseCommit,
+    headCommit,
+  ])
+    .stdout.split(/\r?\n/)
+    .filter(Boolean)
+    .sort();
 }
 
 function compilerSourceHashes() {
@@ -4746,7 +4764,25 @@ function stage12bSourceEvidence(candidate) {
 
 function stage13Inventory() {
   const inventoryPath = path.join(ROOT, STAGE_13_INVENTORY_PATH);
-  const bytes = fs.readFileSync(inventoryPath);
+  const readCheckpoint = (relativePath) =>
+    Buffer.from(
+      run("git", [
+        "show",
+        `${STAGE_13_CHECKPOINT_COMMIT}:${relativePath}`,
+      ]).stdout
+    );
+  for (const relativePath of [
+    "compatibility/baseline.json",
+    STAGE_13_EVIDENCE_PATH,
+    "compatibility/reviewed-differences.json",
+    STAGE_13_INVENTORY_PATH,
+  ]) {
+    const currentBytes = fs.readFileSync(path.join(ROOT, relativePath));
+    if (!currentBytes.equals(readCheckpoint(relativePath))) {
+      throw new Error(`Checked-in Stage 13 evidence changed: ${relativePath}`);
+    }
+  }
+  const bytes = readCheckpoint(STAGE_13_INVENTORY_PATH);
   const inventory = JSON.parse(bytes);
   if (
     sha256(bytes) !== STAGE_13_INVENTORY_SHA256 ||
@@ -4775,7 +4811,12 @@ function stage13Inventory() {
     throw new Error("Stage 13 maintenance file classification changed");
   }
   validateExactFileDigests(
-    fileDigestEvidence(inventory.boundFiles),
+    Object.fromEntries(
+      Object.keys(inventory.boundFiles).map((relativePath) => [
+        relativePath,
+        sha256(readCheckpoint(relativePath)),
+      ])
+    ),
     inventory.boundFiles,
     "stage13MaintenanceFiles"
   );
@@ -4785,7 +4826,12 @@ function stage13Inventory() {
       ["cat-file", "-e", `${STAGE_13_BASE_COMMIT}:${relativePath}`],
       { cwd: ROOT, encoding: "utf8" }
     );
-    if (result.status === 0 || !fs.existsSync(path.join(ROOT, relativePath))) {
+    const checkpointResult = spawnSync(
+      "git",
+      ["cat-file", "-e", `${STAGE_13_CHECKPOINT_COMMIT}:${relativePath}`],
+      { cwd: ROOT, encoding: "utf8" }
+    );
+    if (result.status === 0 || checkpointResult.status !== 0) {
       throw new Error(
         `Stage 13 added-file classification changed: ${relativePath}`
       );
@@ -4793,16 +4839,18 @@ function stage13Inventory() {
   }
   for (const relativePath of inventory.modifiedFiles) {
     run("git", ["cat-file", "-e", `${STAGE_13_BASE_COMMIT}:${relativePath}`]);
-    if (!fs.existsSync(path.join(ROOT, relativePath))) {
-      throw new Error(`Stage 13 modified file is missing: ${relativePath}`);
-    }
+    run("git", [
+      "cat-file",
+      "-e",
+      `${STAGE_13_CHECKPOINT_COMMIT}:${relativePath}`,
+    ]);
   }
 
   const basePackage = JSON.parse(
     run("git", ["show", `${STAGE_13_BASE_COMMIT}:package.json`]).stdout
   );
   const candidatePackage = JSON.parse(
-    fs.readFileSync(path.join(ROOT, "package.json"), "utf8")
+    readCheckpoint("package.json").toString("utf8")
   );
   const baseWithoutScripts = deepClone(basePackage);
   const candidateWithoutScripts = deepClone(candidatePackage);
@@ -4846,10 +4894,8 @@ function stage13Inventory() {
     `${STAGE_13_BASE_COMMIT}:lib/forge-std`,
   ]).stdout.trim();
   const candidateForgeStd = run("git", [
-    "-C",
-    "lib/forge-std",
     "rev-parse",
-    "HEAD",
+    `${STAGE_13_CHECKPOINT_COMMIT}:lib/forge-std`,
   ]).stdout.trim();
   if (
     baseForgeStd !== inventory.forgeStd.commit ||
@@ -4913,7 +4959,10 @@ function stage13MaintenanceEvidence() {
       sha256: STAGE_13_INVENTORY_SHA256,
     },
     changedPaths: validateStage13ChangedPaths(
-      repositoryChangedPaths(STAGE_13_BASE_COMMIT),
+      repositoryChangedPathsBetween(
+        STAGE_13_BASE_COMMIT,
+        STAGE_13_CHECKPOINT_COMMIT
+      ),
       inventory
     ),
     addedFiles: inventory.addedFiles,
@@ -4926,7 +4975,10 @@ function stage13MaintenanceEvidence() {
       sha256: checkpoint.evidence.sha256,
     },
     compatibilityRunnerSha256: sha256(
-      fs.readFileSync(path.join(ROOT, "scripts", "compatibility.cjs"))
+      run("git", [
+        "show",
+        `${STAGE_13_CHECKPOINT_COMMIT}:scripts/compatibility.cjs`,
+      ]).stdout
     ),
   });
 }
@@ -13605,6 +13657,8 @@ async function main() {
       `Refusing to overwrite the compatibility baseline at ${BASELINE_PATH}`
     );
   }
+
+  validateMaintenanceLedger({ root: ROOT });
 
   const manifest = await generateManifest();
   if (command === "revert-strings") {

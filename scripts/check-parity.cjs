@@ -6,6 +6,9 @@ const fs = require("fs");
 const crypto = require("crypto");
 const path = require("path");
 const { spawnSync } = require("child_process");
+const {
+  validateMaintenanceLedger,
+} = require("./maintenance-policy.cjs");
 
 const ROOT = path.resolve(__dirname, "..");
 const MAP_PATH = path.join(ROOT, "compatibility", "parity-map.json");
@@ -53,6 +56,8 @@ const STAGE_12B_CANDIDATE = "stage-12b-hardhat-3";
 const STAGE_13_CANDIDATE = "stage-13-ci-security-maintenance";
 const STAGE_13_POLICY = "stage-13-stage-12b-exact-equality";
 const STAGE_13_BASE_COMMIT = "bfdbcfaf84bd681c823487d1267139353df7ec37";
+const STAGE_13_CHECKPOINT_COMMIT =
+  "26e1082a21e2ef184253542c1bc8c10b87924d53";
 const STAGE_13_INVENTORY_PATH = path.join(
   ROOT,
   "compatibility",
@@ -163,6 +168,23 @@ function repositoryChangedPaths(baseCommit) {
     }
   }
   return sorted(changed);
+}
+
+function repositoryChangedPathsBetween(baseCommit, headCommit) {
+  const result = spawnSync(
+    "git",
+    ["diff", "--no-renames", "--name-only", baseCommit, headCommit],
+    {
+      cwd: ROOT,
+      encoding: "utf8",
+      maxBuffer: 128 * 1024 * 1024,
+    }
+  );
+  if (result.error) throw result.error;
+  if (result.status !== 0) {
+    fail(`git diff ${baseCommit} ${headCommit} failed`);
+  }
+  return sorted(result.stdout.split(/\r?\n/).filter(Boolean));
 }
 
 function sha256(value) {
@@ -425,6 +447,7 @@ function stage13Inventory(stage12b) {
     STAGE_13_EVIDENCE_PATH,
     STAGE_13_REVIEW_PATH,
   ]) {
+    const relativePath = path.relative(ROOT, requiredPath);
     if (!fs.existsSync(requiredPath)) {
       fail(
         `Missing checked-in Stage 13 evidence: ${path.relative(
@@ -433,13 +456,33 @@ function stage13Inventory(stage12b) {
         )}`
       );
     }
+    if (
+      !fs
+        .readFileSync(requiredPath)
+        .equals(checkpointFile(STAGE_13_CHECKPOINT_COMMIT, relativePath))
+    ) {
+      fail(`Checked-in Stage 13 evidence changed: ${relativePath}`);
+    }
   }
 
-  const inventoryBytes = fs.readFileSync(STAGE_13_INVENTORY_PATH);
+  const inventoryBytes = checkpointFile(
+    STAGE_13_CHECKPOINT_COMMIT,
+    path.relative(ROOT, STAGE_13_INVENTORY_PATH)
+  );
   const inventory = JSON.parse(inventoryBytes);
   const inventorySha256 = sha256(inventoryBytes);
-  const review = readJson(STAGE_13_REVIEW_PATH);
-  const evidence = readJson(STAGE_13_EVIDENCE_PATH);
+  const review = JSON.parse(
+    checkpointFile(
+      STAGE_13_CHECKPOINT_COMMIT,
+      path.relative(ROOT, STAGE_13_REVIEW_PATH)
+    )
+  );
+  const evidence = JSON.parse(
+    checkpointFile(
+      STAGE_13_CHECKPOINT_COMMIT,
+      path.relative(ROOT, STAGE_13_EVIDENCE_PATH)
+    )
+  );
   const checkpoint = stage13CheckpointBinding();
   const flattenedCheckpoint = {
     commit: STAGE_13_BASE_COMMIT,
@@ -497,7 +540,12 @@ function stage13Inventory(stage12b) {
     evidence.maintenance?.inventory?.sha256 !== inventorySha256 ||
     !valuesEqual(review.maintenanceEvidence, evidence.maintenance) ||
     review.maintenanceEvidence.compatibilityRunnerSha256 !==
-      sha256(fs.readFileSync(path.join(ROOT, "scripts", "compatibility.cjs")))
+      sha256(
+        checkpointFile(
+          STAGE_13_CHECKPOINT_COMMIT,
+          "scripts/compatibility.cjs"
+        )
+      )
   ) {
     fail("Stage 13 maintenance evidence is stale");
   }
@@ -516,7 +564,7 @@ function stage13Inventory(stage12b) {
   for (const relativePath of inventory.addedFiles) {
     if (
       checkpointPathExists(STAGE_13_BASE_COMMIT, relativePath) ||
-      !fs.existsSync(path.join(ROOT, relativePath))
+      !checkpointPathExists(STAGE_13_CHECKPOINT_COMMIT, relativePath)
     ) {
       fail(`Stage 13 added-file classification changed: ${relativePath}`);
     }
@@ -524,7 +572,7 @@ function stage13Inventory(stage12b) {
   for (const relativePath of inventory.modifiedFiles) {
     if (
       !checkpointPathExists(STAGE_13_BASE_COMMIT, relativePath) ||
-      !fs.existsSync(path.join(ROOT, relativePath))
+      !checkpointPathExists(STAGE_13_CHECKPOINT_COMMIT, relativePath)
     ) {
       fail(`Stage 13 modified-file classification changed: ${relativePath}`);
     }
@@ -533,7 +581,8 @@ function stage13Inventory(stage12b) {
     inventory.boundFiles
   )) {
     if (
-      sha256(fs.readFileSync(path.join(ROOT, relativePath))) !== expectedSha256
+      sha256(checkpointFile(STAGE_13_CHECKPOINT_COMMIT, relativePath)) !==
+      expectedSha256
     ) {
       fail(`Stage 13 maintenance file changed: ${relativePath}`);
     }
@@ -550,7 +599,10 @@ function stage13Inventory(stage12b) {
   compareExact(
     "Stage 13 repository path inventory",
     expectedChangedPaths,
-    repositoryChangedPaths(STAGE_13_BASE_COMMIT)
+    repositoryChangedPathsBetween(
+      STAGE_13_BASE_COMMIT,
+      STAGE_13_CHECKPOINT_COMMIT
+    )
   );
   if (
     !valuesEqual(
@@ -750,6 +802,7 @@ function main() {
   const stage12a = stage12aInventory(stage11);
   const stage12b = stage12bInventory(stage12a);
   stage13Inventory(stage12b);
+  validateMaintenanceLedger({ root: ROOT });
   if (map.schemaVersion !== 1) fail("Unsupported parity-map schema");
   if (!Array.isArray(map.fragments) || map.fragments.length === 0) {
     fail("Parity map must list its cohort fragments");
