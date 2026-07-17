@@ -1,6 +1,5 @@
 // Import Hardhat extensions
-import "@nomiclabs/hardhat-ethers";
-import "@nomiclabs/hardhat-waffle";
+import "@nomicfoundation/hardhat-ethers";
 import "@nomiclabs/hardhat-web3";
 import "hardhat-gas-reporter";
 import "solidity-coverage";
@@ -14,12 +13,6 @@ import dotenv from "dotenv";
 dotenv.config({
   path: path.resolve(process.cwd(), ".env"),
 });
-
-// Type compilation can be turned off.  This is useful when compiling for
-// coverage determination.
-if (process.env.TYPE_COMPILATION !== "false") {
-  require("@typechain/hardhat");
-}
 
 // Ignore Forge-only test sources during Hardhat compilation; Forge resolves its
 // pinned test library from the retained git submodule.
@@ -81,9 +74,5 @@ export default {
     enabled: process.env.REPORT_GAS === "true",
     currency: "USD",
     coinmarketcap: process.env.COINMARKETCAP_API_KEY,
-  },
-  typechain: {
-    outDir: "types",
-    target: "ethers-v5",
   },
 };

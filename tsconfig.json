@@ -6,7 +6,7 @@
     "esModuleInterop": true,
     "outDir": "dist"
   },
-  "include": ["./scripts", "./tests"],
+  "include": ["./scripts", "./tests/Interoperability.smoke.ts"],
   "exclude": ["node_modules"],
   "files": ["./hardhat.config.ts"],
   "typeAcquisition": {

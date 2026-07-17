@@ -1,83 +1,247 @@
 {
-  "allowedDifferences": [
-    {
-      "baselineValue": 89,
-      "candidateValue": 3,
-      "path": "$.tests.hardhat.count",
-      "reason": "Stage 11 retires only the two digest-bound legacy TypeScript behavior sources after exact 104/104 Forge parity and keeps exactly three digest-bound Hardhat interoperability smokes. The historical 89-name oracle and parity map remain immutable provenance, and all 140 Forge identifiers remain active and exact."
-    },
-    {
-      "baselineValue": 89,
-      "candidateValue": 3,
-      "path": "$.tests.hardhat.names.length",
-      "reason": "Stage 11 retires only the two digest-bound legacy TypeScript behavior sources after exact 104/104 Forge parity and keeps exactly three digest-bound Hardhat interoperability smokes. The historical 89-name oracle and parity map remain immutable provenance, and all 140 Forge identifiers remain active and exact."
-    },
-    {
-      "baselineValue": "PartialCommonOwnership.sol #collectTax() succeeds collects after 10m",
-      "candidateValue": "Hardhat interoperability smokes acquires, collects tax, and exits with ordered events and conserved balances",
-      "path": "$.tests.hardhat.names[0]",
-      "reason": "Stage 11 retires only the two digest-bound legacy TypeScript behavior sources after exact 104/104 Forge parity and keeps exactly three digest-bound Hardhat interoperability smokes. The historical 89-name oracle and parity map remain immutable provenance, and all 140 Forge identifiers remain active and exact."
-    },
-    {
-      "baselineValue": "PartialCommonOwnership.sol #collectTax() succeeds collects after 10m and subsequently after 10m",
-      "candidateValue": "Hardhat interoperability smokes approves, wraps, takes over, and unwraps with custody and metadata cleanup",
-      "path": "$.tests.hardhat.names[1]",
-      "reason": "Stage 11 retires only the two digest-bound legacy TypeScript behavior sources after exact 104/104 Forge parity and keeps exactly three digest-bound Hardhat interoperability smokes. The historical 89-name oracle and parity map remain immutable provenance, and all 140 Forge identifiers remain active and exact."
-    },
-    {
-      "baselineValue": "PartialCommonOwnership.sol #collectTax() succeeds no tax collected if token is owned by its beneficiary",
-      "candidateValue": "Hardhat interoperability smokes deploys and reads deterministic PCO configuration",
-      "path": "$.tests.hardhat.names[2]",
-      "reason": "Stage 11 retires only the two digest-bound legacy TypeScript behavior sources after exact 104/104 Forge parity and keeps exactly three digest-bound Hardhat interoperability smokes. The historical 89-name oracle and parity map remain immutable provenance, and all 140 Forge identifiers remain active and exact."
-    },
-    {
-      "baselineValue": 229,
-      "candidateValue": 143,
-      "path": "$.tests.total",
-      "reason": "Stage 11 retires only the two digest-bound legacy TypeScript behavior sources after exact 104/104 Forge parity and keeps exactly three digest-bound Hardhat interoperability smokes. The historical 89-name oracle and parity map remain immutable provenance, and all 140 Forge identifiers remain active and exact."
-    }
-  ],
+  "allowedDifferences": [],
   "baselineSha256": "4ec069e1cdb046198456b1db9179522b604d8dab062838c79e4cf8aa1e9df55c",
-  "candidate": "stage-11-foundry-first-cutover",
+  "candidate": "stage-12a-ethers-6",
+  "migrationEvidence": {
+    "boundFiles": {
+      "compatibility/README.md": "cccac2d4fb89015cdbe20197a9c08d78ecc90c11384d485690b471e42e390df8",
+      "compatibility/stage-12a-ethers6-inventory.json": "f9f3e23ccd84236ffca10d2eb79b3c0f737e83efd0692f8a57ea3a0ac98f0cc2",
+      "docs/development.md": "ab764805a0d8d4679dca1f6b2043ba3f21ea2b5420d567558719a3d5c2109727",
+      "hardhat.config.d.ts": "279ba3be547bf4369a358eafee9bf89d2f6733813010c588f70164512a8158a4",
+      "hardhat.config.ts": "a1fe8c8ee149838e99cd8a93a249a50a1655777589c1341ce6c2e93c8fe1e2ab",
+      "package.json": "fa57c6f6ac2429bcd3b4dcf5c3d8c3121d926999f902baea190488aff854d7a7",
+      "pnpm-lock.yaml": "7ee226b9a5f69123376f1f7429dd7e34b5262c3673a776d1c6cc4ee7ff9e46b4",
+      "scripts/check-parity.js": "540ef384dda01295a357a048290bb89004d3aa64a5e7455b73ff3c08fe37f53a",
+      "tests/Interoperability.smoke.ts": "2cfc8c3fe6599499433874440ed885b19f6ec39e6510eae0c881b19c5aed3350",
+      "tsconfig.json": "79498bc723d15551590dfcc9ce33d2e69f1023895b24d4d680be6c67e97cd488"
+    },
+    "checkpoint": {
+      "commit": "c84870955d77e82e91ed70591f010233675a6880",
+      "evidence": {
+        "path": "compatibility/evidence/stage-11-foundry-first-cutover.json",
+        "sha256": "0077542e6ac4c5f1af3813ff8e84dcc4d46182f1a8c0b28e290acfae733da412"
+      },
+      "review": {
+        "path": "compatibility/reviewed-differences.json",
+        "sha256": "4dfa67856a3d5d04a1057df5064926a07fd1dcde314b05bbdd1927a3080b7731"
+      }
+    },
+    "dependencyMigration": {
+      "installed": {
+        "@nomicfoundation/hardhat-ethers": {
+          "packageJsonSha256": "226daa6f645e7d245ed33574e0467b1bbffc9e68fb6d8d5119dcd7ab00080e28",
+          "version": "3.1.3"
+        },
+        "ethers": {
+          "packageJsonSha256": "d644d7df228197962e4ca19824b06e8d50dce0b5ee2aced63dcfc2a11ec7b90f",
+          "version": "6.17.0"
+        },
+        "hardhat": {
+          "packageJsonSha256": "57797013c50911ae0148e38851f6c232b1d6d9dc27c3ebbd3d82beffbb1b87a2",
+          "version": "2.28.6"
+        }
+      },
+      "lockfileSha256": "7ee226b9a5f69123376f1f7429dd7e34b5262c3673a776d1c6cc4ee7ff9e46b4",
+      "openZeppelin": {
+        "equalToStage11": true,
+        "installedPackageJsonSha256": "3c1a597cb911ffc2988c038d83ee93e1f8bf0ad17769d6bb0368d08bc350d773",
+        "registryIntegrity": "sha512-Ly6SlsVJ3mj+b18W3R8gNufB7dTICT105fJhodGAGgyC2oqnBAhqSiNDJ8V8DLY05cCz81GLI0CU5vNYA1EC/w==",
+        "version": "5.6.1"
+      },
+      "packageJsonSha256": "fa57c6f6ac2429bcd3b4dcf5c3d8c3121d926999f902baea190488aff854d7a7",
+      "registryIntegrity": {
+        "ethers": "sha512-BpyrpIPJ3ydEVow8zGaz1DuPS7YU8DcWxuBnY9a0UA/lvAPwrMr+EPXsfrul628SRaekPNeIM4UFh/91GWZang==",
+        "hardhatEthers": "sha512-208JcDeVIl+7Wu3MhFUUtiA8TJ7r2Rn3Wr+lSx9PfsDTKkbsAsWPY6N6wQ4mtzDv0/pB9nIbJhkjoHe1EsgNsA=="
+      },
+      "transition": {
+        "dormantEthers5Tooling": {
+          "@nomiclabs/hardhat-ethers": "2.0.5",
+          "@nomiclabs/hardhat-waffle": "2.0.3",
+          "@typechain/ethers-v5": "10.0.0",
+          "@typechain/hardhat": "6.0.0",
+          "ethereum-waffle": "3.4.4",
+          "typechain": "8.0.0"
+        },
+        "ethers": {
+          "candidate": "6.17.0",
+          "stage11": "5.6.2"
+        },
+        "hardhat": {
+          "candidate": "2.28.6",
+          "stage11": "2.28.6"
+        },
+        "hardhatEthers": {
+          "candidate": {
+            "name": "@nomicfoundation/hardhat-ethers",
+            "version": "3.1.3"
+          },
+          "stage11": {
+            "name": "@nomiclabs/hardhat-ethers",
+            "version": "2.0.5"
+          }
+        },
+        "packageDifferences": [
+          {
+            "candidateValue": "3.1.3",
+            "path": "$.packageJson.devDependencies.@nomicfoundation/hardhat-ethers"
+          },
+          {
+            "baselineValue": "5.6.2",
+            "candidateValue": "6.17.0",
+            "path": "$.packageJson.devDependencies.ethers"
+          },
+          {
+            "baselineValue": "hardhat typechain && hardhat --network hardhat test tests/Interoperability.smoke.ts",
+            "candidateValue": "hardhat --network hardhat test tests/Interoperability.smoke.ts",
+            "path": "$.packageJson.scripts.test:hardhat:smoke"
+          },
+          {
+            "baselineValue": "hardhat typechain",
+            "path": "$.packageJson.scripts.typechain"
+          }
+        ],
+        "peerDebtDisposition": "retained but runtime-deactivated without suppression; remove together in Stage 12b",
+        "retainedLegacyHelpers": {
+          "@ethersproject/abi": "5.6.0",
+          "@ethersproject/contracts": "5.6.0",
+          "@ethersproject/providers": "5.6.2"
+        },
+        "unchangedActiveLegacyPlugin": {
+          "@nomiclabs/hardhat-web3": "2.0.0"
+        }
+      }
+    },
+    "retainedTests": {
+      "forge": {
+        "count": 140,
+        "namesSha256": "09b141a8c69c4522288cfdbf67373661052764ab019c865ea850dc5eb645f173"
+      },
+      "hardhat": {
+        "count": 3,
+        "names": [
+          "Hardhat interoperability smokes acquires, collects tax, and exits with ordered events and conserved balances",
+          "Hardhat interoperability smokes approves, wraps, takes over, and unwraps with custody and metadata cleanup",
+          "Hardhat interoperability smokes deploys and reads deterministic PCO configuration"
+        ]
+      }
+    },
+    "runtimeBridge": {
+      "active": {
+        "ethers": "6.17.0",
+        "hardhat": "2.28.6",
+        "plugin": {
+          "name": "@nomicfoundation/hardhat-ethers",
+          "version": "3.1.3"
+        }
+      },
+      "deactivatedHardhatRuntimeHooks": [
+        "@nomiclabs/hardhat-ethers",
+        "@nomiclabs/hardhat-waffle",
+        "@typechain/hardhat"
+      ],
+      "dormantEthers5Tooling": {
+        "@nomiclabs/hardhat-ethers": "2.0.5",
+        "@nomiclabs/hardhat-waffle": "2.0.3",
+        "@typechain/ethers-v5": "10.0.0",
+        "@typechain/hardhat": "6.0.0",
+        "ethereum-waffle": "3.4.4",
+        "typechain": "8.0.0"
+      },
+      "files": {
+        "hardhat.config.d.ts": "279ba3be547bf4369a358eafee9bf89d2f6733813010c588f70164512a8158a4",
+        "hardhat.config.ts": "a1fe8c8ee149838e99cd8a93a249a50a1655777589c1341ce6c2e93c8fe1e2ab",
+        "tests/Interoperability.smoke.ts": "2cfc8c3fe6599499433874440ed885b19f6ec39e6510eae0c881b19c5aed3350",
+        "tsconfig.json": "79498bc723d15551590dfcc9ce33d2e69f1023895b24d4d680be6c67e97cd488"
+      },
+      "retainedLegacyHelpers": {
+        "@ethersproject/abi": "5.6.0",
+        "@ethersproject/contracts": "5.6.0",
+        "@ethersproject/providers": "5.6.2"
+      },
+      "smokeRunner": "hardhat --network hardhat test tests/Interoperability.smoke.ts",
+      "typeScriptInclude": [
+        "./scripts",
+        "./tests/Interoperability.smoke.ts"
+      ],
+      "unchangedActiveLegacyPlugin": {
+        "@nomiclabs/hardhat-web3": "2.0.0"
+      }
+    },
+    "toolingInventory": {
+      "activeHardhat": {
+        "count": 3,
+        "names": [
+          "Hardhat interoperability smokes acquires, collects tax, and exits with ordered events and conserved balances",
+          "Hardhat interoperability smokes approves, wraps, takes over, and unwraps with custody and metadata cleanup",
+          "Hardhat interoperability smokes deploys and reads deterministic PCO configuration"
+        ],
+        "sourcePath": "tests/Interoperability.smoke.ts",
+        "sourceSha256": "2cfc8c3fe6599499433874440ed885b19f6ec39e6510eae0c881b19c5aed3350"
+      },
+      "candidate": "stage-12a-ethers-6",
+      "forge": {
+        "count": 140,
+        "namesSha256": "09b141a8c69c4522288cfdbf67373661052764ab019c865ea850dc5eb645f173"
+      },
+      "inheritedStage11": {
+        "hardhatNamesSha256": "e82ce4a1063d5334c8a0962747e9bb0797c9e5e82ef6e40dc1905452fb78714f",
+        "inventoryPath": "compatibility/stage-11-hardhat-smoke-inventory.json",
+        "inventorySha256": "abea926d3e3cf7928a7693565aa01c2e59c22e442ce97c4a0271c7be46095cf4",
+        "smokeSourceSha256": "7fe9df8fca7273886e8eb8cbe96cd8053a9d4061c4034cb46a34831b59ae065a"
+      },
+      "parity": {
+        "files": {
+          "compatibility/parity-map.json": "72f66deac5693d553a681afa755856cc87f2d52d4b109938862ba731da9443b4",
+          "compatibility/parity/cohort-0-existing-forge.json": "3384ae9039fad21bb7800d61f181bd4ca6b68a8e1e8525815c3cc8ecd434df69",
+          "compatibility/parity/cohort-1-pco-read-tax.json": "632c07354ab5f4e0d71290e2631da59bacad8cc3c0bc1d22cc129674098891fc",
+          "compatibility/parity/cohort-2-pco-mutations.json": "47b93d5ecd3734b09533c8af0c514274ad4ff3c90185a6724364060bf5eef5c1",
+          "compatibility/parity/cohort-3-wrapper.json": "4932bd7dd4da1cf55b2723e98cbe865737c9e735528ad70f05f8de85c2baecca",
+          "compatibility/safety-test-inventory.json": "52f7c77b9ebec5093ad484f6695e46194b3ed0b9e737943946843e4f19c4d83a"
+        },
+        "mappedBehaviorCount": 104,
+        "safetyCount": 36
+      },
+      "path": "compatibility/stage-12a-ethers6-inventory.json",
+      "schemaVersion": 1,
+      "sha256": "f9f3e23ccd84236ffca10d2eb79b3c0f737e83efd0692f8a57ea3a0ac98f0cc2",
+      "stage11Checkpoint": "c84870955d77e82e91ed70591f010233675a6880",
+      "tooling": {
+        "ethers": "6.17.0",
+        "files": {
+          "hardhat.config.d.ts": "279ba3be547bf4369a358eafee9bf89d2f6733813010c588f70164512a8158a4",
+          "hardhat.config.ts": "a1fe8c8ee149838e99cd8a93a249a50a1655777589c1341ce6c2e93c8fe1e2ab",
+          "package.json": "fa57c6f6ac2429bcd3b4dcf5c3d8c3121d926999f902baea190488aff854d7a7",
+          "pnpm-lock.yaml": "7ee226b9a5f69123376f1f7429dd7e34b5262c3673a776d1c6cc4ee7ff9e46b4",
+          "tsconfig.json": "79498bc723d15551590dfcc9ce33d2e69f1023895b24d4d680be6c67e97cd488"
+        },
+        "hardhat": "2.28.6",
+        "hardhatEthers": "3.1.3"
+      }
+    }
+  },
   "opcodeEvidence": {
     "contracts": [
       "contracts/Wrapper.sol:Wrapper",
       "contracts/token/PartialCommonOwnership.sol:PartialCommonOwnership"
     ],
-    "mode": "stage-11-stage-10-production-equality",
-    "path": "compatibility/evidence/stage-11-foundry-first-cutover.json"
+    "mode": "stage-12a-stage-11-production-equality",
+    "path": "compatibility/evidence/stage-12a-ethers-6.json"
   },
-  "policy": "stage-11-foundry-first-cutover",
+  "policy": "stage-12a-ethers-6-stage-11-equality",
   "safetyEvidence": {
     "path": "compatibility/evidence/stage-07-safety-artifacts.json",
     "sha256": "0065814caec6e3044951f80c891c9948454e90138d016513ed07d0fcfb7c67d8"
   },
   "schemaVersion": 1,
-  "smokeEvidence": {
-    "deletedLegacyFiles": {
-      "tests/PartialCommonOwnership/index.ts": "729d6297377a6be11ebb122a8413a27985da990c108e70522512c70d98e7c134",
-      "tests/Wrapper.ts": "35377ba00ea68479a517bcfe3873552a13e07563a040091c3b436345111b6a1c"
-    },
-    "historicalNamesSha256": "861cda9b6fe70b931fd4c049c2e75585fd53a2ba502a3f89a70980a520f9a3ce",
-    "names": [
-      "Hardhat interoperability smokes acquires, collects tax, and exits with ordered events and conserved balances",
-      "Hardhat interoperability smokes approves, wraps, takes over, and unwraps with custody and metadata cleanup",
-      "Hardhat interoperability smokes deploys and reads deterministic PCO configuration"
-    ],
-    "path": "compatibility/stage-11-hardhat-smoke-inventory.json",
-    "sha256": "abea926d3e3cf7928a7693565aa01c2e59c22e442ce97c4a0271c7be46095cf4",
-    "sourcePath": "tests/Interoperability.smoke.ts",
-    "sourceSha256": "7fe9df8fca7273886e8eb8cbe96cd8053a9d4061c4034cb46a34831b59ae065a"
-  },
-  "stage10Checkpoint": {
-    "commit": "14720718787046af58be50c110be40c18f5b1364",
+  "stage11Checkpoint": {
+    "commit": "c84870955d77e82e91ed70591f010233675a6880",
     "evidence": {
-      "path": "compatibility/evidence/stage-10-openzeppelin-5-6-1.json",
-      "sha256": "41997589806cfb2549751713ad754816bab1259a172bebdea6ec957494437d60"
+      "path": "compatibility/evidence/stage-11-foundry-first-cutover.json",
+      "sha256": "0077542e6ac4c5f1af3813ff8e84dcc4d46182f1a8c0b28e290acfae733da412"
     },
     "review": {
       "path": "compatibility/reviewed-differences.json",
-      "sha256": "9940b3d2e4408ea7221bf05b98d7d16a97078aa0f2334c4dfec9af83b5533cef"
+      "sha256": "4dfa67856a3d5d04a1057df5064926a07fd1dcde314b05bbdd1927a3080b7731"
     }
   }
 }

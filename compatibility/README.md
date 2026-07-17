@@ -268,6 +268,42 @@ node scripts/compatibility.js check
 node scripts/compatibility.js stage-11-negative-probes
 ```
 
+Stage 12a uses the named `stage-12a-ethers-6-stage-11-equality` policy. It
+anchors the merged Stage 11 commit
+`c84870955d77e82e91ed70591f010233675a6880`, its exact evidence and review
+digests, and reconstructs the Stage 11 production bytecode, metadata-stripped
+opcodes, sizes, compiler identity, 15-entry legacy gas inventory, 12 key-flow
+gas results, and active 3-Hardhat plus 140-Forge test inventory before
+comparison.
+
+The bridge changes only JavaScript tooling: direct ethers becomes exact
+6.17.0, `@nomicfoundation/hardhat-ethers` 3.1.3 is activated under unchanged
+Hardhat 2.28.6, and the three interoperability smokes are migrated to ethers 6
+without changing their reporter titles or behavior. The legacy NomicLabs
+ethers, Waffle, and ethers-v5 TypeChain hooks remain installed but are not
+loaded or invoked. Their grouped removal remains isolated to Stage 12b; the
+resulting peer warning is recorded and is not suppressed. The unrelated Web3
+plugin remains unchanged.
+
+The Stage 12a tooling inventory binds the new smoke source, package and lock,
+Hardhat config and declaration file, and TypeScript scope while retaining the
+exact Stage 11 inventory digest and old smoke-source digest as provenance. No
+compatibility-manifest difference is reviewable: production sources and import
+closure, runtime dependencies, compiler settings, ABI, selectors, events,
+errors, storage, interfaces, enum ordinals, ERC165 answers, revert callsites,
+bytecode, opcodes, sizes, gas, and all 143 active test identifiers must remain
+exactly equal to Stage 11.
+
+Reproduce the Stage 12a review, evidence, gate, and adversarial policy probes
+with:
+
+```console
+node scripts/compatibility.js write-stage-12a-review
+node scripts/compatibility.js write-evidence
+node scripts/compatibility.js check
+node scripts/compatibility.js stage-12a-negative-probes
+```
+
 The original baseline predated explicit revert-literal extraction.
 `project-revert-strings.json` is a SHA-256-bound supplement derived from the
 unchanged production sources at the recorded baseline commit. It binds all 35

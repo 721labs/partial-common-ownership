@@ -880,6 +880,107 @@ const STAGE_11_FINAL_CHANGED_PATHS = Object.freeze(
     "compatibility/reviewed-differences.json",
   ].sort()
 );
+const STAGE_12A_CANDIDATE = "stage-12a-ethers-6";
+const STAGE_12A_POLICY = "stage-12a-ethers-6-stage-11-equality";
+const STAGE_12A_EVIDENCE_PATH =
+  "compatibility/evidence/stage-12a-ethers-6.json";
+const STAGE_12A_BASE_COMMIT = "c84870955d77e82e91ed70591f010233675a6880";
+const STAGE_12A_STAGE_11_EVIDENCE_SHA256 =
+  "0077542e6ac4c5f1af3813ff8e84dcc4d46182f1a8c0b28e290acfae733da412";
+const STAGE_12A_STAGE_11_REVIEW_SHA256 =
+  "4dfa67856a3d5d04a1057df5064926a07fd1dcde314b05bbdd1927a3080b7731";
+const STAGE_12A_CHECKPOINT_BINDING = Object.freeze({
+  commit: STAGE_12A_BASE_COMMIT,
+  evidence: Object.freeze({
+    path: STAGE_11_EVIDENCE_PATH,
+    sha256: STAGE_12A_STAGE_11_EVIDENCE_SHA256,
+  }),
+  review: Object.freeze({
+    path: "compatibility/reviewed-differences.json",
+    sha256: STAGE_12A_STAGE_11_REVIEW_SHA256,
+  }),
+});
+const STAGE_12A_INVENTORY_PATH =
+  "compatibility/stage-12a-ethers6-inventory.json";
+const STAGE_12A_INVENTORY_SHA256 =
+  "f9f3e23ccd84236ffca10d2eb79b3c0f737e83efd0692f8a57ea3a0ac98f0cc2";
+const STAGE_12A_ETHERS_VERSION = "6.17.0";
+const STAGE_12A_HARDHAT_ETHERS_VERSION = "3.1.3";
+const STAGE_12A_HARDHAT_VERSION = "2.28.6";
+const STAGE_12A_RETAINED_LEGACY_DEV_DEPENDENCIES = Object.freeze({
+  "@ethersproject/abi": "5.6.0",
+  "@ethersproject/contracts": "5.6.0",
+  "@ethersproject/providers": "5.6.2",
+  "@nomiclabs/hardhat-ethers": "2.0.5",
+  "@nomiclabs/hardhat-waffle": "2.0.3",
+  "@nomiclabs/hardhat-web3": "2.0.0",
+  "@typechain/ethers-v5": "10.0.0",
+  "@typechain/hardhat": "6.0.0",
+  "ethereum-waffle": "3.4.4",
+  typechain: "8.0.0",
+});
+const STAGE_12A_DORMANT_ETHERS5_TOOLING = Object.freeze({
+  "@nomiclabs/hardhat-ethers": "2.0.5",
+  "@nomiclabs/hardhat-waffle": "2.0.3",
+  "@typechain/ethers-v5": "10.0.0",
+  "@typechain/hardhat": "6.0.0",
+  "ethereum-waffle": "3.4.4",
+  typechain: "8.0.0",
+});
+const STAGE_12A_RETAINED_LEGACY_HELPERS = Object.freeze({
+  "@ethersproject/abi": "5.6.0",
+  "@ethersproject/contracts": "5.6.0",
+  "@ethersproject/providers": "5.6.2",
+});
+const STAGE_12A_ACTIVE_LEGACY_PLUGIN = Object.freeze({
+  "@nomiclabs/hardhat-web3": "2.0.0",
+});
+const STAGE_12A_ETHERS_INTEGRITY =
+  "sha512-BpyrpIPJ3ydEVow8zGaz1DuPS7YU8DcWxuBnY9a0UA/lvAPwrMr+EPXsfrul628SRaekPNeIM4UFh/91GWZang==";
+const STAGE_12A_HARDHAT_ETHERS_INTEGRITY =
+  "sha512-208JcDeVIl+7Wu3MhFUUtiA8TJ7r2Rn3Wr+lSx9PfsDTKkbsAsWPY6N6wQ4mtzDv0/pB9nIbJhkjoHe1EsgNsA==";
+const STAGE_12A_LOCKFILE_SHA256 =
+  "7ee226b9a5f69123376f1f7429dd7e34b5262c3673a776d1c6cc4ee7ff9e46b4";
+const STAGE_12A_PACKAGE_SHA256 =
+  "fa57c6f6ac2429bcd3b4dcf5c3d8c3121d926999f902baea190488aff854d7a7";
+const STAGE_12A_EXPECTED_PACKAGE_DIFFERENCE_PATHS = Object.freeze([
+  "$.packageJson.devDependencies.@nomicfoundation/hardhat-ethers",
+  "$.packageJson.devDependencies.ethers",
+  "$.packageJson.scripts.test:hardhat:smoke",
+  "$.packageJson.scripts.typechain",
+]);
+const STAGE_12A_BOUND_FILES = Object.freeze({
+  "compatibility/README.md":
+    "cccac2d4fb89015cdbe20197a9c08d78ecc90c11384d485690b471e42e390df8",
+  "compatibility/stage-12a-ethers6-inventory.json":
+    "f9f3e23ccd84236ffca10d2eb79b3c0f737e83efd0692f8a57ea3a0ac98f0cc2",
+  "docs/development.md":
+    "ab764805a0d8d4679dca1f6b2043ba3f21ea2b5420d567558719a3d5c2109727",
+  "hardhat.config.d.ts":
+    "279ba3be547bf4369a358eafee9bf89d2f6733813010c588f70164512a8158a4",
+  "hardhat.config.ts":
+    "a1fe8c8ee149838e99cd8a93a249a50a1655777589c1341ce6c2e93c8fe1e2ab",
+  "package.json":
+    "fa57c6f6ac2429bcd3b4dcf5c3d8c3121d926999f902baea190488aff854d7a7",
+  "pnpm-lock.yaml":
+    "7ee226b9a5f69123376f1f7429dd7e34b5262c3673a776d1c6cc4ee7ff9e46b4",
+  "scripts/check-parity.js":
+    "540ef384dda01295a357a048290bb89004d3aa64a5e7455b73ff3c08fe37f53a",
+  "tests/Interoperability.smoke.ts":
+    "2cfc8c3fe6599499433874440ed885b19f6ec39e6510eae0c881b19c5aed3350",
+  "tsconfig.json":
+    "79498bc723d15551590dfcc9ce33d2e69f1023895b24d4d680be6c67e97cd488",
+});
+const STAGE_12A_CORE_CHANGED_PATHS = Object.freeze(
+  [...Object.keys(STAGE_12A_BOUND_FILES), "scripts/compatibility.js"].sort()
+);
+const STAGE_12A_FINAL_CHANGED_PATHS = Object.freeze(
+  [
+    ...STAGE_12A_CORE_CHANGED_PATHS,
+    STAGE_12A_EVIDENCE_PATH,
+    "compatibility/reviewed-differences.json",
+  ].sort()
+);
 const PROJECT_REVERT_STRINGS_PATH = path.join(
   ROOT,
   "compatibility",
@@ -1386,6 +1487,33 @@ function validateStage11Candidate(baseline, candidate) {
   stage11LegacyGasEqualityEvidence(candidate, checkpoint);
 }
 
+function validateStage12aCandidate(baseline, candidate) {
+  const checkpoint = stage12aCheckpointAnchor();
+  stage09ForgeStdEvidence();
+  stage12aSourceEvidence(candidate);
+  stage12aTestInventory(candidate, checkpoint);
+  validateSecurity01HardFields(baseline, candidate);
+  if (
+    candidate.compiler.version !== STAGE_08_COMPILER_VERSION ||
+    candidate.compiler.longVersion !== STAGE_08_COMPILER_LONG_VERSION ||
+    !valuesEqual(candidate.compiler.settings, baseline.compiler.settings)
+  ) {
+    throw new Error(
+      "Stage 12a must preserve exact Solidity 0.8.36 and every compiler setting"
+    );
+  }
+  const expectedReverts = security04ProjectRevertStrings(
+    baseline.projectRevertStrings
+  );
+  if (!valuesEqual(candidate.projectRevertStrings, expectedReverts)) {
+    throw new Error(
+      "Stage 12a must preserve every Stage 11 project-owned revert payload, callsite, and ordering"
+    );
+  }
+  stage12aProductionEqualityEvidence(baseline, candidate, checkpoint);
+  stage12aLegacyGasEqualityEvidence(candidate, checkpoint);
+}
+
 const REVIEW_POLICIES = Object.freeze({
   "stage-04-source-path-metadata-and-gas": Object.freeze({
     candidate: "stage-04-package-canonical-openzeppelin",
@@ -1715,6 +1843,25 @@ const REVIEW_POLICIES = Object.freeze({
       );
     },
     validateCandidate: validateStage11Candidate,
+  }),
+  [STAGE_12A_POLICY]: Object.freeze({
+    candidate: STAGE_12A_CANDIDATE,
+    requiredOpcodeEvidence: Object.freeze({
+      mode: "stage-12a-stage-11-production-equality",
+      path: STAGE_12A_EVIDENCE_PATH,
+      contracts: STAGE_08_PRODUCTION_CONTRACTS,
+    }),
+    requiredSafetyEvidence: Object.freeze({
+      path: "compatibility/evidence/stage-07-safety-artifacts.json",
+      sha256:
+        "0065814caec6e3044951f80c891c9948454e90138d016513ed07d0fcfb7c67d8",
+    }),
+    requiredStage11Checkpoint: STAGE_12A_CHECKPOINT_BINDING,
+    requiresStage12aMigrationEvidence: true,
+    permits() {
+      return false;
+    },
+    validateCandidate: validateStage12aCandidate,
   }),
 });
 
@@ -3147,6 +3294,426 @@ function stage11SourceEvidence(candidate) {
   });
 }
 
+function validateStage12aFrozenConstants() {
+  if (
+    STAGE_12A_ETHERS_INTEGRITY === "TO_BE_FROZEN" ||
+    STAGE_12A_HARDHAT_ETHERS_INTEGRITY === "TO_BE_FROZEN" ||
+    STAGE_12A_LOCKFILE_SHA256 === "TO_BE_FROZEN" ||
+    STAGE_12A_PACKAGE_SHA256 === "TO_BE_FROZEN" ||
+    STAGE_12A_EXPECTED_PACKAGE_DIFFERENCE_PATHS.length === 0 ||
+    Object.keys(STAGE_12A_BOUND_FILES).length === 0 ||
+    STAGE_12A_CORE_CHANGED_PATHS.length === 0 ||
+    STAGE_12A_FINAL_CHANGED_PATHS.length === 0
+  ) {
+    throw new Error(
+      "Stage 12a candidate provenance has not been frozen after the ethers 6 migration settled"
+    );
+  }
+}
+
+function validateStage12aChangedPaths(actual) {
+  validateStage12aFrozenConstants();
+  const permittedStates = [
+    STAGE_12A_CORE_CHANGED_PATHS,
+    [
+      ...STAGE_12A_CORE_CHANGED_PATHS,
+      "compatibility/reviewed-differences.json",
+    ],
+    STAGE_12A_FINAL_CHANGED_PATHS,
+  ].map((paths) => [...new Set(paths)].sort());
+  const normalized = [...new Set(actual)].sort();
+  if (!permittedStates.some((expected) => valuesEqual(normalized, expected))) {
+    const differences = collectDifferences(
+      STAGE_12A_FINAL_CHANGED_PATHS,
+      normalized,
+      "$.stage12aChangedPaths"
+    );
+    throw new Error(
+      `Stage 12a repository changes differ from its exact core/review/evidence states:\n${differences
+        .slice(0, 30)
+        .map((difference) => `- ${formatDifference(difference)}`)
+        .join("\n")}`
+    );
+  }
+  return [...STAGE_12A_FINAL_CHANGED_PATHS];
+}
+
+function stage12aBoundFileEvidence() {
+  validateStage12aFrozenConstants();
+  const files = fileDigestEvidence(STAGE_12A_BOUND_FILES);
+  validateExactFileDigests(files, STAGE_12A_BOUND_FILES, "stage12aFiles");
+  return files;
+}
+
+function stage12aToolingInventory(checkpoint = stage12aCheckpointAnchor()) {
+  const inventoryPath = path.join(ROOT, STAGE_12A_INVENTORY_PATH);
+  const bytes = fs.readFileSync(inventoryPath);
+  const inventory = JSON.parse(bytes);
+  const expectedHardhat =
+    checkpoint.evidence.value.sourceAndTestCutover.tests.activeHardhat;
+  if (
+    sha256(bytes) !== STAGE_12A_INVENTORY_SHA256 ||
+    inventory.schemaVersion !== 1 ||
+    inventory.candidate !== STAGE_12A_CANDIDATE ||
+    inventory.stage11Checkpoint !== STAGE_12A_BASE_COMMIT ||
+    inventory.inheritedStage11?.inventoryPath !==
+      STAGE_11_SMOKE_INVENTORY_PATH ||
+    inventory.inheritedStage11?.inventorySha256 !==
+      "abea926d3e3cf7928a7693565aa01c2e59c22e442ce97c4a0271c7be46095cf4" ||
+    inventory.inheritedStage11?.hardhatNamesSha256 !==
+      sha256(stableJson(expectedHardhat.names)) ||
+    inventory.inheritedStage11?.smokeSourceSha256 !==
+      checkpoint.evidence.value.sourceAndTestCutover.tests.smokeInventory
+        .activeHardhat.sourceSha256 ||
+    !valuesEqual(inventory.activeHardhat.names, expectedHardhat.names) ||
+    inventory.activeHardhat.count !== expectedHardhat.count ||
+    inventory.activeHardhat.sourcePath !== "tests/Interoperability.smoke.ts" ||
+    inventory.forge?.count !== STAGE_11_FORGE_COUNT ||
+    inventory.forge?.namesSha256 !== STAGE_11_FORGE_NAMES_SHA256 ||
+    inventory.tooling?.hardhat !== STAGE_12A_HARDHAT_VERSION ||
+    inventory.tooling?.ethers !== STAGE_12A_ETHERS_VERSION ||
+    inventory.tooling?.hardhatEthers !== STAGE_12A_HARDHAT_ETHERS_VERSION ||
+    inventory.parity?.mappedBehaviorCount !== 104 ||
+    inventory.parity?.safetyCount !== 36 ||
+    !valuesEqual(inventory.parity?.files, security01ParityEvidence())
+  ) {
+    throw new Error("Stage 12a ethers 6 smoke/tooling inventory is invalid");
+  }
+  const sourceBytes = fs.readFileSync(
+    path.join(ROOT, inventory.activeHardhat.sourcePath)
+  );
+  if (sha256(sourceBytes) !== inventory.activeHardhat.sourceSha256) {
+    throw new Error("Stage 12a ethers 6 smoke source digest changed");
+  }
+  const expectedToolingPaths = [
+    "hardhat.config.d.ts",
+    "hardhat.config.ts",
+    "package.json",
+    "pnpm-lock.yaml",
+    "tsconfig.json",
+  ];
+  if (
+    !valuesEqual(
+      Object.keys(inventory.tooling.files).sort(),
+      expectedToolingPaths
+    )
+  ) {
+    throw new Error("Stage 12a tooling inventory paths changed");
+  }
+  for (const relativePath of expectedToolingPaths) {
+    if (
+      sha256(fs.readFileSync(path.join(ROOT, relativePath))) !==
+      inventory.tooling.files[relativePath]
+    ) {
+      throw new Error(`Stage 12a tooling digest changed: ${relativePath}`);
+    }
+  }
+  return sorted({
+    ...inventory,
+    path: STAGE_12A_INVENTORY_PATH,
+    sha256: sha256(bytes),
+  });
+}
+
+function stage12aTestInventory(
+  candidate,
+  checkpoint = stage12aCheckpointAnchor()
+) {
+  const toolingInventory = stage12aToolingInventory(checkpoint);
+  const expectedHardhat =
+    checkpoint.evidence.value.sourceAndTestCutover.tests.activeHardhat;
+  const parity = stage06ParityForgeTests();
+  const safety = stage07SafetyForgeTests();
+  const expectedForgeNames = [...parity.forgeNames, ...safety].sort();
+  if (
+    expectedHardhat.count !== 3 ||
+    expectedHardhat.names.length !== 3 ||
+    sha256(stableJson(expectedHardhat.names)) !==
+      sha256(stableJson(candidate.tests.hardhat.names)) ||
+    !valuesEqual(candidate.tests.hardhat, expectedHardhat) ||
+    !valuesEqual(
+      candidate.tests.hardhat.names,
+      toolingInventory.activeHardhat.names
+    ) ||
+    expectedForgeNames.length !== STAGE_11_FORGE_COUNT ||
+    sha256(stableJson(expectedForgeNames)) !== STAGE_11_FORGE_NAMES_SHA256 ||
+    !valuesEqual(candidate.tests.forge.names, expectedForgeNames) ||
+    candidate.tests.forge.count !== STAGE_11_FORGE_COUNT ||
+    candidate.tests.total !== 3 + STAGE_11_FORGE_COUNT
+  ) {
+    throw new Error(
+      "Stage 12a must preserve exactly the three Stage 11 Hardhat smokes and all 140 Forge identifiers"
+    );
+  }
+  return sorted({
+    hardhat: {
+      count: candidate.tests.hardhat.count,
+      names: candidate.tests.hardhat.names,
+      namesSha256: sha256(stableJson(candidate.tests.hardhat.names)),
+    },
+    forge: {
+      count: candidate.tests.forge.count,
+      namesSha256: sha256(stableJson(candidate.tests.forge.names)),
+      mappedBehaviorCount: parity.forgeNames.length,
+      safetyCount: safety.length,
+    },
+    total: candidate.tests.total,
+    toolingInventory,
+  });
+}
+
+function stage12aProductionSourceEquality(checkpoint) {
+  const expected =
+    checkpoint.evidence.value.sourceAndTestCutover.productionSources;
+  const sources = {};
+  for (const relativePath of STAGE_10_PRODUCTION_SOURCES) {
+    const actualSha256 = sha256(fs.readFileSync(path.join(ROOT, relativePath)));
+    const expectedSha256 = expected[relativePath]?.sha256;
+    if (!expectedSha256 || actualSha256 !== expectedSha256) {
+      throw new Error(
+        `Stage 12a production source differs from Stage 11: ${relativePath}`
+      );
+    }
+    sources[relativePath] = { sha256: actualSha256, equal: true };
+  }
+  return sorted(sources);
+}
+
+function stage12aCompilerSourceEquality(checkpoint) {
+  const expected =
+    checkpoint.evidence.value.sourceAndTestCutover.compilerSources;
+  const sourceHashes = compilerSourceHashes();
+  const names = Object.keys(sourceHashes).sort();
+  const actual = {
+    sourceCount: names.length,
+    sourceNamesSha256: sha256(stableJson(names)),
+    candidateClosureSha256: sha256(stableJson(sourceHashes)),
+    completeSourceHashes: sourceHashes,
+    productionImportClosure: stage10ProductionImportClosure(sourceHashes),
+  };
+  for (const field of [
+    "sourceCount",
+    "sourceNamesSha256",
+    "candidateClosureSha256",
+    "completeSourceHashes",
+    "productionImportClosure",
+  ]) {
+    if (!valuesEqual(actual[field], expected[field])) {
+      throw new Error(`Stage 12a compiler source closure changed: ${field}`);
+    }
+  }
+  return sorted({ ...actual, equalToStage11: true });
+}
+
+function stage12aBasePackageJson() {
+  return JSON.parse(
+    run("git", ["show", `${STAGE_12A_BASE_COMMIT}:package.json`]).stdout
+  );
+}
+
+function validateStage12aPackageManifest(packageJson) {
+  validateStage12aFrozenConstants();
+  const base = stage12aBasePackageJson();
+  if (
+    base.devDependencies?.ethers !== "5.6.2" ||
+    base.devDependencies?.["@nomiclabs/hardhat-ethers"] !== "2.0.5" ||
+    base.devDependencies?.hardhat !== STAGE_12A_HARDHAT_VERSION
+  ) {
+    throw new Error(
+      "Stage 12a inherited an invalid Stage 11 JS dependency set"
+    );
+  }
+  if (
+    packageJson.devDependencies?.ethers !== STAGE_12A_ETHERS_VERSION ||
+    packageJson.devDependencies?.["@nomicfoundation/hardhat-ethers"] !==
+      STAGE_12A_HARDHAT_ETHERS_VERSION ||
+    packageJson.devDependencies?.hardhat !== STAGE_12A_HARDHAT_VERSION ||
+    !valuesEqual(packageJson.dependencies, base.dependencies)
+  ) {
+    throw new Error(
+      "Stage 12a requires exact ethers 6.17.0, Foundation hardhat-ethers 3.1.3, Hardhat 2.28.6, and unchanged runtime dependencies"
+    );
+  }
+  for (const [name, version] of Object.entries(
+    STAGE_12A_RETAINED_LEGACY_DEV_DEPENDENCIES
+  )) {
+    if (
+      base.devDependencies?.[name] !== version ||
+      packageJson.devDependencies?.[name] !== version
+    ) {
+      throw new Error(
+        `Stage 12a must retain dormant legacy dependency ${name}@${version} unchanged for the isolated Stage 12b removal`
+      );
+    }
+  }
+  const differences = collectDifferences(base, packageJson, "$.packageJson");
+  const actualPaths = differences.map(({ path: reviewPath }) => reviewPath);
+  if (!valuesEqual(actualPaths, STAGE_12A_EXPECTED_PACKAGE_DIFFERENCE_PATHS)) {
+    throw new Error(
+      `Stage 12a package.json changed outside its exact migration:\n${collectDifferences(
+        STAGE_12A_EXPECTED_PACKAGE_DIFFERENCE_PATHS,
+        actualPaths,
+        "$.packageDifferencePaths"
+      )
+        .map((difference) => `- ${formatDifference(difference)}`)
+        .join("\n")}`
+    );
+  }
+  return differences;
+}
+
+function lockfileKey(name) {
+  return name.startsWith("@") ? `'${name}'` : name;
+}
+
+function escapedPattern(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function validateStage12aLockDependency(lock, name, version, integrity) {
+  const key = escapedPattern(lockfileKey(name));
+  const escapedVersion = escapedPattern(version);
+  const escapedIntegrity = escapedPattern(integrity);
+  const importer = new RegExp(
+    `^      ${key}:\\n        specifier: ${escapedVersion}\\n        version: ${escapedVersion}(?:\\([^\\n]+\\))?$`,
+    "m"
+  );
+  const resolution = new RegExp(
+    `^  ${escapedPattern(
+      lockfileKey(`${name}@${version}`)
+    )}:\\n    resolution: \\{integrity: ${escapedIntegrity}\\}`,
+    "m"
+  );
+  if (!importer.test(lock) || !resolution.test(lock)) {
+    throw new Error(
+      `Stage 12a pnpm lock is missing exact ${name} ${version} importer/integrity evidence`
+    );
+  }
+}
+
+function stage12aDependencyEvidence() {
+  validateStage12aFrozenConstants();
+  const packagePath = path.join(ROOT, "package.json");
+  const lockPath = path.join(ROOT, "pnpm-lock.yaml");
+  const packageBytes = fs.readFileSync(packagePath);
+  const lockBytes = fs.readFileSync(lockPath);
+  const packageJson = JSON.parse(packageBytes);
+  const lock = lockBytes.toString("utf8");
+  const differences = validateStage12aPackageManifest(packageJson);
+  if (
+    sha256(packageBytes) !== STAGE_12A_PACKAGE_SHA256 ||
+    sha256(lockBytes) !== STAGE_12A_LOCKFILE_SHA256
+  ) {
+    throw new Error("Stage 12a package manifest or lockfile digest changed");
+  }
+  validateStage12aLockDependency(
+    lock,
+    "ethers",
+    STAGE_12A_ETHERS_VERSION,
+    STAGE_12A_ETHERS_INTEGRITY
+  );
+  validateStage12aLockDependency(
+    lock,
+    "@nomicfoundation/hardhat-ethers",
+    STAGE_12A_HARDHAT_ETHERS_VERSION,
+    STAGE_12A_HARDHAT_ETHERS_INTEGRITY
+  );
+  if (!/^      '@nomiclabs\/hardhat-ethers':$/m.test(lock)) {
+    throw new Error(
+      "Stage 12a must retain the dormant ethers-5 plugin as explicit Stage 12b debt"
+    );
+  }
+  const installed = {};
+  for (const [name, expectedVersion] of [
+    ["ethers", STAGE_12A_ETHERS_VERSION],
+    ["@nomicfoundation/hardhat-ethers", STAGE_12A_HARDHAT_ETHERS_VERSION],
+    ["hardhat", STAGE_12A_HARDHAT_VERSION],
+  ]) {
+    const installedPath = path.join(ROOT, "node_modules", name, "package.json");
+    const installedBytes = fs.readFileSync(installedPath);
+    const installedPackage = JSON.parse(installedBytes);
+    if (installedPackage.version !== expectedVersion) {
+      throw new Error(
+        `Stage 12a installed ${name} version changed: ${installedPackage.version}`
+      );
+    }
+    installed[name] = {
+      version: installedPackage.version,
+      packageJsonSha256: sha256(installedBytes),
+    };
+  }
+  const checkpoint = stage12aCheckpointAnchor();
+  const stage11OpenZeppelin =
+    checkpoint.evidence.value.sourceAndTestCutover.dependency;
+  const openZeppelin = stage10DependencyEvidence();
+  for (const field of [
+    "name",
+    "candidateVersion",
+    "registryIntegrity",
+    "installedPackageJsonSha256",
+  ]) {
+    const checkpointField = field === "candidateVersion" ? "version" : field;
+    if (openZeppelin[field] !== stage11OpenZeppelin[checkpointField]) {
+      throw new Error(`Stage 12a OpenZeppelin dependency changed: ${field}`);
+    }
+  }
+  return sorted({
+    transition: {
+      ethers: { stage11: "5.6.2", candidate: STAGE_12A_ETHERS_VERSION },
+      hardhatEthers: {
+        stage11: { name: "@nomiclabs/hardhat-ethers", version: "2.0.5" },
+        candidate: {
+          name: "@nomicfoundation/hardhat-ethers",
+          version: STAGE_12A_HARDHAT_ETHERS_VERSION,
+        },
+      },
+      hardhat: {
+        stage11: STAGE_12A_HARDHAT_VERSION,
+        candidate: STAGE_12A_HARDHAT_VERSION,
+      },
+      dormantEthers5Tooling: STAGE_12A_DORMANT_ETHERS5_TOOLING,
+      retainedLegacyHelpers: STAGE_12A_RETAINED_LEGACY_HELPERS,
+      unchangedActiveLegacyPlugin: STAGE_12A_ACTIVE_LEGACY_PLUGIN,
+      peerDebtDisposition:
+        "retained but runtime-deactivated without suppression; remove together in Stage 12b",
+      packageDifferences: differences,
+    },
+    registryIntegrity: {
+      ethers: STAGE_12A_ETHERS_INTEGRITY,
+      hardhatEthers: STAGE_12A_HARDHAT_ETHERS_INTEGRITY,
+    },
+    packageJsonSha256: sha256(packageBytes),
+    lockfileSha256: sha256(lockBytes),
+    installed,
+    openZeppelin: {
+      version: openZeppelin.candidateVersion,
+      registryIntegrity: openZeppelin.registryIntegrity,
+      installedPackageJsonSha256: openZeppelin.installedPackageJsonSha256,
+      equalToStage11: true,
+    },
+  });
+}
+
+function stage12aSourceEvidence(candidate) {
+  const checkpoint = stage12aCheckpointAnchor();
+  return sorted({
+    checkpoint: STAGE_12A_CHECKPOINT_BINDING,
+    changedPaths: validateStage12aChangedPaths(
+      repositoryChangedPaths(STAGE_12A_BASE_COMMIT)
+    ),
+    boundFiles: stage12aBoundFileEvidence(),
+    toolingInventory: stage12aToolingInventory(checkpoint),
+    dependencyMigration: stage12aDependencyEvidence(),
+    runtimeBridge: stage12aRuntimeBridgeEvidence(),
+    productionSources: stage12aProductionSourceEquality(checkpoint),
+    compilerSources: stage12aCompilerSourceEquality(checkpoint),
+    tests: stage12aTestInventory(candidate, checkpoint),
+    compatibilityRunnerSha256: sha256(
+      fs.readFileSync(path.join(ROOT, "scripts", "compatibility.js"))
+    ),
+  });
+}
+
 function validateSecurity01CompilerSourceEvidence(evidence) {
   if (
     evidence.sourceCount !== SECURITY_01_COMPILER_SOURCE_COUNT ||
@@ -4416,9 +4983,19 @@ function temporaryFile(name) {
 function captureHardhatTests() {
   const outputPath = temporaryFile("hardhat-tests.json");
   try {
-    run(hardhatBinary(), ["--config", HARDHAT_CONFIG, "test", "--no-compile"], {
-      env: { COMPAT_HARDHAT_RESULTS: outputPath },
-    });
+    run(
+      hardhatBinary(),
+      [
+        "--config",
+        HARDHAT_CONFIG,
+        "test",
+        "tests/Interoperability.smoke.ts",
+        "--no-compile",
+      ],
+      {
+        env: { COMPAT_HARDHAT_RESULTS: outputPath },
+      }
+    );
     const results = JSON.parse(fs.readFileSync(outputPath, "utf8"));
     if (results.failed.length > 0 || results.pending.length > 0) {
       throw new Error(
@@ -4847,6 +5424,14 @@ function reviewPolicy(review) {
       );
     }
   }
+  if (policy.requiredStage11Checkpoint) {
+    const supplied = review.stage11Checkpoint;
+    if (!supplied || !valuesEqual(supplied, policy.requiredStage11Checkpoint)) {
+      throw new Error(
+        `Compatibility review policy ${review.policy} requires the exact Stage 11 checkpoint`
+      );
+    }
+  }
   if (policy.requiresStage10ReceiverEvidence) {
     const expected = stage10ReceiverReviewEvidence();
     if (!valuesEqual(review.receiverEvidence, expected)) {
@@ -4860,6 +5445,14 @@ function reviewPolicy(review) {
     if (!valuesEqual(review.smokeEvidence, expected)) {
       throw new Error(
         `Compatibility review policy ${review.policy} requires the exact Stage 11 Hardhat smoke inventory and source evidence`
+      );
+    }
+  }
+  if (policy.requiresStage12aMigrationEvidence) {
+    const expected = stage12aMigrationReviewEvidence();
+    if (!valuesEqual(review.migrationEvidence, expected)) {
+      throw new Error(
+        `Compatibility review policy ${review.policy} requires the exact Stage 12a dependency, config, and smoke migration evidence`
       );
     }
   }
@@ -5342,6 +5935,120 @@ function stage11Review(baselineBytes, differences, candidate) {
     },
     stage10Checkpoint: STAGE_11_CHECKPOINT_BINDING,
     smokeEvidence: stage11SmokeReviewEvidence(),
+    safetyEvidence: {
+      path: "compatibility/evidence/stage-07-safety-artifacts.json",
+      sha256:
+        "0065814caec6e3044951f80c891c9948454e90138d016513ed07d0fcfb7c67d8",
+    },
+  };
+}
+
+function stage12aRuntimeBridgeEvidence() {
+  const configPath = path.join(ROOT, "hardhat.config.ts");
+  const declarationsPath = path.join(ROOT, "hardhat.config.d.ts");
+  const tsconfigPath = path.join(ROOT, "tsconfig.json");
+  const smokePath = path.join(ROOT, "tests", "Interoperability.smoke.ts");
+  const packagePath = path.join(ROOT, "package.json");
+  const config = fs.readFileSync(configPath, "utf8");
+  const declarations = fs.readFileSync(declarationsPath, "utf8");
+  const tsconfig = JSON.parse(fs.readFileSync(tsconfigPath, "utf8"));
+  const packageJson = JSON.parse(fs.readFileSync(packagePath, "utf8"));
+  const smoke = fs.readFileSync(smokePath, "utf8");
+  const forbiddenRuntimeLoads = [
+    "@nomiclabs/hardhat-ethers",
+    "@nomiclabs/hardhat-waffle",
+    "@typechain/hardhat",
+  ];
+  if (
+    !config.includes('import "@nomicfoundation/hardhat-ethers";') ||
+    forbiddenRuntimeLoads.some((name) => config.includes(name)) ||
+    /\btypechain\s*:/.test(config) ||
+    !declarations.includes("@nomicfoundation/hardhat-ethers") ||
+    forbiddenRuntimeLoads.some((name) => declarations.includes(name)) ||
+    !valuesEqual(tsconfig.include, [
+      "./scripts",
+      "./tests/Interoperability.smoke.ts",
+    ]) ||
+    packageJson.scripts?.["test:hardhat:smoke"] !==
+      "hardhat --network hardhat test tests/Interoperability.smoke.ts" ||
+    Object.prototype.hasOwnProperty.call(
+      packageJson.scripts || {},
+      "typechain"
+    ) ||
+    !smoke.includes('import { ethers, network } from "hardhat";')
+  ) {
+    throw new Error(
+      "Stage 12a Hardhat bridge must load only the Foundation ethers plugin, deactivate Waffle/NomicLabs/TypeChain runtime hooks, scope TypeScript to the smoke, and run the smoke without TypeChain"
+    );
+  }
+  return sorted({
+    active: {
+      hardhat: STAGE_12A_HARDHAT_VERSION,
+      ethers: STAGE_12A_ETHERS_VERSION,
+      plugin: {
+        name: "@nomicfoundation/hardhat-ethers",
+        version: STAGE_12A_HARDHAT_ETHERS_VERSION,
+      },
+    },
+    dormantEthers5Tooling: STAGE_12A_DORMANT_ETHERS5_TOOLING,
+    retainedLegacyHelpers: STAGE_12A_RETAINED_LEGACY_HELPERS,
+    deactivatedHardhatRuntimeHooks: forbiddenRuntimeLoads,
+    unchangedActiveLegacyPlugin: STAGE_12A_ACTIVE_LEGACY_PLUGIN,
+    files: fileDigestEvidence({
+      "hardhat.config.d.ts": STAGE_12A_BOUND_FILES["hardhat.config.d.ts"],
+      "hardhat.config.ts": STAGE_12A_BOUND_FILES["hardhat.config.ts"],
+      "tests/Interoperability.smoke.ts":
+        STAGE_12A_BOUND_FILES["tests/Interoperability.smoke.ts"],
+      "tsconfig.json": STAGE_12A_BOUND_FILES["tsconfig.json"],
+    }),
+    smokeRunner: packageJson.scripts["test:hardhat:smoke"],
+    typeScriptInclude: tsconfig.include,
+  });
+}
+
+function stage12aMigrationReviewEvidence() {
+  const checkpoint = stage12aCheckpointAnchor();
+  return sorted({
+    checkpoint: STAGE_12A_CHECKPOINT_BINDING,
+    boundFiles: stage12aBoundFileEvidence(),
+    toolingInventory: stage12aToolingInventory(checkpoint),
+    dependencyMigration: stage12aDependencyEvidence(),
+    runtimeBridge: stage12aRuntimeBridgeEvidence(),
+    retainedTests: {
+      hardhat:
+        checkpoint.evidence.value.sourceAndTestCutover.tests.activeHardhat,
+      forge: {
+        count: STAGE_11_FORGE_COUNT,
+        namesSha256: STAGE_11_FORGE_NAMES_SHA256,
+      },
+    },
+  });
+}
+
+function stage12aReview(baselineBytes, differences, candidate) {
+  const checkpoint = stage12aCheckpointAnchor();
+  stage12aTestInventory(candidate, checkpoint);
+  if (differences.length !== 0) {
+    throw new Error(
+      `Stage 12a may not review any compatibility-manifest difference:\n${differences
+        .slice(0, 20)
+        .map((difference) => `- ${formatDifference(difference)}`)
+        .join("\n")}`
+    );
+  }
+  return {
+    schemaVersion: 1,
+    candidate: STAGE_12A_CANDIDATE,
+    policy: STAGE_12A_POLICY,
+    baselineSha256: sha256(baselineBytes),
+    allowedDifferences: [],
+    opcodeEvidence: {
+      mode: "stage-12a-stage-11-production-equality",
+      path: STAGE_12A_EVIDENCE_PATH,
+      contracts: [...STAGE_08_PRODUCTION_CONTRACTS],
+    },
+    stage11Checkpoint: STAGE_12A_CHECKPOINT_BINDING,
+    migrationEvidence: stage12aMigrationReviewEvidence(),
     safetyEvidence: {
       path: "compatibility/evidence/stage-07-safety-artifacts.json",
       sha256:
@@ -5970,6 +6677,62 @@ function stage11CheckpointAnchor() {
   };
 }
 
+function stage12aCheckpointAnchor() {
+  run("git", ["merge-base", "--is-ancestor", STAGE_12A_BASE_COMMIT, "HEAD"]);
+  const evidenceBytes = Buffer.from(
+    run("git", ["show", `${STAGE_12A_BASE_COMMIT}:${STAGE_11_EVIDENCE_PATH}`])
+      .stdout
+  );
+  const evidenceSha256 = sha256(evidenceBytes);
+  if (evidenceSha256 !== STAGE_12A_STAGE_11_EVIDENCE_SHA256) {
+    throw new Error(
+      `Stage 12a Stage 11 checkpoint evidence changed: expected ${STAGE_12A_STAGE_11_EVIDENCE_SHA256}, received ${evidenceSha256}`
+    );
+  }
+  const evidence = JSON.parse(evidenceBytes);
+  if (
+    evidence.schemaVersion !== 1 ||
+    evidence.candidate !== STAGE_11_CANDIDATE ||
+    evidence.mode !== "stage-11-stage-10-production-equality"
+  ) {
+    throw new Error("Stage 12a Stage 11 evidence has an invalid identity");
+  }
+  const reviewBytes = Buffer.from(
+    run("git", [
+      "show",
+      `${STAGE_12A_BASE_COMMIT}:compatibility/reviewed-differences.json`,
+    ]).stdout
+  );
+  const reviewSha256 = sha256(reviewBytes);
+  if (reviewSha256 !== STAGE_12A_STAGE_11_REVIEW_SHA256) {
+    throw new Error(
+      `Stage 12a Stage 11 checkpoint review changed: expected ${STAGE_12A_STAGE_11_REVIEW_SHA256}, received ${reviewSha256}`
+    );
+  }
+  const review = JSON.parse(reviewBytes);
+  if (
+    review.schemaVersion !== 1 ||
+    review.candidate !== STAGE_11_CANDIDATE ||
+    review.policy !== STAGE_11_POLICY ||
+    review.opcodeEvidence?.path !== STAGE_11_EVIDENCE_PATH
+  ) {
+    throw new Error("Stage 12a Stage 11 review has an invalid identity");
+  }
+  return {
+    commit: STAGE_12A_BASE_COMMIT,
+    evidence: {
+      path: STAGE_11_EVIDENCE_PATH,
+      sha256: evidenceSha256,
+      value: evidence,
+    },
+    review: {
+      path: "compatibility/reviewed-differences.json",
+      sha256: reviewSha256,
+      value: review,
+    },
+  };
+}
+
 function applyUnifiedOpcodeDiff(baselineOpcodes, diff) {
   if (!diff) return baselineOpcodes;
   const baseline = opcodeInstructions(baselineOpcodes);
@@ -6423,6 +7186,59 @@ function stage10CheckpointLegacyGasEntries(checkpoint) {
     throw new Error("Stage 11 Stage 10 legacy gas digest changed");
   }
   return previousEntries;
+}
+
+function stage12aCheckpointOpcodes(
+  baseline,
+  qualifiedName,
+  bytecodeKind,
+  checkpoint
+) {
+  const stage10 = stage11CheckpointAnchor();
+  const opcodes = stage10CheckpointOpcodes(
+    baseline,
+    qualifiedName,
+    bytecodeKind,
+    stage10
+  );
+  const expected =
+    checkpoint.evidence.value.productionEquality.contracts[qualifiedName][
+      bytecodeKind
+    ].candidate.metadataStrippedOpcodesSha256;
+  if (sha256(opcodes) !== expected) {
+    throw new Error(
+      `Stage 12a could not reconstruct Stage 11 ${qualifiedName} ${bytecodeKind} opcodes`
+    );
+  }
+  return opcodes;
+}
+
+function stage12aCheckpointBytecode(checkpoint, qualifiedName, bytecodeKind) {
+  const bytecode =
+    checkpoint.evidence.value.productionEquality.contracts[qualifiedName][
+      bytecodeKind
+    ];
+  if (!bytecode.equal || !valuesEqual(bytecode.stage10, bytecode.candidate)) {
+    throw new Error(
+      `Stage 12a inherited invalid Stage 11 bytecode equality for ${qualifiedName} ${bytecodeKind}`
+    );
+  }
+  return deepClone(bytecode.candidate);
+}
+
+function stage12aCheckpointLegacyGasEntries(checkpoint) {
+  const entries = stage10CheckpointLegacyGasEntries(stage11CheckpointAnchor());
+  const evidence = checkpoint.evidence.value.legacyGasEquality;
+  if (
+    !evidence.equal ||
+    evidence.fuzzSeed !== "0x721" ||
+    evidence.inventoryCount !== entries.length ||
+    evidence.stage10EntriesSha256 !== sha256(stableJson(entries)) ||
+    evidence.candidateEntriesSha256 !== sha256(stableJson(entries))
+  ) {
+    throw new Error("Stage 12a inherited invalid Stage 11 legacy gas equality");
+  }
+  return entries;
 }
 
 function stage09ProductionEvidence(baseline, candidate) {
@@ -8351,6 +9167,229 @@ function stage11Evidence(review, baseline, candidate) {
   });
 }
 
+function stage12aHardCompatibilityEvidence(baseline, candidate, checkpoint) {
+  const contracts = {};
+  for (const qualifiedName of Object.keys(baseline.contracts).sort()) {
+    const fields = {};
+    for (const field of [
+      "abi",
+      "functions",
+      "events",
+      "errors",
+      "storageLayout",
+    ]) {
+      const expected = baseline.contracts[qualifiedName][field];
+      const actual = candidate.contracts[qualifiedName]?.[field];
+      if (!valuesEqual(actual, expected)) {
+        throw new Error(
+          `Stage 12a hard compatibility changed: ${qualifiedName} ${field}`
+        );
+      }
+      fields[field] = { equal: true, sha256: sha256(stableJson(actual)) };
+    }
+    contracts[qualifiedName] = fields;
+  }
+  const globals = {};
+  for (const field of ["interfaces", "enums", "erc165"]) {
+    if (!valuesEqual(candidate[field], baseline[field])) {
+      throw new Error(`Stage 12a hard compatibility changed: ${field}`);
+    }
+    globals[field] = {
+      equal: true,
+      sha256: sha256(stableJson(candidate[field])),
+    };
+  }
+  const expectedReverts = security04ProjectRevertStrings(
+    baseline.projectRevertStrings
+  );
+  if (!valuesEqual(candidate.projectRevertStrings, expectedReverts)) {
+    throw new Error("Stage 12a project-owned revert evidence changed");
+  }
+  return sorted({
+    contracts,
+    ...globals,
+    compilerSettings: {
+      equal: valuesEqual(
+        candidate.compiler.settings,
+        baseline.compiler.settings
+      ),
+      sha256: sha256(stableJson(candidate.compiler.settings)),
+    },
+    projectRevertStrings: {
+      equal: true,
+      count: candidate.projectRevertStrings.length,
+      sha256: sha256(stableJson(candidate.projectRevertStrings)),
+    },
+    tests: stage12aTestInventory(candidate, checkpoint),
+    parityFiles: security01ParityEvidence(),
+  });
+}
+
+function stage12aProductionEqualityEvidence(baseline, candidate, checkpoint) {
+  const contracts = {};
+  for (const qualifiedName of STAGE_08_PRODUCTION_CONTRACTS) {
+    const candidateContract = candidate.contracts[qualifiedName];
+    const bytecodes = {};
+    for (const bytecodeKind of ["creationBytecode", "runtimeBytecode"]) {
+      const expected = stage12aCheckpointBytecode(
+        checkpoint,
+        qualifiedName,
+        bytecodeKind
+      );
+      const expectedOpcodes = stage12aCheckpointOpcodes(
+        baseline,
+        qualifiedName,
+        bytecodeKind,
+        checkpoint
+      );
+      const actualBytecode = candidateContract[bytecodeKind];
+      const actual = {
+        rawKeccak256: actualBytecode.keccak256,
+        rawSizeBytes: actualBytecode.sizeBytes,
+        metadataBytes: actualBytecode.metadataBytes,
+        metadataStrippedKeccak256: actualBytecode.metadataStrippedKeccak256,
+        metadataStrippedSizeBytes: actualBytecode.metadataStrippedSizeBytes,
+        metadataStrippedOpcodesSha256: sha256(
+          actualBytecode.metadataStrippedOpcodes
+        ),
+      };
+      if (
+        !valuesEqual(actual, expected) ||
+        actualBytecode.metadataStrippedOpcodes !== expectedOpcodes
+      ) {
+        throw new Error(
+          `Stage 12a must preserve Stage 11 ${qualifiedName} ${bytecodeKind} exactly`
+        );
+      }
+      bytecodes[bytecodeKind] = {
+        stage11: expected,
+        candidate: actual,
+        equal: true,
+        opcodeInstructionCount: opcodeInstructions(expectedOpcodes).length,
+      };
+    }
+    const runtimeSize = candidateContract.runtimeBytecode.sizeBytes;
+    if (runtimeSize > 24_576) {
+      throw new Error(`${qualifiedName} exceeds the EIP-170 size limit`);
+    }
+    contracts[qualifiedName] = {
+      ...bytecodes,
+      eip170: {
+        limitBytes: 24_576,
+        stage11RuntimeSizeBytes: runtimeSize,
+        candidateRuntimeSizeBytes: runtimeSize,
+        equal: true,
+        candidateWithinLimit: true,
+      },
+    };
+  }
+  const expectedCompiler =
+    checkpoint.evidence.value.productionEquality.compiler;
+  const candidateCompiler = {
+    version: candidate.compiler.version,
+    longVersion: candidate.compiler.longVersion,
+    settingsSha256: sha256(stableJson(candidate.compiler.settings)),
+  };
+  if (!valuesEqual(candidateCompiler, expectedCompiler)) {
+    throw new Error("Stage 12a compiler differs from Stage 11");
+  }
+  return sorted({ compiler: candidateCompiler, contracts });
+}
+
+function stage12aLegacyGasEqualityEvidence(candidate, checkpoint) {
+  const expected = stage12aCheckpointLegacyGasEntries(checkpoint);
+  const actual = candidate.gasSnapshot.entries;
+  if (
+    candidate.gasSnapshot.fuzzSeed !== "0x721" ||
+    !valuesEqual(actual, expected)
+  ) {
+    throw new Error(
+      "Stage 12a must preserve all 15 Stage 11 legacy gas entries"
+    );
+  }
+  return sorted({
+    fuzzSeed: "0x721",
+    inventoryCount: actual.length,
+    stage11EntriesSha256: sha256(stableJson(expected)),
+    candidateEntriesSha256: sha256(stableJson(actual)),
+    equal: true,
+  });
+}
+
+function stage12aKeyFlowGasEqualityEvidence(checkpoint, candidateGas) {
+  const previous = new Map(
+    checkpoint.evidence.value.keyFlowGasEquality.comparisons.map((entry) => [
+      entry.name,
+      entry,
+    ])
+  );
+  const current = new Map();
+  for (const [group, entries] of Object.entries(candidateGas.groups)) {
+    for (const entry of entries) current.set(entry.name, { group, ...entry });
+  }
+  if (!valuesEqual([...previous.keys()].sort(), [...current.keys()].sort())) {
+    throw new Error("Stage 12a must preserve the 12 key-flow gas inventory");
+  }
+  const comparisons = [...previous.keys()].sort().map((name) => {
+    const stage11 = previous.get(name);
+    const candidateEntry = current.get(name);
+    if (
+      !stage11.equal ||
+      stage11.group !== candidateEntry.group ||
+      stage11.candidateGas !== candidateEntry.candidateGas ||
+      stage11.baselineGas !== candidateEntry.baselineGas ||
+      stage11.maximumGas !== candidateEntry.maximumGas ||
+      !candidateEntry.withinLimit
+    ) {
+      throw new Error(`Stage 12a key-flow gas changed: ${name}`);
+    }
+    return {
+      group: candidateEntry.group,
+      name,
+      stage11Gas: stage11.candidateGas,
+      candidateGas: candidateEntry.candidateGas,
+      equal: true,
+      baselineGas: candidateEntry.baselineGas,
+      maximumGas: candidateEntry.maximumGas,
+      withinBaselineLimit: true,
+    };
+  });
+  return sorted({
+    baselinePath: candidateGas.baselinePath,
+    baselineSha256: candidateGas.baselineSha256,
+    baselinePolicy: candidateGas.policy,
+    fuzzSeed: candidateGas.fuzzSeed,
+    comparisons,
+  });
+}
+
+function stage12aEvidence(review, baseline, candidate) {
+  const checkpoint = stage12aCheckpointAnchor();
+  return sorted({
+    schemaVersion: 1,
+    candidate: review.candidate,
+    baselineSha256: review.baselineSha256,
+    mode: review.opcodeEvidence.mode,
+    inheritedStage11Checkpoint: STAGE_12A_CHECKPOINT_BINDING,
+    toolingAndTestMigration: stage12aSourceEvidence(candidate),
+    hardCompatibility: stage12aHardCompatibilityEvidence(
+      baseline,
+      candidate,
+      checkpoint
+    ),
+    productionEquality: stage12aProductionEqualityEvidence(
+      baseline,
+      candidate,
+      checkpoint
+    ),
+    legacyGasEquality: stage12aLegacyGasEqualityEvidence(candidate, checkpoint),
+    keyFlowGasEquality: stage12aKeyFlowGasEqualityEvidence(
+      checkpoint,
+      stage08GasEvidence()
+    ),
+  });
+}
+
 function security01ComparisonBaseline(baseline, candidate) {
   validateSecurity01Inventory(candidate);
   security01SourceEvidence();
@@ -8669,6 +9708,70 @@ function stage11ComparisonBaseline(baseline, candidate) {
   expectedToolchain.forge[2] = candidate.toolchain.forge[2];
   if (!valuesEqual(candidate.toolchain, expectedToolchain)) {
     throw new Error("Stage 11 must preserve the pinned toolchain identity");
+  }
+  comparison.toolchain = expectedToolchain;
+  return comparison;
+}
+
+function stage12aComparisonBaseline(baseline, candidate) {
+  const checkpoint = stage12aCheckpointAnchor();
+  stage12aTestInventory(candidate, checkpoint);
+  stage12aSourceEvidence(candidate);
+  const comparison = deepClone(baseline);
+  const checkpointCompiler =
+    checkpoint.evidence.value.productionEquality.compiler;
+  if (
+    checkpointCompiler.version !== STAGE_08_COMPILER_VERSION ||
+    checkpointCompiler.longVersion !== STAGE_08_COMPILER_LONG_VERSION ||
+    checkpointCompiler.settingsSha256 !==
+      sha256(stableJson(baseline.compiler.settings))
+  ) {
+    throw new Error("Stage 12a inherited an invalid Stage 11 compiler anchor");
+  }
+  comparison.compiler.version = checkpointCompiler.version;
+  comparison.compiler.longVersion = checkpointCompiler.longVersion;
+
+  for (const qualifiedName of STAGE_08_PRODUCTION_CONTRACTS) {
+    for (const bytecodeKind of ["creationBytecode", "runtimeBytecode"]) {
+      const bytecode = stage12aCheckpointBytecode(
+        checkpoint,
+        qualifiedName,
+        bytecodeKind
+      );
+      Object.assign(comparison.contracts[qualifiedName][bytecodeKind], {
+        keccak256: bytecode.rawKeccak256,
+        sizeBytes: bytecode.rawSizeBytes,
+        metadataBytes: bytecode.metadataBytes,
+        metadataStrippedKeccak256: bytecode.metadataStrippedKeccak256,
+        metadataStrippedSizeBytes: bytecode.metadataStrippedSizeBytes,
+        metadataStrippedOpcodes: stage12aCheckpointOpcodes(
+          baseline,
+          qualifiedName,
+          bytecodeKind,
+          checkpoint
+        ),
+      });
+    }
+  }
+  comparison.gasSnapshot.entries =
+    stage12aCheckpointLegacyGasEntries(checkpoint);
+  comparison.projectRevertStrings = security04ProjectRevertStrings(
+    baseline.projectRevertStrings
+  );
+  comparison.tests.hardhat = deepClone(
+    checkpoint.evidence.value.sourceAndTestCutover.tests.activeHardhat
+  );
+  const parity = stage06ParityForgeTests();
+  comparison.tests.forge = {
+    count: STAGE_11_FORGE_COUNT,
+    names: [...parity.forgeNames, ...stage07SafetyForgeTests()].sort(),
+  };
+  comparison.tests.total = 3 + STAGE_11_FORGE_COUNT;
+
+  const expectedToolchain = deepClone(baseline.toolchain);
+  expectedToolchain.forge[2] = candidate.toolchain.forge[2];
+  if (!valuesEqual(candidate.toolchain, expectedToolchain)) {
+    throw new Error("Stage 12a must preserve the pinned toolchain identity");
   }
   comparison.toolchain = expectedToolchain;
   return comparison;
@@ -9982,6 +11085,233 @@ function stage11NegativeProbes(baseline, candidate, review) {
   return probes;
 }
 
+function expectStage12aRejection(name, operation) {
+  try {
+    operation();
+  } catch (_error) {
+    return name;
+  }
+  throw new Error(`Stage 12a negative probe unexpectedly passed: ${name}`);
+}
+
+function stage12aNegativeProbes(baseline, candidate, review) {
+  const probes = [];
+  const reject = (name, operation) => {
+    probes.push(expectStage12aRejection(name, operation));
+  };
+  const rejectCandidate = (name, mutate) => {
+    const drift = deepClone(candidate);
+    mutate(drift);
+    reject(name, () => validateStage12aCandidate(baseline, drift));
+  };
+  const wrapperName = "contracts/Wrapper.sol:Wrapper";
+  const pcoName =
+    "contracts/token/PartialCommonOwnership.sol:PartialCommonOwnership";
+
+  const checkpointCommit = deepClone(review);
+  checkpointCommit.stage11Checkpoint.commit = "0".repeat(40);
+  reject("Stage 11 checkpoint commit drift", () =>
+    reviewPolicy(checkpointCommit)
+  );
+  const checkpointEvidence = deepClone(review);
+  checkpointEvidence.stage11Checkpoint.evidence.sha256 = "0".repeat(64);
+  reject("Stage 11 checkpoint evidence drift", () =>
+    reviewPolicy(checkpointEvidence)
+  );
+  const checkpointReview = deepClone(review);
+  checkpointReview.stage11Checkpoint.review.sha256 = "0".repeat(64);
+  reject("Stage 11 checkpoint review drift", () =>
+    reviewPolicy(checkpointReview)
+  );
+  const migrationReview = deepClone(review);
+  migrationReview.migrationEvidence.dependencyMigration.lockfileSha256 =
+    "0".repeat(64);
+  reject("migration review evidence drift", () =>
+    reviewPolicy(migrationReview)
+  );
+
+  rejectCandidate("Hardhat smoke count drift", (drift) => {
+    drift.tests.hardhat.count += 1;
+  });
+  rejectCandidate("Hardhat smoke identifier drift", (drift) => {
+    drift.tests.hardhat.names[0] += " drift";
+  });
+  rejectCandidate("Forge identifier removal", (drift) => {
+    drift.tests.forge.names.pop();
+    drift.tests.forge.count -= 1;
+    drift.tests.total -= 1;
+  });
+  rejectCandidate("Forge identifier addition", (drift) => {
+    drift.tests.forge.names.push(
+      "test/solidity/fuzz/Unexpected.t.sol:UnexpectedTest:test_unexpected"
+    );
+    drift.tests.forge.names.sort();
+    drift.tests.forge.count += 1;
+    drift.tests.total += 1;
+  });
+  rejectCandidate("combined test total drift", (drift) => {
+    drift.tests.total += 1;
+  });
+  rejectCandidate("compiler version drift", (drift) => {
+    drift.compiler.version = "0.8.35";
+  });
+  rejectCandidate("compiler settings drift", (drift) => {
+    drift.compiler.settings.optimizer.enabled = true;
+  });
+  rejectCandidate("ABI drift", (drift) => {
+    drift.contracts[wrapperName].abi.pop();
+  });
+  rejectCandidate("function selector drift", (drift) => {
+    drift.contracts[wrapperName].functions[0].selector = "0x00000000";
+  });
+  rejectCandidate("event drift", (drift) => {
+    drift.contracts[wrapperName].events.pop();
+  });
+  rejectCandidate("custom error drift", (drift) => {
+    drift.contracts[wrapperName].errors.pop();
+  });
+  rejectCandidate("storage layout drift", (drift) => {
+    drift.contracts[pcoName].storageLayout.storage[0].slot = "999";
+  });
+  rejectCandidate("interface drift", (drift) => {
+    drift.interfaces[Object.keys(drift.interfaces)[0]].interfaceId =
+      "0x00000000";
+  });
+  rejectCandidate("enum ordinal drift", (drift) => {
+    drift.enums[0].members[0].ordinal = 999;
+  });
+  rejectCandidate("ERC165 drift", (drift) => {
+    drift.erc165.probes.Wrapper[0].supported =
+      !drift.erc165.probes.Wrapper[0].supported;
+  });
+  rejectCandidate("project revert drift", (drift) => {
+    drift.projectRevertStrings[0].value += " drift";
+  });
+  rejectCandidate("raw bytecode drift", (drift) => {
+    drift.contracts[wrapperName].runtimeBytecode.keccak256 = `0x${"00".repeat(
+      32
+    )}`;
+  });
+  rejectCandidate("metadata-stripped opcode drift", (drift) => {
+    drift.contracts[wrapperName].runtimeBytecode.metadataStrippedOpcodes +=
+      " STOP";
+  });
+  rejectCandidate("runtime size drift", (drift) => {
+    drift.contracts[pcoName].runtimeBytecode.sizeBytes += 1;
+  });
+  rejectCandidate("legacy gas drift", (drift) => {
+    drift.gasSnapshot.entries[0] += " drift";
+  });
+
+  const packageJson = JSON.parse(
+    fs.readFileSync(path.join(ROOT, "package.json"), "utf8")
+  );
+  const packageProbe = (name, mutate) => {
+    const drift = deepClone(packageJson);
+    mutate(drift);
+    reject(name, () => validateStage12aPackageManifest(drift));
+  };
+  packageProbe("ethers version drift", (drift) => {
+    drift.devDependencies.ethers = "6.16.0";
+  });
+  packageProbe("Foundation plugin version drift", (drift) => {
+    drift.devDependencies["@nomicfoundation/hardhat-ethers"] = "3.1.2";
+  });
+  packageProbe("Hardhat version drift", (drift) => {
+    drift.devDependencies.hardhat = "2.28.5";
+  });
+  packageProbe("dormant legacy dependency removal", (drift) => {
+    delete drift.devDependencies["@nomiclabs/hardhat-waffle"];
+  });
+  packageProbe("runtime dependency drift", (drift) => {
+    drift.dependencies["@openzeppelin/contracts"] = "5.6.0";
+  });
+  packageProbe("TypeChain runtime invocation", (drift) => {
+    drift.scripts.typechain = "hardhat typechain";
+  });
+  const lock = fs.readFileSync(path.join(ROOT, "pnpm-lock.yaml"), "utf8");
+  reject("ethers lock integrity drift", () =>
+    validateStage12aLockDependency(
+      lock.replace(STAGE_12A_ETHERS_INTEGRITY, "sha512-drift"),
+      "ethers",
+      STAGE_12A_ETHERS_VERSION,
+      STAGE_12A_ETHERS_INTEGRITY
+    )
+  );
+  reject("Foundation plugin lock integrity drift", () =>
+    validateStage12aLockDependency(
+      lock.replace(STAGE_12A_HARDHAT_ETHERS_INTEGRITY, "sha512-drift"),
+      "@nomicfoundation/hardhat-ethers",
+      STAGE_12A_HARDHAT_ETHERS_VERSION,
+      STAGE_12A_HARDHAT_ETHERS_INTEGRITY
+    )
+  );
+
+  const checkpoint = stage12aCheckpointAnchor();
+  const productionCheckpointDrift = deepClone(checkpoint);
+  productionCheckpointDrift.evidence.value.sourceAndTestCutover.productionSources[
+    STAGE_10_PRODUCTION_SOURCES[0]
+  ].sha256 = "0".repeat(64);
+  reject("production source equality drift", () =>
+    stage12aProductionSourceEquality(productionCheckpointDrift)
+  );
+  const compilerCheckpointDrift = deepClone(checkpoint);
+  compilerCheckpointDrift.evidence.value.sourceAndTestCutover.compilerSources.candidateClosureSha256 =
+    "0".repeat(64);
+  reject("compiler source closure drift", () =>
+    stage12aCompilerSourceEquality(compilerCheckpointDrift)
+  );
+  const keyFlowDrift = deepClone(stage08GasEvidence());
+  const gasGroup = Object.keys(keyFlowDrift.groups)[0];
+  keyFlowDrift.groups[gasGroup][0].candidateGas += 1;
+  reject("key-flow gas drift", () =>
+    stage12aKeyFlowGasEqualityEvidence(checkpoint, keyFlowDrift)
+  );
+  const boundFiles = stage12aBoundFileEvidence();
+  const boundFileDrift = deepClone(boundFiles);
+  boundFileDrift[Object.keys(boundFileDrift)[0]] = "0".repeat(64);
+  reject("bound file digest drift", () =>
+    validateExactFileDigests(
+      boundFileDrift,
+      STAGE_12A_BOUND_FILES,
+      "stage12aFiles"
+    )
+  );
+  reject("unexpected repository path", () =>
+    validateStage12aChangedPaths([
+      ...STAGE_12A_FINAL_CHANGED_PATHS,
+      "unexpected-stage-12a-file",
+    ])
+  );
+
+  const unauthorizedReview = deepClone(review);
+  const unauthorizedDifference = {
+    path: "$.tests.hardhat.count",
+    baselineValue: 3,
+    candidateValue: 4,
+    reason: "probe",
+  };
+  unauthorizedReview.allowedDifferences.push(unauthorizedDifference);
+  reject("compatibility difference waiver", () =>
+    validateReviewedDifferences(
+      unauthorizedReview,
+      fs.readFileSync(BASELINE_PATH),
+      [unauthorizedDifference]
+    )
+  );
+
+  const evidencePath = opcodeEvidencePath(review);
+  const checkedInEvidence = JSON.parse(fs.readFileSync(evidencePath, "utf8"));
+  const staleEvidence = deepClone(checkedInEvidence);
+  staleEvidence.toolingAndTestMigration.dependencyMigration.transition.ethers.candidate =
+    "6.16.0";
+  reject("stale Stage 12a evidence", () =>
+    validateExactOpcodeEvidence(staleEvidence, checkedInEvidence)
+  );
+
+  return probes;
+}
+
 function reviewedOpcodeEvidence(review, baseline, candidate) {
   const configuration = review.opcodeEvidence;
   if (!configuration) return null;
@@ -9996,6 +11326,7 @@ function reviewedOpcodeEvidence(review, baseline, candidate) {
       "security-04-security-03-relative-wrapper-only",
       "stage-10-security-04-relative-full-diff",
       "stage-11-stage-10-production-equality",
+      "stage-12a-stage-11-production-equality",
     ].includes(configuration.mode)
   ) {
     throw new Error(`Unsupported opcode evidence mode: ${configuration.mode}`);
@@ -10026,6 +11357,9 @@ function reviewedOpcodeEvidence(review, baseline, candidate) {
   }
   if (configuration.mode === "stage-11-stage-10-production-equality") {
     return stage11Evidence(review, baseline, candidate);
+  }
+  if (configuration.mode === "stage-12a-stage-11-production-equality") {
+    return stage12aEvidence(review, baseline, candidate);
   }
 
   const contracts = {};
@@ -10243,6 +11577,7 @@ function expectedProjectRevertStrings(command, protectedRevertStrings) {
   if (command === "write-security-04-review") return security04Candidate;
   if (command === "write-stage-10-review") return security04Candidate;
   if (command === "write-stage-11-review") return security04Candidate;
+  if (command === "write-stage-12a-review") return security04Candidate;
   if (command === "diff") {
     return {
       baseline: protectedRevertStrings,
@@ -10262,6 +11597,7 @@ function expectedProjectRevertStrings(command, protectedRevertStrings) {
       "security-04-negative-probes",
       "stage-10-negative-probes",
       "stage-11-negative-probes",
+      "stage-12a-negative-probes",
     ].includes(command) &&
     fs.existsSync(REVIEW_PATH)
   ) {
@@ -10272,6 +11608,7 @@ function expectedProjectRevertStrings(command, protectedRevertStrings) {
     if (review.policy === SECURITY_04_POLICY) return security04Candidate;
     if (review.policy === STAGE_10_POLICY) return security04Candidate;
     if (review.policy === STAGE_11_POLICY) return security04Candidate;
+    if (review.policy === STAGE_12A_POLICY) return security04Candidate;
   }
   return protectedRevertStrings;
 }
@@ -10291,6 +11628,7 @@ async function main() {
       "security-04-negative-probes",
       "stage-10-negative-probes",
       "stage-11-negative-probes",
+      "stage-12a-negative-probes",
       "write-stage-08-review",
       "write-stage-09-review",
       "write-security-01-review",
@@ -10299,11 +11637,12 @@ async function main() {
       "write-security-04-review",
       "write-stage-10-review",
       "write-stage-11-review",
+      "write-stage-12a-review",
       "write-evidence",
     ].includes(command)
   ) {
     console.error(
-      "Usage: node scripts/compatibility.js <capture|check|diff|revert-strings|stage-09-negative-probes|security-01-negative-probes|security-02-negative-probes|security-03-negative-probes|security-04-negative-probes|stage-10-negative-probes|stage-11-negative-probes|write-stage-08-review|write-stage-09-review|write-security-01-review|write-security-02-review|write-security-03-review|write-security-04-review|write-stage-10-review|write-stage-11-review|write-evidence>"
+      "Usage: node scripts/compatibility.js <capture|check|diff|revert-strings|stage-09-negative-probes|security-01-negative-probes|security-02-negative-probes|security-03-negative-probes|security-04-negative-probes|stage-10-negative-probes|stage-11-negative-probes|stage-12a-negative-probes|write-stage-08-review|write-stage-09-review|write-security-01-review|write-security-02-review|write-security-03-review|write-security-04-review|write-stage-10-review|write-stage-11-review|write-stage-12a-review|write-evidence>"
     );
     process.exitCode = 2;
     return;
@@ -10388,6 +11727,7 @@ async function main() {
     "security-04-negative-probes",
     "stage-10-negative-probes",
     "stage-11-negative-probes",
+    "stage-12a-negative-probes",
   ].includes(command);
   const security01ReviewActive =
     command === "write-security-01-review" ||
@@ -10407,7 +11747,12 @@ async function main() {
   const stage11ReviewActive =
     command === "write-stage-11-review" ||
     (inheritedReviewCommand && existingReview?.policy === STAGE_11_POLICY);
-  const comparisonBaseline = stage11ReviewActive
+  const stage12aReviewActive =
+    command === "write-stage-12a-review" ||
+    (inheritedReviewCommand && existingReview?.policy === STAGE_12A_POLICY);
+  const comparisonBaseline = stage12aReviewActive
+    ? stage12aComparisonBaseline(baseline, manifest)
+    : stage11ReviewActive
     ? stage11ComparisonBaseline(baseline, manifest)
     : stage10ReviewActive
     ? stage10ComparisonBaseline(baseline, manifest)
@@ -10567,6 +11912,23 @@ async function main() {
     );
     return;
   }
+  if (command === "write-stage-12a-review") {
+    const review = stage12aReview(baselineBytes, differences, manifest);
+    validateReviewedDifferences(review, baselineBytes, differences);
+    const policy = reviewPolicy(review);
+    policy.validateCandidate(baseline, manifest);
+    validateSafetyEvidence(review);
+    fs.writeFileSync(REVIEW_PATH, stableJson(review));
+    console.log(
+      `Wrote ${
+        differences.length
+      } exact Stage 12a reviewed differences to ${path.relative(
+        ROOT,
+        REVIEW_PATH
+      )}`
+    );
+    return;
+  }
   if (command === "stage-09-negative-probes") {
     const probes = stage09NegativeProbes(baseline, manifest);
     console.log(`Stage 9 negative probes passed: ${probes.join("; ")}`);
@@ -10662,6 +12024,22 @@ async function main() {
     validateOpcodeEvidence(review, baseline, manifest);
     const probes = stage11NegativeProbes(baseline, manifest, review);
     console.log(`Stage 11 negative probes passed: ${probes.join("; ")}`);
+    return;
+  }
+  if (command === "stage-12a-negative-probes") {
+    const review = readReviewedDifferences();
+    if (!review || review.policy !== STAGE_12A_POLICY) {
+      throw new Error(
+        "Stage 12a negative probes require the exact Stage 12a review"
+      );
+    }
+    validateReviewedDifferences(review, baselineBytes, differences);
+    const policy = reviewPolicy(review);
+    policy.validateCandidate(baseline, manifest);
+    validateSafetyEvidence(review);
+    validateOpcodeEvidence(review, baseline, manifest);
+    const probes = stage12aNegativeProbes(baseline, manifest, review);
+    console.log(`Stage 12a negative probes passed: ${probes.join("; ")}`);
     return;
   }
   const review = existingReview;
