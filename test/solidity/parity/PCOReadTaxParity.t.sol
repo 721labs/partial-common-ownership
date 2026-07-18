@@ -28,7 +28,6 @@ contract PCOReadTaxParityTest is Test {
         uint256 expectedDeposit;
     }
 
-
     uint256 private constant START_TIME = 1_700_000_000;
     uint256 private constant INVALID_TOKEN_ID = 999;
     uint256 private constant TAX_DENOMINATOR = 1_000_000_000_000;
@@ -96,6 +95,28 @@ contract PCOReadTaxParityTest is Test {
         assertEq(token.collectionFrequencyOf(TOKEN_ONE), 90 days);
         assertEq(token.collectionFrequencyOf(TOKEN_TWO), 30 days);
         assertEq(token.collectionFrequencyOf(TOKEN_THREE), 365 days);
+    }
+
+    function test_interoperabilitySmoke_deploysAndReadsDeterministicPCOConfiguration() public view {
+        assertTrue(token.supportsInterface(0x01ffc9a7));
+        assertTrue(token.supportsInterface(0x80ac58cd));
+        assertFalse(token.supportsInterface(0x5b5e139f));
+
+        uint256[3] memory tokenIds = [TOKEN_ONE, TOKEN_TWO, TOKEN_THREE];
+        uint256[3] memory expectedRates = [uint256(50_000_000_000), 1_000_000_000_000, 1_000_000_000_000];
+        uint256[3] memory expectedFrequencies = [uint256(90 days), 30 days, 365 days];
+
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            uint256 tokenId = tokenIds[i];
+            assertEq(token.ownerOf(tokenId), address(token));
+            assertEq(token.beneficiaryOf(tokenId), beneficiary);
+            assertEq(token.taxRateOf(tokenId), expectedRates[i]);
+            assertEq(token.collectionFrequencyOf(tokenId), expectedFrequencies[i]);
+            assertEq(token.valuationOf(tokenId), 0);
+            assertEq(token.depositOf(tokenId), 0);
+            assertEq(token.taxationCollected(tokenId), 0);
+            assertEq(token.lastCollectionTimeOf(tokenId), 0);
+        }
     }
 
     //////////////////////////////
@@ -676,9 +697,7 @@ contract PCOReadTaxParityTest is Test {
         }
     }
 
-    function _assertApprovalLog(Vm.Log memory log_, address owner_, address approved_, uint256 tokenId_)
-        internal
-    {
+    function _assertApprovalLog(Vm.Log memory log_, address owner_, address approved_, uint256 tokenId_) internal {
         _assertFourTopicLog(
             log_, APPROVAL_SIGNATURE, _addressTopic(owner_), _addressTopic(approved_), bytes32(tokenId_)
         );
@@ -696,23 +715,17 @@ contract PCOReadTaxParityTest is Test {
         _assertThreeTopicLog(log_, FORECLOSURE_SIGNATURE, bytes32(tokenId_), _addressTopic(previousOwner_));
     }
 
-    function _assertLeaseTakeoverLog(
-        Vm.Log memory log_,
-        uint256 tokenId_,
-        address owner_,
-        uint256 valuation_
-    ) internal {
+    function _assertLeaseTakeoverLog(Vm.Log memory log_, uint256 tokenId_, address owner_, uint256 valuation_)
+        internal
+    {
         _assertFourTopicLog(
             log_, LEASE_TAKEOVER_SIGNATURE, bytes32(tokenId_), _addressTopic(owner_), bytes32(valuation_)
         );
     }
 
-    function _assertRemittanceLog(
-        Vm.Log memory log_,
-        RemittanceTriggers trigger_,
-        address recipient_,
-        uint256 amount_
-    ) internal {
+    function _assertRemittanceLog(Vm.Log memory log_, RemittanceTriggers trigger_, address recipient_, uint256 amount_)
+        internal
+    {
         _assertFourTopicLog(
             log_, REMITTANCE_SIGNATURE, bytes32(uint256(trigger_)), _addressTopic(recipient_), bytes32(amount_)
         );
@@ -722,12 +735,9 @@ contract PCOReadTaxParityTest is Test {
         _assertThreeTopicLog(log_, VALUATION_SIGNATURE, bytes32(tokenId_), bytes32(valuation_));
     }
 
-    function _assertThreeTopicLog(
-        Vm.Log memory log_,
-        bytes32 signature_,
-        bytes32 topicOne_,
-        bytes32 topicTwo_
-    ) internal {
+    function _assertThreeTopicLog(Vm.Log memory log_, bytes32 signature_, bytes32 topicOne_, bytes32 topicTwo_)
+        internal
+    {
         assertEq(log_.emitter, address(token));
         assertEq(log_.topics.length, 3);
         assertEq(log_.topics[0], signature_);

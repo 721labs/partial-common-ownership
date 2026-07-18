@@ -21,8 +21,9 @@
     "contracts/token/modules/Taxation.sol": "72aa02e63d76e28e6f04e29ea49e81a764f2211955e032a907fe0a7e524b0027",
     "test/solidity/fuzz/WrapperFuzz.t.sol": "ecd22eec5c14af50f0837f45b8ec72714729bf449645d82752ab430b7b4a8795",
     "test/solidity/invariant/PCOInvariant.t.sol": "8a1f76de69c21233608992678ace76e8a72225d5361d50063bcaa0c7069c4efb",
-    "test/solidity/parity/PCOMutationParity.t.sol": "3aee5877b76da7143bf3b678f86d76e670f7ce86b49ec9a8d13216cf4cd78aea",
-    "test/solidity/parity/PCOReadTaxParity.t.sol": "3e743560bff1f62eb359fcadfbca9b87022a9b6eb68c1c73d27e8051f3fbc8a8"
+    "test/solidity/parity/PCOMutationParity.t.sol": "6e441bd6209b55f7872404b20a62daf4b164f78a0d8e7fe50049f31807bd5afc",
+    "test/solidity/parity/PCOReadTaxParity.t.sol": "dce90b2cf8174271d9cd72e59376dfffd5c84881ca17d843cf9c51e2ba3901c8",
+    "test/solidity/parity/WrapperParity.t.sol": "9fa1bcc0b6ffa2ac6c7a619c44162330f64171877048732bdfa7f48675a99d25"
   },
   "diagnostics": [
     {
@@ -56,10 +57,10 @@
       "code": "divide-before-multiply",
       "level": "warning",
       "source": "test/solidity/parity/PCOMutationParity.t.sol",
-      "start": 36631,
-      "end": 36720,
-      "lineStart": 822,
-      "lineEnd": 822,
+      "start": 41160,
+      "end": 41249,
+      "lineStart": 903,
+      "lineEnd": 903,
       "columnStart": 14,
       "columnEnd": 103,
       "message": "multiplication should occur before division to avoid loss of precision"
@@ -69,12 +70,25 @@
       "code": "divide-before-multiply",
       "level": "warning",
       "source": "test/solidity/parity/PCOReadTaxParity.t.sol",
-      "start": 28678,
-      "end": 28771,
-      "lineStart": 667,
-      "lineEnd": 667,
+      "start": 29838,
+      "end": 29931,
+      "lineStart": 688,
+      "lineEnd": 688,
       "columnStart": 17,
       "columnEnd": 110,
+      "message": "multiplication should occur before division to avoid loss of precision"
+    },
+    {
+      "severity": "med",
+      "code": "divide-before-multiply",
+      "level": "warning",
+      "source": "test/solidity/parity/WrapperParity.t.sol",
+      "start": 12476,
+      "end": 12576,
+      "lineStart": 261,
+      "lineEnd": 261,
+      "columnStart": 14,
+      "columnEnd": 114,
       "message": "multiplication should occur before division to avoid loss of precision"
     },
     {
@@ -121,10 +135,10 @@
       "code": "block-timestamp",
       "level": "warning",
       "source": "test/solidity/parity/PCOMutationParity.t.sol",
-      "start": 32785,
-      "end": 32833,
-      "lineStart": 741,
-      "lineEnd": 741,
+      "start": 37314,
+      "end": 37362,
+      "lineStart": 822,
+      "lineEnd": 822,
       "columnStart": 73,
       "columnEnd": 121,
       "message": "usage of `block.timestamp` in a comparison may be manipulated by validators"

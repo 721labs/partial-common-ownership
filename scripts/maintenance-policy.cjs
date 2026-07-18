@@ -30,11 +30,10 @@ const STAGE_13_ANCHOR = Object.freeze({
 const IMMUTABLE_STAGE_13_FILES = Object.freeze([
   "compatibility/baseline.json",
   "compatibility/evidence/stage-13-ci-security-maintenance.json",
-  "compatibility/reviewed-differences.json",
   "compatibility/stage-13-ci-maintenance-inventory.json",
 ]);
 
-const MANAGED_FILES = Object.freeze([
+const LEGACY_MANAGED_FILES = Object.freeze([
   ".github/dependabot.yml",
   ".github/workflows/tests.yml",
   ".gitmodules",
@@ -77,6 +76,40 @@ const MANAGED_FILES = Object.freeze([
   "tsconfig.json",
 ]);
 
+const FOUNDRY_RETIREMENT_TOMBSTONES = Object.freeze([
+  ".vscode/launch.json",
+  "compatibility/erc165.capture.ts",
+  "hardhat.config.ts",
+  "pnpm-workspace.yaml",
+  "tests/Interoperability.smoke.ts",
+  "tsconfig.json",
+]);
+
+const FOUNDRY_RETIREMENT_MANAGED_FILES = Object.freeze(
+  [
+    ...LEGACY_MANAGED_FILES,
+    ...FOUNDRY_RETIREMENT_TOMBSTONES,
+    ".gitignore",
+    "compatibility/README.md",
+    "compatibility/evidence/stage-14-foundry-retirement.json",
+    "compatibility/interoperability-smoke-parity.json",
+    "compatibility/stage-14-foundry-retirement-inventory.json",
+    "docs/security/custom-erc721-vs-openzeppelin-5.6.1.md",
+    "test/solidity/parity/PCOMutationParity.t.sol",
+    "test/solidity/parity/PCOReadTaxParity.t.sol",
+    "test/solidity/parity/WrapperParity.t.sol",
+  ].filter((relativePath, index, paths) => paths.indexOf(relativePath) === index).sort()
+);
+
+const MANAGED_FILES_BY_STATE = Object.freeze({
+  1: LEGACY_MANAGED_FILES,
+  2: FOUNDRY_RETIREMENT_MANAGED_FILES,
+});
+
+// Export the post-retirement scope for consumers that need the complete policy
+// inventory. Ledger validation selects the version belonging to each record.
+const MANAGED_FILES = FOUNDRY_RETIREMENT_MANAGED_FILES;
+
 const BOOTSTRAP_CHANGED_FILES = Object.freeze([
   ".github/workflows/tests.yml",
   "scripts/check-ci-policy.cjs",
@@ -85,13 +118,79 @@ const BOOTSTRAP_CHANGED_FILES = Object.freeze([
   "scripts/maintenance-policy.cjs",
 ]);
 
-const EXPECTED_ACTION_COUNTS = Object.freeze({
+const LEGACY_EXPECTED_ACTION_COUNTS = Object.freeze({
   "actions/cache": 10,
   "actions/checkout": 10,
   "actions/setup-node": 10,
   "actions/setup-python": 1,
   "actions/upload-artifact": 1,
   "foundry-rs/foundry-toolchain": 7,
+});
+
+const FOUNDRY_RETIREMENT_EXPECTED_ACTION_COUNTS = Object.freeze({
+  "actions/cache": 9,
+  "actions/checkout": 9,
+  "actions/setup-node": 9,
+  "actions/setup-python": 1,
+  "actions/upload-artifact": 1,
+  "foundry-rs/foundry-toolchain": 7,
+});
+
+const ACTION_COUNTS_BY_STATE = Object.freeze({
+  1: LEGACY_EXPECTED_ACTION_COUNTS,
+  2: FOUNDRY_RETIREMENT_EXPECTED_ACTION_COUNTS,
+});
+
+const FOUNDRY_RETIREMENT_DEV_DEPENDENCIES = Object.freeze({
+  "@nomicfoundation/hardhat-ethers": "4.0.15",
+  "@types/node": "24.13.3",
+  ethers: "6.17.0",
+  hardhat: "3.10.0",
+  tsx: "4.23.1",
+  typescript: "7.0.2",
+});
+
+const FOUNDRY_RETIREMENT_SCRIPT_TRANSITIONS = Object.freeze([
+  Object.freeze({ from: "hardhat console", name: "console", to: null }),
+  Object.freeze({ from: "hardhat build", name: "compile", to: "forge build" }),
+  Object.freeze({
+    from: "hardhat build --force && node scripts/check-compiler-warnings.cjs hardhat",
+    name: "compiler-warnings:hardhat",
+    to: null,
+  }),
+  Object.freeze({
+    from: "pnpm run compiler-warnings:hardhat && pnpm run compiler-warnings:forge",
+    name: "compiler-warnings:check",
+    to: "pnpm run compiler-warnings:forge",
+  }),
+  Object.freeze({
+    from: "pnpm run test:hardhat:smoke",
+    name: "test:hardhat",
+    to: null,
+  }),
+  Object.freeze({
+    from: "hardhat build && node --import tsx --test tests/Interoperability.smoke.ts",
+    name: "test:hardhat:smoke",
+    to: null,
+  }),
+  Object.freeze({
+    from: "pnpm run test:forge && pnpm run test:hardhat:smoke",
+    name: "test",
+    to: "pnpm run test:forge",
+  }),
+  Object.freeze({ from: "tsc --noEmit", name: "typecheck", to: null }),
+]);
+
+const FOUNDRY_RETIREMENT_ACTION_TRANSITIONS = Object.freeze({
+  "actions/cache": Object.freeze({ from: 10, to: 9 }),
+  "actions/checkout": Object.freeze({ from: 10, to: 9 }),
+  "actions/setup-node": Object.freeze({ from: 10, to: 9 }),
+});
+
+const FOUNDRY_RETIREMENT_SECURITY_OVERRIDE = Object.freeze({
+  advisory: "GHSA-xcpc-8h2w-3j85",
+  name: "adm-zip",
+  version: "0.6.0",
 });
 
 const RECORD_DIRECTORY = "compatibility/maintenance";
@@ -143,6 +242,22 @@ function exactKeys(value, expected, label) {
   }
 }
 
+function managedFilesForState(stateVersion) {
+  const managedFiles = MANAGED_FILES_BY_STATE[stateVersion];
+  if (!managedFiles) {
+    fail(`Unsupported maintenance state version: ${stateVersion}`);
+  }
+  return managedFiles;
+}
+
+function actionCountsForState(stateVersion) {
+  const actionCounts = ACTION_COUNTS_BY_STATE[stateVersion];
+  if (!actionCounts) {
+    fail(`Unsupported maintenance state version: ${stateVersion}`);
+  }
+  return actionCounts;
+}
+
 function runGit(root, args, { allowFailure = false } = {}) {
   const result = spawnSync("git", args, {
     cwd: root,
@@ -177,8 +292,12 @@ function checkedPath(root, relativePath) {
   return absolutePath;
 }
 
-function currentFileBytes(root, relativePath) {
+function currentFileBytes(root, relativePath, allowMissing = false) {
   const absolutePath = checkedPath(root, relativePath);
+  if (!fs.existsSync(absolutePath)) {
+    if (allowMissing) return null;
+    fail(`Maintenance-bound path is missing: ${relativePath}`);
+  }
   const stat = fs.lstatSync(absolutePath);
   if (!stat.isFile() || stat.isSymbolicLink()) {
     fail(`Maintenance-bound path must be a regular file: ${relativePath}`);
@@ -194,10 +313,15 @@ function checkpointBytes(root, commit, relativePath, allowMissing = false) {
   return Buffer.from(result.stdout);
 }
 
-function repositoryFileBytes(root, relativePath, reference = null) {
+function repositoryFileBytes(
+  root,
+  relativePath,
+  reference = null,
+  { allowMissing = false } = {}
+) {
   return reference === null
-    ? currentFileBytes(root, relativePath)
-    : checkpointBytes(root, reference, relativePath);
+    ? currentFileBytes(root, relativePath, allowMissing)
+    : checkpointBytes(root, reference, relativePath, allowMissing);
 }
 
 function fileSha256(root, relativePath, reference = null) {
@@ -231,13 +355,16 @@ function stage13AnchorSha256() {
   return sha256(stableJson(STAGE_13_ANCHOR));
 }
 
-function boundFiles(root, reference = null, { allowMissing = false } = {}) {
+function boundFiles(
+  root,
+  reference = null,
+  { allowMissing = false, managedFiles = LEGACY_MANAGED_FILES } = {}
+) {
   return Object.fromEntries(
-    MANAGED_FILES.map((relativePath) => {
-      const bytes =
-        reference === null
-          ? repositoryFileBytes(root, relativePath)
-          : checkpointBytes(root, reference, relativePath, allowMissing);
+    managedFiles.map((relativePath) => {
+      const bytes = repositoryFileBytes(root, relativePath, reference, {
+        allowMissing,
+      });
       if (bytes === null && !allowMissing) {
         fail(`Maintenance-bound path is missing: ${relativePath}`);
       }
@@ -246,15 +373,21 @@ function boundFiles(root, reference = null, { allowMissing = false } = {}) {
   );
 }
 
-function currentBoundFiles(root) {
-  return boundFiles(root);
+function currentBoundFiles(root, stateVersion = 1) {
+  return boundFiles(root, null, {
+    allowMissing: stateVersion >= 2,
+    managedFiles: managedFilesForState(stateVersion),
+  });
 }
 
 function stage13BoundFiles(root) {
-  return boundFiles(root, STAGE_13_ANCHOR.commit, { allowMissing: true });
+  return boundFiles(root, STAGE_13_ANCHOR.commit, {
+    allowMissing: true,
+    managedFiles: LEGACY_MANAGED_FILES,
+  });
 }
 
-function parseActionSnapshot(workflowBytes) {
+function parseActionSnapshot(workflowBytes, expectedActionCounts) {
   const workflow = workflowBytes.toString("utf8");
   const actions = {};
   for (const match of workflow.matchAll(
@@ -267,7 +400,7 @@ function parseActionSnapshot(workflowBytes) {
       fail(`Action is not pinned by full commit SHA: ${specification}`);
     }
     const name = parsed[1];
-    if (!(name in EXPECTED_ACTION_COUNTS)) {
+    if (!(name in expectedActionCounts)) {
       fail(`Workflow contains an unreviewed external action: ${name}`);
     }
     const tag = (match[2] || "").trim();
@@ -284,10 +417,10 @@ function parseActionSnapshot(workflowBytes) {
       tag,
     };
   }
-  if (!valuesEqual(Object.keys(actions).sort(), Object.keys(EXPECTED_ACTION_COUNTS).sort())) {
+  if (!valuesEqual(Object.keys(actions).sort(), Object.keys(expectedActionCounts).sort())) {
     fail("Workflow action-name inventory changed");
   }
-  for (const [name, count] of Object.entries(EXPECTED_ACTION_COUNTS)) {
+  for (const [name, count] of Object.entries(expectedActionCounts)) {
     if (actions[name].count !== count) {
       fail(`Workflow action count changed for ${name}`);
     }
@@ -295,9 +428,10 @@ function parseActionSnapshot(workflowBytes) {
   return sorted(actions);
 }
 
-function actionSnapshot(root, reference = null) {
+function actionSnapshot(root, reference = null, stateVersion = 1) {
   return parseActionSnapshot(
-    repositoryFileBytes(root, ".github/workflows/tests.yml", reference)
+    repositoryFileBytes(root, ".github/workflows/tests.yml", reference),
+    actionCountsForState(stateVersion)
   );
 }
 
@@ -434,7 +568,11 @@ function toolchainSnapshot(root, reference = null) {
 }
 
 function expectedChangedFiles(previousBoundFiles, nextBoundFiles) {
-  return MANAGED_FILES.filter(
+  const managedFiles = [...new Set([
+    ...Object.keys(previousBoundFiles),
+    ...Object.keys(nextBoundFiles),
+  ])].sort();
+  return managedFiles.filter(
     (relativePath) =>
       previousBoundFiles[relativePath] !== nextBoundFiles[relativePath]
   );
@@ -545,24 +683,41 @@ function maintenanceHistory(root, currentFilenames) {
   const introductionCommits = new Set(
     [...introductions.values()].filter((commit) => commit !== null)
   );
+  const recordsByIntroduction = new Map();
+  for (const filename of currentFilenames) {
+    const introduction = introductions.get(filename);
+    if (introduction === null) continue;
+    const record = JSON.parse(
+      currentFileBytes(root, `${RECORD_DIRECTORY}/${filename}`).toString("utf8")
+    );
+    recordsByIntroduction.set(introduction, record);
+  }
+  let activeManagedFiles = LEGACY_MANAGED_FILES;
   for (const commit of commits.slice(1)) {
     const firstParent = runGit(root, ["rev-parse", `${commit}^1`])
       .stdout.toString("utf8")
       .trim();
     const scopedPaths = maintenanceScopedPaths(
-      changedPathsBetween(root, firstParent, commit)
+      changedPathsBetween(root, firstParent, commit),
+      activeManagedFiles
     );
     if (scopedPaths.length > 0 && !introductionCommits.has(commit)) {
       fail(
         `Managed files changed without a maintenance record in ${commit}: ${scopedPaths.join(", ")}`
       );
     }
+    const introducedRecord = recordsByIntroduction.get(commit);
+    if (introducedRecord) {
+      activeManagedFiles = managedFilesForState(
+        introducedRecord.schemaVersion === 1 ? 1 : introducedRecord.stateVersion
+      );
+    }
   }
   return introductions;
 }
 
-function maintenanceScopedPaths(paths) {
-  const managed = new Set(MANAGED_FILES);
+function maintenanceScopedPaths(paths, managedFiles = LEGACY_MANAGED_FILES) {
+  const managed = new Set(managedFiles);
   return paths.filter(
     (relativePath) =>
       managed.has(relativePath) ||
@@ -571,6 +726,7 @@ function maintenanceScopedPaths(paths) {
 }
 
 function validateRecordSchema(record, filename, sequence) {
+  const expectedSchemaVersion = sequence <= 7 ? 1 : 2;
   exactKeys(
     record,
     [
@@ -589,15 +745,24 @@ function validateRecordSchema(record, filename, sequence) {
       "summary",
       "toolchain",
       "transition",
+      ...(expectedSchemaVersion === 2 ? ["stateVersion"] : []),
     ],
     `Maintenance record ${filename}`
   );
+  const allowedCategories =
+    expectedSchemaVersion === 1
+      ? ["bootstrap", "governance", "github-actions", "javascript"]
+      : ["foundry-retirement", "governance", "github-actions", "javascript"];
   if (
-    record.schemaVersion !== 1 ||
+    record.schemaVersion !== expectedSchemaVersion ||
     record.sequence !== sequence ||
+    (expectedSchemaVersion === 2 && ![1, 2].includes(record.stateVersion)) ||
+    (sequence >= 8 && record.stateVersion !== 2) ||
+    (sequence === 8 && record.category !== "foundry-retirement") ||
+    (sequence !== 8 && record.category === "foundry-retirement") ||
     record.id !== filename.replace(/^[0-9]{4}-|\.json$/g, "") ||
     !/^[0-9a-f]{40}$/.test(record.baseCommit) ||
-    !["bootstrap", "governance", "github-actions", "javascript"].includes(record.category) ||
+    !allowedCategories.includes(record.category) ||
     record.transition?.kind !== record.category ||
     typeof record.summary !== "string" ||
     record.summary.trim().length < 12 ||
@@ -627,14 +792,19 @@ function validateRecordSchema(record, filename, sequence) {
   ) {
     fail("Routine maintenance records require PR provenance and cannot bootstrap");
   }
+  const stateVersion = record.schemaVersion === 1 ? 1 : record.stateVersion;
+  const managedFiles = managedFilesForState(stateVersion);
+  const invalidDigest = Object.entries(record.boundFiles).some(
+    ([relativePath, digest]) => {
+      if (stateVersion === 2 && FOUNDRY_RETIREMENT_TOMBSTONES.includes(relativePath)) {
+        return digest !== null;
+      }
+      return typeof digest !== "string" || !/^[0-9a-f]{64}$/.test(digest);
+    }
+  );
   if (
-    !valuesEqual(
-      Object.keys(record.boundFiles).sort(),
-      [...MANAGED_FILES].sort()
-    ) ||
-    Object.values(record.boundFiles).some(
-      (digest) => typeof digest !== "string" || !/^[0-9a-f]{64}$/.test(digest)
-    )
+    !valuesEqual(Object.keys(record.boundFiles).sort(), [...managedFiles].sort()) ||
+    invalidDigest
   ) {
     fail(`Maintenance record has an invalid bound-file snapshot: ${filename}`);
   }
@@ -752,7 +922,7 @@ function validateGithubActionTransition(
   const transition = record.transition;
   if (
     !valuesEqual(record.changedFiles, [".github/workflows/tests.yml"]) ||
-    !(transition.action in EXPECTED_ACTION_COUNTS) ||
+    !(transition.action in beforeActions) ||
     !Number.isInteger(transition.occurrences) ||
     transition.occurrences <= 0
   ) {
@@ -895,6 +1065,241 @@ function validateJavascriptTransition(
   }
 }
 
+function removeWorkflowJob(workflow, jobId) {
+  const startPattern = new RegExp(`^  ${jobId}:\\n`, "m");
+  const start = workflow.search(startPattern);
+  if (start === -1) {
+    fail(`Workflow is missing the reviewed ${jobId} job`);
+  }
+  const remainder = workflow.slice(start + 1);
+  const next = remainder.search(/^  [a-z0-9][a-z0-9-]*:\n/m);
+  if (next === -1) {
+    return workflow.slice(0, start);
+  }
+  return workflow.slice(0, start) + remainder.slice(next);
+}
+
+function validateFoundryRetirementTransition(
+  record,
+  root,
+  baseCommit,
+  targetReference,
+  beforeActions,
+  afterActions,
+  beforePackages,
+  afterPackages,
+  beforeToolchain,
+  afterToolchain
+) {
+  exactKeys(
+    record.transition,
+    [
+      "actionCounts",
+      "devDependencies",
+      "kind",
+      "policy",
+      "scripts",
+      "securityOverride",
+      "tombstones",
+    ],
+    "Foundry retirement transition"
+  );
+  if (
+    record.schemaVersion !== 2 ||
+    record.stateVersion !== 2 ||
+    !valuesEqual(
+      record.transition.actionCounts,
+      FOUNDRY_RETIREMENT_ACTION_TRANSITIONS
+    ) ||
+    !valuesEqual(
+      record.transition.devDependencies,
+      FOUNDRY_RETIREMENT_DEV_DEPENDENCIES
+    ) ||
+    !valuesEqual(
+      record.transition.scripts,
+      FOUNDRY_RETIREMENT_SCRIPT_TRANSITIONS
+    ) ||
+    !valuesEqual(
+      record.transition.securityOverride,
+      FOUNDRY_RETIREMENT_SECURITY_OVERRIDE
+    ) ||
+    !valuesEqual(
+      record.transition.tombstones,
+      FOUNDRY_RETIREMENT_TOMBSTONES
+    )
+  ) {
+    fail("Foundry retirement declaration is not the exact reviewed transition");
+  }
+
+  exactKeys(
+    record.transition.policy,
+    ["fromSha256", "path", "toSha256"],
+    "Foundry retirement policy transition"
+  );
+  if (
+    record.transition.policy.path !== MAINTENANCE_POLICY_PATH ||
+    !/^[0-9a-f]{64}$/.test(record.transition.policy.fromSha256) ||
+    !/^[0-9a-f]{64}$/.test(record.transition.policy.toSha256) ||
+    record.transition.policy.fromSha256 === record.transition.policy.toSha256 ||
+    fileSha256(root, MAINTENANCE_POLICY_PATH, baseCommit) !==
+      record.transition.policy.fromSha256 ||
+    fileSha256(root, MAINTENANCE_POLICY_PATH, targetReference) !==
+      record.transition.policy.toSha256
+  ) {
+    fail("Foundry retirement must bind its exact policy replacement");
+  }
+
+  if (!valuesEqual(beforeToolchain, afterToolchain)) {
+    fail("Foundry retirement may not change the pinned production toolchain");
+  }
+  const expectedActions = structuredClone(beforeActions);
+  for (const [name, counts] of Object.entries(
+    FOUNDRY_RETIREMENT_ACTION_TRANSITIONS
+  )) {
+    if (
+      beforeActions[name]?.count !== counts.from ||
+      afterActions[name]?.count !== counts.to ||
+      beforeActions[name]?.commit !== afterActions[name]?.commit ||
+      beforeActions[name]?.tag !== afterActions[name]?.tag
+    ) {
+      fail(`Foundry retirement action transition changed unexpectedly: ${name}`);
+    }
+    expectedActions[name] = { ...beforeActions[name], count: counts.to };
+  }
+  if (!valuesEqual(expectedActions, afterActions)) {
+    fail("Foundry retirement changed action pins or unreviewed action counts");
+  }
+
+  const beforePackage = readPackage(root, baseCommit);
+  const afterPackage = readPackage(root, targetReference);
+  if (
+    !valuesEqual(beforePackage.devDependencies, FOUNDRY_RETIREMENT_DEV_DEPENDENCIES) ||
+    !valuesEqual(beforePackages.devDependencies, FOUNDRY_RETIREMENT_DEV_DEPENDENCIES)
+  ) {
+    fail("Foundry retirement dependency source inventory changed");
+  }
+  const expectedPackage = structuredClone(beforePackage);
+  delete expectedPackage.devDependencies;
+  for (const transition of FOUNDRY_RETIREMENT_SCRIPT_TRANSITIONS) {
+    if (expectedPackage.scripts?.[transition.name] !== transition.from) {
+      fail(`Foundry retirement script source changed: ${transition.name}`);
+    }
+    if (transition.to === null) {
+      delete expectedPackage.scripts[transition.name];
+    } else {
+      expectedPackage.scripts[transition.name] = transition.to;
+    }
+  }
+  if (
+    !valuesEqual(expectedPackage, afterPackage) ||
+    !valuesEqual(afterPackages.devDependencies, {}) ||
+    !valuesEqual(beforePackages.dependencies, afterPackages.dependencies) ||
+    beforePackages.packageManager !== afterPackages.packageManager
+  ) {
+    fail("package.json changed outside the exact Foundry retirement");
+  }
+
+  const beforeWorkflow = repositoryFileBytes(
+    root,
+    ".github/workflows/tests.yml",
+    baseCommit
+  ).toString("utf8");
+  const afterWorkflow = repositoryFileBytes(
+    root,
+    ".github/workflows/tests.yml",
+    targetReference
+  ).toString("utf8");
+  if (
+    removeWorkflowJob(beforeWorkflow, "hardhat-integration") !== afterWorkflow ||
+    /hardhat/i.test(afterWorkflow)
+  ) {
+    fail("Workflow changed outside removal of the Hardhat integration job");
+  }
+
+  const beforeAllowlist = readJsonFile(
+    root,
+    HARDHAT_WARNING_ALLOWLIST,
+    baseCommit
+  );
+  const afterAllowlist = readJsonFile(
+    root,
+    HARDHAT_WARNING_ALLOWLIST,
+    targetReference
+  );
+  if (
+    beforeAllowlist.tools?.hardhat?.version !== "3.10.0" ||
+    afterAllowlist.schemaVersion !== 3 ||
+    "hardhat" in afterAllowlist ||
+    "hardhat" in afterAllowlist.tools ||
+    !valuesEqual(Object.keys(afterAllowlist).sort(), [
+      "compiler",
+      "diagnostic",
+      "forge",
+      "schemaVersion",
+      "tools",
+    ]) ||
+    !valuesEqual(beforeAllowlist.compiler, afterAllowlist.compiler) ||
+    !valuesEqual(beforeAllowlist.diagnostic, afterAllowlist.diagnostic) ||
+    !valuesEqual(beforeAllowlist.tools.forge, afterAllowlist.tools.forge) ||
+    !valuesEqual(
+      {
+        compilerProfile: beforeAllowlist.forge.compilerProfile,
+        metadataSettings: beforeAllowlist.forge.metadataSettings,
+        settings: beforeAllowlist.forge.settings,
+      },
+      {
+        compilerProfile: afterAllowlist.forge.compilerProfile,
+        metadataSettings: afterAllowlist.forge.metadataSettings,
+        settings: afterAllowlist.forge.settings,
+      }
+    ) ||
+    !Array.isArray(afterAllowlist.forge.warnings) ||
+    !afterAllowlist.forge.sourceSha256 ||
+    typeof afterAllowlist.forge.sourceSha256 !== "object"
+  ) {
+    fail("Compiler warning allowlist changed outside reviewed Forge metadata and Hardhat retirement");
+  }
+
+  const beforeOverrides = pnpmOverrides(root, baseCommit);
+  if (!valuesEqual(beforeOverrides, { "adm-zip": "0.6.0" })) {
+    fail("Foundry retirement security override source changed");
+  }
+  const lock = repositoryFileBytes(root, "pnpm-lock.yaml", targetReference)
+    .toString("utf8")
+    .toLowerCase();
+  for (const forbidden of [
+    "@nomicfoundation/hardhat-ethers",
+    "@types/node",
+    "adm-zip",
+    "ethers@",
+    "hardhat@",
+    "tsx@",
+    "typescript@",
+  ]) {
+    if (lock.includes(forbidden)) {
+      fail(`Retired JavaScript dependency remains in pnpm-lock.yaml: ${forbidden}`);
+    }
+  }
+
+  for (const relativePath of FOUNDRY_RETIREMENT_TOMBSTONES) {
+    if (record.boundFiles[relativePath] !== null) {
+      fail(`Foundry retirement tombstone is not null: ${relativePath}`);
+    }
+  }
+  for (const relativePath of [
+    "compatibility/evidence/stage-14-foundry-retirement.json",
+    "compatibility/interoperability-smoke-parity.json",
+    "compatibility/stage-14-foundry-retirement-inventory.json",
+    "test/solidity/parity/PCOMutationParity.t.sol",
+    "test/solidity/parity/PCOReadTaxParity.t.sol",
+    "test/solidity/parity/WrapperParity.t.sol",
+  ]) {
+    if (!/^[0-9a-f]{64}$/.test(record.boundFiles[relativePath])) {
+      fail(`Foundry retirement evidence is not digest-bound: ${relativePath}`);
+    }
+  }
+}
+
 function validateTransition(
   root,
   record,
@@ -926,6 +1331,21 @@ function validateTransition(
       root,
       baseCommit,
       targetReference
+    );
+    return;
+  }
+  if (record.category === "foundry-retirement") {
+    validateFoundryRetirementTransition(
+      record,
+      root,
+      baseCommit,
+      targetReference,
+      beforeActions,
+      afterActions,
+      beforePackages,
+      afterPackages,
+      beforeToolchain,
+      afterToolchain
     );
     return;
   }
@@ -978,7 +1398,13 @@ function validateMaintenanceLedger({ root = path.resolve(__dirname, "..") } = {}
   const records = [];
   let previousBytes = null;
   let previousBoundFiles = stage13BoundFiles(root);
-  let previousActions = actionSnapshot(root, STAGE_13_ANCHOR.commit);
+  let previousStateVersion = 1;
+  let previousManagedFiles = managedFilesForState(previousStateVersion);
+  let previousActions = actionSnapshot(
+    root,
+    STAGE_13_ANCHOR.commit,
+    previousStateVersion
+  );
   let previousPackages = packageSnapshot(root, STAGE_13_ANCHOR.commit);
   let previousToolchain = toolchainSnapshot(root, STAGE_13_ANCHOR.commit);
 
@@ -995,6 +1421,9 @@ function validateMaintenanceLedger({ root = path.resolve(__dirname, "..") } = {}
       fail(`Maintenance record is not canonical JSON: ${filename}`);
     }
     validateRecordSchema(record, filename, sequence);
+    const recordStateVersion =
+      record.schemaVersion === 1 ? 1 : record.stateVersion;
+    const recordManagedFiles = managedFilesForState(recordStateVersion);
 
     const expectedPrevious =
       sequence === 1
@@ -1016,7 +1445,8 @@ function validateMaintenanceLedger({ root = path.resolve(__dirname, "..") } = {}
           root,
           records[index - 1].introduction,
           record.baseCommit
-        )
+        ),
+        previousManagedFiles
       ).length !== 0
     ) {
       fail(`Maintenance base contains unrecorded managed changes: ${filename}`);
@@ -1024,11 +1454,22 @@ function validateMaintenanceLedger({ root = path.resolve(__dirname, "..") } = {}
     if (!valuesEqual(recordFilesAt(root, record.baseCommit), filenames.slice(0, index))) {
       fail(`Maintenance base has an invalid record history: ${filename}`);
     }
-    if (!valuesEqual(boundFiles(root, record.baseCommit, { allowMissing: true }), previousBoundFiles)) {
+    if (
+      !valuesEqual(
+        boundFiles(root, record.baseCommit, {
+          allowMissing: true,
+          managedFiles: previousManagedFiles,
+        }),
+        previousBoundFiles
+      )
+    ) {
       fail(`Maintenance base does not match its predecessor snapshot: ${filename}`);
     }
     if (
-      !valuesEqual(actionSnapshot(root, record.baseCommit), previousActions) ||
+      !valuesEqual(
+        actionSnapshot(root, record.baseCommit, previousStateVersion),
+        previousActions
+      ) ||
       !valuesEqual(packageSnapshot(root, record.baseCommit), previousPackages) ||
       !valuesEqual(toolchainSnapshot(root, record.baseCommit), previousToolchain)
     ) {
@@ -1062,8 +1503,15 @@ function validateMaintenanceLedger({ root = path.resolve(__dirname, "..") } = {}
       }
     }
     const targetReference = introduction;
-    const targetBoundFiles = boundFiles(root, targetReference);
-    const targetActions = actionSnapshot(root, targetReference);
+    const targetBoundFiles = boundFiles(root, targetReference, {
+      allowMissing: recordStateVersion >= 2,
+      managedFiles: recordManagedFiles,
+    });
+    const targetActions = actionSnapshot(
+      root,
+      targetReference,
+      recordStateVersion
+    );
     const targetPackages = packageSnapshot(root, targetReference);
     const targetToolchain = toolchainSnapshot(root, targetReference);
     if (
@@ -1074,7 +1522,16 @@ function validateMaintenanceLedger({ root = path.resolve(__dirname, "..") } = {}
     ) {
       fail(`Maintenance record does not bind its introduction tree: ${filename}`);
     }
-    const changedFiles = expectedChangedFiles(previousBoundFiles, targetBoundFiles);
+    const comparisonBase = boundFiles(root, record.baseCommit, {
+      allowMissing: true,
+      managedFiles: recordManagedFiles,
+    });
+    for (const relativePath of previousManagedFiles) {
+      if (comparisonBase[relativePath] !== previousBoundFiles[relativePath]) {
+        fail(`Maintenance state expansion changed its base: ${relativePath}`);
+      }
+    }
+    const changedFiles = expectedChangedFiles(comparisonBase, targetBoundFiles);
     if (!valuesEqual(record.changedFiles, changedFiles)) {
       fail(`Maintenance record changed-file inventory is stale: ${filename}`);
     }
@@ -1107,15 +1564,20 @@ function validateMaintenanceLedger({ root = path.resolve(__dirname, "..") } = {}
     });
     previousBytes = bytes;
     previousBoundFiles = targetBoundFiles;
+    previousStateVersion = recordStateVersion;
+    previousManagedFiles = recordManagedFiles;
     previousActions = targetActions;
     previousPackages = targetPackages;
     previousToolchain = targetToolchain;
   }
 
   const latest = records.at(-1);
+  const latestStateVersion =
+    latest.schemaVersion === 1 ? 1 : latest.stateVersion;
+  const latestManagedFiles = managedFilesForState(latestStateVersion);
   if (
-    !valuesEqual(currentBoundFiles(root), latest.boundFiles) ||
-    !valuesEqual(actionSnapshot(root), latest.actions) ||
+    !valuesEqual(currentBoundFiles(root, latestStateVersion), latest.boundFiles) ||
+    !valuesEqual(actionSnapshot(root, null, latestStateVersion), latest.actions) ||
     !valuesEqual(packageSnapshot(root), latest.packages) ||
     !valuesEqual(toolchainSnapshot(root), latest.toolchain)
   ) {
@@ -1123,7 +1585,8 @@ function validateMaintenanceLedger({ root = path.resolve(__dirname, "..") } = {}
   }
   if (latest.introduction !== null) {
     const unrecorded = maintenanceScopedPaths(
-      currentChangedPaths(root, latest.introduction)
+      currentChangedPaths(root, latest.introduction),
+      latestManagedFiles
     );
     if (unrecorded.length !== 0) {
       fail(`Managed files changed after the latest maintenance record: ${unrecorded.join(", ")}`);

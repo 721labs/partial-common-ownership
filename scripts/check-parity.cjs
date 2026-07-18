@@ -98,6 +98,51 @@ const STAGE_11_HARDHAT_NAMES_SHA256 =
   "861cda9b6fe70b931fd4c049c2e75585fd53a2ba502a3f89a70980a520f9a3ce";
 const STAGE_11_FORGE_NAMES_SHA256 =
   "09b141a8c69c4522288cfdbf67373661052764ab019c865ea850dc5eb645f173";
+const STAGE_14_PARITY_PATH = path.join(
+  ROOT,
+  "compatibility",
+  "interoperability-smoke-parity.json"
+);
+const STAGE_14_PARITY_SHA256 =
+  "0c2f481a394fb9e04b9b7346f008c70658240f2e7db7995fe5ff2f8f2d65d658";
+const STAGE_14_CANDIDATE = "stage-14-hardhat-retirement";
+const STAGE_14_SMOKE_SOURCE_SHA256 =
+  "80bc8ba664ae11d9081e73427cde09652cfc7da03bbfa87fd61767400ca9f696";
+const STAGE_14_FORGE_COUNT = 143;
+const STAGE_14_FORGE_NAMES_SHA256 =
+  "ff02c3d8a133d928555279fd30d720afc6d01f8baf78551ff32a9e91367ab990";
+const STAGE_14_EXPECTED_MAPPINGS = Object.freeze([
+  Object.freeze({
+    hardhatName:
+      "Hardhat interoperability smokes acquires, collects tax, and exits with ordered events and conserved balances",
+    forgeFile: "test/solidity/parity/PCOMutationParity.t.sol",
+    forgeFileSha256:
+      "6e441bd6209b55f7872404b20a62daf4b164f78a0d8e7fe50049f31807bd5afc",
+    forgeContract: "PCOMutationParityTest",
+    forgeTest:
+      "test_interoperabilitySmoke_acquiresCollectsTaxAndExitsWithOrderedEventsAndConservedBalances",
+  }),
+  Object.freeze({
+    hardhatName:
+      "Hardhat interoperability smokes approves, wraps, takes over, and unwraps with custody and metadata cleanup",
+    forgeFile: "test/solidity/parity/WrapperParity.t.sol",
+    forgeFileSha256:
+      "9fa1bcc0b6ffa2ac6c7a619c44162330f64171877048732bdfa7f48675a99d25",
+    forgeContract: "WrapperParityTest",
+    forgeTest:
+      "test_interoperabilitySmoke_approvesWrapsTakesOverAndUnwrapsWithCustodyAndMetadataCleanup",
+  }),
+  Object.freeze({
+    hardhatName:
+      "Hardhat interoperability smokes deploys and reads deterministic PCO configuration",
+    forgeFile: "test/solidity/parity/PCOReadTaxParity.t.sol",
+    forgeFileSha256:
+      "dce90b2cf8174271d9cd72e59376dfffd5c84881ca17d843cf9c51e2ba3901c8",
+    forgeContract: "PCOReadTaxParityTest",
+    forgeTest:
+      "test_interoperabilitySmoke_deploysAndReadsDeterministicPCOConfiguration",
+  }),
+]);
 const STAGE_11_DELETED_LEGACY_FILES = Object.freeze({
   "tests/PartialCommonOwnership/index.ts":
     "729d6297377a6be11ebb122a8413a27985da990c108e70522512c70d98e7c134",
@@ -197,6 +242,17 @@ function stableJson(value) {
 
 function valuesEqual(left, right) {
   return JSON.stringify(left) === JSON.stringify(right);
+}
+
+function exactKeys(value, expected, label) {
+  if (
+    !value ||
+    typeof value !== "object" ||
+    Array.isArray(value) ||
+    !valuesEqual(Object.keys(value).sort(), [...expected].sort())
+  ) {
+    fail(`${label} has unexpected or missing fields`);
+  }
 }
 
 function stage11Inventory(baseline) {
@@ -442,29 +498,6 @@ function stage13CheckpointBinding() {
 }
 
 function stage13Inventory(stage12b) {
-  for (const requiredPath of [
-    STAGE_13_INVENTORY_PATH,
-    STAGE_13_EVIDENCE_PATH,
-    STAGE_13_REVIEW_PATH,
-  ]) {
-    const relativePath = path.relative(ROOT, requiredPath);
-    if (!fs.existsSync(requiredPath)) {
-      fail(
-        `Missing checked-in Stage 13 evidence: ${path.relative(
-          ROOT,
-          requiredPath
-        )}`
-      );
-    }
-    if (
-      !fs
-        .readFileSync(requiredPath)
-        .equals(checkpointFile(STAGE_13_CHECKPOINT_COMMIT, relativePath))
-    ) {
-      fail(`Checked-in Stage 13 evidence changed: ${relativePath}`);
-    }
-  }
-
   const inventoryBytes = checkpointFile(
     STAGE_13_CHECKPOINT_COMMIT,
     path.relative(ROOT, STAGE_13_INVENTORY_PATH)
@@ -636,6 +669,195 @@ function stage13Inventory(stage12b) {
   return inventory;
 }
 
+function interoperabilitySmokeParity(stage11, stage12b) {
+  if (!fs.existsSync(STAGE_14_PARITY_PATH)) {
+    fail("Missing Stage 14 interoperability-smoke parity evidence");
+  }
+  const bytes = fs.readFileSync(STAGE_14_PARITY_PATH);
+  const evidence = JSON.parse(bytes);
+  if (sha256(bytes) !== STAGE_14_PARITY_SHA256) {
+    fail("Stage 14 interoperability-smoke parity evidence changed");
+  }
+
+  exactKeys(
+    evidence,
+    [
+      "schemaVersion",
+      "candidate",
+      "historicalHardhat",
+      "forge",
+      "mappings",
+      "runnerMechanicsReplaced",
+    ],
+    "Stage 14 interoperability-smoke parity evidence"
+  );
+  exactKeys(
+    evidence.historicalHardhat,
+    [
+      "count",
+      "finalInventoryPath",
+      "finalInventorySha256",
+      "namesSha256",
+      "originalInventoryPath",
+      "originalInventorySha256",
+      "sourcePath",
+      "sourceSha256",
+    ],
+    "Stage 14 historical Hardhat evidence"
+  );
+  exactKeys(evidence.forge, ["after", "before"], "Stage 14 Forge evidence");
+  exactKeys(
+    evidence.forge.before,
+    ["count", "namesSha256"],
+    "Stage 14 predecessor Forge evidence"
+  );
+  exactKeys(
+    evidence.forge.after,
+    ["count", "namesSha256"],
+    "Stage 14 successor Forge evidence"
+  );
+
+  const historical = evidence.historicalHardhat;
+  if (
+    evidence.schemaVersion !== 1 ||
+    evidence.candidate !== STAGE_14_CANDIDATE ||
+    historical.count !== 3 ||
+    historical.originalInventoryPath !==
+      path.relative(ROOT, STAGE_11_INVENTORY_PATH) ||
+    historical.originalInventorySha256 !== STAGE_11_INVENTORY_SHA256 ||
+    historical.finalInventoryPath !==
+      path.relative(ROOT, STAGE_12B_INVENTORY_PATH) ||
+    historical.finalInventorySha256 !== STAGE_12B_INVENTORY_SHA256 ||
+    historical.namesSha256 !== STAGE_11_SMOKE_NAMES_SHA256 ||
+    historical.sourcePath !== "tests/Interoperability.smoke.ts" ||
+    historical.sourceSha256 !== STAGE_14_SMOKE_SOURCE_SHA256 ||
+    evidence.forge.before.count !== stage12b.activeTests.forge.count ||
+    evidence.forge.before.namesSha256 !==
+      stage12b.activeTests.forge.namesSha256 ||
+    evidence.forge.after.count !== STAGE_14_FORGE_COUNT ||
+    evidence.forge.after.namesSha256 !== STAGE_14_FORGE_NAMES_SHA256
+  ) {
+    fail("Stage 14 interoperability-smoke parity evidence has an invalid schema");
+  }
+
+  for (const [relativePath, expectedSha256] of [
+    [historical.originalInventoryPath, historical.originalInventorySha256],
+    [historical.finalInventoryPath, historical.finalInventorySha256],
+    [historical.sourcePath, historical.sourceSha256],
+  ]) {
+    if (
+      sha256(checkpointFile(STAGE_13_CHECKPOINT_COMMIT, relativePath)) !==
+      expectedSha256
+    ) {
+      fail(`Stage 14 historical checkpoint changed: ${relativePath}`);
+    }
+  }
+  if (
+    !valuesEqual(
+      stage11.activeHardhat.names,
+      stage12b.activeTests.hardhat.names
+    ) ||
+    historical.namesSha256 !== stage12b.activeTests.hardhat.namesSha256 ||
+    historical.sourcePath !== stage12b.activeTests.hardhat.sourcePath ||
+    historical.sourceSha256 !== stage12b.activeTests.hardhat.sourceSha256
+  ) {
+    fail("Stage 14 historical Hardhat identity changed");
+  }
+  if (fs.existsSync(path.join(ROOT, historical.sourcePath))) {
+    fail(`Retired Hardhat smoke source still exists: ${historical.sourcePath}`);
+  }
+
+  if (
+    !Array.isArray(evidence.mappings) ||
+    evidence.mappings.length !== STAGE_14_EXPECTED_MAPPINGS.length
+  ) {
+    fail("Stage 14 must map exactly three interoperability smokes");
+  }
+  const expectedByHardhatName = new Map(
+    STAGE_14_EXPECTED_MAPPINGS.map((mapping) => [
+      mapping.hardhatName,
+      mapping,
+    ])
+  );
+  const hardhatNames = [];
+  const forgeTargets = [];
+  for (const mapping of evidence.mappings) {
+    exactKeys(
+      mapping,
+      [
+        "behaviorDimensions",
+        "forgeContract",
+        "forgeFile",
+        "forgeFileSha256",
+        "forgeTest",
+        "hardhatName",
+      ],
+      "Stage 14 smoke mapping"
+    );
+    const expected = expectedByHardhatName.get(mapping.hardhatName);
+    if (
+      !expected ||
+      mapping.forgeFile !== expected.forgeFile ||
+      mapping.forgeFileSha256 !== expected.forgeFileSha256 ||
+      mapping.forgeContract !== expected.forgeContract ||
+      mapping.forgeTest !== expected.forgeTest ||
+      !Array.isArray(mapping.behaviorDimensions) ||
+      mapping.behaviorDimensions.length === 0 ||
+      mapping.behaviorDimensions.some(
+        (dimension) => typeof dimension !== "string" || dimension.length === 0
+      ) ||
+      duplicateValues(mapping.behaviorDimensions).length > 0
+    ) {
+      fail(`Invalid Stage 14 smoke mapping: ${mapping.hardhatName}`);
+    }
+    const forgePath = resolveUnder(
+      mapping.forgeFile,
+      "test/solidity",
+      "Stage 14 mapped Forge source"
+    );
+    if (
+      !fs.existsSync(forgePath) ||
+      sha256(fs.readFileSync(forgePath)) !== mapping.forgeFileSha256
+    ) {
+      fail(`Stage 14 mapped Forge source changed: ${mapping.forgeFile}`);
+    }
+    hardhatNames.push(mapping.hardhatName);
+    forgeTargets.push(
+      `${mapping.forgeFile}:${mapping.forgeContract}:${mapping.forgeTest}`
+    );
+  }
+  compareExact(
+    "Stage 14 retired Hardhat smoke inventory",
+    stage12b.activeTests.hardhat.names,
+    hardhatNames
+  );
+  compareExact(
+    "Stage 14 Forge successor mapping",
+    STAGE_14_EXPECTED_MAPPINGS.map(
+      (mapping) =>
+        `${mapping.forgeFile}:${mapping.forgeContract}:${mapping.forgeTest}`
+    ),
+    forgeTargets
+  );
+  if (
+    duplicateValues(hardhatNames).length > 0 ||
+    duplicateValues(forgeTargets).length > 0
+  ) {
+    fail("Stage 14 smoke mappings must be one-to-one");
+  }
+  if (
+    !Array.isArray(evidence.runnerMechanicsReplaced) ||
+    evidence.runnerMechanicsReplaced.length !== 3 ||
+    evidence.runnerMechanicsReplaced.some(
+      (mechanic) => typeof mechanic !== "string" || mechanic.length === 0
+    ) ||
+    duplicateValues(evidence.runnerMechanicsReplaced).length > 0
+  ) {
+    fail("Stage 14 runner-mechanics replacement evidence changed");
+  }
+  return sorted(forgeTargets);
+}
+
 function resolveUnder(relativePath, rootDirectory, label) {
   if (path.isAbsolute(relativePath)) {
     fail(`${label} must be repository-relative: ${relativePath}`);
@@ -802,6 +1024,7 @@ function main() {
   const stage12a = stage12aInventory(stage11);
   const stage12b = stage12bInventory(stage12a);
   stage13Inventory(stage12b);
+  const stage14ForgeTargets = interoperabilitySmokeParity(stage11, stage12b);
   validateMaintenanceLedger({ root: ROOT });
   if (map.schemaVersion !== 1) fail("Unsupported parity-map schema");
   if (!Array.isArray(map.fragments) || map.fragments.length === 0) {
@@ -966,30 +1189,61 @@ function main() {
       `Safety and parity targets overlap: ${duplicateAllTargets.join(", ")}`
     );
   }
+  if (
+    allForgeTargets.length !== stage12b.activeTests.forge.count ||
+    sha256(stableJson([...allForgeTargets].sort())) !==
+      stage12b.activeTests.forge.namesSha256
+  ) {
+    fail("Historical Stage 11-13 active 140-Forge inventory changed");
+  }
+  const activeForgeTargets = sorted([
+    ...allForgeTargets,
+    ...stage14ForgeTargets,
+  ]);
+  const duplicateActiveTargets = duplicateValues(activeForgeTargets);
+  if (duplicateActiveTargets.length > 0) {
+    fail(
+      `Stage 14 successor tests overlap the prior Forge inventory: ${duplicateActiveTargets.join(
+        ", "
+      )}`
+    );
+  }
   const discoveredForgeTests = discoverForgeTests();
+  const priorForgeSet = new Set(allForgeTargets);
   compareExact(
-    "Discovered Forge inventory",
+    "Preserved Stage 11-13 Forge inventory",
     allForgeTargets,
+    discoveredForgeTests.filter((name) => priorForgeSet.has(name))
+  );
+  compareExact(
+    "Added Stage 14 Forge inventory",
+    stage14ForgeTargets,
+    discoveredForgeTests.filter((name) => !priorForgeSet.has(name))
+  );
+  compareExact(
+    "Discovered Stage 14 Forge inventory",
+    activeForgeTargets,
     discoveredForgeTests
   );
   const executedForgeTests = executeForgeTests();
   compareExact(
-    "Successful Forge inventory",
-    allForgeTargets,
+    "Successful Stage 14 Forge inventory",
+    activeForgeTargets,
     executedForgeTests
   );
   if (
-    discoveredForgeTests.length !== stage12b.activeTests.forge.count ||
+    discoveredForgeTests.length !== STAGE_14_FORGE_COUNT ||
+    executedForgeTests.length !== STAGE_14_FORGE_COUNT ||
     sha256(stableJson([...discoveredForgeTests].sort())) !==
-      stage12b.activeTests.forge.namesSha256 ||
+      STAGE_14_FORGE_NAMES_SHA256 ||
     sha256(stableJson([...executedForgeTests].sort())) !==
-      stage12b.activeTests.forge.namesSha256
+      STAGE_14_FORGE_NAMES_SHA256
   ) {
-    fail("Stage 11 active 140-Forge inventory digest changed");
+    fail("Stage 14 active 143-Forge inventory digest changed");
   }
 
   console.log(
-    `Safety inventory passed: ${hardhatEntries.length} Hardhat + ${forgeLegacyEntries.length} baseline Forge scenarios map one-to-one to ${forgeTargets.length} behavior tests, plus ${safetyTargets.length} successful safety tests.`
+    `Safety inventory passed: ${hardhatEntries.length} historical Hardhat + ${forgeLegacyEntries.length} baseline Forge scenarios map one-to-one to ${forgeTargets.length} behavior tests, plus ${safetyTargets.length} safety tests and ${stage14ForgeTargets.length} interoperability-smoke successor tests (${executedForgeTests.length} successful Forge tests total).`
   );
 }
 
