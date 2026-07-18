@@ -414,11 +414,53 @@ from a clean recursive checkout with a frozen pnpm install, `pnpm test`,
 
 The original baseline predated explicit revert-literal extraction.
 `project-revert-strings.json` is a SHA-256-bound supplement derived from the
-unchanged production sources at the recorded baseline commit. It binds all 35
+unchanged production sources at the recorded baseline commit. It binds all 37
 project-owned `require`/`revert` strings to their source contract, callable,
 call kind, and ordinal. The compatibility runner injects that supplement as a
 non-waivable field, so compiler-bytecode review cannot authorize a changed
 project revert payload.
+
+Stage 15 uses the named `stage-15-reviewed-custom-error-migration` policy. Its
+immutable pre-migration manifest is captured at the policy commit recorded in
+`stage-15-base-manifest.json`; the runner verifies that commit is an ancestor,
+the manifest digest is exact, all 143 behavior-test identifiers are unchanged,
+and all 37 compatibility-bound project revert strings are present before it
+compares the candidate.
+
+`stage-15-custom-errors-inventory.json` maps each old callsite to one stable,
+typed custom-error signature. It also binds every changed production source,
+every Forge parity/invariant assertion source, the package-consumer
+compile check, the exact published error set for `Wrapper`,
+`PartialCommonOwnership`, and each public module interface, and the ERC721
+receiver contract: empty reverts and wrong selectors become
+`ERC721InvalidReceiver(address)`, while arbitrary nonempty downstream revert
+bytes continue to bubble exactly.
+
+The Forge behavior runner continues to verify the immutable Stage 13 anchor,
+but permits the current review file to differ only when the latest append-only
+maintenance record binds the exact issue-75 Stage 15 review, inventory, base
+manifest, evidence, and 37-to-0 transition.
+The migration inventory also binds the Slither runner's two relocated
+Remittance suppression sites, so location drift cannot silently bypass the
+reviewed static-analysis triage.
+
+This is an intentional ABI-breaking error-surface change. The policy permits
+only the exact additions and reorderings in ABI/error manifests, removal of the
+37 revert-string entries, and the resulting creation/runtime bytecode delta.
+Functions, events, storage layout, interface IDs, enum ordinals, compiler and
+toolchain identity, gas inventory, and all active test identifiers remain hard
+equal to the Stage 15 base manifest. The checked-in evidence records the full
+metadata-stripped opcode diff, raw and stripped bytecode sizes and hashes, gas
+evidence, and EIP-170 results for both production contracts.
+
+Reproduce the Stage 15 review, evidence, gate, and adversarial probes with:
+
+```console
+node scripts/compatibility.cjs write-stage-15-review
+node scripts/compatibility.cjs write-evidence
+node scripts/compatibility.cjs check
+node scripts/compatibility.cjs stage-15-negative-probes
+```
 
 Do not overwrite these files to make a dependency or compiler upgrade pass.
 For an intentional compiler change, generate a separate candidate manifest and

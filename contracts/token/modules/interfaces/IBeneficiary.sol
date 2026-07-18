@@ -3,6 +3,9 @@
 pragma solidity ^0.8.20;
 
 interface IBeneficiary {
+  error BeneficiaryOnly();
+  error InvalidBeneficiary(address beneficiary);
+
   /// @notice Sets the beneficiary for a given token.
   /// @dev Should only be called by beneficiary.
   /// @param tokenId_ Token to set beneficiary of.

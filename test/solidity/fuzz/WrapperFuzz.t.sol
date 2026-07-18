@@ -9,7 +9,10 @@ import {IERC721Metadata} from "@openzeppelin/contracts/token/ERC721/extensions/I
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {TestNFT} from "../../../contracts/test/TestNFT.sol";
 import {TestWrapper} from "../../../contracts/test/TestWrapper.sol";
-import {Remittance} from "../../../contracts/token/modules/Remittance.sol";
+import {Wrapper} from "../../../contracts/Wrapper.sol";
+import {ILease} from "../../../contracts/token/modules/interfaces/ILease.sol";
+import {IRemittance} from "../../../contracts/token/modules/interfaces/IRemittance.sol";
+import {IERC721Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 
 contract WrapperFuzzValidReceiver is IERC721Receiver {
     address public tokenCaller;
@@ -336,16 +339,18 @@ contract WrapperFuzzTest is Test, IERC721Receiver {
 
         _assertSafeTransferToEOA();
         _assertSafeTransferToValidReceiver();
+        address wrongReceiver = address(new WrapperFuzzWrongReceiver());
         _assertRejectedSafeTransfer(
-            address(new WrapperFuzzWrongReceiver()), _error("ERC721: transfer to non ERC721Receiver implementer")
+            wrongReceiver, abi.encodeWithSelector(IERC721Errors.ERC721InvalidReceiver.selector, wrongReceiver)
         );
         _assertRejectedSafeTransfer(
             address(new WrapperFuzzRevertingReceiver(false)),
             abi.encodeWithSelector(WrapperFuzzRevertingReceiver.ReceiverRejected.selector)
         );
+        address emptyRevertReceiver = address(new WrapperFuzzRevertingReceiver(true));
         _assertRejectedSafeTransfer(
-            address(new WrapperFuzzRevertingReceiver(true)),
-            _error("ERC721: transfer to non ERC721Receiver implementer")
+            emptyRevertReceiver,
+            abi.encodeWithSelector(IERC721Errors.ERC721InvalidReceiver.selector, emptyRevertReceiver)
         );
         _assertConstructionTimeCodeLengthBehavior();
     }
@@ -364,7 +369,7 @@ contract WrapperFuzzTest is Test, IERC721Receiver {
 
         assertEq(success, validReceiver_);
         if (!validReceiver_) {
-            assertEq(returnData, _error("ERC721: transfer to non ERC721Receiver implementer"));
+            assertEq(returnData, abi.encodeWithSelector(IERC721Errors.ERC721InvalidReceiver.selector, receiver));
         }
         assertEq(wrapper.ownerOf(wrappedId), validReceiver_ ? receiver : ALICE);
         assertEq(underlying.ownerOf(tokenId), address(wrapper));
@@ -560,7 +565,10 @@ contract WrapperFuzzTest is Test, IERC721Receiver {
         DelinquentTransferSnapshot memory before_ = _delinquentTransferSnapshot(firstWrappedId);
 
         vm.expectRevert(
-            abi.encodeWithSignature("Error(string)", "ERC721: transfer from incorrect owner"), address(wrapper)
+            abi.encodeWithSelector(
+                IERC721Errors.ERC721IncorrectOwner.selector, ALICE, firstWrappedId, address(wrapper)
+            ),
+            address(wrapper)
         );
         vm.prank(caller);
         if (transferMode_ == 0) {
@@ -643,7 +651,7 @@ contract WrapperFuzzTest is Test, IERC721Receiver {
         Vm.Log[] memory revertedLogs = vm.getRecordedLogs();
 
         assertFalse(success);
-        assertEq(returnData, _error("Msg contains value"));
+        assertEq(returnData, abi.encodeWithSelector(ILease.IncorrectPayment.selector, wrappedId, 0, currentValuation));
         _assertPendingForeclosurePrefix(revertedLogs, wrappedId);
         assertEq(revertedLogs.length, 6);
         _assertTakeoverStateUnchanged(wrappedId, before_);
@@ -684,7 +692,7 @@ contract WrapperFuzzTest is Test, IERC721Receiver {
         Vm.Log[] memory revertedLogs = vm.getRecordedLogs();
 
         assertFalse(success);
-        assertEq(returnData, _error("Message does not contain surplus value for deposit"));
+        assertEq(returnData, abi.encodeWithSelector(ILease.DepositPaymentRequired.selector, wrappedId, 0, 0));
         _assertPendingForeclosurePrefix(revertedLogs, wrappedId);
         assertEq(revertedLogs.length, 6);
         _assertTakeoverStateUnchanged(wrappedId, before_);
@@ -735,7 +743,7 @@ contract WrapperFuzzTest is Test, IERC721Receiver {
         Vm.Log[] memory logs = vm.getRecordedLogs();
 
         assertFalse(success);
-        assertEq(returnData, _error("Msg contains surplus value"));
+        assertEq(returnData, abi.encodeWithSelector(ILease.IncorrectPayment.selector, wrappedId, 2 ether, 2 ether + 1));
         assertEq(logs.length, 2);
         _assertLog(logs[0], COLLECTION_SIGNATURE);
         assertEq(logs[0].topics[1], bytes32(wrappedId));
@@ -853,10 +861,6 @@ contract WrapperFuzzTest is Test, IERC721Receiver {
             + wrapper.outstandingRemittances(CAROL);
     }
 
-    function _error(string memory reason_) private pure returns (bytes memory) {
-        return abi.encodeWithSignature("Error(string)", reason_);
-    }
-
     function _addressTopic(address value_) private pure returns (bytes32) {
         return bytes32(uint256(uint160(value_)));
     }
@@ -875,9 +879,11 @@ contract WrapperFuzzTest is Test, IERC721Receiver {
         assertEq(wrapper.valuationOf(wrappedId), 0);
         assertEq(wrapper.depositOf(wrappedId), 0);
 
-        _assertUnwrapGuardRevertsAndRollsBack(wrappedId, 1, CAROL, _error("Wrap originator only"));
         _assertUnwrapGuardRevertsAndRollsBack(
-            wrappedId, 1, ALICE, abi.encodeWithSelector(Remittance.DestinationContractAddress.selector)
+            wrappedId, 1, CAROL, abi.encodeWithSelector(Wrapper.WrapOriginatorOnly.selector, CAROL, ALICE)
+        );
+        _assertUnwrapGuardRevertsAndRollsBack(
+            wrappedId, 1, ALICE, abi.encodeWithSelector(IRemittance.DestinationContractAddress.selector)
         );
 
         uint256 carolEtherBeforeRecovery = CAROL.balance;
@@ -907,7 +913,7 @@ contract WrapperFuzzTest is Test, IERC721Receiver {
         assertEq(wrapper.valuationOf(directlyTransferredId), 1 ether);
         assertEq(wrapper.depositOf(directlyTransferredId), 0);
         _assertUnwrapGuardRevertsAndRollsBack(
-            directlyTransferredId, 2, ALICE, abi.encodeWithSelector(Remittance.DestinationContractAddress.selector)
+            directlyTransferredId, 2, ALICE, abi.encodeWithSelector(IRemittance.DestinationContractAddress.selector)
         );
     }
 

@@ -3,8 +3,8 @@
   "candidate": "stage-07-foundry-safety",
   "artifacts": {
     "coverage/lcov.info": {
-      "sha256": "699bec5254479d496dd7fdf6366be2c5f1afe386585bfa4f2f4be0304735f575",
-      "sizeBytes": 21124
+      "sha256": "1dc0ab3b36b9c6c305784b1f85c7fad9b18e5e4228d3f31509ef2c446bdf66b1",
+      "sizeBytes": 15269
     },
     "gas/key-flows.snap": {
       "sha256": "c57e387d3a71141ce69078dc051608e8eb1f5bccbddf5745f6d478d709b575f7",

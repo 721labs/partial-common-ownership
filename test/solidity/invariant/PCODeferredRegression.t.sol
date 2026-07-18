@@ -4,6 +4,7 @@ pragma solidity 0.8.36;
 import {Test} from "forge-std/Test.sol";
 import {Vm} from "forge-std/Vm.sol";
 import {TestPCOToken} from "../../../contracts/test/TestPCOToken.sol";
+import {IERC721Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 
 contract PCODeferredRejectingBeneficiary {
     error EtherRejected();
@@ -149,7 +150,9 @@ contract PCODeferredRegressionTest is Test {
         Vm.Log[] memory logs = vm.getRecordedLogs();
 
         assertFalse(success);
-        assertEq(returnData, abi.encodeWithSignature("Error(string)", "ERC721: caller is not owner nor approved"));
+        assertEq(
+            returnData, abi.encodeWithSelector(IERC721Errors.ERC721InsufficientApproval.selector, caller_, TOKEN_ID)
+        );
         assertEq(logs.length, 6);
         _assertForeclosureEventPrefix(logs, token_, beneficiary_, alice_);
         _assertStateUnchanged(token_, beneficiary_, alice_, caller_, before_);

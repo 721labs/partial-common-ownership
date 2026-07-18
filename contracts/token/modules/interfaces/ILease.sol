@@ -3,6 +3,30 @@
 pragma solidity ^0.8.20;
 
 interface ILease {
+  error TokenLocked(uint256 tokenId);
+  error CurrentValuationMismatch(
+    uint256 tokenId,
+    uint256 suppliedValuation,
+    uint256 actualValuation
+  );
+  error NewValuationBelowCurrent(
+    uint256 tokenId,
+    uint256 newValuation,
+    uint256 currentValuation
+  );
+  error BuyerAlreadyOwner(uint256 tokenId, address buyer);
+  error IncorrectPayment(
+    uint256 tokenId,
+    uint256 expectedPayment,
+    uint256 actualPayment
+  );
+  error DepositPaymentRequired(
+    uint256 tokenId,
+    uint256 purchasePrice,
+    uint256 actualPayment
+  );
+  error ValuationUnchanged(uint256 tokenId, uint256 valuation);
+
   /// @notice Takeover the lease of a token. Current owner is remitted the current valuation and all excess value included
   /// in the message gets added to the deposit.
   /// @param tokenId_ ID of token the buyer wants to purchase.

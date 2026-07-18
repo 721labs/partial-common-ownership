@@ -10,6 +10,15 @@ import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 /// @dev Re-implementation of OpenZeppelin's ERC721, removing IERC721Metadata
 /// compatability.
 abstract contract ERC721 is Context, ERC165, IERC721 {
+  error ERC721InvalidOwner(address owner);
+  error ERC721NonexistentToken(uint256 tokenId);
+  error ERC721IncorrectOwner(address sender, uint256 tokenId, address owner);
+  error ERC721InvalidSender(address sender);
+  error ERC721InvalidReceiver(address receiver);
+  error ERC721InsufficientApproval(address operator, uint256 tokenId);
+  error ERC721InvalidApprover(address approver);
+  error ERC721InvalidOperator(address operator);
+
   //////////////////////////////
   /// State
   //////////////////////////////
@@ -33,17 +42,16 @@ abstract contract ERC721 is Context, ERC165, IERC721 {
   /// @notice Checks whether message sender owns a given token id
   /// @param tokenId_ ID of token to check ownership again.
   modifier _onlyApprovedOrOwner(uint256 tokenId_) {
-    require(
-      _isApprovedOrOwner(_msgSender(), tokenId_),
-      "ERC721: caller is not owner nor approved"
-    );
+    if (!_isApprovedOrOwner(_msgSender(), tokenId_)) {
+      revert ERC721InsufficientApproval(_msgSender(), tokenId_);
+    }
     _;
   }
 
   /// @notice Requires that token have been minted.
   /// @param tokenId_ ID of token to verify.
   modifier _tokenMinted(uint256 tokenId_) {
-    require(_exists(tokenId_), "ERC721: query for nonexistent token");
+    if (!_exists(tokenId_)) revert ERC721NonexistentToken(tokenId_);
     _;
   }
 
@@ -56,14 +64,11 @@ abstract contract ERC721 is Context, ERC165, IERC721 {
    */
   function approve(address to, uint256 tokenId) public virtual override {
     address owner = ERC721.ownerOf(tokenId);
-    require(to != owner, "ERC721: approval to current owner");
+    if (to == owner) revert ERC721InvalidOperator(to);
 
-    /* solhint-disable reason-string */
-    require(
-      _msgSender() == owner || isApprovedForAll(owner, _msgSender()),
-      "ERC721: approve caller is not owner nor approved for all"
-    );
-    /* solhint-enable reason-string */
+    if (_msgSender() != owner && !isApprovedForAll(owner, _msgSender())) {
+      revert ERC721InvalidApprover(_msgSender());
+    }
 
     _approve(to, tokenId);
   }
@@ -142,7 +147,7 @@ abstract contract ERC721 is Context, ERC165, IERC721 {
     override
     returns (uint256)
   {
-    require(owner != address(0), "ERC721: address zero is not a valid owner");
+    if (owner == address(0)) revert ERC721InvalidOwner(owner);
     return _balances[owner];
   }
 
@@ -157,7 +162,7 @@ abstract contract ERC721 is Context, ERC165, IERC721 {
     returns (address)
   {
     address owner = _owners[tokenId];
-    require(owner != address(0), "ERC721: owner query for nonexistent token");
+    if (owner == address(0)) revert ERC721NonexistentToken(tokenId);
     return owner;
   }
 
@@ -217,10 +222,9 @@ abstract contract ERC721 is Context, ERC165, IERC721 {
     bytes memory _data
   ) internal virtual {
     _transfer(from, to, tokenId);
-    require(
-      _checkOnERC721Received(from, to, tokenId, _data),
-      "ERC721: transfer to non ERC721Receiver implementer"
-    );
+    if (!_checkOnERC721Received(from, to, tokenId, _data)) {
+      revert ERC721InvalidReceiver(to);
+    }
   }
 
   /**
@@ -247,10 +251,9 @@ abstract contract ERC721 is Context, ERC165, IERC721 {
     bytes memory _data
   ) internal virtual {
     _mint(to, tokenId);
-    require(
-      _checkOnERC721Received(address(0), to, tokenId, _data),
-      "ERC721: transfer to non ERC721Receiver implementer"
-    );
+    if (!_checkOnERC721Received(address(0), to, tokenId, _data)) {
+      revert ERC721InvalidReceiver(to);
+    }
   }
 
   /**
@@ -266,8 +269,8 @@ abstract contract ERC721 is Context, ERC165, IERC721 {
    * Emits a {Transfer} event.
    */
   function _mint(address to, uint256 tokenId) internal virtual {
-    require(to != address(0), "ERC721: mint to the zero address");
-    require(!_exists(tokenId), "ERC721: token already minted");
+    if (to == address(0)) revert ERC721InvalidReceiver(to);
+    if (_exists(tokenId)) revert ERC721InvalidSender(address(0));
 
     _beforeTokenTransfer(address(0), to, tokenId);
 
@@ -321,20 +324,20 @@ abstract contract ERC721 is Context, ERC165, IERC721 {
     address to,
     uint256 tokenId
   ) internal virtual {
-    require(
-      ERC721.ownerOf(tokenId) == from,
-      "ERC721: transfer from incorrect owner"
-    );
-    require(to != address(0), "ERC721: transfer to the zero address");
+    address previousOwner = ERC721.ownerOf(tokenId);
+    if (previousOwner != from) {
+      revert ERC721IncorrectOwner(from, tokenId, previousOwner);
+    }
+    if (to == address(0)) revert ERC721InvalidReceiver(to);
 
     _beforeTokenTransfer(from, to, tokenId);
 
     // The hook may have transferred the token. Revalidate ownership before
     // applying this transfer's balance and ownership changes.
-    require(
-      ERC721.ownerOf(tokenId) == from,
-      "ERC721: transfer from incorrect owner"
-    );
+    address ownerAfterHook = ERC721.ownerOf(tokenId);
+    if (ownerAfterHook != from) {
+      revert ERC721IncorrectOwner(from, tokenId, ownerAfterHook);
+    }
 
     // Clear approvals from the previous owner
     _approve(address(0), tokenId);
@@ -368,7 +371,7 @@ abstract contract ERC721 is Context, ERC165, IERC721 {
     address operator,
     bool approved
   ) internal virtual {
-    require(owner != operator, "ERC721: approve to caller");
+    if (owner == operator) revert ERC721InvalidOperator(operator);
     _operatorApprovals[owner][operator] = approved;
     emit ApprovalForAll(owner, operator, approved);
   }
@@ -480,7 +483,7 @@ abstract contract ERC721 is Context, ERC165, IERC721 {
         return retval == IERC721Receiver.onERC721Received.selector;
       } catch (bytes memory reason) {
         if (reason.length == 0) {
-          revert("ERC721: transfer to non ERC721Receiver implementer");
+          revert ERC721InvalidReceiver(to);
         } else {
           /* solhint-disable no-inline-assembly */
           assembly {

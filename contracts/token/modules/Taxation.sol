@@ -314,12 +314,15 @@ abstract contract Taxation is
     if (wei_ == 0) return;
 
     // Note: Can withdraw whole deposit, which immediately triggers foreclosure.
-    require(wei_ <= depositOf(tokenId_), "Cannot withdraw more than deposited");
+    uint256 available = depositOf(tokenId_);
+    if (wei_ > available) {
+      revert WithdrawalExceedsDeposit(tokenId_, wei_, available);
+    }
 
     address currentOwner = ownerOf(tokenId_);
-    require(currentOwner != address(this), "Cannot withdraw deposit to self");
+    if (currentOwner == address(this)) revert WithdrawalToContract(tokenId_);
 
-    _setDeposit(tokenId_, depositOf(tokenId_) - wei_);
+    _setDeposit(tokenId_, available - wei_);
 
     _remit(currentOwner, wei_, RemittanceTriggers.WithdrawnDeposit);
 
