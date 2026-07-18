@@ -32,19 +32,14 @@
   "repository": "git@github.com:721labs/partial-common-ownership.git",
   "type": "module",
   "scripts": {
-    "console": "hardhat console",
-    "compile": "hardhat build",
-    "compiler-warnings:hardhat": "hardhat build --force && node scripts/check-compiler-warnings.cjs hardhat",
+    "compile": "forge build",
     "compiler-warnings:forge": "node scripts/check-compiler-warnings.cjs forge",
-    "compiler-warnings:check": "pnpm run compiler-warnings:hardhat && pnpm run compiler-warnings:forge",
-    "test:hardhat": "pnpm run test:hardhat:smoke",
-    "test:hardhat:smoke": "hardhat build && node --import tsx --test tests/Interoperability.smoke.ts",
+    "compiler-warnings:check": "pnpm run compiler-warnings:forge",
     "test:forge": "node scripts/check-parity.cjs",
     "test:safety": "node scripts/check-parity.cjs --profile=ci",
     "test:safety:scheduled": "node scripts/check-parity.cjs --profile=scheduled",
     "test:package": "node scripts/test-package.cjs",
-    "test": "pnpm run test:forge && pnpm run test:hardhat:smoke",
-    "typecheck": "tsc --noEmit",
+    "test": "pnpm run test:forge",
     "compatibility": "node scripts/compatibility.cjs check",
     "compatibility:diff": "node scripts/compatibility.cjs diff",
     "parity:check": "node scripts/check-parity.cjs",
@@ -59,14 +54,6 @@
     "safety-baselines:check": "node scripts/check-safety-baselines.cjs",
     "size:check": "node scripts/check-contract-sizes.cjs",
     "slither": "node scripts/run-slither.cjs"
-  },
-  "devDependencies": {
-    "@nomicfoundation/hardhat-ethers": "4.0.15",
-    "@types/node": "24.13.3",
-    "ethers": "6.17.0",
-    "hardhat": "3.10.0",
-    "tsx": "4.23.1",
-    "typescript": "7.0.2"
   },
   "dependencies": {
     "@openzeppelin/contracts": "5.6.1"

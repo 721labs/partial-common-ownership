@@ -162,24 +162,30 @@ needed by the custom implementation, so all 13 production sources can advertise
 `^0.8.20` while repository builds remain pinned to solc 0.8.36 and London.
 Test fixtures likewise avoid inheriting the concrete OpenZeppelin ERC721.
 
-The packed-consumer gate proves direct Wrapper import and a concrete PCO
-subclass in clean Hardhat and Forge consumers using London. A downstream
-project that separately imports OpenZeppelin 5.6.1's concrete ERC721 must use a
-compatible Cancun compiler profile for that source or avoid that import; this
-package does not silently change the downstream EVM target.
+The active packed-consumer gate proves direct Wrapper import and a concrete PCO
+subclass in a clean Forge consumer using London. The earlier clean Hardhat
+consumer result remains immutable Stage 10 through Stage 13 provenance, not an
+active package path. A downstream project that separately imports OpenZeppelin
+5.6.1's concrete ERC721 must use a compatible Cancun compiler profile for that
+source or avoid that import; this package does not silently change the
+downstream EVM target.
 
 ## Required verification
 
-Stage 10 remains blocked unless all of the following hold:
+At Stage 10, the upgrade was blocked unless all of the following held:
 
 - Production ABI, selectors, events, errors, storage, enums, ERC165 answers,
   project revert strings, and deterministic behavior are hard-equal to the
   Security 04 checkpoint.
 - Compiler-generated opcode, bytecode-size, and gas differences are captured
   and reviewed, with both production contracts below EIP-170.
-- The complete Hardhat oracle, mapped Forge suite, receiver matrix, fuzzing,
-  invariants, coverage, package consumers, and warning inventories pass.
+- The then-active complete Hardhat oracle, mapped Forge suite, receiver matrix,
+  fuzzing, invariants, coverage, package consumers, and warning inventories
+  passed.
 - Slither 0.11.5 reports no untriaged high- or medium-impact finding.
 
-A mismatch stops the upgrade; it is not grounds to regenerate or weaken a
+Stage 14 retains that evidence immutably while the active gate consists of 143
+Forge tests, the exact three-smoke-to-Forge mapping, the Forge-only warning and
+package-consumer checks, coverage, gas, size, Slither, and dependency audit. A
+mismatch stops the release; it is not grounds to regenerate or weaken a
 baseline.

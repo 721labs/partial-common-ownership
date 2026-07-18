@@ -9,7 +9,6 @@ const { createRequire } = require("module");
 const PROJECT_ROOT = path.resolve(__dirname, "..");
 const PACKAGE_NAME = "@721labs/partial-common-ownership";
 const PNPM_VERSION = "11.13.1";
-const HARDHAT_VERSION = "3.9.1";
 const FOUNDRY_VERSION = "1.7.1";
 const SOLC_VERSION = "0.8.36";
 const OPENZEPPELIN_VERSION = "5.6.1";
@@ -292,22 +291,10 @@ contract ConsumerPCO is PartialCommonOwnership {
 }`;
 }
 
-function prepareCleanConsumer(
-  directory,
-  tarball,
-  manifest,
-  workspaceConfiguration = ""
-) {
+function prepareCleanConsumer(directory, tarball, manifest) {
   fs.mkdirSync(directory, { recursive: true });
   fs.copyFileSync(tarball, path.join(directory, "package.tgz"));
   writeJson(path.join(directory, "package.json"), manifest);
-  if (workspaceConfiguration) {
-    writeFile(
-      path.join(directory, "pnpm-workspace.yaml"),
-      workspaceConfiguration
-    );
-  }
-
   run(pnpm, ["install", "--lockfile-only", "--ignore-scripts"], {
     cwd: directory,
   });
@@ -331,67 +318,6 @@ function assertArtifacts(directory, relativePaths, tool) {
       )}`
     );
   }
-}
-
-function buildHardhatConsumer(directory, tarball) {
-  prepareCleanConsumer(
-    directory,
-    tarball,
-    {
-      name: "pco-hardhat-package-consumer",
-      version: "0.0.0",
-      private: true,
-      type: "module",
-      packageManager: `pnpm@${PNPM_VERSION}`,
-      dependencies: {
-        [PACKAGE_NAME]: "file:./package.tgz",
-      },
-      devDependencies: {
-        hardhat: HARDHAT_VERSION,
-      },
-    },
-    // Hardhat 3 executes TypeScript/ESM configuration through its exact tsx
-    // graph. Permit only that compiler build; dependency resolution remains
-    // strict and OpenZeppelin is intentionally not hoisted into the consumer.
-    `allowBuilds:
-  esbuild@0.28.1: true`
-  );
-
-  writeFile(
-    path.join(directory, "contracts", "Consumer.sol"),
-    consumerSource()
-  );
-  writeFile(
-    path.join(directory, "hardhat.config.js"),
-    `import { defineConfig } from "hardhat/config";
-
-export default defineConfig({
-  solidity: {
-    version: "${SOLC_VERSION}",
-    settings: {
-      evmVersion: "london",
-      optimizer: { enabled: false, runs: 200 },
-      viaIR: false,
-      metadata: { bytecodeHash: "ipfs", useLiteralContent: false }
-    }
-  },
-  paths: {
-    sources: "./contracts",
-    cache: "./cache",
-    artifacts: "./artifacts"
-  }
-});`
-  );
-
-  run(pnpm, ["exec", "hardhat", "build"], { cwd: directory });
-  assertArtifacts(
-    directory,
-    [
-      "artifacts/contracts/Consumer.sol/ConsumerWrapper.json",
-      "artifacts/contracts/Consumer.sol/ConsumerPCO.json",
-    ],
-    "Hardhat"
-  );
 }
 
 function resolveInstalledPackage(fromDirectory, packageName) {
@@ -505,11 +431,10 @@ function main() {
       path.join(temporaryRoot, "unpacked")
     );
 
-    buildHardhatConsumer(path.join(temporaryRoot, "hardhat-consumer"), tarball);
     buildForgeConsumer(path.join(temporaryRoot, "forge-consumer"), tarball);
 
     console.log(
-      `Package gate passed: ${packageResult.fileCount} allowlisted files, ${packageResult.productionSourceCount} production sources at ${packageResult.productionPragma}, OpenZeppelin ${packageResult.openZeppelinVersion}, Hardhat ${HARDHAT_VERSION}, and Forge ${FOUNDRY_VERSION}.`
+      `Package gate passed: ${packageResult.fileCount} allowlisted files, ${packageResult.productionSourceCount} production sources at ${packageResult.productionPragma}, OpenZeppelin ${packageResult.openZeppelinVersion}, and Forge ${FOUNDRY_VERSION}.`
     );
   } catch (error) {
     if (process.env.KEEP_PACKAGE_TEST_TEMP === "1") {

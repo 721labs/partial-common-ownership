@@ -18,6 +18,15 @@ contract WrapperParityTest is Test {
     uint256 private constant COLLECTION_FREQUENCY_SECONDS = 365 days;
     uint256 private constant NON_BENEFICIARY_DEPOSIT = 3 ether;
     uint256 private constant TEST_TIMESTAMP = 1_650_000_000;
+    uint256 private constant INTEROP_TAX_RATE = 1;
+    uint256 private constant INTEROP_COLLECTION_FREQUENCY_DAYS = 3650;
+    uint256 private constant INTEROP_COLLECTION_FREQUENCY_SECONDS = 3650 days;
+    uint256 private constant INTEROP_APPROVAL_TIME = 2_000_019_999;
+    uint256 private constant INTEROP_WRAP_TIME = 2_000_020_000;
+    uint256 private constant INTEROP_TAKEOVER_TIME = INTEROP_WRAP_TIME + 100;
+    uint256 private constant INTEROP_UNWRAP_TIME = INTEROP_TAKEOVER_TIME + 1;
+    uint256 private constant INTEROP_BUYER_VALUATION = 2 ether;
+    uint256 private constant TAX_DENOMINATOR = 1_000_000_000_000;
     // Frozen by compatibility/baseline.json's Wrapper storage layout.
     uint256 private constant WRAPPED_TOKEN_MAP_SLOT = 14;
 
@@ -27,6 +36,7 @@ contract WrapperParityTest is Test {
     bytes32 private constant LOG_BENEFICIARY_UPDATED_SIGNATURE = keccak256("LogBeneficiaryUpdated(uint256,address)");
     bytes32 private constant LOG_COLLECTION_SIGNATURE = keccak256("LogCollection(uint256,uint256)");
     bytes32 private constant LOG_FORECLOSURE_SIGNATURE = keccak256("LogForeclosure(uint256,address)");
+    bytes32 private constant LOG_LEASE_TAKEOVER_SIGNATURE = keccak256("LogLeaseTakeover(uint256,address,uint256)");
     bytes32 private constant LOG_REMITTANCE_SIGNATURE = keccak256("LogRemittance(uint8,address,uint256)");
     bytes32 private constant LOG_TOKEN_WRAPPED_SIGNATURE = keccak256("LogTokenWrapped(address,uint256,uint256)");
     bytes32 private constant LOG_VALUATION_SIGNATURE = keccak256("LogValuation(uint256,uint256)");
@@ -204,6 +214,98 @@ contract WrapperParityTest is Test {
         assertEq(DEPLOYER.balance, beneficiaryBalanceBeforeUnwrap + 2 ether);
         assertEq(ALICE.balance, aliceBalanceBeforeUnwrap);
         assertEq(address(wrapper).balance, contractBalanceBefore - 2 ether);
+    }
+
+    function test_interoperabilitySmoke_approvesWrapsTakesOverAndUnwrapsWithCustodyAndMetadataCleanup() public {
+        uint256 wrappedId = wrapper.wrappedTokenId(address(testNFT), TOKEN_ONE);
+        assertEq(wrappedId, uint256(keccak256(abi.encode(address(testNFT), TOKEN_ONE))));
+
+        vm.warp(INTEROP_APPROVAL_TIME);
+        vm.recordLogs();
+        vm.prank(DEPLOYER);
+        testNFT.approve(address(wrapper), TOKEN_ONE);
+        Vm.Log[] memory approvalLogs = vm.getRecordedLogs();
+        assertEq(approvalLogs.length, 1);
+        assertEq(approvalLogs[0].emitter, address(testNFT));
+        _assertApproval(approvalLogs[0], DEPLOYER, address(wrapper), TOKEN_ONE);
+
+        uint256 deployerBeforeWrap = DEPLOYER.balance;
+        vm.warp(INTEROP_WRAP_TIME);
+        vm.recordLogs();
+        vm.prank(DEPLOYER);
+        wrapper.wrap{value: NON_BENEFICIARY_DEPOSIT}(
+            address(testNFT),
+            TOKEN_ONE,
+            WRAP_VALUATION,
+            payable(BOB),
+            INTEROP_TAX_RATE,
+            INTEROP_COLLECTION_FREQUENCY_DAYS
+        );
+        Vm.Log[] memory wrapLogs = vm.getRecordedLogs();
+
+        _assertWrapperEventOrderForWrap(wrapLogs, TOKEN_ONE, wrappedId, BOB);
+        assertEq(DEPLOYER.balance, deployerBeforeWrap - NON_BENEFICIARY_DEPOSIT);
+        assertEq(testNFT.ownerOf(TOKEN_ONE), address(wrapper));
+        assertEq(testNFT.getApproved(TOKEN_ONE), address(0));
+        assertEq(wrapper.ownerOf(wrappedId), DEPLOYER);
+        assertEq(wrapper.tokenURI(wrappedId), "721.dev/1");
+        assertEq(wrapper.valuationOf(wrappedId), WRAP_VALUATION);
+        assertEq(wrapper.depositOf(wrappedId), NON_BENEFICIARY_DEPOSIT);
+        assertEq(wrapper.beneficiaryOf(wrappedId), BOB);
+        assertEq(wrapper.taxRateOf(wrappedId), INTEROP_TAX_RATE);
+        assertEq(wrapper.collectionFrequencyOf(wrappedId), INTEROP_COLLECTION_FREQUENCY_SECONDS);
+        assertEq(wrapper.lastCollectionTimeOf(wrappedId), 0);
+        assertEq(address(wrapper).balance, NON_BENEFICIARY_DEPOSIT);
+
+        uint256 takeoverTax =
+            (((WRAP_VALUATION * INTEROP_TAKEOVER_TIME) / INTEROP_COLLECTION_FREQUENCY_SECONDS) * INTEROP_TAX_RATE)
+                / TAX_DENOMINATOR;
+        uint256 takeoverRemittance = WRAP_VALUATION + NON_BENEFICIARY_DEPOSIT - takeoverTax;
+        uint256 deployerBeforeTakeover = DEPLOYER.balance;
+        uint256 bobBeforeTakeover = BOB.balance;
+
+        vm.warp(INTEROP_TAKEOVER_TIME);
+        vm.recordLogs();
+        vm.prank(BOB);
+        wrapper.takeoverLease{value: WRAP_VALUATION}(wrappedId, INTEROP_BUYER_VALUATION, WRAP_VALUATION);
+        Vm.Log[] memory takeoverLogs = vm.getRecordedLogs();
+
+        assertEq(takeoverLogs.length, 7);
+        for (uint256 i = 0; i < takeoverLogs.length; i++) {
+            assertEq(takeoverLogs[i].emitter, address(wrapper));
+        }
+        _assertCollection(takeoverLogs[0], wrappedId, takeoverTax);
+        _assertRemittance(takeoverLogs[1], 3, BOB, takeoverTax);
+        _assertRemittance(takeoverLogs[2], 0, DEPLOYER, takeoverRemittance);
+        _assertValuation(takeoverLogs[3], wrappedId, INTEROP_BUYER_VALUATION);
+        _assertApproval(takeoverLogs[4], DEPLOYER, address(0), wrappedId);
+        _assertTransfer(takeoverLogs[5], DEPLOYER, BOB, wrappedId);
+        _assertLeaseTakeover(takeoverLogs[6], wrappedId, BOB, INTEROP_BUYER_VALUATION);
+
+        assertEq(DEPLOYER.balance, deployerBeforeTakeover + takeoverRemittance);
+        assertEq(BOB.balance, bobBeforeTakeover - WRAP_VALUATION + takeoverTax);
+        assertEq(address(wrapper).balance, 0);
+        assertEq(wrapper.ownerOf(wrappedId), BOB);
+        assertEq(wrapper.valuationOf(wrappedId), INTEROP_BUYER_VALUATION);
+        assertEq(wrapper.depositOf(wrappedId), 0);
+        assertEq(wrapper.taxationCollected(wrappedId), takeoverTax);
+        assertEq(wrapper.taxCollectedSinceLastTransferOf(wrappedId), 0);
+        assertEq(wrapper.lastCollectionTimeOf(wrappedId), INTEROP_TAKEOVER_TIME);
+        assertEq(testNFT.ownerOf(TOKEN_ONE), address(wrapper));
+        assertEq(wrapper.tokenURI(wrappedId), "721.dev/1");
+
+        uint256 bobWrappedBalanceBefore = wrapper.balanceOf(BOB);
+        vm.warp(INTEROP_UNWRAP_TIME);
+        vm.recordLogs();
+        vm.prank(DEPLOYER);
+        wrapper.unwrap(wrappedId);
+        Vm.Log[] memory unwrapLogs = vm.getRecordedLogs();
+
+        _assertWrapperEventOrderForUntaxedUnwrap(unwrapLogs, wrappedId, TOKEN_ONE, BOB, BOB);
+        _assertUnwrappedState(wrappedId, TOKEN_ONE, BOB, bobWrappedBalanceBefore);
+        assertEq(wrapper.taxationCollected(wrappedId), takeoverTax);
+        assertEq(wrapper.balanceOf(BOB), 0);
+        assertEq(address(wrapper).balance, 0);
     }
 
     function test_wrap_zeroBeneficiaryReverts() public {
@@ -729,6 +831,27 @@ contract WrapperParityTest is Test {
         _assertTransfer(logs[1], DEPLOYER, address(0), wrappedId_);
     }
 
+    function _assertWrapperEventOrderForUntaxedUnwrap(
+        Vm.Log[] memory entries_,
+        uint256 wrappedId_,
+        uint256 underlyingId_,
+        address wrappedOwner_,
+        address underlyingOwner_
+    ) internal {
+        assertEq(entries_.length, 3, "untaxed unwrap event count");
+        assertEq(entries_[0].emitter, address(wrapper));
+        assertEq(entries_[1].emitter, address(wrapper));
+        _assertTransferFromEmitter(entries_[2], address(testNFT), address(wrapper), underlyingOwner_, underlyingId_);
+
+        bytes32[] memory expected = new bytes32[](2);
+        expected[0] = APPROVAL_SIGNATURE;
+        expected[1] = TRANSFER_SIGNATURE;
+        Vm.Log[] memory logs = _wrapperLogs(entries_);
+        _assertSignatures(logs, expected);
+        _assertApproval(logs[0], wrappedOwner_, address(0), wrappedId_);
+        _assertTransfer(logs[1], wrappedOwner_, address(0), wrappedId_);
+    }
+
     function _assertWrapperEventOrderForTaxedUnwrap(
         Vm.Log[] memory entries_,
         uint256 wrappedId_,
@@ -852,6 +975,15 @@ contract WrapperParityTest is Test {
         assertEq(entry_.topics[0], LOG_FORECLOSURE_SIGNATURE);
         _assertIndexedUint(entry_, 1, tokenId_);
         _assertIndexedAddress(entry_, 2, previousOwner_);
+        assertEq(entry_.data.length, 0);
+    }
+
+    function _assertLeaseTakeover(Vm.Log memory entry_, uint256 tokenId_, address owner_, uint256 valuation_) internal {
+        assertEq(entry_.topics.length, 4);
+        assertEq(entry_.topics[0], LOG_LEASE_TAKEOVER_SIGNATURE);
+        _assertIndexedUint(entry_, 1, tokenId_);
+        _assertIndexedAddress(entry_, 2, owner_);
+        _assertIndexedUint(entry_, 3, valuation_);
         assertEq(entry_.data.length, 0);
     }
 

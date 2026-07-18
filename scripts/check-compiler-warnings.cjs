@@ -8,7 +8,6 @@ const fs = require("fs");
 const path = require("path");
 
 const ROOT = path.resolve(__dirname, "..");
-const BUILD_INFO_DIRECTORY = path.join(ROOT, "artifacts", "build-info");
 const ALLOWLIST_PATH = path.join(
   ROOT,
   "compatibility",
@@ -112,20 +111,13 @@ function diskSourcePath(kind, source) {
     );
   }
 
-  let relative = source;
-  if (kind === "Hardhat" && source.startsWith("@openzeppelin/")) {
-    relative = path.posix.join("node_modules", source);
-  }
-
-  const allowed =
-    kind === "Hardhat"
-      ? ["contracts/", "node_modules/@openzeppelin/"]
-      : [
-          "contracts/",
-          "test/solidity/",
-          "lib/forge-std/",
-          "node_modules/@openzeppelin/",
-        ];
+  const relative = source;
+  const allowed = [
+    "contracts/",
+    "test/solidity/",
+    "lib/forge-std/",
+    "node_modules/@openzeppelin/",
+  ];
   if (!allowed.some((prefix) => relative.startsWith(prefix))) {
     throw new Error(
       `${kind} returned an unsupported compiler source: ${source}`
@@ -284,191 +276,6 @@ function normalizeWarnings(
   const actual = normalized.sort(compareWarnings);
   assertEqual(actual, expected, `${description} compiler-warning inventory`);
   return actual.length;
-}
-
-function hardhatSourceBytes(buildInfo, source) {
-  const content = buildInfo.input?.sources?.[source]?.content;
-  if (typeof content !== "string") {
-    throw new Error(
-      `Hardhat build input is missing source bytes for ${source}.`
-    );
-  }
-  const bytes = Buffer.from(content, "utf8");
-  const file = diskSourcePath("Hardhat", source);
-  assertEqual(
-    bytes.toString("hex"),
-    fs.readFileSync(file).toString("hex"),
-    `Hardhat build input source bytes for ${source}`
-  );
-  return bytes;
-}
-
-function hardhatLogicalSource(source, userSourceNameMap) {
-  for (const [logical, canonical] of Object.entries(userSourceNameMap || {})) {
-    if (canonical === source) return logical;
-  }
-  const dependency = source.match(
-    /^npm\/@openzeppelin\/contracts@5\.6\.1\/(.+)$/
-  );
-  if (dependency) return `@openzeppelin/contracts/${dependency[1]}`;
-  if (source.startsWith("project/") || source.startsWith("npm/")) {
-    throw new Error(`Unreviewed Hardhat 3 canonical source: ${source}`);
-  }
-  return source;
-}
-
-function normalizeHardhat3BuildInfo(inputBuildInfo, outputBuildInfo) {
-  if (
-    inputBuildInfo._format !== "hh3-sol-build-info-1" ||
-    outputBuildInfo._format !== "hh3-sol-build-info-output-1" ||
-    inputBuildInfo.id !== outputBuildInfo.id
-  ) {
-    throw new Error("Hardhat 3 build-info input/output identity mismatch");
-  }
-  const rename = (value) =>
-    Object.fromEntries(
-      Object.entries(value || {}).map(([source, description]) => [
-        hardhatLogicalSource(source, inputBuildInfo.userSourceNameMap),
-        description,
-      ])
-    );
-  const output = {
-    ...outputBuildInfo.output,
-    contracts: rename(outputBuildInfo.output.contracts),
-    sources: rename(outputBuildInfo.output.sources),
-    errors: (outputBuildInfo.output.errors || []).map((diagnostic) => ({
-      ...diagnostic,
-      sourceLocation: diagnostic.sourceLocation
-        ? {
-            ...diagnostic.sourceLocation,
-            file: hardhatLogicalSource(
-              diagnostic.sourceLocation.file,
-              inputBuildInfo.userSourceNameMap
-            ),
-          }
-        : diagnostic.sourceLocation,
-    })),
-  };
-  const rawSettings = inputBuildInfo.input.settings;
-  const settings = {
-    evmVersion: rawSettings.evmVersion,
-    optimizer: rawSettings.optimizer,
-    viaIR: rawSettings.viaIR,
-    metadata: rawSettings.metadata,
-    outputSelection: {
-    "*": {
-      "*": [
-        "storageLayout",
-        "abi",
-        "evm.bytecode",
-        "evm.deployedBytecode",
-        "evm.methodIdentifiers",
-        "metadata",
-      ],
-      "": ["ast"],
-    },
-    },
-  };
-  if (
-    rawSettings.remappings !== undefined &&
-    JSON.stringify(rawSettings.remappings) !==
-    JSON.stringify([
-      "project/:@openzeppelin/contracts/=npm/@openzeppelin/contracts@5.6.1/",
-    ])
-  ) {
-    throw new Error("Hardhat 3 native package remapping changed");
-  }
-  return {
-    ...inputBuildInfo,
-    input: {
-      ...inputBuildInfo.input,
-      settings,
-      sources: rename(inputBuildInfo.input.sources),
-    },
-    output,
-  };
-}
-
-function loadHardhatBuildInfo(allowlist) {
-  if (!fs.existsSync(BUILD_INFO_DIRECTORY)) {
-    throw new Error(
-      "Hardhat build info is missing. Run a forced Hardhat compile before checking compiler warnings."
-    );
-  }
-
-  const candidates = fs
-    .readdirSync(BUILD_INFO_DIRECTORY)
-    .filter(
-      (file) => file.endsWith(".json") && !file.endsWith(".output.json")
-    )
-    .map((file) => {
-      const inputPath = path.join(BUILD_INFO_DIRECTORY, file);
-      const inputValue = JSON.parse(fs.readFileSync(inputPath, "utf8"));
-      const outputPath = inputPath.replace(/\.json$/, ".output.json");
-      const value =
-        inputValue._format === "hh3-sol-build-info-1"
-          ? normalizeHardhat3BuildInfo(
-              inputValue,
-              JSON.parse(fs.readFileSync(outputPath, "utf8"))
-            )
-          : inputValue;
-      return { file, value };
-    })
-    .filter(
-      ({ value }) =>
-        value.solcVersion === allowlist.compiler.version &&
-        value.solcLongVersion === allowlist.compiler.longVersion &&
-        Object.keys(value.input?.sources || {}).every((source) => {
-          try {
-            hardhatSourceBytes(value, source);
-            return true;
-          } catch (_) {
-            return false;
-          }
-        })
-    );
-
-  if (candidates.length !== 1) {
-    throw new Error(
-      `Expected exactly one complete Hardhat ${allowlist.compiler.longVersion} build-info file; found ${candidates.length}. Run a clean, forced Hardhat compile.`
-    );
-  }
-  return candidates[0].value;
-}
-
-function runHardhatGate(allowlist) {
-  const installedVersion = require(path.join(
-    ROOT,
-    "node_modules",
-    "hardhat",
-    "package.json"
-  )).version;
-  assertEqual(
-    installedVersion,
-    allowlist.tools.hardhat.version,
-    "Hardhat version"
-  );
-
-  const buildInfo = loadHardhatBuildInfo(allowlist);
-  assertEqual(
-    buildInfo.input.settings,
-    allowlist.hardhat.settings,
-    "Hardhat compiler settings"
-  );
-  for (const source of Object.keys(buildInfo.input.sources)) {
-    hardhatSourceBytes(buildInfo, source);
-  }
-
-  const warningCount = normalizeWarnings(
-    buildInfo.output.errors || [],
-    allowlist.hardhat,
-    allowlist.diagnostic,
-    (source) => hardhatSourceBytes(buildInfo, source),
-    "Hardhat"
-  );
-  console.log(
-    `Hardhat compiler-warning gate passed: Hardhat ${installedVersion}, Solidity ${allowlist.compiler.version}, ${warningCount} exact warnings.`
-  );
 }
 
 function runForge(args, description) {
@@ -696,37 +503,28 @@ function runForgeGate(allowlist) {
 function loadAllowlist() {
   const allowlist = JSON.parse(fs.readFileSync(ALLOWLIST_PATH, "utf8"));
   if (
-    allowlist.schemaVersion !== 2 ||
+    allowlist.schemaVersion !== 3 ||
     !allowlist.compiler ||
     !allowlist.diagnostic ||
-    !allowlist.tools?.hardhat ||
     !allowlist.tools?.forge ||
-    !allowlist.hardhat ||
     !allowlist.forge ||
     typeof allowlist.forge.compilerProfile !== "string"
   ) {
     throw new Error("Compiler-warning allowlist has an invalid schema.");
   }
-  validateExpectedWarnings(allowlist.hardhat, "Hardhat");
   validateExpectedWarnings(allowlist.forge, "Forge");
   return allowlist;
 }
 
 function main() {
   const target = process.argv[2];
-  if (target !== "hardhat" && target !== "forge") {
-    throw new Error(
-      "Usage: node scripts/check-compiler-warnings.cjs <hardhat|forge>"
-    );
+  if (target !== "forge") {
+    throw new Error("Usage: node scripts/check-compiler-warnings.cjs forge");
   }
 
   const allowlist = loadAllowlist();
   verifyPragmas();
-  if (target === "hardhat") {
-    runHardhatGate(allowlist);
-  } else {
-    runForgeGate(allowlist);
-  }
+  runForgeGate(allowlist);
 }
 
 try {

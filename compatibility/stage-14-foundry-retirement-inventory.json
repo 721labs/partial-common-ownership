@@ -1,0 +1,126 @@
+{
+  "activeTests": {
+    "forge": {
+      "count": 143,
+      "namesSha256": "ff02c3d8a133d928555279fd30d720afc6d01f8baf78551ff32a9e91367ab990"
+    },
+    "hardhat": {
+      "count": 0,
+      "names": [],
+      "namesSha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+    },
+    "total": 143
+  },
+  "candidate": "stage-14-foundry-retirement",
+  "compilerSources": {
+    "closureSha256": "38d2428df3ed7472afb28ad76273ea14ed05c89bbfcc165a9540378b9ca317df",
+    "count": 24,
+    "namesSha256": "c2b32297ccca42832b645845a77dc45bc2991141c7d7e2bc1244125c595dc805",
+    "nativeSourceNameMap": {
+      "@openzeppelin/contracts/token/ERC721/IERC721.sol": "node_modules/@openzeppelin/contracts/token/ERC721/IERC721.sol",
+      "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol": "node_modules/@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol",
+      "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol": "node_modules/@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol",
+      "@openzeppelin/contracts/utils/Context.sol": "node_modules/@openzeppelin/contracts/utils/Context.sol",
+      "@openzeppelin/contracts/utils/introspection/ERC165.sol": "node_modules/@openzeppelin/contracts/utils/introspection/ERC165.sol",
+      "@openzeppelin/contracts/utils/introspection/IERC165.sol": "node_modules/@openzeppelin/contracts/utils/introspection/IERC165.sol",
+      "contracts/Wrapper.sol": "contracts/Wrapper.sol",
+      "contracts/test/Blocker.sol": "contracts/test/Blocker.sol",
+      "contracts/test/PCOInitializationReceiver.sol": "contracts/test/PCOInitializationReceiver.sol",
+      "contracts/test/TestNFT.sol": "contracts/test/TestNFT.sol",
+      "contracts/test/TestPCOToken.sol": "contracts/test/TestPCOToken.sol",
+      "contracts/test/TestWrapper.sol": "contracts/test/TestWrapper.sol",
+      "contracts/token/PartialCommonOwnership.sol": "contracts/token/PartialCommonOwnership.sol",
+      "contracts/token/modules/Beneficiary.sol": "contracts/token/modules/Beneficiary.sol",
+      "contracts/token/modules/ERC721.sol": "contracts/token/modules/ERC721.sol",
+      "contracts/token/modules/Lease.sol": "contracts/token/modules/Lease.sol",
+      "contracts/token/modules/Remittance.sol": "contracts/token/modules/Remittance.sol",
+      "contracts/token/modules/Taxation.sol": "contracts/token/modules/Taxation.sol",
+      "contracts/token/modules/Valuation.sol": "contracts/token/modules/Valuation.sol",
+      "contracts/token/modules/interfaces/IBeneficiary.sol": "contracts/token/modules/interfaces/IBeneficiary.sol",
+      "contracts/token/modules/interfaces/ILease.sol": "contracts/token/modules/interfaces/ILease.sol",
+      "contracts/token/modules/interfaces/IRemittance.sol": "contracts/token/modules/interfaces/IRemittance.sol",
+      "contracts/token/modules/interfaces/ITaxation.sol": "contracts/token/modules/interfaces/ITaxation.sol",
+      "contracts/token/modules/interfaces/IValuation.sol": "contracts/token/modules/interfaces/IValuation.sol"
+    }
+  },
+  "gateArtifacts": {
+    "compatibility/compiler-warning-allowlist.json": "5658841704af40a762a4af48b763e648fa81d036394212ef924e91d84ae10586",
+    "compatibility/forge-lint-allowlist.json": "d0d0ef979813badb882f87a12da785f9d22a476cca9839987d921e510496dac9",
+    "compatibility/safety-baselines.json": "d70fb57f2dbf4671178fee515a583cb48ea5ea8e263a187dc0dec9a229ea4b5c",
+    "compatibility/safety-test-inventory.json": "52f7c77b9ebec5093ad484f6695e46194b3ed0b9e737943946843e4f19c4d83a",
+    "coverage/lcov.info": "699bec5254479d496dd7fdf6366be2c5f1afe386585bfa4f2f4be0304735f575",
+    "gas/key-flows.snap": "c57e387d3a71141ce69078dc051608e8eb1f5bccbddf5745f6d478d709b575f7"
+  },
+  "predecessorCommit": "26e1082a21e2ef184253542c1bc8c10b87924d53",
+  "removedDevDependencies": [
+    "@nomicfoundation/hardhat-ethers",
+    "@types/node",
+    "ethers",
+    "hardhat",
+    "tsx",
+    "typescript"
+  ],
+  "removedFiles": [
+    ".vscode/launch.json",
+    "compatibility/erc165.capture.ts",
+    "hardhat.config.ts",
+    "pnpm-workspace.yaml",
+    "tests/Interoperability.smoke.ts",
+    "tsconfig.json"
+  ],
+  "schemaVersion": 1,
+  "smokeMapping": {
+    "entries": [
+      {
+        "behaviorDimensions": [
+          "initial acquisition event order and indexed arguments",
+          "initial owner valuation deposit timestamp and contract balance",
+          "divide-before-multiply tax calculation",
+          "public collection and tax-remittance event order",
+          "beneficiary deposit and contract balance conservation",
+          "cumulative and since-transfer tax accounting",
+          "exit collection and two-remittance event order",
+          "deposit return and second tax increment",
+          "foreclosure custody and zeroed live state",
+          "lifetime tax persistence and voluntary-exit foreclosure status"
+        ],
+        "forgeName": "test/solidity/parity/PCOMutationParity.t.sol:PCOMutationParityTest:test_interoperabilitySmoke_acquiresCollectsTaxAndExitsWithOrderedEventsAndConservedBalances",
+        "hardhatName": "Hardhat interoperability smokes acquires, collects tax, and exits with ordered events and conserved balances"
+      },
+      {
+        "behaviorDimensions": [
+          "canonical wrapped token identifier",
+          "underlying approval event",
+          "cross-contract wrap event order",
+          "underlying custody and approval cleanup",
+          "wrapped ownership URI valuation deposit beneficiary rate and frequency",
+          "epoch-based wrapper tax calculation",
+          "beneficiary takeover with zero new deposit",
+          "takeover collection remittances valuation transfer and lease event order",
+          "originator-authorized unwrap after wrapped ownership changes",
+          "untaxed unwrap event order naming the final wrapped owner",
+          "underlying delivery to final owner",
+          "metadata accounting storage and nonexistent-token cleanup with lifetime tax persistence"
+        ],
+        "forgeName": "test/solidity/parity/WrapperParity.t.sol:WrapperParityTest:test_interoperabilitySmoke_approvesWrapsTakesOverAndUnwrapsWithCustodyAndMetadataCleanup",
+        "hardhatName": "Hardhat interoperability smokes approves, wraps, takes over, and unwraps with custody and metadata cleanup"
+      },
+      {
+        "behaviorDimensions": [
+          "ERC165 interface support",
+          "ERC721 interface support",
+          "ERC721Metadata interface rejection",
+          "three deterministic initial owners",
+          "three deterministic beneficiaries",
+          "three exact tax rates",
+          "three exact collection frequencies",
+          "zero initial valuation deposit taxation and collection timestamp for every token"
+        ],
+        "forgeName": "test/solidity/parity/PCOReadTaxParity.t.sol:PCOReadTaxParityTest:test_interoperabilitySmoke_deploysAndReadsDeterministicPCOConfiguration",
+        "hardhatName": "Hardhat interoperability smokes deploys and reads deterministic PCO configuration"
+      }
+    ],
+    "path": "compatibility/interoperability-smoke-parity.json",
+    "sha256": "0c2f481a394fb9e04b9b7346f008c70658240f2e7db7995fe5ff2f8f2d65d658"
+  }
+}

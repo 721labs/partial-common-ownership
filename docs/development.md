@@ -62,50 +62,59 @@ temporary directory with recursive submodules and run the frozen install plus
 the commands below. Never regenerate a compatibility, gas, coverage, or warning
 baseline merely because a clean candidate differs.
 
+The clean release sequence is therefore: start from a fresh recursive checkout
+of the candidate commit, activate the pinned Node, pnpm, Foundry, forge-std, solc,
+and Slither versions above, run `CI=true pnpm install --frozen-lockfile`, and
+then run the full local release gate in the order documented below. Keep
+compiler-cache users sequential so one gate cannot alter another gate's
+compiler inputs.
+
 ## Behavior tests and compatibility
 
-The repository is Foundry-first. The default command runs the complete Forge
-behavior and parity gate first, then the three retained Hardhat interoperability
-smokes:
+The active repository is Foundry-only. The default command runs the complete
+143-test Forge behavior, parity, fuzz, and invariant inventory:
 
 ```console
 $ pnpm test
 ```
 
-Run either side of that split directly with:
+Run the same Forge authority directly with:
 
 ```console
 $ pnpm test:forge
-$ pnpm test:hardhat:smoke
 ```
 
-`pnpm test:hardhat` remains an alias for the explicit smoke command. That small
-suite contains exactly three integration checks: deploy and read
-configuration; acquire, collect tax, and exit while decoding events; and
-approve, wrap, takeover, and unwrap while verifying custody. It is an
-interoperability signal, not a second behavior oracle.
+The three former interoperability smokes each have one exact, active Forge
+successor recorded in `compatibility/interoperability-smoke-parity.json`:
 
-The smokes use exactly ethers 6.17.0 through
-`@nomicfoundation/hardhat-ethers` 4.0.14 and Hardhat 3.9.1. They run with
-Node's built-in test runner; each smoke creates a fresh declarative
-`edr-simulated` Hardhat network. Waffle, Web3, NomicLabs plugins, TypeChain,
-OpenZeppelin test helpers, and the legacy Hardhat 2 runner stack have been
-removed.
+- `PCOReadTaxParityTest:test_interoperabilitySmoke_deploysAndReadsDeterministicPCOConfiguration`
+- `PCOMutationParityTest:test_interoperabilitySmoke_acquiresCollectsTaxAndExitsWithOrderedEventsAndConservedBalances`
+- `WrapperParityTest:test_interoperabilitySmoke_approvesWrapsTakesOverAndUnwrapsWithCustodyAndMetadataCleanup`
 
-The Forge command enforces the checked-in 104-entry parity map. The 89 legacy
-Hardhat behavior scenarios and 15 original Forge scenarios each map to one
-unique, successful Forge regression. The 89 TypeScript behavior tests were
-retired only after 104/104 Forge parity, the fuzz and invariant gates, and a
-final green dual run; the map remains the machine-readable record of their
-replacement coverage.
+That evidence binds each retired smoke's historical name and source digest to
+its Forge test contract, source path, and test identifier. It also binds the
+complete 143-name Forge inventory, so deleting a successor, renaming it, or
+reviving an active JavaScript bridge fails the parity gate.
 
-CI preserves the same division with independent required jobs for Forge tests,
-Hardhat integration, the compatibility manifest, coverage, gas, package
-consumers, Forge formatting/linting, Slither, and dependency audit. Every job
-starts from an immutable frozen pnpm install; jobs that replay a historical
-compatibility checkpoint fetch the complete read-only Git history. The weekly
-scheduled Foundry profile remains a separate 45-minute job and always uploads
-its seed, log, and minimized failure corpus.
+The Forge command also enforces the checked-in 104-entry historical parity map.
+The 89 legacy Hardhat behavior scenarios and 15 original Forge scenarios each
+map to one unique, successful Forge regression. The 89 TypeScript behavior
+tests were retired only after 104/104 Forge parity and the fuzz and invariant
+gates; the map remains immutable machine-readable replacement evidence.
+
+Stage 11 through Stage 13 records retain the former Hardhat, ethers, and
+TypeScript inventories and toolchain digests solely as immutable historical
+provenance. They are reconstructed from their recorded commits by the
+compatibility job; they are not active dependencies, commands, tests, compiler
+entry points, or CI jobs and must not be rewritten to hide the cutover.
+
+Pull requests have eight active jobs: Forge Build and Tests, Compatibility
+Manifest, Forge Coverage, Forge Gas Snapshot, Package Consumers, Forge
+Formatting and Linting, Slither, and Dependency Audit. Every job starts from an
+immutable frozen pnpm install; jobs that replay a historical compatibility
+checkpoint fetch the complete read-only Git history. Scheduled Foundry Safety
+is a separate 45-minute weekly/manual job and always uploads its seed, log, and
+minimized failure corpus.
 
 Run the public-compatibility and packed-consumer gates locally with:
 
@@ -118,8 +127,9 @@ $ pnpm test:package
 The package gate also inspects the packed bytes rather than trusting the
 working tree. It requires exact `@openzeppelin/contracts@5.6.1` as the sole
 OpenZeppelin declaration, exactly 13 shipped production Solidity sources, and
-the exact `^0.8.20` pragma in every one before compiling clean Hardhat and Forge
-consumers.
+the exact `^0.8.20` pragma in every one before compiling a clean Forge consumer
+with the pinned London profile. Historical Hardhat consumer evidence remains in
+its immutable stage record but is not part of the active package gate.
 
 Repository tool configurations compile with exactly Solidity 0.8.36 while
 retaining the London EVM target, disabled optimizer with 200 configured runs,
@@ -129,25 +139,22 @@ and fixture pragmas remain pinned to exact 0.8.36. The custom ERC721 is retained
 the dependency supplies interfaces, `Context`, and `ERC165`, not production
 ownership or transfer semantics.
 
-The compiler warning gates perform forced builds and require the complete,
-exact reviewed warning inventories from both compiler entry points, including
-warnings from production code, fixtures, and Forge tests. Mutability
-suggestions, the test-only unchecked call, and expected test-contract code-size
-warnings are included rather than globally ignored. Forge lint diagnostics are
-captured separately from the compiler JSON and are not counted as Solidity
-compiler warnings.
+The Forge compiler-warning gate performs a forced build and requires the
+complete, exact reviewed warning inventory, including warnings from production
+code, fixtures, and Forge tests. Mutability suggestions, the test-only
+unchecked call, and expected test-contract code-size warnings are included
+rather than globally ignored. Forge lint diagnostics are captured separately
+from the compiler JSON and are not counted as Solidity compiler warnings.
 
 ```console
-$ pnpm compiler-warnings:hardhat
 $ pnpm compiler-warnings:forge
 $ pnpm compiler-warnings:check
 ```
 
-The first two commands let the separate Hardhat and Forge CI jobs enforce only
-the toolchain installed in that job. The combined command is the local full
-gate. Each gate verifies the exact tool and Solidity versions, compiler
-settings, warning source bytes and byte ranges, and rejects duplicate, new, or
-missing warnings.
+`compiler-warnings:check` is the local aggregate entry point for the same
+Forge-only warning policy. The gate verifies the exact Forge and Solidity
+versions, compiler settings, warning source bytes and byte ranges, and rejects
+duplicate, new, or missing warnings.
 
 Warnings may be changed only by reviewing and updating
 `compatibility/compiler-warning-allowlist.json`; the gate rejects both new and
@@ -268,12 +275,12 @@ expected inventory in that case.
 From a clean recursive checkout, run:
 
 ```console
-$ pnpm install --frozen-lockfile
-$ pnpm typecheck
+$ CI=true pnpm install --frozen-lockfile
 $ pnpm compiler-warnings:check
 $ pnpm test
 $ pnpm compatibility
 $ pnpm test:safety
+$ pnpm safety-baselines:check
 $ pnpm coverage:forge
 $ pnpm gas:check
 $ pnpm size:check

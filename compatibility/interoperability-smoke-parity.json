@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "candidate": "stage-14-hardhat-retirement",
+  "historicalHardhat": {
+    "count": 3,
+    "finalInventoryPath": "compatibility/stage-12b-hardhat3-inventory.json",
+    "finalInventorySha256": "ce37ec6e86d25aa8bb947a5b62f1885ff7c6541fda0ca2c2560e034b5c682e9e",
+    "namesSha256": "e82ce4a1063d5334c8a0962747e9bb0797c9e5e82ef6e40dc1905452fb78714f",
+    "originalInventoryPath": "compatibility/stage-11-hardhat-smoke-inventory.json",
+    "originalInventorySha256": "abea926d3e3cf7928a7693565aa01c2e59c22e442ce97c4a0271c7be46095cf4",
+    "sourcePath": "tests/Interoperability.smoke.ts",
+    "sourceSha256": "80bc8ba664ae11d9081e73427cde09652cfc7da03bbfa87fd61767400ca9f696"
+  },
+  "forge": {
+    "after": {
+      "count": 143,
+      "namesSha256": "ff02c3d8a133d928555279fd30d720afc6d01f8baf78551ff32a9e91367ab990"
+    },
+    "before": {
+      "count": 140,
+      "namesSha256": "09b141a8c69c4522288cfdbf67373661052764ab019c865ea850dc5eb645f173"
+    }
+  },
+  "mappings": [
+    {
+      "behaviorDimensions": [
+        "initial acquisition event order and indexed arguments",
+        "initial owner valuation deposit timestamp and contract balance",
+        "divide-before-multiply tax calculation",
+        "public collection and tax-remittance event order",
+        "beneficiary deposit and contract balance conservation",
+        "cumulative and since-transfer tax accounting",
+        "exit collection and two-remittance event order",
+        "deposit return and second tax increment",
+        "foreclosure custody and zeroed live state",
+        "lifetime tax persistence and voluntary-exit foreclosure status"
+      ],
+      "forgeContract": "PCOMutationParityTest",
+      "forgeFile": "test/solidity/parity/PCOMutationParity.t.sol",
+      "forgeFileSha256": "6e441bd6209b55f7872404b20a62daf4b164f78a0d8e7fe50049f31807bd5afc",
+      "forgeTest": "test_interoperabilitySmoke_acquiresCollectsTaxAndExitsWithOrderedEventsAndConservedBalances",
+      "hardhatName": "Hardhat interoperability smokes acquires, collects tax, and exits with ordered events and conserved balances"
+    },
+    {
+      "behaviorDimensions": [
+        "canonical wrapped token identifier",
+        "underlying approval event",
+        "cross-contract wrap event order",
+        "underlying custody and approval cleanup",
+        "wrapped ownership URI valuation deposit beneficiary rate and frequency",
+        "epoch-based wrapper tax calculation",
+        "beneficiary takeover with zero new deposit",
+        "takeover collection remittances valuation transfer and lease event order",
+        "originator-authorized unwrap after wrapped ownership changes",
+        "untaxed unwrap event order naming the final wrapped owner",
+        "underlying delivery to final owner",
+        "metadata accounting storage and nonexistent-token cleanup with lifetime tax persistence"
+      ],
+      "forgeContract": "WrapperParityTest",
+      "forgeFile": "test/solidity/parity/WrapperParity.t.sol",
+      "forgeFileSha256": "9fa1bcc0b6ffa2ac6c7a619c44162330f64171877048732bdfa7f48675a99d25",
+      "forgeTest": "test_interoperabilitySmoke_approvesWrapsTakesOverAndUnwrapsWithCustodyAndMetadataCleanup",
+      "hardhatName": "Hardhat interoperability smokes approves, wraps, takes over, and unwraps with custody and metadata cleanup"
+    },
+    {
+      "behaviorDimensions": [
+        "ERC165 interface support",
+        "ERC721 interface support",
+        "ERC721Metadata interface rejection",
+        "three deterministic initial owners",
+        "three deterministic beneficiaries",
+        "three exact tax rates",
+        "three exact collection frequencies",
+        "zero initial valuation deposit taxation and collection timestamp for every token"
+      ],
+      "forgeContract": "PCOReadTaxParityTest",
+      "forgeFile": "test/solidity/parity/PCOReadTaxParity.t.sol",
+      "forgeFileSha256": "dce90b2cf8174271d9cd72e59376dfffd5c84881ca17d843cf9c51e2ba3901c8",
+      "forgeTest": "test_interoperabilitySmoke_deploysAndReadsDeterministicPCOConfiguration",
+      "hardhatName": "Hardhat interoperability smokes deploys and reads deterministic PCO configuration"
+    }
+  ],
+  "runnerMechanicsReplaced": [
+    "ethers artifact deployment by direct Forge deployment",
+    "ethers log decoding by exact Vm.Log emitter topic and data assertions",
+    "gas-price-adjusted signer balances by gas-independent contract-induced balance deltas"
+  ]
+}

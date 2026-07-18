@@ -1,130 +1,65 @@
 {
-  "allowedDifferences": [],
-  "baselineSha256": "4ec069e1cdb046198456b1db9179522b604d8dab062838c79e4cf8aa1e9df55c",
-  "candidate": "stage-13-ci-security-maintenance",
-  "maintenanceEvidence": {
-    "addedFiles": [
-      ".github/dependabot.yml",
-      "compatibility/forge-lint-allowlist.json",
-      "scripts/check-ci-policy.cjs",
-      "scripts/check-forge-lint.cjs",
-      "scripts/dependency-inventory.cjs"
-    ],
-    "boundFiles": {
-      ".github/dependabot.yml": "b5e19b671186ac4e3541664d00a0ad13d4c30e64610847a0b59eaa71b40f77b4",
-      ".github/workflows/tests.yml": "1e58f24d752da7e9a2e68a89113d53b37898bc046896ca968b32ce7c535d4195",
-      ".gitmodules": "ff4ebffecc8ab2a2a7320aa95762463fe80a4bc8acf0a4664d90d7c1adae75df",
-      "compatibility/forge-lint-allowlist.json": "13f6a34e3b6fc4c9295ae578f24b1cebdea96a45cb01b69acf5996f5ee986ef7",
-      "docs/development.md": "26cfbbcbc40713083d3132654259b2779adc148a41ac5075492d1db1b286c899",
-      "package.json": "5fc4d4382bda9e03f94e826de4f21f318e38649a74ba0c8981e749d56edbf6bc",
-      "scripts/audit-ratchet.cjs": "d52d7c69861b35dba286c99764c00b86da1be7505931c267d4ea7a8e87905128",
-      "scripts/check-ci-policy.cjs": "007bf6e8b21f1939b1c54c2f032645988dc32c597bcc6b95101514956f805b1c",
-      "scripts/check-forge-lint.cjs": "409e188118effff4a0c4a25b1497b94adb779b9088c5a4fd2d859a98515a8416",
-      "scripts/check-parity.cjs": "7a5cf2140d8fa5e246a064f2dbc69b69ad0353aa1b7fb9ad1653907355222df1",
-      "scripts/dependency-inventory.cjs": "6de23d7136ccef1dab89a1eefb082a07d542e50d54166c7641dfb032523e35e7",
-      "scripts/install.sh": "045b06f3d2f9705248aed669a252b41b5bd3285f44faf441127dbd62005a7b47"
+  "allowedDifferences": [
+    {
+      "candidateSha256": "983f0fd8fd0ab0862f8a567bca883f4affbeef24a77982804f165ce99f07ea9f",
+      "path": "$.forgeBuild",
+      "reason": "Forge 1.7.1 replaces Hardhat as the sole native compiler build-info producer."
     },
-    "changedPaths": [
-      ".github/dependabot.yml",
-      ".github/workflows/tests.yml",
-      ".gitmodules",
-      "compatibility/README.md",
-      "compatibility/evidence/stage-13-ci-security-maintenance.json",
-      "compatibility/forge-lint-allowlist.json",
-      "compatibility/reviewed-differences.json",
-      "compatibility/stage-13-ci-maintenance-inventory.json",
-      "docs/development.md",
-      "package.json",
-      "scripts/audit-ratchet.cjs",
-      "scripts/check-ci-policy.cjs",
-      "scripts/check-forge-lint.cjs",
-      "scripts/check-parity.cjs",
-      "scripts/compatibility.cjs",
-      "scripts/dependency-inventory.cjs",
-      "scripts/install.sh"
-    ],
-    "checkpoint": {
-      "commit": "bfdbcfaf84bd681c823487d1267139353df7ec37",
-      "compatibilityRunner": {
-        "path": "scripts/compatibility.cjs",
-        "sha256": "f8c1a26d90ec696c2b7d317813210dc903cd831d8e978e1861135a1dbfdddab9"
+    {
+      "from": 1,
+      "path": "$.schemaVersion",
+      "reason": "The active manifest records Forge-native provenance.",
+      "to": 2
+    },
+    {
+      "from": {
+        "forge": {
+          "count": 140,
+          "namesSha256": "09b141a8c69c4522288cfdbf67373661052764ab019c865ea850dc5eb645f173"
+        },
+        "hardhat": {
+          "count": 3,
+          "namesSha256": "e82ce4a1063d5334c8a0962747e9bb0797c9e5e82ef6e40dc1905452fb78714f"
+        },
+        "total": 143
       },
-      "evidence": {
-        "path": "compatibility/evidence/stage-12b-hardhat-3.json",
-        "sha256": "d5e4e569dd9698e5dad1326b29461b0fe01d25c13bc8ad72075e5a084bd0e998"
-      },
-      "inventory": {
-        "path": "compatibility/stage-12b-hardhat3-inventory.json",
-        "sha256": "ce37ec6e86d25aa8bb947a5b62f1885ff7c6541fda0ca2c2560e034b5c682e9e"
-      },
-      "review": {
-        "path": "compatibility/reviewed-differences.json",
-        "sha256": "0429ef8df0361120e485ac8f0ade6f6b4892e3a162287ec61bb8dc69de4b9402"
+      "path": "$.tests",
+      "reason": "Three digest-bound Hardhat smokes move one-to-one into Forge without changing the total behavior inventory.",
+      "to": {
+        "forge": {
+          "count": 143,
+          "namesSha256": "ff02c3d8a133d928555279fd30d720afc6d01f8baf78551ff32a9e91367ab990"
+        },
+        "hardhat": {
+          "count": 0,
+          "namesSha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+        },
+        "total": 143
       }
     },
-    "compatibilityRunnerSha256": "58f4f84f1fd8b8ab54d98d6c7f8d9364d45fca4dabc3c40382729d1050f4d8ff",
-    "forgeStd": {
-      "branch": "v1",
-      "commit": "bf647bd6046f2f7da30d0c2bf435e5c76a780c1b"
-    },
-    "immutableStage12bEvidence": {
-      "path": "compatibility/evidence/stage-12b-hardhat-3.json",
-      "sha256": "d5e4e569dd9698e5dad1326b29461b0fe01d25c13bc8ad72075e5a084bd0e998"
-    },
-    "inventory": {
-      "path": "compatibility/stage-13-ci-maintenance-inventory.json",
-      "sha256": "1ddf58ff2c58832c82c903b71180add027a18598633f9e39d81e5dffb5f9d420"
-    },
-    "modifiedFiles": [
-      ".github/workflows/tests.yml",
-      ".gitmodules",
-      "docs/development.md",
-      "package.json",
-      "scripts/audit-ratchet.cjs",
-      "scripts/check-parity.cjs",
-      "scripts/install.sh"
-    ],
-    "package": {
-      "changedScripts": {
-        "ci:policy": "node scripts/check-ci-policy.cjs",
-        "lint:forge": "node scripts/check-forge-lint.cjs",
-        "maintenance:inventory": "node scripts/dependency-inventory.cjs"
-      },
-      "previousScripts": {
-        "ci:policy": null,
-        "lint:forge": "forge lint",
-        "maintenance:inventory": null
-      },
-      "unchangedPackageWithoutScriptsSha256": "5561e1047df932a65a9a04f0347de7088c6667ff8abd41a180504ca80e6ce8b5"
+    {
+      "candidateSha256": "b8fcb44079f29d725711b849b4642195313090899aefdd80b3e6535175b0d8fd",
+      "path": "$.contracts.*.{creationBytecode,runtimeBytecode}.keccak256",
+      "reason": "Forge logical/native source naming may change only the IPFS metadata payload; stripped bytecode, opcodes, and sizes remain exact."
     }
+  ],
+  "baselineSha256": "4ec069e1cdb046198456b1db9179522b604d8dab062838c79e4cf8aa1e9df55c",
+  "candidate": "stage-14-foundry-retirement",
+  "evidence": {
+    "path": "compatibility/evidence/stage-14-foundry-retirement.json"
   },
-  "opcodeEvidence": {
-    "contracts": [
-      "contracts/Wrapper.sol:Wrapper",
-      "contracts/token/PartialCommonOwnership.sol:PartialCommonOwnership"
-    ],
-    "mode": "stage-13-stage-12b-exact-equality",
-    "path": "compatibility/evidence/stage-13-ci-security-maintenance.json"
+  "inventory": {
+    "path": "compatibility/stage-14-foundry-retirement-inventory.json"
   },
-  "policy": "stage-13-stage-12b-exact-equality",
-  "schemaVersion": 1,
-  "stage12bCheckpoint": {
-    "commit": "bfdbcfaf84bd681c823487d1267139353df7ec37",
-    "compatibilityRunner": {
-      "path": "scripts/compatibility.cjs",
-      "sha256": "f8c1a26d90ec696c2b7d317813210dc903cd831d8e978e1861135a1dbfdddab9"
-    },
-    "evidence": {
-      "path": "compatibility/evidence/stage-12b-hardhat-3.json",
-      "sha256": "d5e4e569dd9698e5dad1326b29461b0fe01d25c13bc8ad72075e5a084bd0e998"
-    },
-    "inventory": {
-      "path": "compatibility/stage-12b-hardhat3-inventory.json",
-      "sha256": "ce37ec6e86d25aa8bb947a5b62f1885ff7c6541fda0ca2c2560e034b5c682e9e"
-    },
-    "review": {
-      "path": "compatibility/reviewed-differences.json",
-      "sha256": "0429ef8df0361120e485ac8f0ade6f6b4892e3a162287ec61bb8dc69de4b9402"
-    }
+  "policy": "stage-14-foundry-only-exact-parity",
+  "predecessor": {
+    "commit": "26e1082a21e2ef184253542c1bc8c10b87924d53",
+    "evidencePath": "compatibility/evidence/stage-13-ci-security-maintenance.json",
+    "evidenceSha256": "c7df59ea50e3a374723dd44cd061dc4b9ddd2722d3f3c8f67f8a437b702b5d07"
+  },
+  "schemaVersion": 2,
+  "smokeMapping": {
+    "path": "compatibility/interoperability-smoke-parity.json",
+    "sha256": "0c2f481a394fb9e04b9b7346f008c70658240f2e7db7995fe5ff2f8f2d65d658"
   }
 }

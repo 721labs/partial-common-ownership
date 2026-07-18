@@ -10,7 +10,6 @@ import {TestPCOToken} from "../../../contracts/test/TestPCOToken.sol";
 /// @notice Deterministic Forge ports of the 31 mutation scenarios in the
 /// legacy `tests/PartialCommonOwnership/index.ts` Hardhat oracle.
 contract PCOMutationParityTest is Test {
-
     uint256 private constant START_TIME = 1_700_000_000;
     uint256 private constant INVALID_TOKEN_ID = 999;
     uint256 private constant TOKEN_ONE = 1;
@@ -20,6 +19,12 @@ contract PCOMutationParityTest is Test {
     uint256 private constant ETH3 = 3 ether;
     uint256 private constant ETH4 = 4 ether;
     uint256 private constant TAX_DENOMINATOR = 1_000_000_000_000;
+
+    uint256 private constant INTEROP_ACQUISITION_TIME = 2_000_010_000;
+    uint256 private constant INTEROP_COLLECTION_TIME = INTEROP_ACQUISITION_TIME + 10 days;
+    uint256 private constant INTEROP_EXIT_TIME = INTEROP_COLLECTION_TIME + 1;
+    uint256 private constant INTEROP_VALUATION = 9 ether;
+    uint256 private constant INTEROP_INITIAL_DEPOSIT = 2 ether;
 
     uint256 private constant LEASE_TAKEOVER = 0;
     uint256 private constant WITHDRAWN_DEPOSIT = 1;
@@ -438,6 +443,82 @@ contract PCOMutationParityTest is Test {
         assertEq(token.outstandingRemittances(beneficiary), 0);
     }
 
+    function test_interoperabilitySmoke_acquiresCollectsTaxAndExitsWithOrderedEventsAndConservedBalances() public {
+        vm.warp(INTEROP_ACQUISITION_TIME);
+        uint256 aliceBeforeAcquisition = alice.balance;
+
+        vm.recordLogs();
+        vm.prank(alice);
+        token.takeoverLease{value: INTEROP_INITIAL_DEPOSIT}(TOKEN_ONE, INTEROP_VALUATION, 0);
+        Vm.Log[] memory acquisitionLogs = vm.getRecordedLogs();
+
+        assertEq(acquisitionLogs.length, 4);
+        _assertValuation(acquisitionLogs[0], TOKEN_ONE, INTEROP_VALUATION);
+        _assertApproval(acquisitionLogs[1], address(token), address(0), TOKEN_ONE);
+        _assertTransfer(acquisitionLogs[2], address(token), alice, TOKEN_ONE);
+        _assertLeaseTakeover(acquisitionLogs[3], TOKEN_ONE, alice, INTEROP_VALUATION);
+        assertEq(token.ownerOf(TOKEN_ONE), alice);
+        assertEq(token.valuationOf(TOKEN_ONE), INTEROP_VALUATION);
+        assertEq(token.depositOf(TOKEN_ONE), INTEROP_INITIAL_DEPOSIT);
+        assertEq(token.lastCollectionTimeOf(TOKEN_ONE), INTEROP_ACQUISITION_TIME);
+        assertEq(alice.balance, aliceBeforeAcquisition - INTEROP_INITIAL_DEPOSIT);
+        assertEq(address(token).balance, INTEROP_INITIAL_DEPOSIT);
+
+        uint256 firstTax = _taxDue(TOKEN_ONE, INTEROP_VALUATION, INTEROP_COLLECTION_TIME - INTEROP_ACQUISITION_TIME);
+        uint256 beneficiaryBeforeCollection = beneficiary.balance;
+
+        vm.warp(INTEROP_COLLECTION_TIME);
+        vm.recordLogs();
+        token.collectTax(TOKEN_ONE);
+        Vm.Log[] memory collectionLogs = vm.getRecordedLogs();
+
+        assertEq(collectionLogs.length, 2);
+        _assertCollection(collectionLogs[0], TOKEN_ONE, firstTax);
+        _assertRemittance(collectionLogs[1], TAX_COLLECTION, beneficiary, firstTax);
+        assertEq(beneficiary.balance, beneficiaryBeforeCollection + firstTax);
+        assertEq(token.depositOf(TOKEN_ONE), INTEROP_INITIAL_DEPOSIT - firstTax);
+        assertEq(token.taxationCollected(TOKEN_ONE), firstTax);
+        assertEq(token.taxCollectedSinceLastTransferOf(TOKEN_ONE), firstTax);
+        assertEq(token.lastCollectionTimeOf(TOKEN_ONE), INTEROP_COLLECTION_TIME);
+        assertEq(address(token).balance, INTEROP_INITIAL_DEPOSIT - firstTax);
+
+        uint256 exitTax = _taxDue(TOKEN_ONE, INTEROP_VALUATION, INTEROP_EXIT_TIME - INTEROP_COLLECTION_TIME);
+        uint256 returnedDeposit = INTEROP_INITIAL_DEPOSIT - firstTax - exitTax;
+        uint256 aliceBeforeExit = alice.balance;
+        uint256 beneficiaryBeforeExit = beneficiary.balance;
+        uint256 contractTokensBeforeExit = token.balanceOf(address(token));
+
+        vm.warp(INTEROP_EXIT_TIME);
+        vm.recordLogs();
+        vm.prank(alice);
+        token.exit(TOKEN_ONE);
+        Vm.Log[] memory exitLogs = vm.getRecordedLogs();
+
+        assertEq(exitLogs.length, 7);
+        _assertCollection(exitLogs[0], TOKEN_ONE, exitTax);
+        _assertRemittance(exitLogs[1], TAX_COLLECTION, beneficiary, exitTax);
+        _assertRemittance(exitLogs[2], WITHDRAWN_DEPOSIT, alice, returnedDeposit);
+        _assertValuation(exitLogs[3], TOKEN_ONE, 0);
+        _assertApproval(exitLogs[4], alice, address(0), TOKEN_ONE);
+        _assertTransfer(exitLogs[5], alice, address(token), TOKEN_ONE);
+        _assertForeclosure(exitLogs[6], TOKEN_ONE, alice);
+
+        assertEq(alice.balance, aliceBeforeExit + returnedDeposit);
+        assertEq(beneficiary.balance, beneficiaryBeforeExit + exitTax);
+        assertEq(address(token).balance, 0);
+        assertEq(token.ownerOf(TOKEN_ONE), address(token));
+        assertEq(token.valuationOf(TOKEN_ONE), 0);
+        assertEq(token.depositOf(TOKEN_ONE), 0);
+        assertEq(token.taxationCollected(TOKEN_ONE), firstTax + exitTax);
+        assertEq(token.taxCollectedSinceLastTransferOf(TOKEN_ONE), 0);
+        assertEq(token.lastCollectionTimeOf(TOKEN_ONE), INTEROP_EXIT_TIME);
+        assertEq(token.balanceOf(alice), 0);
+        assertEq(token.balanceOf(address(token)), contractTokensBeforeExit + 1);
+        assertEq(token.outstandingRemittances(alice), 0);
+        assertEq(token.outstandingRemittances(beneficiary), 0);
+        assertTrue(token.foreclosed(TOKEN_ONE));
+    }
+
     //////////////////////////////
     /// Success helpers
     //////////////////////////////
@@ -827,9 +908,7 @@ contract PCOMutationParityTest is Test {
         return abi.encodeWithSignature("Error(string)", reason);
     }
 
-    function _assertApproval(Vm.Log memory entry, address owner, address approved, uint256 tokenId)
-        internal
-    {
+    function _assertApproval(Vm.Log memory entry, address owner, address approved, uint256 tokenId) internal {
         _assertLogHeader(entry, APPROVAL_SIGNATURE, 4);
         assertEq(entry.topics[1], _addressTopic(owner));
         assertEq(entry.topics[2], _addressTopic(approved));
@@ -843,9 +922,7 @@ contract PCOMutationParityTest is Test {
         assertEq(entry.topics[3], bytes32(tokenId));
     }
 
-    function _assertLeaseTakeover(Vm.Log memory entry, uint256 tokenId, address owner, uint256 newValuation)
-        internal
-    {
+    function _assertLeaseTakeover(Vm.Log memory entry, uint256 tokenId, address owner, uint256 newValuation) internal {
         _assertLogHeader(entry, LEASE_TAKEOVER_SIGNATURE, 4);
         assertEq(entry.topics[1], bytes32(tokenId));
         assertEq(entry.topics[2], _addressTopic(owner));
@@ -864,9 +941,7 @@ contract PCOMutationParityTest is Test {
         assertEq(entry.topics[2], bytes32(collected));
     }
 
-    function _assertRemittance(Vm.Log memory entry, uint256 trigger, address recipient, uint256 amount)
-        internal
-    {
+    function _assertRemittance(Vm.Log memory entry, uint256 trigger, address recipient, uint256 amount) internal {
         _assertLogHeader(entry, REMITTANCE_SIGNATURE, 4);
         assertEq(entry.topics[1], bytes32(trigger));
         assertEq(entry.topics[2], _addressTopic(recipient));
