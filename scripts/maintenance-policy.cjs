@@ -202,6 +202,16 @@ const EXACT_GITHUB_ADVISORY =
 const HARDHAT_WARNING_ALLOWLIST =
   "compatibility/compiler-warning-allowlist.json";
 const MAINTENANCE_POLICY_PATH = "scripts/maintenance-policy.cjs";
+const STAGE_15_SOLIDITY_ARTIFACTS = Object.freeze([
+  "compatibility/evidence/stage-15-custom-errors.json",
+  "compatibility/reviewed-differences.json",
+  "compatibility/stage-15-base-manifest.json",
+  "compatibility/stage-15-custom-errors-inventory.json",
+]);
+const PROJECT_REVERT_STRING_INVENTORY =
+  "compatibility/project-revert-strings.json";
+const PROJECT_REVERT_STRING_INVENTORY_SHA256 =
+  "027be662c5a30bc124afd2f8965e39fcd18c3681bd76fddd659bf78396190b68";
 
 function fail(message) {
   throw new Error(message);
@@ -727,6 +737,7 @@ function maintenanceScopedPaths(paths, managedFiles = LEGACY_MANAGED_FILES) {
 
 function validateRecordSchema(record, filename, sequence) {
   const expectedSchemaVersion = sequence <= 7 ? 1 : 2;
+  const hasIssueProvenance = sequence >= 9;
   exactKeys(
     record,
     [
@@ -746,13 +757,21 @@ function validateRecordSchema(record, filename, sequence) {
       "toolchain",
       "transition",
       ...(expectedSchemaVersion === 2 ? ["stateVersion"] : []),
+      ...(hasIssueProvenance ? ["sourceIssues"] : []),
     ],
     `Maintenance record ${filename}`
   );
   const allowedCategories =
     expectedSchemaVersion === 1
       ? ["bootstrap", "governance", "github-actions", "javascript"]
-      : ["foundry-retirement", "governance", "github-actions", "javascript"];
+      : [
+          "foundry-retirement",
+          "governance",
+          "github-actions",
+          "javascript",
+          "solidity",
+        ];
+  const sourceIssues = hasIssueProvenance ? record.sourceIssues : [];
   if (
     record.schemaVersion !== expectedSchemaVersion ||
     record.sequence !== sequence ||
@@ -766,7 +785,9 @@ function validateRecordSchema(record, filename, sequence) {
     record.transition?.kind !== record.category ||
     typeof record.summary !== "string" ||
     record.summary.trim().length < 12 ||
-    record.productionImpact !== "none" ||
+    !(record.category === "solidity"
+      ? record.productionImpact === "abi-breaking"
+      : record.productionImpact === "none") ||
     !Array.isArray(record.sourcePullRequests) ||
     record.sourcePullRequests.some(
       (number) => !Number.isInteger(number) || number <= 0
@@ -774,6 +795,12 @@ function validateRecordSchema(record, filename, sequence) {
     !valuesEqual(
       record.sourcePullRequests,
       [...new Set(record.sourcePullRequests)].sort((left, right) => left - right)
+    ) ||
+    !Array.isArray(sourceIssues) ||
+    sourceIssues.some((number) => !Number.isInteger(number) || number <= 0) ||
+    !valuesEqual(
+      sourceIssues,
+      [...new Set(sourceIssues)].sort((left, right) => left - right)
     )
   ) {
     fail(`Maintenance record has an invalid schema: ${filename}`);
@@ -782,15 +809,16 @@ function validateRecordSchema(record, filename, sequence) {
     if (
       record.category !== "bootstrap" ||
       record.baseCommit !== STAGE_13_ANCHOR.commit ||
-      record.sourcePullRequests.length !== 0
+      record.sourcePullRequests.length !== 0 ||
+      sourceIssues.length !== 0
     ) {
       fail("Record 0001 must be the exact post-Stage-13 bootstrap");
     }
   } else if (
     record.category === "bootstrap" ||
-    record.sourcePullRequests.length === 0
+    (record.sourcePullRequests.length === 0 && sourceIssues.length === 0)
   ) {
-    fail("Routine maintenance records require PR provenance and cannot bootstrap");
+    fail("Routine maintenance records require issue or PR provenance and cannot bootstrap");
   }
   const stateVersion = record.schemaVersion === 1 ? 1 : record.stateVersion;
   const managedFiles = managedFilesForState(stateVersion);
@@ -814,6 +842,72 @@ function validateRecordSchema(record, filename, sequence) {
     !valuesEqual(record.changedFiles, [...new Set(record.changedFiles)].sort())
   ) {
     fail(`Maintenance record changed-file inventory is invalid: ${filename}`);
+  }
+}
+
+function validateSolidityTransition(record, root, targetReference) {
+  exactKeys(
+    record.transition,
+    ["artifacts", "kind", "repositoryPaths", "sourceRevertStrings"],
+    "Solidity transition"
+  );
+  const transition = record.transition;
+  const repositoryPaths = transition.repositoryPaths;
+  if (
+    !Array.isArray(repositoryPaths) ||
+    repositoryPaths.length === 0 ||
+    !valuesEqual(repositoryPaths, [...new Set(repositoryPaths)].sort()) ||
+    !repositoryPaths.includes("scripts/compatibility.cjs") ||
+    !repositoryPaths.includes("scripts/test-package.cjs") ||
+    !repositoryPaths.includes("compatibility/README.md") ||
+    !repositoryPaths.includes("compatibility/reviewed-differences.json") ||
+    !repositoryPaths.includes("compatibility/stage-15-custom-errors-inventory.json") ||
+    repositoryPaths.some(
+      (relativePath) =>
+        typeof relativePath !== "string" ||
+        relativePath.startsWith("compatibility/maintenance/") ||
+        relativePath === "package.json" ||
+        relativePath === "pnpm-lock.yaml" ||
+        relativePath === "pnpm-workspace.yaml" ||
+        relativePath === "foundry.toml" ||
+        relativePath === "hardhat.config.ts" ||
+        relativePath === ".gitmodules" ||
+        relativePath === ".nvmrc" ||
+        relativePath.startsWith(".github/")
+    )
+  ) {
+    fail("Solidity maintenance must declare one exact, sorted source and evidence delta");
+  }
+  exactKeys(
+    transition.sourceRevertStrings,
+    ["baselineInventorySha256", "from", "to"],
+    "Solidity revert-string transition"
+  );
+  if (
+    transition.sourceRevertStrings.from !== 37 ||
+    transition.sourceRevertStrings.to !== 0 ||
+    transition.sourceRevertStrings.baselineInventorySha256 !==
+      PROJECT_REVERT_STRING_INVENTORY_SHA256 ||
+    fileSha256(root, PROJECT_REVERT_STRING_INVENTORY, targetReference) !==
+      PROJECT_REVERT_STRING_INVENTORY_SHA256
+  ) {
+    fail("Solidity maintenance must remove the complete reviewed project revert-string inventory");
+  }
+  if (
+    !valuesEqual(
+      Object.keys(transition.artifacts).sort(),
+      [...STAGE_15_SOLIDITY_ARTIFACTS].sort()
+    ) ||
+    Object.entries(transition.artifacts).some(
+      ([relativePath, digest]) =>
+        !/^[0-9a-f]{64}$/.test(digest) ||
+        fileSha256(root, relativePath, targetReference) !== digest
+    )
+  ) {
+    fail("Solidity maintenance must bind the exact Stage 15 review artifacts");
+  }
+  if (!valuesEqual(record.sourceIssues, [75])) {
+    fail("The Stage 15 Solidity transition must cite issue 75");
   }
 }
 
@@ -892,12 +986,14 @@ function validateGovernanceTransition(
   ) {
     fail("Governance maintenance must bind one exact policy-file replacement");
   }
-  validateSecurityOverrideTransitions(
-    overrideChanges,
-    root,
-    baseCommit,
-    targetReference
-  );
+  if (overrideChanges.length > 0) {
+    validateSecurityOverrideTransitions(
+      overrideChanges,
+      root,
+      baseCommit,
+      targetReference
+    );
+  }
 }
 
 function validateActionDescriptor(value, label) {
@@ -1352,6 +1448,16 @@ function validateTransition(
   if (!valuesEqual(beforeToolchain, afterToolchain)) {
     fail("Routine dependency maintenance may not change the pinned toolchain");
   }
+  if (record.category === "solidity") {
+    if (
+      !valuesEqual(beforeActions, afterActions) ||
+      !valuesEqual(beforePackages, afterPackages)
+    ) {
+      fail("Solidity maintenance may not change actions, packages, or the pinned toolchain");
+    }
+    validateSolidityTransition(record, root, targetReference);
+    return;
+  }
   if (record.category === "github-actions") {
     if (!valuesEqual(beforePackages, afterPackages)) {
       fail("GitHub Actions maintenance may not change JavaScript packages");
@@ -1539,7 +1645,12 @@ function validateMaintenanceLedger({ root = path.resolve(__dirname, "..") } = {}
       targetReference === null
         ? currentChangedPaths(root, record.baseCommit)
         : changedPathsBetween(root, record.baseCommit, targetReference);
-    const expectedPaths = [...record.changedFiles, relativePath].sort();
+    const expectedPaths = [
+      ...(record.category === "solidity"
+        ? record.transition.repositoryPaths
+        : record.changedFiles),
+      relativePath,
+    ].sort();
     if (!valuesEqual(actualPaths, expectedPaths)) {
       fail(`Maintenance repository delta is not exact: ${filename}`);
     }
@@ -1609,6 +1720,7 @@ module.exports = Object.freeze({
   validateGithubActionTransition,
   validateGovernanceTransition,
   validateJavascriptTransition,
+  validateSolidityTransition,
   validateMaintenanceLedger,
 });
 
