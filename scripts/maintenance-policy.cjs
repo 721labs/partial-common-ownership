@@ -638,14 +638,31 @@ function recordFilesAt(root, reference) {
     .sort();
 }
 
+function maintenanceHistoryHead(root) {
+  const parts = runGit(root, ["rev-list", "--parents", "-n", "1", "HEAD"])
+    .stdout.toString("utf8")
+    .trim()
+    .split(/\s+/);
+  if (parts.length !== 3) return "HEAD";
+
+  const headTree = runGit(root, ["rev-parse", "HEAD^{tree}"])
+    .stdout.toString("utf8")
+    .trim();
+  const secondParentTree = runGit(root, ["rev-parse", `${parts[2]}^{tree}`])
+    .stdout.toString("utf8")
+    .trim();
+  return headTree === secondParentTree ? parts[2] : "HEAD";
+}
+
 function maintenanceHistory(root, currentFilenames) {
+  const historyHead = maintenanceHistoryHead(root);
   const commits = [
     STAGE_13_ANCHOR.commit,
     ...runGit(root, [
       "rev-list",
       "--first-parent",
       "--reverse",
-      `${STAGE_13_ANCHOR.commit}..HEAD`,
+      `${STAGE_13_ANCHOR.commit}..${historyHead}`,
     ])
       .stdout.toString("utf8")
       .split(/\r?\n/)
