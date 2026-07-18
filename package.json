@@ -61,10 +61,10 @@
     "slither": "node scripts/run-slither.cjs"
   },
   "devDependencies": {
-    "@nomicfoundation/hardhat-ethers": "4.0.14",
+    "@nomicfoundation/hardhat-ethers": "4.0.15",
     "@types/node": "24.13.3",
     "ethers": "6.17.0",
-    "hardhat": "3.9.1",
+    "hardhat": "3.10.0",
     "tsx": "4.23.1",
     "typescript": "7.0.2"
   },
