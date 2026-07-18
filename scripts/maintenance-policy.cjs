@@ -98,6 +98,11 @@ const RECORD_DIRECTORY = "compatibility/maintenance";
 const RECORD_NAME = /^([0-9]{4})-([a-z0-9]+(?:-[a-z0-9]+)*)\.json$/;
 const EXACT_SEMVER = /^[0-9]+\.[0-9]+\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$/;
 const EXACT_ACTION_TAG = /^v[0-9]+\.[0-9]+\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$/;
+const EXACT_GITHUB_ADVISORY =
+  /^GHSA-[23456789cfghjmpqrvwx]{4}(?:-[23456789cfghjmpqrvwx]{4}){2}$/;
+const HARDHAT_WARNING_ALLOWLIST =
+  "compatibility/compiler-warning-allowlist.json";
+const MAINTENANCE_POLICY_PATH = "scripts/maintenance-policy.cjs";
 
 function fail(message) {
   throw new Error(message);
@@ -300,6 +305,34 @@ function readPackage(root, reference = null) {
   return JSON.parse(
     repositoryFileBytes(root, "package.json", reference).toString("utf8")
   );
+}
+
+function readJsonFile(root, relativePath, reference = null) {
+  return JSON.parse(
+    repositoryFileBytes(root, relativePath, reference).toString("utf8")
+  );
+}
+
+function pnpmOverrides(root, reference = null) {
+  const text = repositoryFileBytes(
+    root,
+    "pnpm-workspace.yaml",
+    reference
+  ).toString("utf8");
+  const overrides = {};
+  const lines = text.split(/\r?\n/);
+  const start = lines.findIndex((line) => line === "overrides:");
+  if (start === -1) return overrides;
+  for (const line of lines.slice(start + 1)) {
+    if (line.length === 0 || /^\s*#/.test(line)) continue;
+    if (!line.startsWith("  ")) break;
+    const match = line.match(/^  ([A-Za-z0-9@/_.-]+): ([0-9A-Za-z.+-]+)$/);
+    if (!match || !EXACT_SEMVER.test(match[2]) || match[1] in overrides) {
+      fail("pnpm overrides must be unique exact package-version mappings");
+    }
+    overrides[match[1]] = match[2];
+  }
+  return sorted(overrides);
 }
 
 function packageSnapshot(root, reference = null) {
@@ -564,7 +597,7 @@ function validateRecordSchema(record, filename, sequence) {
     record.sequence !== sequence ||
     record.id !== filename.replace(/^[0-9]{4}-|\.json$/g, "") ||
     !/^[0-9a-f]{40}$/.test(record.baseCommit) ||
-    !["bootstrap", "github-actions", "javascript"].includes(record.category) ||
+    !["bootstrap", "governance", "github-actions", "javascript"].includes(record.category) ||
     record.transition?.kind !== record.category ||
     typeof record.summary !== "string" ||
     record.summary.trim().length < 12 ||
@@ -619,6 +652,82 @@ function validateBootstrapTransition(record) {
   if (!valuesEqual(record.changedFiles, BOOTSTRAP_CHANGED_FILES)) {
     fail("Bootstrap may change only the workflow and four maintenance support scripts");
   }
+}
+
+function validateSecurityOverrideTransitions(
+  changes,
+  root,
+  baseCommit,
+  targetReference
+) {
+  if (!Array.isArray(changes)) {
+    fail("Security override transitions must be an array");
+  }
+  const beforeOverrides = pnpmOverrides(root, baseCommit);
+  const afterOverrides = pnpmOverrides(root, targetReference);
+  const expectedOverrides = structuredClone(beforeOverrides);
+  const names = [];
+  for (const change of changes) {
+    exactKeys(
+      change,
+      ["advisory", "from", "name", "to"],
+      "Security override transition"
+    );
+    if (
+      typeof change.name !== "string" ||
+      !EXACT_GITHUB_ADVISORY.test(change.advisory) ||
+      !EXACT_SEMVER.test(change.to) ||
+      change.from !== (beforeOverrides[change.name] || null) ||
+      change.to === change.from
+    ) {
+      fail(`Invalid security override transition: ${change.name}`);
+    }
+    names.push(change.name);
+    expectedOverrides[change.name] = change.to;
+  }
+  if (
+    !valuesEqual(names, [...new Set(names)].sort()) ||
+    !valuesEqual(sorted(expectedOverrides), afterOverrides)
+  ) {
+    fail("Security overrides must be unique, sorted, and exact");
+  }
+}
+
+function validateGovernanceTransition(
+  record,
+  root,
+  baseCommit,
+  targetReference
+) {
+  exactKeys(
+    record.transition,
+    ["fromSha256", "kind", "path", "securityOverrides", "toSha256"],
+    "Governance transition"
+  );
+  const overrideChanges = record.transition.securityOverrides;
+  const expectedChangedFiles = [MAINTENANCE_POLICY_PATH];
+  if (Array.isArray(overrideChanges) && overrideChanges.length > 0) {
+    expectedChangedFiles.push("pnpm-lock.yaml", "pnpm-workspace.yaml");
+  }
+  if (
+    !valuesEqual(record.changedFiles, expectedChangedFiles.sort()) ||
+    record.transition.path !== MAINTENANCE_POLICY_PATH ||
+    !/^[0-9a-f]{64}$/.test(record.transition.fromSha256) ||
+    !/^[0-9a-f]{64}$/.test(record.transition.toSha256) ||
+    record.transition.fromSha256 === record.transition.toSha256 ||
+    fileSha256(root, MAINTENANCE_POLICY_PATH, baseCommit) !==
+      record.transition.fromSha256 ||
+    fileSha256(root, MAINTENANCE_POLICY_PATH, targetReference) !==
+      record.transition.toSha256
+  ) {
+    fail("Governance maintenance must bind one exact policy-file replacement");
+  }
+  validateSecurityOverrideTransitions(
+    overrideChanges,
+    root,
+    baseCommit,
+    targetReference
+  );
 }
 
 function validateActionDescriptor(value, label) {
@@ -685,19 +794,38 @@ function validateGithubActionTransition(
   }
 }
 
-function validateJavascriptTransition(record, beforePackage, afterPackage) {
+function validateJavascriptTransition(
+  record,
+  beforePackage,
+  afterPackage,
+  root,
+  baseCommit,
+  targetReference
+) {
   exactKeys(
     record.transition,
-    ["devDependencies", "kind"],
+    ["devDependencies", "hardhatWarningMetadata", "kind", "securityOverrides"],
     "JavaScript transition"
   );
   const changes = record.transition.devDependencies;
+  const hardhatMetadata = record.transition.hardhatWarningMetadata;
+  const overrideChanges = record.transition.securityOverrides;
+  if (!Array.isArray(overrideChanges)) {
+    fail("Security override transitions must be an array");
+  }
+  const expectedChangedFiles = ["package.json", "pnpm-lock.yaml"];
+  if (hardhatMetadata !== null) {
+    expectedChangedFiles.push(HARDHAT_WARNING_ALLOWLIST);
+  }
+  if (overrideChanges.length > 0) {
+    expectedChangedFiles.push("pnpm-workspace.yaml");
+  }
   if (
-    !valuesEqual(record.changedFiles, ["package.json", "pnpm-lock.yaml"]) ||
+    !valuesEqual(record.changedFiles, expectedChangedFiles.sort()) ||
     !Array.isArray(changes) ||
     changes.length === 0
   ) {
-    fail("JavaScript maintenance must update package.json and pnpm-lock.yaml");
+    fail("JavaScript maintenance changed files outside its declared transition");
   }
   const names = [];
   const expectedPackage = structuredClone(beforePackage);
@@ -722,6 +850,49 @@ function validateJavascriptTransition(record, beforePackage, afterPackage) {
   if (!valuesEqual(expectedPackage, afterPackage)) {
     fail("package.json changed outside declared existing devDependencies");
   }
+
+  validateSecurityOverrideTransitions(
+    overrideChanges,
+    root,
+    baseCommit,
+    targetReference
+  );
+
+  const hardhatChange = changes.find((change) => change.name === "hardhat");
+  if (hardhatMetadata === null) {
+    if (hardhatChange) {
+      fail("Hardhat maintenance must update its reviewed warning metadata");
+    }
+  } else {
+    exactKeys(
+      hardhatMetadata,
+      ["from", "to"],
+      "Hardhat warning metadata transition"
+    );
+    const beforeAllowlist = readJsonFile(
+      root,
+      HARDHAT_WARNING_ALLOWLIST,
+      baseCommit
+    );
+    const afterAllowlist = readJsonFile(
+      root,
+      HARDHAT_WARNING_ALLOWLIST,
+      targetReference
+    );
+    if (
+      !hardhatChange ||
+      hardhatMetadata.from !== hardhatChange.from ||
+      hardhatMetadata.to !== hardhatChange.to ||
+      beforeAllowlist.tools?.hardhat?.version !== hardhatMetadata.from ||
+      afterAllowlist.tools?.hardhat?.version !== hardhatMetadata.to
+    ) {
+      fail("Hardhat warning metadata must match the package transition");
+    }
+    beforeAllowlist.tools.hardhat.version = hardhatMetadata.to;
+    if (!valuesEqual(beforeAllowlist, afterAllowlist)) {
+      fail("Hardhat warning allowlist changed outside its reviewed version");
+    }
+  }
 }
 
 function validateTransition(
@@ -738,6 +909,24 @@ function validateTransition(
 ) {
   if (record.category === "bootstrap") {
     validateBootstrapTransition(record);
+    return;
+  }
+  if (record.category === "governance") {
+    if (
+      !valuesEqual(beforeActions, afterActions) ||
+      !valuesEqual(beforePackages, afterPackages) ||
+      !valuesEqual(beforeToolchain, afterToolchain)
+    ) {
+      fail(
+        "Governance maintenance may not change dependencies or the pinned toolchain"
+      );
+    }
+    validateGovernanceTransition(
+      record,
+      root,
+      baseCommit,
+      targetReference
+    );
     return;
   }
   if (!valuesEqual(beforeToolchain, afterToolchain)) {
@@ -762,7 +951,10 @@ function validateTransition(
   validateJavascriptTransition(
     record,
     readPackage(root, baseCommit),
-    readPackage(root, targetReference)
+    readPackage(root, targetReference),
+    root,
+    baseCommit,
+    targetReference
   );
 }
 
@@ -952,6 +1144,7 @@ module.exports = Object.freeze({
   stage13AnchorSha256,
   toolchainSnapshot,
   validateGithubActionTransition,
+  validateGovernanceTransition,
   validateJavascriptTransition,
   validateMaintenanceLedger,
 });
