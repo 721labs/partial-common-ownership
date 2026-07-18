@@ -4,3 +4,8 @@ allowBuilds:
   bufferutil@4.0.6: false
   esbuild@0.28.1: true
   utf-8-validate@5.0.9: false
+
+# Hardhat still declares adm-zip ^0.4.16. Force the first release patched for
+# GHSA-xcpc-8h2w-3j85 until Hardhat updates its dependency range upstream.
+overrides:
+  adm-zip: 0.6.0
