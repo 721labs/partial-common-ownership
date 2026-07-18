@@ -26,6 +26,7 @@ $ pnpm add --save-dev @721labs/partial-common-ownership
 | ----------------------------------------------------------- | -------------------------------------------- |
 | [Partial Common Ownership Resources](docs/pco-resources.md) | Learn more about Partial Common Ownership    |
 | [Development](docs/development.md)                          | Developer Documentation                      |
+| [Contributing](CONTRIBUTING.md)                             | Contribution and Pull Request Guidelines     |
 | [Usage](docs/documentation.md)                              | General Usage / Implementation Documentation |
 
 ## Security
