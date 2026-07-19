@@ -3,6 +3,15 @@
 pragma solidity ^0.8.20;
 
 interface ITaxation {
+  error InvalidTaxRate(uint256 taxRate);
+  error InvalidCollectionFrequency(uint256 collectionFrequency);
+  error WithdrawalExceedsDeposit(
+    uint256 tokenId,
+    uint256 requested,
+    uint256 available
+  );
+  error WithdrawalToContract(uint256 tokenId);
+
   //////////////////////////////
   /// External Methods
   //////////////////////////////

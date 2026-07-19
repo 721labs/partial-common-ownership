@@ -39,32 +39,40 @@ abstract contract Lease is ILease, Taxation {
     uint256 currentValuation_
   ) public payable override _tokenMinted(tokenId_) {
     // Prevent re-entrancy attack
-    require(!_locked[tokenId_], "Token is locked");
+    if (_locked[tokenId_]) revert TokenLocked(tokenId_);
 
     uint256 valuationPriorToTaxCollection = valuationOf(tokenId_);
 
     // Prevent front-run.
-    require(
-      valuationPriorToTaxCollection == currentValuation_,
-      "Current valuation is incorrect"
-    );
+    if (valuationPriorToTaxCollection != currentValuation_) {
+      revert CurrentValuationMismatch(
+        tokenId_,
+        currentValuation_,
+        valuationPriorToTaxCollection
+      );
+    }
 
     // New valuation must be greater than zero, even if current valuation is zero, to ensure that
     // funds are available for deposit.
-    require(newValuation_ > 0, "New valuation cannot be zero");
+    if (newValuation_ == 0) revert InvalidValuation(newValuation_);
 
     // Buyer can self-assess the valuation higher the current valuation; this renders unnecessary a second gas payment
     // if Buyer wants to immediately self-assess the token at a higher valuation.
-    require(
-      newValuation_ >= valuationPriorToTaxCollection,
-      "New valuation must be >= current valuation"
-    );
+    if (newValuation_ < valuationPriorToTaxCollection) {
+      revert NewValuationBelowCurrent(
+        tokenId_,
+        newValuation_,
+        valuationPriorToTaxCollection
+      );
+    }
 
     bool senderIsBeneficiary = msg.sender == beneficiaryOf(tokenId_);
 
     // Owner will be seller or this contract if foreclosed.
     // Prevent an accidental re-purchase.
-    require(msg.sender != ownerOf(tokenId_), "Buyer is already owner");
+    if (msg.sender == ownerOf(tokenId_)) {
+      revert BuyerAlreadyOwner(tokenId_, msg.sender);
+    }
 
     // After all security checks have occured, lock the token.
     _locked[tokenId_] = true;
@@ -81,19 +89,27 @@ abstract contract Lease is ILease, Taxation {
     if (senderIsBeneficiary) {
       if (purchasedFromContract) {
         // If token is owned by contract, beneficiary does not need to pay anything.
-        require(msg.value == 0, "Msg contains value");
+        if (msg.value != 0) revert IncorrectPayment(tokenId_, 0, msg.value);
       } else {
         // Beneficiary only needs to pay the current valuation,
         // doesn't need to put down a deposit.
-        require(msg.value == currentValuation_, "Msg contains surplus value");
+        if (msg.value != currentValuation_) {
+          revert IncorrectPayment(
+            tokenId_,
+            currentValuation_,
+            msg.value
+          );
+        }
       }
     } else {
       // Value sent must fund a deposit when purchasing from the contract, or
       // exceed the amount remitted when purchasing from an external owner.
-      require(
-        msg.value > (purchasedFromContract ? 0 : valuationPriorToTaxCollection),
-        "Message does not contain surplus value for deposit"
-      );
+      uint256 purchasePrice = purchasedFromContract
+        ? 0
+        : valuationPriorToTaxCollection;
+      if (msg.value <= purchasePrice) {
+        revert DepositPaymentRequired(tokenId_, purchasePrice, msg.value);
+      }
     }
 
     // Token is being purchased for the first time or out of foreclosure
@@ -150,8 +166,10 @@ abstract contract Lease is ILease, Taxation {
     _onlyApprovedOrOwner(tokenId_)
   {
     uint256 currentValuation = valuationOf(tokenId_);
-    require(newValuation_ > 0, "New valuation cannot be zero");
-    require(newValuation_ != currentValuation, "New valuation cannot be same");
+    if (newValuation_ == 0) revert InvalidValuation(newValuation_);
+    if (newValuation_ == currentValuation) {
+      revert ValuationUnchanged(tokenId_, newValuation_);
+    }
 
     _setValuation(tokenId_, newValuation_);
   }

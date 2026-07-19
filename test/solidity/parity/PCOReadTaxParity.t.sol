@@ -5,6 +5,7 @@ import {Test} from "forge-std/Test.sol";
 import {Vm} from "forge-std/Vm.sol";
 import {TestPCOToken} from "../../../contracts/test/TestPCOToken.sol";
 import {RemittanceTriggers} from "../../../contracts/token/modules/Remittance.sol";
+import {IERC721Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 
 /* solhint-disable func-name-mixedcase */
 
@@ -27,7 +28,6 @@ contract PCOReadTaxParityTest is Test {
         uint256 sellerRemittance;
         uint256 expectedDeposit;
     }
-
 
     uint256 private constant START_TIME = 1_700_000_000;
     uint256 private constant INVALID_TOKEN_ID = 999;
@@ -98,6 +98,28 @@ contract PCOReadTaxParityTest is Test {
         assertEq(token.collectionFrequencyOf(TOKEN_THREE), 365 days);
     }
 
+    function test_interoperabilitySmoke_deploysAndReadsDeterministicPCOConfiguration() public view {
+        assertTrue(token.supportsInterface(0x01ffc9a7));
+        assertTrue(token.supportsInterface(0x80ac58cd));
+        assertFalse(token.supportsInterface(0x5b5e139f));
+
+        uint256[3] memory tokenIds = [TOKEN_ONE, TOKEN_TWO, TOKEN_THREE];
+        uint256[3] memory expectedRates = [uint256(50_000_000_000), 1_000_000_000_000, 1_000_000_000_000];
+        uint256[3] memory expectedFrequencies = [uint256(90 days), 30 days, 365 days];
+
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            uint256 tokenId = tokenIds[i];
+            assertEq(token.ownerOf(tokenId), address(token));
+            assertEq(token.beneficiaryOf(tokenId), beneficiary);
+            assertEq(token.taxRateOf(tokenId), expectedRates[i]);
+            assertEq(token.collectionFrequencyOf(tokenId), expectedFrequencies[i]);
+            assertEq(token.valuationOf(tokenId), 0);
+            assertEq(token.depositOf(tokenId), 0);
+            assertEq(token.taxationCollected(tokenId), 0);
+            assertEq(token.lastCollectionTimeOf(tokenId), 0);
+        }
+    }
+
     //////////////////////////////
     /// Friendly transfers (3)
     //////////////////////////////
@@ -120,7 +142,7 @@ contract PCOReadTaxParityTest is Test {
 
     function test_parity_008_onlyOwner_deposit_revertsForNonOwner() public {
         vm.prank(alice);
-        vm.expectRevert(bytes("ERC721: caller is not owner nor approved"));
+        vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721InsufficientApproval.selector, alice, TOKEN_ONE));
         token.deposit{value: ETH1}(TOKEN_ONE);
 
         assertEq(token.ownerOf(TOKEN_ONE), address(token));
@@ -130,7 +152,7 @@ contract PCOReadTaxParityTest is Test {
 
     function test_parity_009_onlyOwner_selfAssess_revertsForNonOwner() public {
         vm.prank(alice);
-        vm.expectRevert(bytes("ERC721: caller is not owner nor approved"));
+        vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721InsufficientApproval.selector, alice, TOKEN_ONE));
         token.selfAssess(TOKEN_ONE, 500);
 
         assertEq(token.ownerOf(TOKEN_ONE), address(token));
@@ -139,7 +161,7 @@ contract PCOReadTaxParityTest is Test {
 
     function test_parity_010_onlyOwner_withdrawDeposit_revertsForNonOwner() public {
         vm.prank(alice);
-        vm.expectRevert(bytes("ERC721: caller is not owner nor approved"));
+        vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721InsufficientApproval.selector, alice, TOKEN_ONE));
         token.withdrawDeposit(TOKEN_ONE, 10);
 
         assertEq(token.ownerOf(TOKEN_ONE), address(token));
@@ -148,7 +170,7 @@ contract PCOReadTaxParityTest is Test {
 
     function test_parity_011_onlyOwner_exit_revertsForNonOwner() public {
         vm.prank(alice);
-        vm.expectRevert(bytes("ERC721: caller is not owner nor approved"));
+        vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721InsufficientApproval.selector, alice, TOKEN_ONE));
         token.exit(TOKEN_ONE);
 
         assertEq(token.ownerOf(TOKEN_ONE), address(token));
@@ -200,22 +222,22 @@ contract PCOReadTaxParityTest is Test {
     function test_parity_015_tokenMinted_valuationOfGuard() public {
         // The legacy test title says valuationOf, but the oracle intentionally
         // invokes ownerOf and pins that exact ERC721 revert payload.
-        vm.expectRevert(bytes("ERC721: owner query for nonexistent token"));
+        vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721NonexistentToken.selector, INVALID_TOKEN_ID));
         token.ownerOf(INVALID_TOKEN_ID);
     }
 
     function test_parity_016_tokenMinted_depositOfGuard() public {
-        vm.expectRevert(bytes("ERC721: query for nonexistent token"));
+        vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721NonexistentToken.selector, INVALID_TOKEN_ID));
         token.depositOf(INVALID_TOKEN_ID);
     }
 
     function test_parity_017_tokenMinted_takeoverLeaseGuard() public {
-        vm.expectRevert(bytes("ERC721: query for nonexistent token"));
+        vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721NonexistentToken.selector, INVALID_TOKEN_ID));
         token.takeoverLease(INVALID_TOKEN_ID, ETH0, ETH0);
     }
 
     function test_parity_018_tokenMinted_taxOwedSinceGuard() public {
-        vm.expectRevert(bytes("ERC721: query for nonexistent token"));
+        vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721NonexistentToken.selector, INVALID_TOKEN_ID));
         token.taxOwedSince(INVALID_TOKEN_ID, block.timestamp);
     }
 
@@ -676,9 +698,7 @@ contract PCOReadTaxParityTest is Test {
         }
     }
 
-    function _assertApprovalLog(Vm.Log memory log_, address owner_, address approved_, uint256 tokenId_)
-        internal
-    {
+    function _assertApprovalLog(Vm.Log memory log_, address owner_, address approved_, uint256 tokenId_) internal {
         _assertFourTopicLog(
             log_, APPROVAL_SIGNATURE, _addressTopic(owner_), _addressTopic(approved_), bytes32(tokenId_)
         );
@@ -696,23 +716,17 @@ contract PCOReadTaxParityTest is Test {
         _assertThreeTopicLog(log_, FORECLOSURE_SIGNATURE, bytes32(tokenId_), _addressTopic(previousOwner_));
     }
 
-    function _assertLeaseTakeoverLog(
-        Vm.Log memory log_,
-        uint256 tokenId_,
-        address owner_,
-        uint256 valuation_
-    ) internal {
+    function _assertLeaseTakeoverLog(Vm.Log memory log_, uint256 tokenId_, address owner_, uint256 valuation_)
+        internal
+    {
         _assertFourTopicLog(
             log_, LEASE_TAKEOVER_SIGNATURE, bytes32(tokenId_), _addressTopic(owner_), bytes32(valuation_)
         );
     }
 
-    function _assertRemittanceLog(
-        Vm.Log memory log_,
-        RemittanceTriggers trigger_,
-        address recipient_,
-        uint256 amount_
-    ) internal {
+    function _assertRemittanceLog(Vm.Log memory log_, RemittanceTriggers trigger_, address recipient_, uint256 amount_)
+        internal
+    {
         _assertFourTopicLog(
             log_, REMITTANCE_SIGNATURE, bytes32(uint256(trigger_)), _addressTopic(recipient_), bytes32(amount_)
         );
@@ -722,12 +736,9 @@ contract PCOReadTaxParityTest is Test {
         _assertThreeTopicLog(log_, VALUATION_SIGNATURE, bytes32(tokenId_), bytes32(valuation_));
     }
 
-    function _assertThreeTopicLog(
-        Vm.Log memory log_,
-        bytes32 signature_,
-        bytes32 topicOne_,
-        bytes32 topicTwo_
-    ) internal {
+    function _assertThreeTopicLog(Vm.Log memory log_, bytes32 signature_, bytes32 topicOne_, bytes32 topicTwo_)
+        internal
+    {
         assertEq(log_.emitter, address(token));
         assertEq(log_.topics.length, 3);
         assertEq(log_.topics[0], signature_);

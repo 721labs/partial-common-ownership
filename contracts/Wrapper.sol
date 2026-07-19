@@ -21,6 +21,11 @@ struct WrappedToken {
 /// @notice This contract can wrap or hold other tokens adhering to the ERC721
 /// standard, and is partially common owned (see PCO).
 contract Wrapper is PCO {
+  error DepositNotAllowed(address depositor, uint256 amount);
+  error DepositRequired(address depositor);
+  error WrapOriginatorOnly(address caller, address originator);
+  error TokenReceivedOutsideWrap(address operator);
+
   //////////////////////////////
   /// State
   //////////////////////////////
@@ -65,18 +70,22 @@ contract Wrapper is PCO {
     uint256 collectionFrequency_
   ) public payable {
     // Assertions
-    require(valuation_ > 0, "Valuation must be > 0");
-    require(beneficiary_ != address(0), "Beneficiary cannot be address zero");
-    require(taxRate_ > 0, "Tax rate must be > 0");
-    require(collectionFrequency_ > 0, "Tax frequency must be > 0");
+    if (valuation_ == 0) revert InvalidValuation(valuation_);
+    if (beneficiary_ == address(0)) {
+      revert InvalidBeneficiary(beneficiary_);
+    }
+    if (taxRate_ == 0) revert InvalidTaxRate(taxRate_);
+    if (collectionFrequency_ == 0) {
+      revert InvalidCollectionFrequency(collectionFrequency_);
+    }
 
     IERC721 tokenContract = IERC721(tokenContractAddress_);
 
     if (msg.sender == beneficiary_) {
       // If sender is the beneficiary, ensure they did not send a deposit
-      require(msg.value == 0, "No deposit required");
+      if (msg.value != 0) revert DepositNotAllowed(msg.sender, msg.value);
     } else {
-      require(msg.value > 0, "Deposit required");
+      if (msg.value == 0) revert DepositRequired(msg.sender);
     }
 
     // Transfer ownership of the token to this contract.
@@ -109,7 +118,9 @@ contract Wrapper is PCO {
   function unwrap(uint256 tokenId_) public _tokenMinted(tokenId_) {
     WrappedToken memory token = _wrappedTokenMap[tokenId_];
 
-    require(token.operatorAddress == msg.sender, "Wrap originator only");
+    if (token.operatorAddress != msg.sender) {
+      revert WrapOriginatorOnly(msg.sender, token.operatorAddress);
+    }
 
     // Get current owner's address prior to burning.
     address owner = ownerOf(tokenId_);
@@ -131,10 +142,7 @@ contract Wrapper is PCO {
   /// @param tokenId_ See IERC721
   /// @return Token URI string.
   function tokenURI(uint256 tokenId_) public view returns (string memory) {
-    require(
-      _exists(tokenId_),
-      "ERC721Metadata: URI query for nonexistent token"
-    );
+    if (!_exists(tokenId_)) revert ERC721NonexistentToken(tokenId_);
 
     WrappedToken memory wrappedToken = _wrappedTokenMap[tokenId_];
     IERC721Metadata metadata = IERC721Metadata(wrappedToken.contractAddress);
@@ -158,10 +166,9 @@ contract Wrapper is PCO {
   ) public view returns (bytes4) {
     // Ensure that the token was not errantly sent. This ensures that the self-assesssed valuation
     // and taxation information are set.
-    require(
-      operator_ == address(this),
-      "Tokens can only be received via #wrap"
-    );
+    if (operator_ != address(this)) {
+      revert TokenReceivedOutsideWrap(operator_);
+    }
 
     return this.onERC721Received.selector;
   }

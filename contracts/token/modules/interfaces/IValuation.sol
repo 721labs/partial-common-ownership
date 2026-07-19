@@ -3,6 +3,8 @@
 pragma solidity ^0.8.20;
 
 interface IValuation {
+  error InvalidValuation(uint256 valuation);
+
   /// @notice Returns the self-assessed valuation for a token.
   /// @param tokenId_ ID of token.
   /// @return Valuation in Wei.  If token has no valuation set, returns 0.

@@ -9,7 +9,6 @@ const { createRequire } = require("module");
 const PROJECT_ROOT = path.resolve(__dirname, "..");
 const PACKAGE_NAME = "@721labs/partial-common-ownership";
 const PNPM_VERSION = "11.13.1";
-const HARDHAT_VERSION = "3.9.1";
 const FOUNDRY_VERSION = "1.7.1";
 const SOLC_VERSION = "0.8.36";
 const OPENZEPPELIN_VERSION = "5.6.1";
@@ -270,8 +269,52 @@ pragma solidity 0.8.36;
 
 import {Wrapper} from "${PACKAGE_NAME}/contracts/Wrapper.sol";
 import {PartialCommonOwnership} from "${PACKAGE_NAME}/contracts/token/PartialCommonOwnership.sol";
+import {IBeneficiary} from "${PACKAGE_NAME}/contracts/token/modules/interfaces/IBeneficiary.sol";
+import {ILease} from "${PACKAGE_NAME}/contracts/token/modules/interfaces/ILease.sol";
+import {IRemittance} from "${PACKAGE_NAME}/contracts/token/modules/interfaces/IRemittance.sol";
+import {ITaxation} from "${PACKAGE_NAME}/contracts/token/modules/interfaces/ITaxation.sol";
+import {IValuation} from "${PACKAGE_NAME}/contracts/token/modules/interfaces/IValuation.sol";
+import {IERC721Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 
-contract ConsumerWrapper is Wrapper {}
+contract ConsumerWrapper is Wrapper {
+  function customErrorSelectors()
+    external
+    pure
+    returns (bytes4[31] memory selectors)
+  {
+    selectors[0] = Wrapper.DepositNotAllowed.selector;
+    selectors[1] = Wrapper.DepositRequired.selector;
+    selectors[2] = Wrapper.TokenReceivedOutsideWrap.selector;
+    selectors[3] = Wrapper.WrapOriginatorOnly.selector;
+    selectors[4] = IBeneficiary.BeneficiaryOnly.selector;
+    selectors[5] = IBeneficiary.InvalidBeneficiary.selector;
+    selectors[6] = ILease.BuyerAlreadyOwner.selector;
+    selectors[7] = ILease.CurrentValuationMismatch.selector;
+    selectors[8] = ILease.DepositPaymentRequired.selector;
+    selectors[9] = ILease.IncorrectPayment.selector;
+    selectors[10] = ILease.NewValuationBelowCurrent.selector;
+    selectors[11] = ILease.TokenLocked.selector;
+    selectors[12] = ILease.ValuationUnchanged.selector;
+    selectors[13] = IRemittance.AmountZero.selector;
+    selectors[14] = IRemittance.DestinationContractAddress.selector;
+    selectors[15] = IRemittance.DestinationZeroAddress.selector;
+    selectors[16] = IRemittance.InsufficientBalance.selector;
+    selectors[17] = IRemittance.NoOutstandingBalance.selector;
+    selectors[18] = ITaxation.InvalidCollectionFrequency.selector;
+    selectors[19] = ITaxation.InvalidTaxRate.selector;
+    selectors[20] = ITaxation.WithdrawalExceedsDeposit.selector;
+    selectors[21] = ITaxation.WithdrawalToContract.selector;
+    selectors[22] = IValuation.InvalidValuation.selector;
+    selectors[23] = IERC721Errors.ERC721IncorrectOwner.selector;
+    selectors[24] = IERC721Errors.ERC721InsufficientApproval.selector;
+    selectors[25] = IERC721Errors.ERC721InvalidApprover.selector;
+    selectors[26] = IERC721Errors.ERC721InvalidOperator.selector;
+    selectors[27] = IERC721Errors.ERC721InvalidOwner.selector;
+    selectors[28] = IERC721Errors.ERC721InvalidReceiver.selector;
+    selectors[29] = IERC721Errors.ERC721InvalidSender.selector;
+    selectors[30] = IERC721Errors.ERC721NonexistentToken.selector;
+  }
+}
 
 contract ConsumerPCO is PartialCommonOwnership {
   function mintForConsumer(
@@ -292,22 +335,10 @@ contract ConsumerPCO is PartialCommonOwnership {
 }`;
 }
 
-function prepareCleanConsumer(
-  directory,
-  tarball,
-  manifest,
-  workspaceConfiguration = ""
-) {
+function prepareCleanConsumer(directory, tarball, manifest) {
   fs.mkdirSync(directory, { recursive: true });
   fs.copyFileSync(tarball, path.join(directory, "package.tgz"));
   writeJson(path.join(directory, "package.json"), manifest);
-  if (workspaceConfiguration) {
-    writeFile(
-      path.join(directory, "pnpm-workspace.yaml"),
-      workspaceConfiguration
-    );
-  }
-
   run(pnpm, ["install", "--lockfile-only", "--ignore-scripts"], {
     cwd: directory,
   });
@@ -331,67 +362,6 @@ function assertArtifacts(directory, relativePaths, tool) {
       )}`
     );
   }
-}
-
-function buildHardhatConsumer(directory, tarball) {
-  prepareCleanConsumer(
-    directory,
-    tarball,
-    {
-      name: "pco-hardhat-package-consumer",
-      version: "0.0.0",
-      private: true,
-      type: "module",
-      packageManager: `pnpm@${PNPM_VERSION}`,
-      dependencies: {
-        [PACKAGE_NAME]: "file:./package.tgz",
-      },
-      devDependencies: {
-        hardhat: HARDHAT_VERSION,
-      },
-    },
-    // Hardhat 3 executes TypeScript/ESM configuration through its exact tsx
-    // graph. Permit only that compiler build; dependency resolution remains
-    // strict and OpenZeppelin is intentionally not hoisted into the consumer.
-    `allowBuilds:
-  esbuild@0.28.1: true`
-  );
-
-  writeFile(
-    path.join(directory, "contracts", "Consumer.sol"),
-    consumerSource()
-  );
-  writeFile(
-    path.join(directory, "hardhat.config.js"),
-    `import { defineConfig } from "hardhat/config";
-
-export default defineConfig({
-  solidity: {
-    version: "${SOLC_VERSION}",
-    settings: {
-      evmVersion: "london",
-      optimizer: { enabled: false, runs: 200 },
-      viaIR: false,
-      metadata: { bytecodeHash: "ipfs", useLiteralContent: false }
-    }
-  },
-  paths: {
-    sources: "./contracts",
-    cache: "./cache",
-    artifacts: "./artifacts"
-  }
-});`
-  );
-
-  run(pnpm, ["exec", "hardhat", "build"], { cwd: directory });
-  assertArtifacts(
-    directory,
-    [
-      "artifacts/contracts/Consumer.sol/ConsumerWrapper.json",
-      "artifacts/contracts/Consumer.sol/ConsumerPCO.json",
-    ],
-    "Hardhat"
-  );
 }
 
 function resolveInstalledPackage(fromDirectory, packageName) {
@@ -505,11 +475,10 @@ function main() {
       path.join(temporaryRoot, "unpacked")
     );
 
-    buildHardhatConsumer(path.join(temporaryRoot, "hardhat-consumer"), tarball);
     buildForgeConsumer(path.join(temporaryRoot, "forge-consumer"), tarball);
 
     console.log(
-      `Package gate passed: ${packageResult.fileCount} allowlisted files, ${packageResult.productionSourceCount} production sources at ${packageResult.productionPragma}, OpenZeppelin ${packageResult.openZeppelinVersion}, Hardhat ${HARDHAT_VERSION}, and Forge ${FOUNDRY_VERSION}.`
+      `Package gate passed: ${packageResult.fileCount} allowlisted files, ${packageResult.productionSourceCount} production sources at ${packageResult.productionPragma}, OpenZeppelin ${packageResult.openZeppelinVersion}, and Forge ${FOUNDRY_VERSION}.`
     );
   } catch (error) {
     if (process.env.KEEP_PACKAGE_TEST_TEMP === "1") {

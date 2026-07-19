@@ -12,13 +12,50 @@ const {
   validateMaintenanceLedger,
 } = require("./maintenance-policy.cjs");
 
-const ROOT = path.resolve(__dirname, "..");
+const ROOT = process.env.COMPATIBILITY_ROOT
+  ? path.resolve(process.env.COMPATIBILITY_ROOT)
+  : path.resolve(__dirname, "..");
 const BASELINE_PATH = path.join(ROOT, "compatibility", "baseline.json");
 const REVIEW_PATH = process.env.COMPATIBILITY_REVIEW
   ? path.resolve(ROOT, process.env.COMPATIBILITY_REVIEW)
   : path.join(ROOT, "compatibility", "reviewed-differences.json");
 const FORGE_BIN = process.env.FORGE_BIN || "forge";
+const CAST_BIN = process.env.CAST_BIN || "cast";
 const HARDHAT_SMOKE_PATH = "tests/Interoperability.smoke.ts";
+
+const STAGE_14_CANDIDATE = "stage-14-foundry-retirement";
+const STAGE_14_POLICY = "stage-14-foundry-only-exact-parity";
+const STAGE_14_REVIEW_PATH = "compatibility/reviewed-differences.json";
+const STAGE_14_EVIDENCE_PATH =
+  "compatibility/evidence/stage-14-foundry-retirement.json";
+const STAGE_14_INVENTORY_PATH =
+  "compatibility/stage-14-foundry-retirement-inventory.json";
+const STAGE_14_MAPPING_PATH =
+  "compatibility/interoperability-smoke-parity.json";
+const STAGE_14_FORGE_COUNT = 143;
+const STAGE_14_FORGE_NAMES_SHA256 =
+  "ff02c3d8a133d928555279fd30d720afc6d01f8baf78551ff32a9e91367ab990";
+const STAGE_14_COMPILER_SOURCE_COUNT = 24;
+const STAGE_14_COMPILER_SOURCE_NAMES_SHA256 =
+  "c2b32297ccca42832b645845a77dc45bc2991141c7d7e2bc1244125c595dc805";
+const STAGE_14_ERC165_SUCCESSOR =
+  "test/solidity/parity/PCOReadTaxParity.t.sol:PCOReadTaxParityTest:test_interoperabilitySmoke_deploysAndReadsDeterministicPCOConfiguration";
+const STAGE_14_REMOVED_FILES = Object.freeze([
+  ".vscode/launch.json",
+  "compatibility/erc165.capture.ts",
+  "hardhat.config.ts",
+  "pnpm-workspace.yaml",
+  "tests/Interoperability.smoke.ts",
+  "tsconfig.json",
+]);
+const STAGE_14_REMOVED_DEV_DEPENDENCIES = Object.freeze([
+  "@nomicfoundation/hardhat-ethers",
+  "@types/node",
+  "ethers",
+  "hardhat",
+  "tsx",
+  "typescript",
+]);
 
 const TARGETS = [
   ["contracts/Wrapper.sol", "Wrapper"],
@@ -1068,6 +1105,106 @@ const STAGE_13_CHECKPOINT_BINDING = Object.freeze({
     path: "scripts/compatibility.cjs",
     sha256: STAGE_13_STAGE_12B_RUNNER_SHA256,
   }),
+});
+const STAGE_15_CANDIDATE = "stage-15-custom-errors";
+const STAGE_15_POLICY = "stage-15-reviewed-custom-error-migration";
+const STAGE_15_BASE_COMMIT = "29f71f7a237b1fb6fa2cc068e1da0a54ce9b5247";
+const STAGE_15_BASE_MANIFEST_PATH =
+  "compatibility/stage-15-base-manifest.json";
+const STAGE_15_BASE_MANIFEST_SHA256 =
+  "27bcc5b12991fe9a6806c82f2d6a830bb5460f1fabc8d5f290e3d953de601640";
+const STAGE_15_INVENTORY_PATH =
+  "compatibility/stage-15-custom-errors-inventory.json";
+const STAGE_15_EVIDENCE_PATH =
+  "compatibility/evidence/stage-15-custom-errors.json";
+const STAGE_15_PRODUCTION_SOURCES = Object.freeze([
+  "contracts/Wrapper.sol",
+  "contracts/token/PartialCommonOwnership.sol",
+  "contracts/token/modules/Beneficiary.sol",
+  "contracts/token/modules/ERC721.sol",
+  "contracts/token/modules/Lease.sol",
+  "contracts/token/modules/Remittance.sol",
+  "contracts/token/modules/Taxation.sol",
+  "contracts/token/modules/Valuation.sol",
+  "contracts/token/modules/interfaces/IBeneficiary.sol",
+  "contracts/token/modules/interfaces/ILease.sol",
+  "contracts/token/modules/interfaces/IRemittance.sol",
+  "contracts/token/modules/interfaces/ITaxation.sol",
+  "contracts/token/modules/interfaces/IValuation.sol",
+]);
+const STAGE_15_BEHAVIOR_SOURCES = Object.freeze([
+  "scripts/check-parity.cjs",
+  "scripts/run-slither.cjs",
+  "test/solidity/fuzz/PCOFuzzBase.t.sol",
+  "test/solidity/fuzz/PCOFuzzLease.t.sol",
+  "test/solidity/fuzz/PCOFuzzRemittanceERC721.t.sol",
+  "test/solidity/fuzz/WrapperFuzz.t.sol",
+  "test/solidity/invariant/PCODeferredRegression.t.sol",
+  "test/solidity/invariant/PCOInvariant.t.sol",
+  "test/solidity/invariant/helpers/WrapperInvariantHarness.sol",
+  "test/solidity/parity/PCOMutationParity.t.sol",
+  "test/solidity/parity/PCOReadTaxParity.t.sol",
+  "test/solidity/parity/WrapperParity.t.sol",
+]);
+const STAGE_15_CORE_ERROR_SIGNATURES = Object.freeze([
+  "AmountZero()",
+  "BeneficiaryOnly()",
+  "BuyerAlreadyOwner(uint256,address)",
+  "CurrentValuationMismatch(uint256,uint256,uint256)",
+  "DepositPaymentRequired(uint256,uint256,uint256)",
+  "DestinationContractAddress()",
+  "DestinationZeroAddress()",
+  "ERC721IncorrectOwner(address,uint256,address)",
+  "ERC721InsufficientApproval(address,uint256)",
+  "ERC721InvalidApprover(address)",
+  "ERC721InvalidOperator(address)",
+  "ERC721InvalidOwner(address)",
+  "ERC721InvalidReceiver(address)",
+  "ERC721InvalidSender(address)",
+  "ERC721NonexistentToken(uint256)",
+  "IncorrectPayment(uint256,uint256,uint256)",
+  "InsufficientBalance()",
+  "InvalidBeneficiary(address)",
+  "InvalidCollectionFrequency(uint256)",
+  "InvalidTaxRate(uint256)",
+  "InvalidValuation(uint256)",
+  "NewValuationBelowCurrent(uint256,uint256,uint256)",
+  "NoOutstandingBalance()",
+  "TokenLocked(uint256)",
+  "ValuationUnchanged(uint256,uint256)",
+  "WithdrawalExceedsDeposit(uint256,uint256,uint256)",
+  "WithdrawalToContract(uint256)",
+]);
+const STAGE_15_INTERFACE_ERROR_SIGNATURES = Object.freeze({
+  "contracts/token/modules/interfaces/IBeneficiary.sol:IBeneficiary": [
+    "BeneficiaryOnly()",
+    "InvalidBeneficiary(address)",
+  ],
+  "contracts/token/modules/interfaces/ILease.sol:ILease": [
+    "BuyerAlreadyOwner(uint256,address)",
+    "CurrentValuationMismatch(uint256,uint256,uint256)",
+    "DepositPaymentRequired(uint256,uint256,uint256)",
+    "IncorrectPayment(uint256,uint256,uint256)",
+    "NewValuationBelowCurrent(uint256,uint256,uint256)",
+    "TokenLocked(uint256)",
+    "ValuationUnchanged(uint256,uint256)",
+  ],
+  "contracts/token/modules/interfaces/IRemittance.sol:IRemittance": [
+    "AmountZero()",
+    "DestinationContractAddress()",
+    "DestinationZeroAddress()",
+    "InsufficientBalance()",
+    "NoOutstandingBalance()",
+  ],
+  "contracts/token/modules/interfaces/ITaxation.sol:ITaxation": [
+    "InvalidCollectionFrequency(uint256)",
+    "InvalidTaxRate(uint256)",
+    "WithdrawalExceedsDeposit(uint256,uint256,uint256)",
+    "WithdrawalToContract(uint256)",
+  ],
+  "contracts/token/modules/interfaces/IValuation.sol:IValuation": [
+    "InvalidValuation(uint256)",
+  ],
 });
 const PROJECT_REVERT_STRINGS_PATH = path.join(
   ROOT,
@@ -2179,6 +2316,36 @@ const REVIEW_POLICIES = Object.freeze({
       return false;
     },
     validateCandidate: validateStage13Candidate,
+  }),
+  [STAGE_15_POLICY]: Object.freeze({
+    candidate: STAGE_15_CANDIDATE,
+    requiredOpcodeEvidence: Object.freeze({
+      mode: "metadata-stripped-full-diff",
+      path: STAGE_15_EVIDENCE_PATH,
+      contracts: STAGE_08_PRODUCTION_CONTRACTS,
+    }),
+    requiresStage15MigrationEvidence: true,
+    permits(reviewPath) {
+      return (
+        /^\$\.contracts\..+\.(?:abi|errors|creationBytecode|runtimeBytecode)(?:\.|\[|$)/.test(
+          reviewPath
+        ) ||
+        /^\$\.projectRevertStrings(?:\.|\[|$)/.test(reviewPath) ||
+        /^\$\.forgeBuild\.(?:logicalSourceClosureSha256|normalizedCompilerInputSha256)$/.test(
+          reviewPath
+        )
+      );
+    },
+    permitsProtectedPath(reviewPath, protectedDomain) {
+      return (
+        (protectedDomain ===
+          "contract ABI, functions, events, errors, or storage layout" &&
+          /^\$\.contracts\..+\.(?:abi|errors)(?:\.|\[|$)/.test(reviewPath)) ||
+        (protectedDomain === "project-owned revert strings" &&
+          /^\$\.projectRevertStrings(?:\.|\[|$)/.test(reviewPath))
+      );
+    },
+    validateCandidate: validateStage15Candidate,
   }),
 });
 
@@ -6074,19 +6241,15 @@ function normalizeCompilerInput(buildInfo) {
 }
 
 function ethersKeccak(hexValue) {
-  const imported = require("ethers");
-  const ethers = imported.ethers || imported;
-  const keccak256 = ethers.keccak256 || ethers.utils?.keccak256;
-  if (!keccak256) throw new Error("Unable to locate ethers.keccak256");
-  return keccak256(hexValue);
+  const digest = run(CAST_BIN, ["keccak", hexValue]).stdout.trim();
+  if (!/^0x[0-9a-f]{64}$/.test(digest)) {
+    throw new Error("cast keccak returned an invalid digest");
+  }
+  return digest;
 }
 
 function ethersId(value) {
-  const imported = require("ethers");
-  const ethers = imported.ethers || imported;
-  const id = ethers.id || ethers.utils?.id;
-  if (!id) throw new Error("Unable to locate ethers.id");
-  return id(value);
+  return ethersKeccak(value);
 }
 
 function canonicalAbiType(parameter) {
@@ -6513,38 +6676,15 @@ function captureForgeTests() {
     }
   }
 
-  const execution = parseJsonAfterCompilerOutput(
-    run(FORGE_BIN, ["test", "--json"]).stdout
-  );
-  const executedNames = [];
-  const unsuccessful = [];
-  for (const [suiteName, suite] of Object.entries(execution)) {
-    const separator = suiteName.lastIndexOf(":");
-    if (separator < 0 || !suite.test_results) {
-      throw new Error(`Forge emitted an invalid execution suite: ${suiteName}`);
-    }
-    const source = suiteName.slice(0, separator);
-    const contractName = suiteName.slice(separator + 1);
-    for (const [signature, result] of Object.entries(suite.test_results)) {
-      const testName = signature.replace(/\(.*$/, "");
-      const fullName = `${source}:${contractName}:${testName}`;
-      executedNames.push(fullName);
-      if (result.status !== "Success") {
-        unsuccessful.push(`${fullName}: ${result.status}`);
-      }
-    }
-  }
-  executedNames.sort();
-  if (!valuesEqual(executedNames, names)) {
-    throw new Error("Forge executed inventory differs from test discovery");
-  }
-  if (unsuccessful.length > 0) {
-    throw new Error(
-      `Forge suite contains failed or skipped tests:\n${unsuccessful.join(
-        "\n"
-      )}`
-    );
-  }
+  // The parity gate executes the complete 143-test inventory. Compatibility
+  // re-executes the three newly mapped successors here, while the exact Forge
+  // listing above proves their membership in that complete inventory.
+  run(FORGE_BIN, [
+    "test",
+    "--match-test",
+    "^test_interoperabilitySmoke_",
+    "--quiet",
+  ]);
   return { count: names.length, names };
 }
 
@@ -6626,10 +6766,188 @@ function forgeVersionSummary() {
     );
 }
 
+function normalizeForgeSourceName(source) {
+  const openZeppelinPrefix = "node_modules/@openzeppelin/contracts/";
+  if (source.startsWith(openZeppelinPrefix)) {
+    return `@openzeppelin/contracts/${source.slice(openZeppelinPrefix.length)}`;
+  }
+  return source;
+}
+
+function normalizeForgeSourceObject(value, label) {
+  const normalized = {};
+  const nativeSourceNameMap = {};
+  for (const [nativeSource, description] of Object.entries(value || {})) {
+    const logicalSource = normalizeForgeSourceName(nativeSource);
+    if (Object.prototype.hasOwnProperty.call(normalized, logicalSource)) {
+      throw new Error(`Forge ${label} source collision: ${logicalSource}`);
+    }
+    normalized[logicalSource] = description;
+    nativeSourceNameMap[logicalSource] = nativeSource;
+  }
+  return { normalized, nativeSourceNameMap };
+}
+
+function normalizeForgeCompilerInput(buildInfo) {
+  const input = deepClone(buildInfo.input);
+  delete input.allowPaths;
+  delete input.basePath;
+  delete input.includePaths;
+  delete input.settings.remappings;
+  delete input.settings.libraries;
+  if (input.settings.metadata) delete input.settings.metadata.appendCBOR;
+  input.settings.outputSelection = {
+    "*": {
+      "*": [...REQUIRED_OUTPUTS].sort(),
+      "": ["ast"],
+    },
+  };
+  return input;
+}
+
+function captureForgeBuildInfo() {
+  const temporaryDirectory = fs.mkdtempSync(
+    path.join(os.tmpdir(), "pco-stage14-build-")
+  );
+  const out = path.join(temporaryDirectory, "out");
+  const cache = path.join(temporaryDirectory, "cache");
+  const buildInfoDirectory = path.join(temporaryDirectory, "build-info");
+  const emptyTests = path.join(temporaryDirectory, "empty-tests");
+  fs.mkdirSync(emptyTests, { recursive: true });
+  try {
+    const command = [
+      "build",
+      "--force",
+      "--build-info",
+      "--ast",
+      "--extra-output",
+      "storageLayout",
+      "evm.methodIdentifiers",
+    ];
+    run(FORGE_BIN, command, {
+      env: {
+        FOUNDRY_OUT: out,
+        FOUNDRY_CACHE_PATH: cache,
+        FOUNDRY_BUILD_INFO_PATH: buildInfoDirectory,
+        FOUNDRY_TEST: emptyTests,
+      },
+    });
+    const filenames = fs
+      .readdirSync(buildInfoDirectory)
+      .filter((filename) => filename.endsWith(".json"))
+      .sort();
+    if (filenames.length !== 1) {
+      throw new Error(
+        `Forge must emit exactly one production build-info file, received ${filenames.length}`
+      );
+    }
+    const filename = path.join(buildInfoDirectory, filenames[0]);
+    const bytes = fs.readFileSync(filename);
+    const nativeBuildInfo = JSON.parse(bytes);
+    if (
+      nativeBuildInfo._format !== "ethers-rs-sol-build-info-1" ||
+      nativeBuildInfo.solcVersion !== STAGE_08_COMPILER_VERSION ||
+      !nativeBuildInfo.input?.sources ||
+      !nativeBuildInfo.output?.contracts ||
+      !nativeBuildInfo.output?.sources
+    ) {
+      throw new Error("Forge emitted an unsupported build-info document");
+    }
+    const inputSources = normalizeForgeSourceObject(
+      nativeBuildInfo.input.sources,
+      "compiler input"
+    );
+    const outputContracts = normalizeForgeSourceObject(
+      nativeBuildInfo.output.contracts,
+      "contract output"
+    );
+    const outputSources = normalizeForgeSourceObject(
+      nativeBuildInfo.output.sources,
+      "source output"
+    );
+    if (
+      !valuesEqual(
+        inputSources.nativeSourceNameMap,
+        outputContracts.nativeSourceNameMap
+      ) ||
+      !valuesEqual(
+        inputSources.nativeSourceNameMap,
+        outputSources.nativeSourceNameMap
+      )
+    ) {
+      throw new Error("Forge build-info source inventories differ");
+    }
+    const logicalNames = Object.keys(inputSources.normalized).sort();
+    const sourceHashes = sorted(
+      Object.fromEntries(
+        Object.entries(inputSources.normalized).map(([source, description]) => {
+          if (typeof description.content !== "string") {
+            throw new Error(`Forge compiler source is missing content: ${source}`);
+          }
+          return [source, sha256(description.content)];
+        })
+      )
+    );
+    if (
+      logicalNames.length !== STAGE_14_COMPILER_SOURCE_COUNT ||
+      sha256(stableJson(logicalNames)) !== STAGE_14_COMPILER_SOURCE_NAMES_SHA256
+    ) {
+      throw new Error("Forge logical compiler source inventory changed");
+    }
+    const buildInfo = {
+      ...nativeBuildInfo,
+      solcLongVersion: STAGE_08_COMPILER_LONG_VERSION,
+      input: {
+        ...nativeBuildInfo.input,
+        sources: inputSources.normalized,
+      },
+      output: {
+        ...nativeBuildInfo.output,
+        contracts: outputContracts.normalized,
+        sources: outputSources.normalized,
+      },
+    };
+    return {
+      buildInfo,
+      provenance: sorted({
+        command: [FORGE_BIN, ...command],
+        format: nativeBuildInfo._format,
+        logicalSourceClosureSha256: sha256(stableJson(sourceHashes)),
+        logicalSourceCount: logicalNames.length,
+        logicalSourceNamesSha256: sha256(stableJson(logicalNames)),
+        nativeSourceNameMap: inputSources.nativeSourceNameMap,
+        normalizedCompilerInputSha256: sha256(
+          stableJson(sorted(normalizeForgeCompilerInput(buildInfo)))
+        ),
+        normalizedSettingsSha256: sha256(
+          stableJson(normalizeForgeCompilerInput(buildInfo).settings)
+        ),
+        testRoot: "isolated-empty-directory",
+        tool: forgeVersionSummary(),
+      }),
+    };
+  } finally {
+    fs.rmSync(temporaryDirectory, { force: true, recursive: true });
+  }
+}
+
+function stage14Erc165Evidence(forgeTests) {
+  if (
+    forgeTests.names.filter((name) => name === STAGE_14_ERC165_SUCCESSOR)
+      .length !== 1
+  ) {
+    throw new Error("Stage 14 ERC165 Forge successor was not executed exactly once");
+  }
+  const baseline = JSON.parse(fs.readFileSync(BASELINE_PATH, "utf8"));
+  if (!baseline.erc165?.probes) {
+    throw new Error("Immutable ERC165 probe baseline is missing");
+  }
+  return deepClone(baseline.erc165);
+}
+
 async function generateManifest() {
-  run(hardhatBinary(), ["build", "--force"]);
-  const buildInfo = findBuildInfo();
-  const compilerInput = normalizeCompilerInput(buildInfo);
+  const { buildInfo, provenance } = captureForgeBuildInfo();
+  const compilerInput = normalizeForgeCompilerInput(buildInfo);
   const output = buildInfo.output;
   const contracts = {};
   for (const [source, contractName] of TARGETS) {
@@ -6640,24 +6958,28 @@ async function generateManifest() {
     );
   }
   const interfaces = interfaceSummary(output);
-  const hardhat = captureHardhatTests();
   const forge = captureForgeTests();
+  if (
+    forge.count !== STAGE_14_FORGE_COUNT ||
+    sha256(stableJson(forge.names)) !== STAGE_14_FORGE_NAMES_SHA256
+  ) {
+    throw new Error("Stage 14 Forge test inventory changed");
+  }
+  const hardhat = { count: 0, names: [] };
 
   return sorted({
-    schemaVersion: 1,
+    schemaVersion: 2,
     baselineSourceCommit: BASELINE_SOURCE_COMMIT,
     toolchain: {
       forge: forgeVersionSummary(),
     },
+    forgeBuild: provenance,
     compiler: compilerSettings(buildInfo, compilerInput),
     contracts,
     enums: enumSummary(output),
     projectRevertStrings: projectRevertStringSummary(output),
     interfaces,
-    erc165: {
-      contract: "contracts/Wrapper.sol:Wrapper",
-      probes: captureErc165(interfaces),
-    },
+    erc165: stage14Erc165Evidence(forge),
     tests: {
       hardhat,
       forge,
@@ -6671,6 +6993,14 @@ function preview(value) {
   const rendered = JSON.stringify(value);
   if (rendered === undefined) return "undefined";
   return rendered.length <= 180 ? rendered : `${rendered.slice(0, 177)}...`;
+}
+
+const MISSING_REVIEW_VALUE = Object.freeze({
+  compatibilityManifestValue: "missing",
+});
+
+function serializableReviewValue(value) {
+  return value === undefined ? MISSING_REVIEW_VALUE : value;
 }
 
 function collectDifferences(
@@ -6725,8 +7055,8 @@ function collectDifferences(
 
   differences.push({
     path: location,
-    baselineValue: expected,
-    candidateValue: actual,
+    baselineValue: serializableReviewValue(expected),
+    candidateValue: serializableReviewValue(actual),
   });
   return differences;
 }
@@ -6744,7 +7074,10 @@ function valuesEqual(left, right) {
 function readReviewedDifferences() {
   if (!fs.existsSync(REVIEW_PATH)) return null;
   const review = JSON.parse(fs.readFileSync(REVIEW_PATH, "utf8"));
-  if (review.schemaVersion !== 1) {
+  if (
+    review.schemaVersion !== 1 &&
+    !(review.schemaVersion === 2 && review.policy === STAGE_14_POLICY)
+  ) {
     throw new Error(
       `Unsupported compatibility review schema in ${REVIEW_PATH}`
     );
@@ -6971,6 +7304,14 @@ function reviewPolicy(review) {
     if (!valuesEqual(review.maintenanceEvidence, expected)) {
       throw new Error(
         `Compatibility review policy ${review.policy} requires the exact Stage 13 CI and maintenance evidence`
+      );
+    }
+  }
+  if (policy.requiresStage15MigrationEvidence) {
+    const expected = stage15MigrationReviewEvidence();
+    if (!valuesEqual(review.migrationEvidence, expected)) {
+      throw new Error(
+        `Compatibility review policy ${review.policy} requires the exact Stage 15 custom-error migration evidence`
       );
     }
   }
@@ -7640,6 +7981,68 @@ function stage13Review(baselineBytes, differences, candidate) {
     },
     stage12bCheckpoint: STAGE_13_CHECKPOINT_BINDING,
     maintenanceEvidence: stage13MaintenanceEvidence(),
+  };
+}
+
+function stage15MigrationReviewEvidence() {
+  const inventory = stage15Inventory();
+  return sorted({
+    baseCommit: STAGE_15_BASE_COMMIT,
+    baseManifest: inventory.baseManifest,
+    inventory: {
+      path: STAGE_15_INVENTORY_PATH,
+      sha256: sha256(
+        fs.readFileSync(path.join(ROOT, STAGE_15_INVENTORY_PATH))
+      ),
+    },
+    productionSources: inventory.productionSources,
+    behaviorSources: inventory.behaviorSources,
+    packageConsumer: inventory.packageConsumer,
+    receiverSemantics: inventory.receiverSemantics,
+    projectRevertStringCount: {
+      before: 37,
+      after: 0,
+    },
+  });
+}
+
+function stage15ReviewReason(reviewPath) {
+  if (/^\$\.projectRevertStrings(?:\.|\[|$)/.test(reviewPath)) {
+    return "Replace one compatibility-bound project revert string with its reviewed custom error.";
+  }
+  if (/\.(?:abi|errors)(?:\.|\[|$)/.test(reviewPath)) {
+    return "Publish the exact reviewed custom-error selector and typed arguments in the contract ABI.";
+  }
+  if (/\.(?:creationBytecode|runtimeBytecode)(?:\.|\[|$)/.test(reviewPath)) {
+    return "Record the compiler output change caused only by the reviewed custom-error migration.";
+  }
+  if (
+    /^\$\.forgeBuild\.(?:logicalSourceClosureSha256|normalizedCompilerInputSha256)$/.test(
+      reviewPath
+    )
+  ) {
+    return "Bind the exact production-source content and normalized compiler input after the reviewed custom-error migration.";
+  }
+  throw new Error(`Stage 15 has no review reason for ${reviewPath}`);
+}
+
+function stage15Review(baselineBytes, differences, candidate) {
+  validateStage15Candidate(null, candidate);
+  return {
+    schemaVersion: 1,
+    candidate: STAGE_15_CANDIDATE,
+    policy: STAGE_15_POLICY,
+    baselineSha256: sha256(baselineBytes),
+    allowedDifferences: differences.map((difference) => ({
+      ...difference,
+      reason: stage15ReviewReason(difference.path),
+    })),
+    opcodeEvidence: {
+      mode: "metadata-stripped-full-diff",
+      path: STAGE_15_EVIDENCE_PATH,
+      contracts: [...STAGE_08_PRODUCTION_CONTRACTS],
+    },
+    migrationEvidence: stage15MigrationReviewEvidence(),
   };
 }
 
@@ -11445,6 +11848,174 @@ function stage13ComparisonBaseline(baseline, candidate) {
   return deepClone(candidate);
 }
 
+function stage15BaseManifest() {
+  const manifestPath = path.join(ROOT, STAGE_15_BASE_MANIFEST_PATH);
+  const bytes = fs.readFileSync(manifestPath);
+  const captured = JSON.parse(bytes);
+  if (
+    sha256(bytes) !== STAGE_15_BASE_MANIFEST_SHA256 ||
+    captured.schemaVersion !== 1 ||
+    captured.candidate !== STAGE_15_CANDIDATE ||
+    captured.baseCommit !== STAGE_15_BASE_COMMIT ||
+    !captured.manifest ||
+    captured.manifest.tests?.total !== 143 ||
+    captured.manifest.projectRevertStrings?.length !== 37
+  ) {
+    throw new Error("Stage 15 base manifest is stale or malformed");
+  }
+  run("git", ["merge-base", "--is-ancestor", STAGE_15_BASE_COMMIT, "HEAD"]);
+  return captured.manifest;
+}
+
+function stage15FileDigests(relativePaths) {
+  return Object.fromEntries(
+    [...relativePaths].sort().map((relativePath) => [
+      relativePath,
+      sha256(fs.readFileSync(path.join(ROOT, relativePath))),
+    ])
+  );
+}
+
+function stage15ExpectedContractErrors() {
+  const wrapperSpecific = [
+    "DepositNotAllowed(address,uint256)",
+    "DepositRequired(address)",
+    "TokenReceivedOutsideWrap(address)",
+    "WrapOriginatorOnly(address,address)",
+  ];
+  return sorted({
+    "contracts/Wrapper.sol:Wrapper": [
+      ...STAGE_15_CORE_ERROR_SIGNATURES,
+      ...wrapperSpecific,
+    ].sort(),
+    "contracts/token/PartialCommonOwnership.sol:PartialCommonOwnership": [
+      ...STAGE_15_CORE_ERROR_SIGNATURES,
+    ].sort(),
+    ...Object.fromEntries(
+      Object.entries(STAGE_15_INTERFACE_ERROR_SIGNATURES).map(
+        ([qualifiedName, signatures]) => [qualifiedName, [...signatures].sort()]
+      )
+    ),
+  });
+}
+
+function stage15Inventory() {
+  const inventoryPath = path.join(ROOT, STAGE_15_INVENTORY_PATH);
+  const inventory = JSON.parse(fs.readFileSync(inventoryPath));
+  const expectedKeys = [
+    "baseCommit",
+    "baseManifest",
+    "behaviorSources",
+    "candidate",
+    "contractErrors",
+    "migrations",
+    "packageConsumer",
+    "productionSources",
+    "receiverSemantics",
+    "schemaVersion",
+  ];
+  const baseManifest = stage15BaseManifest();
+  if (
+    !valuesEqual(Object.keys(inventory).sort(), expectedKeys.sort()) ||
+    inventory.schemaVersion !== 1 ||
+    inventory.candidate !== STAGE_15_CANDIDATE ||
+    inventory.baseCommit !== STAGE_15_BASE_COMMIT ||
+    !valuesEqual(inventory.baseManifest, {
+      path: STAGE_15_BASE_MANIFEST_PATH,
+      sha256: STAGE_15_BASE_MANIFEST_SHA256,
+    }) ||
+    !valuesEqual(
+      inventory.productionSources,
+      stage15FileDigests(STAGE_15_PRODUCTION_SOURCES)
+    ) ||
+    !valuesEqual(
+      inventory.behaviorSources,
+      stage15FileDigests(STAGE_15_BEHAVIOR_SOURCES)
+    ) ||
+    !valuesEqual(inventory.packageConsumer, {
+      path: "scripts/test-package.cjs",
+      sha256: sha256(
+        fs.readFileSync(path.join(ROOT, "scripts/test-package.cjs"))
+      ),
+    }) ||
+    !valuesEqual(inventory.contractErrors, stage15ExpectedContractErrors()) ||
+    !Array.isArray(inventory.migrations) ||
+    inventory.migrations.length !== 37 ||
+    !valuesEqual(
+      inventory.migrations.map(({ previous }) => previous),
+      baseManifest.projectRevertStrings
+    ) ||
+    inventory.migrations.some(
+      ({ customError }) =>
+        typeof customError !== "string" ||
+        ![
+          ...STAGE_15_CORE_ERROR_SIGNATURES,
+          "DepositNotAllowed(address,uint256)",
+          "DepositRequired(address)",
+          "TokenReceivedOutsideWrap(address)",
+          "WrapOriginatorOnly(address,address)",
+        ].includes(customError)
+    ) ||
+    !valuesEqual(inventory.receiverSemantics, {
+      emptyRevert: "ERC721InvalidReceiver(address)",
+      nonemptyRevert: "bubble exact downstream revert bytes",
+      wrongSelector: "ERC721InvalidReceiver(address)",
+    })
+  ) {
+    throw new Error("Stage 15 custom-error inventory is stale or malformed");
+  }
+  return inventory;
+}
+
+function validateStage15Candidate(_baseline, candidate) {
+  const comparison = stage15BaseManifest();
+  const inventory = stage15Inventory();
+  for (const pathName of [
+    "compiler",
+    "enums",
+    "erc165",
+    "gasSnapshot",
+    "interfaces",
+    "tests",
+    "toolchain",
+  ]) {
+    if (!valuesEqual(candidate[pathName], comparison[pathName])) {
+      throw new Error(`Stage 15 changed protected ${pathName} behavior`);
+    }
+  }
+  if (!valuesEqual(candidate.projectRevertStrings, [])) {
+    throw new Error("Stage 15 must remove every project-owned production revert string");
+  }
+  const protectedForgeBuild = deepClone(candidate.forgeBuild);
+  protectedForgeBuild.logicalSourceClosureSha256 =
+    comparison.forgeBuild.logicalSourceClosureSha256;
+  protectedForgeBuild.normalizedCompilerInputSha256 =
+    comparison.forgeBuild.normalizedCompilerInputSha256;
+  if (!valuesEqual(protectedForgeBuild, comparison.forgeBuild)) {
+    throw new Error("Stage 15 changed protected compiler-source provenance");
+  }
+  const actualErrors = {};
+  for (const [source, contractName] of TARGETS) {
+    const qualifiedName = `${source}:${contractName}`;
+    const before = comparison.contracts[qualifiedName];
+    const after = candidate.contracts[qualifiedName];
+    for (const property of ["events", "functions", "storageLayout"]) {
+      if (!valuesEqual(after[property], before[property])) {
+        throw new Error(`Stage 15 changed protected ${qualifiedName} ${property}`);
+      }
+    }
+    actualErrors[qualifiedName] = after.errors.map(({ signature }) => signature);
+  }
+  if (!valuesEqual(sorted(actualErrors), inventory.contractErrors)) {
+    throw new Error("Stage 15 custom-error ABI does not match the reviewed inventory");
+  }
+}
+
+function stage15ComparisonBaseline(baseline, candidate) {
+  validateStage15Candidate(baseline, candidate);
+  return deepClone(stage15BaseManifest());
+}
+
 function expectStage09Rejection(name, operation) {
   try {
     operation();
@@ -13298,9 +13869,68 @@ function stage13NegativeProbes(baseline, candidate, review) {
   return probes;
 }
 
+function expectStage15Rejection(name, operation) {
+  try {
+    operation();
+  } catch (_error) {
+    return name;
+  }
+  throw new Error(`Stage 15 negative probe unexpectedly passed: ${name}`);
+}
+
+function stage15NegativeProbes(baseline, candidate, review) {
+  const probes = [];
+  const reject = (name, operation) =>
+    probes.push(expectStage15Rejection(name, operation));
+
+  const revertStringDrift = deepClone(candidate);
+  revertStringDrift.projectRevertStrings = [
+    stage15BaseManifest().projectRevertStrings[0],
+  ];
+  reject("project revert string remains", () =>
+    validateStage15Candidate(baseline, revertStringDrift)
+  );
+
+  const functionDrift = deepClone(candidate);
+  functionDrift.contracts[
+    "contracts/Wrapper.sol:Wrapper"
+  ].functions[0].signature += "_drift";
+  reject("function ABI drift", () =>
+    validateStage15Candidate(baseline, functionDrift)
+  );
+
+  const protectedReview = deepClone(review);
+  const unauthorizedDifference = {
+    path: "$.contracts.contracts/Wrapper.sol:Wrapper.storageLayout.storage[0]",
+    baselineValue: null,
+    candidateValue: null,
+    reason: "probe",
+  };
+  protectedReview.allowedDifferences.push(unauthorizedDifference);
+  reject("storage-layout waiver", () =>
+    validateReviewedDifferences(
+      protectedReview,
+      fs.readFileSync(BASELINE_PATH),
+      [unauthorizedDifference]
+    )
+  );
+
+  const evidencePath = opcodeEvidencePath(review);
+  const checkedInEvidence = JSON.parse(fs.readFileSync(evidencePath, "utf8"));
+  const staleEvidence = deepClone(checkedInEvidence);
+  staleEvidence.contracts[
+    "contracts/Wrapper.sol:Wrapper"
+  ].eip170.candidateRuntimeSizeBytes += 1;
+  reject("stale opcode evidence", () =>
+    validateExactOpcodeEvidence(staleEvidence, checkedInEvidence)
+  );
+  return probes;
+}
+
 function reviewedOpcodeEvidence(review, baseline, candidate) {
   const configuration = review.opcodeEvidence;
   if (!configuration) return null;
+  if (review.policy === STAGE_15_POLICY) baseline = stage15BaseManifest();
   if (
     ![
       "metadata-stripped-equality",
@@ -13553,6 +14183,7 @@ function validateSafetyEvidence(review) {
 }
 
 function expectedProjectRevertStrings(command, protectedRevertStrings) {
+  const stage15Candidate = [];
   const security01Candidate = security01ProjectRevertStrings(
     protectedRevertStrings
   );
@@ -13574,6 +14205,8 @@ function expectedProjectRevertStrings(command, protectedRevertStrings) {
   if (command === "write-stage-12a-review") return security04Candidate;
   if (command === "write-stage-12b-review") return security04Candidate;
   if (command === "write-stage-13-review") return security04Candidate;
+  if (command === "write-stage-14-review") return security04Candidate;
+  if (command === "write-stage-15-review") return stage15Candidate;
   if (command === "diff") {
     return {
       baseline: protectedRevertStrings,
@@ -13581,6 +14214,7 @@ function expectedProjectRevertStrings(command, protectedRevertStrings) {
       security02Candidate,
       security03Candidate,
       security04Candidate,
+      stage15Candidate,
     };
   }
   if (
@@ -13596,6 +14230,8 @@ function expectedProjectRevertStrings(command, protectedRevertStrings) {
       "stage-12a-negative-probes",
       "stage-12b-negative-probes",
       "stage-13-negative-probes",
+      "stage-14-negative-probes",
+      "stage-15-negative-probes",
     ].includes(command) &&
     fs.existsSync(REVIEW_PATH)
   ) {
@@ -13609,8 +14245,503 @@ function expectedProjectRevertStrings(command, protectedRevertStrings) {
     if (review.policy === STAGE_12A_POLICY) return security04Candidate;
     if (review.policy === STAGE_12B_POLICY) return security04Candidate;
     if (review.policy === STAGE_13_POLICY) return security04Candidate;
+    if (review.policy === STAGE_14_POLICY) return security04Candidate;
+    if (review.policy === STAGE_15_POLICY) return stage15Candidate;
   }
   return protectedRevertStrings;
+}
+
+function stage14FileSha256(relativePath) {
+  return sha256(fs.readFileSync(path.join(ROOT, relativePath)));
+}
+
+function stage14HistoricalEvidence() {
+  const bytes = fs.readFileSync(path.join(ROOT, STAGE_13_EVIDENCE_PATH));
+  if (sha256(bytes) !== "c7df59ea50e3a374723dd44cd061dc4b9ddd2722d3f3c8f67f8a437b702b5d07") {
+    throw new Error("Immutable Stage 13 evidence changed");
+  }
+  return JSON.parse(bytes);
+}
+
+function stage14PriorTests() {
+  const inventory = JSON.parse(
+    fs.readFileSync(
+      path.join(ROOT, "compatibility/stage-12b-hardhat3-inventory.json"),
+      "utf8"
+    )
+  );
+  const forgeNames = [
+    ...stage06ParityForgeTests().forgeNames,
+    ...stage07SafetyForgeTests(),
+  ].sort();
+  if (
+    inventory.activeTests?.hardhat?.count !== 3 ||
+    inventory.activeTests?.hardhat?.namesSha256 !==
+      "e82ce4a1063d5334c8a0962747e9bb0797c9e5e82ef6e40dc1905452fb78714f" ||
+    forgeNames.length !== 140 ||
+    sha256(stableJson(forgeNames)) !==
+      "09b141a8c69c4522288cfdbf67373661052764ab019c865ea850dc5eb645f173"
+  ) {
+    throw new Error("Stage 14 predecessor test inventory changed");
+  }
+  return {
+    hardhat: {
+      count: 3,
+      names: [...inventory.activeTests.hardhat.names],
+      namesSha256: inventory.activeTests.hardhat.namesSha256,
+    },
+    forge: {
+      count: 140,
+      names: forgeNames,
+      namesSha256: sha256(stableJson(forgeNames)),
+    },
+    total: 143,
+  };
+}
+
+function stage14SmokeMapping(candidate) {
+  const bytes = fs.readFileSync(path.join(ROOT, STAGE_14_MAPPING_PATH));
+  const mapping = JSON.parse(bytes);
+  if (
+    sha256(bytes) !== "0c2f481a394fb9e04b9b7346f008c70658240f2e7db7995fe5ff2f8f2d65d658" ||
+    mapping.schemaVersion !== 1 ||
+    mapping.candidate !== "stage-14-hardhat-retirement" ||
+    mapping.historicalHardhat?.count !== 3 ||
+    mapping.forge?.before?.count !== 140 ||
+    mapping.forge?.after?.count !== STAGE_14_FORGE_COUNT ||
+    mapping.forge.after.namesSha256 !== STAGE_14_FORGE_NAMES_SHA256 ||
+    !Array.isArray(mapping.mappings) ||
+    mapping.mappings.length !== 3
+  ) {
+    throw new Error("Stage 14 smoke mapping changed");
+  }
+  const oldNames = new Set();
+  const newNames = new Set();
+  for (const entry of mapping.mappings) {
+    const fullName = `${entry.forgeFile}:${entry.forgeContract}:${entry.forgeTest}`;
+    if (
+      oldNames.has(entry.hardhatName) ||
+      newNames.has(fullName) ||
+      candidate.tests.forge.names.filter((name) => name === fullName).length !== 1 ||
+      !Array.isArray(entry.behaviorDimensions) ||
+      entry.behaviorDimensions.length < 4 ||
+      sha256(fs.readFileSync(path.join(ROOT, entry.forgeFile))) !==
+        entry.forgeFileSha256
+    ) {
+      throw new Error(`Stage 14 smoke mapping is not one-to-one: ${fullName}`);
+    }
+    oldNames.add(entry.hardhatName);
+    newNames.add(fullName);
+  }
+  const prior = stage14PriorTests();
+  if (!valuesEqual([...oldNames].sort(), prior.hardhat.names.slice().sort())) {
+    throw new Error("Stage 14 did not map every retained Hardhat smoke");
+  }
+  return { mapping, sha256: sha256(bytes) };
+}
+
+function stage14ArtifactBindings() {
+  const exact = {
+    "compatibility/safety-baselines.json":
+      "d70fb57f2dbf4671178fee515a583cb48ea5ea8e263a187dc0dec9a229ea4b5c",
+    "compatibility/safety-test-inventory.json":
+      "52f7c77b9ebec5093ad484f6695e46194b3ed0b9e737943946843e4f19c4d83a",
+    "coverage/lcov.info":
+      "699bec5254479d496dd7fdf6366be2c5f1afe386585bfa4f2f4be0304735f575",
+    "gas/key-flows.snap":
+      "c57e387d3a71141ce69078dc051608e8eb1f5bccbddf5745f6d478d709b575f7",
+  };
+  for (const [relativePath, expected] of Object.entries(exact)) {
+    if (stage14FileSha256(relativePath) !== expected) {
+      throw new Error(`Stage 14 changed a frozen safety baseline: ${relativePath}`);
+    }
+  }
+  const warnings = JSON.parse(
+    fs.readFileSync(
+      path.join(ROOT, "compatibility/compiler-warning-allowlist.json"),
+      "utf8"
+    )
+  );
+  if (
+    warnings.schemaVersion !== 3 ||
+    "hardhat" in warnings ||
+    "hardhat" in warnings.tools ||
+    warnings.tools.forge?.version !== "1.7.1" ||
+    warnings.tools.forge?.commitSha !==
+      "4072e48705af9d93e3c0f6e29e93b5e9a40caed8" ||
+    warnings.forge?.warnings?.length !== 62 ||
+    Object.keys(warnings.forge?.sourceSha256 || {}).length !== 16
+  ) {
+    throw new Error("Stage 14 Forge warning inventory changed");
+  }
+  return sorted({
+    ...exact,
+    "compatibility/compiler-warning-allowlist.json": stage14FileSha256(
+      "compatibility/compiler-warning-allowlist.json"
+    ),
+    "compatibility/forge-lint-allowlist.json": stage14FileSha256(
+      "compatibility/forge-lint-allowlist.json"
+    ),
+  });
+}
+
+function validateStage14Candidate(baseline, candidate) {
+  const historical = stage14HistoricalEvidence().exactStage12bEquality;
+  if (
+    candidate.schemaVersion !== 2 ||
+    candidate.tests.hardhat.count !== 0 ||
+    candidate.tests.hardhat.names.length !== 0 ||
+    candidate.tests.forge.count !== STAGE_14_FORGE_COUNT ||
+    candidate.tests.total !== STAGE_14_FORGE_COUNT ||
+    sha256(stableJson(candidate.tests.forge.names)) !==
+      STAGE_14_FORGE_NAMES_SHA256 ||
+    candidate.compiler.version !== STAGE_08_COMPILER_VERSION ||
+    candidate.compiler.longVersion !== STAGE_08_COMPILER_LONG_VERSION ||
+    sha256(stableJson(candidate.compiler.settings)) !==
+      historical.hardCompatibility.compiler.normalizedSettingsSha256 ||
+    candidate.forgeBuild.logicalSourceCount !== STAGE_14_COMPILER_SOURCE_COUNT ||
+    candidate.forgeBuild.logicalSourceNamesSha256 !==
+      STAGE_14_COMPILER_SOURCE_NAMES_SHA256 ||
+    candidate.forgeBuild.logicalSourceClosureSha256 !==
+      historical.compilerSources.logical.closureSha256
+  ) {
+    throw new Error("Stage 14 compiler or active test identity changed");
+  }
+  stage14SmokeMapping(candidate);
+
+  const hardCompatibility = historical.hardCompatibility;
+  for (const [qualifiedName, expectedContract] of Object.entries(
+    hardCompatibility.contracts
+  )) {
+    for (const field of ["abi", "functions", "events", "errors", "storageLayout"]) {
+      if (
+        sha256(stableJson(candidate.contracts[qualifiedName][field])) !==
+        expectedContract[field].sha256
+      ) {
+        throw new Error(`Stage 14 production ${field} changed: ${qualifiedName}`);
+      }
+    }
+  }
+  for (const [field, value] of [
+    ["interfaces", candidate.interfaces],
+    ["enums", candidate.enums],
+    ["erc165", candidate.erc165],
+    ["projectRevertStrings", candidate.projectRevertStrings],
+  ]) {
+    if (sha256(stableJson(value)) !== hardCompatibility[field].sha256) {
+      throw new Error(`Stage 14 production ${field} changed`);
+    }
+  }
+
+  const production = historical.productionMetadataOnly.contracts;
+  for (const [qualifiedName, expectedContract] of Object.entries(production)) {
+    for (const bytecodeKind of ["creationBytecode", "runtimeBytecode"]) {
+      const actual = candidate.contracts[qualifiedName][bytecodeKind];
+      const expected = expectedContract[bytecodeKind];
+      if (
+        actual.metadataStrippedKeccak256 !==
+          expected.metadataStripped.candidateKeccak256 ||
+        sha256(actual.metadataStrippedOpcodes) !==
+          expected.metadataStripped.opcodesSha256 ||
+        actual.metadataStrippedSizeBytes !== expected.metadataStripped.sizeBytes ||
+        actual.metadataBytes !== expected.metadataBytes.candidate ||
+        actual.sizeBytes !== expected.rawSizeBytes.candidate
+      ) {
+        throw new Error(
+          `Stage 14 metadata-stripped bytecode changed: ${qualifiedName} ${bytecodeKind}`
+        );
+      }
+    }
+    if (
+      candidate.contracts[qualifiedName].runtimeBytecode.sizeBytes > 24_576 ||
+      !expectedContract.eip170.withinLimit
+    ) {
+      throw new Error(`Stage 14 EIP-170 size gate failed: ${qualifiedName}`);
+    }
+  }
+  if (
+    sha256(stableJson(candidate.gasSnapshot.entries)) !==
+    historical.legacyGasCheckpointReplay.candidate.entriesSha256
+  ) {
+    throw new Error("Stage 14 legacy compatibility gas changed");
+  }
+  if (
+    !candidate.tests.forge.names.includes(STAGE_14_ERC165_SUCCESSOR) ||
+    !valuesEqual(candidate.erc165, baseline.erc165)
+  ) {
+    throw new Error("Stage 14 ERC165 evidence changed");
+  }
+
+  const packageJson = JSON.parse(fs.readFileSync(path.join(ROOT, "package.json")));
+  if (
+    Object.keys(packageJson.devDependencies || {}).length !== 0 ||
+    Object.values(packageJson.scripts || {}).some((script) => /hardhat|tsx|tsc\b/i.test(script))
+  ) {
+    throw new Error("Stage 14 retained active Hardhat or TypeScript tooling");
+  }
+  for (const relativePath of STAGE_14_REMOVED_FILES) {
+    if (fs.existsSync(path.join(ROOT, relativePath))) {
+      throw new Error(`Stage 14 retired file still exists: ${relativePath}`);
+    }
+  }
+  stage14ArtifactBindings();
+  return true;
+}
+
+function stage14Review(baselineBytes, candidate) {
+  const prior = stage14PriorTests();
+  const mapping = stage14SmokeMapping(candidate);
+  return sorted({
+    schemaVersion: 2,
+    candidate: STAGE_14_CANDIDATE,
+    policy: STAGE_14_POLICY,
+    baselineSha256: sha256(baselineBytes),
+    predecessor: {
+      commit: STAGE_13_CHECKPOINT_COMMIT,
+      evidencePath: STAGE_13_EVIDENCE_PATH,
+      evidenceSha256:
+        "c7df59ea50e3a374723dd44cd061dc4b9ddd2722d3f3c8f67f8a437b702b5d07",
+    },
+    allowedDifferences: [
+      {
+        path: "$.forgeBuild",
+        reason: "Forge 1.7.1 replaces Hardhat as the sole native compiler build-info producer.",
+        candidateSha256: sha256(stableJson(candidate.forgeBuild)),
+      },
+      {
+        path: "$.schemaVersion",
+        reason: "The active manifest records Forge-native provenance.",
+        from: 1,
+        to: 2,
+      },
+      {
+        path: "$.tests",
+        reason: "Three digest-bound Hardhat smokes move one-to-one into Forge without changing the total behavior inventory.",
+        from: {
+          hardhat: { count: prior.hardhat.count, namesSha256: prior.hardhat.namesSha256 },
+          forge: { count: prior.forge.count, namesSha256: prior.forge.namesSha256 },
+          total: prior.total,
+        },
+        to: {
+          hardhat: { count: 0, namesSha256: sha256(stableJson([])) },
+          forge: { count: candidate.tests.forge.count, namesSha256: STAGE_14_FORGE_NAMES_SHA256 },
+          total: candidate.tests.total,
+        },
+      },
+      {
+        path: "$.contracts.*.{creationBytecode,runtimeBytecode}.keccak256",
+        reason: "Forge logical/native source naming may change only the IPFS metadata payload; stripped bytecode, opcodes, and sizes remain exact.",
+        candidateSha256: sha256(
+          stableJson(
+            Object.fromEntries(
+              STAGE_08_PRODUCTION_CONTRACTS.flatMap((qualifiedName) =>
+                ["creationBytecode", "runtimeBytecode"].map((kind) => [
+                  `${qualifiedName}:${kind}`,
+                  candidate.contracts[qualifiedName][kind].keccak256,
+                ])
+              )
+            )
+          )
+        ),
+      },
+    ],
+    smokeMapping: { path: STAGE_14_MAPPING_PATH, sha256: mapping.sha256 },
+    evidence: { path: STAGE_14_EVIDENCE_PATH },
+    inventory: { path: STAGE_14_INVENTORY_PATH },
+  });
+}
+
+function stage14Evidence(baseline, candidate) {
+  const historical = stage14HistoricalEvidence().exactStage12bEquality;
+  const contractEvidence = {};
+  for (const qualifiedName of STAGE_08_PRODUCTION_CONTRACTS) {
+    const actualContract = candidate.contracts[qualifiedName];
+    contractEvidence[qualifiedName] = {
+      abiSha256: sha256(stableJson(actualContract.abi)),
+      functionsSha256: sha256(stableJson(actualContract.functions)),
+      eventsSha256: sha256(stableJson(actualContract.events)),
+      errorsSha256: sha256(stableJson(actualContract.errors)),
+      storageLayoutSha256: sha256(stableJson(actualContract.storageLayout)),
+      creationBytecode: {
+        rawKeccak256: actualContract.creationBytecode.keccak256,
+        rawSizeBytes: actualContract.creationBytecode.sizeBytes,
+        metadataStrippedKeccak256:
+          actualContract.creationBytecode.metadataStrippedKeccak256,
+        metadataStrippedOpcodesSha256: sha256(
+          actualContract.creationBytecode.metadataStrippedOpcodes
+        ),
+        metadataStrippedSizeBytes:
+          actualContract.creationBytecode.metadataStrippedSizeBytes,
+      },
+      runtimeBytecode: {
+        rawKeccak256: actualContract.runtimeBytecode.keccak256,
+        rawSizeBytes: actualContract.runtimeBytecode.sizeBytes,
+        metadataStrippedKeccak256:
+          actualContract.runtimeBytecode.metadataStrippedKeccak256,
+        metadataStrippedOpcodesSha256: sha256(
+          actualContract.runtimeBytecode.metadataStrippedOpcodes
+        ),
+        metadataStrippedSizeBytes:
+          actualContract.runtimeBytecode.metadataStrippedSizeBytes,
+        eip170: actualContract.runtimeBytecode.sizeBytes <= 24_576,
+      },
+    };
+  }
+  return sorted({
+    schemaVersion: 1,
+    candidate: STAGE_14_CANDIDATE,
+    mode: STAGE_14_POLICY,
+    inheritedStage13: {
+      commit: STAGE_13_CHECKPOINT_COMMIT,
+      evidenceSha256:
+        "c7df59ea50e3a374723dd44cd061dc4b9ddd2722d3f3c8f67f8a437b702b5d07",
+    },
+    compiler: {
+      version: candidate.compiler.version,
+      longVersion: candidate.compiler.longVersion,
+      settingsSha256: sha256(stableJson(candidate.compiler.settings)),
+      sourceClosure: candidate.forgeBuild,
+    },
+    hardCompatibility: {
+      contracts: contractEvidence,
+      interfacesSha256: sha256(stableJson(candidate.interfaces)),
+      enumsSha256: sha256(stableJson(candidate.enums)),
+      erc165Sha256: sha256(stableJson(candidate.erc165)),
+      projectRevertStringsSha256: sha256(
+        stableJson(candidate.projectRevertStrings)
+      ),
+      stage13Sha256: sha256(stableJson(historical.hardCompatibility)),
+    },
+    tests: {
+      hardhat: { count: 0, namesSha256: sha256(stableJson([])) },
+      forge: { count: candidate.tests.forge.count, namesSha256: STAGE_14_FORGE_NAMES_SHA256 },
+      total: candidate.tests.total,
+      erc165Successor: STAGE_14_ERC165_SUCCESSOR,
+      smokeMappingSha256: stage14FileSha256(STAGE_14_MAPPING_PATH),
+    },
+    gas: {
+      legacyEntriesSha256: sha256(stableJson(candidate.gasSnapshot.entries)),
+      keyFlowBaselineSha256: stage14FileSha256("gas/key-flows.snap"),
+    },
+    gateArtifacts: stage14ArtifactBindings(),
+    removedFiles: [...STAGE_14_REMOVED_FILES],
+    removedDevDependencies: [...STAGE_14_REMOVED_DEV_DEPENDENCIES],
+    compatibilityRunnerSha256: stage14FileSha256("scripts/compatibility.cjs"),
+  });
+}
+
+function stage14Inventory(candidate) {
+  const mapping = stage14SmokeMapping(candidate);
+  return sorted({
+    schemaVersion: 1,
+    candidate: STAGE_14_CANDIDATE,
+    predecessorCommit: STAGE_13_CHECKPOINT_COMMIT,
+    activeTests: {
+      hardhat: { count: 0, names: [], namesSha256: sha256(stableJson([])) },
+      forge: {
+        count: candidate.tests.forge.count,
+        namesSha256: STAGE_14_FORGE_NAMES_SHA256,
+      },
+      total: candidate.tests.total,
+    },
+    compilerSources: {
+      count: candidate.forgeBuild.logicalSourceCount,
+      namesSha256: candidate.forgeBuild.logicalSourceNamesSha256,
+      closureSha256: candidate.forgeBuild.logicalSourceClosureSha256,
+      nativeSourceNameMap: candidate.forgeBuild.nativeSourceNameMap,
+    },
+    smokeMapping: {
+      path: STAGE_14_MAPPING_PATH,
+      sha256: mapping.sha256,
+      entries: mapping.mapping.mappings.map((entry) => ({
+        hardhatName: entry.hardhatName,
+        forgeName: `${entry.forgeFile}:${entry.forgeContract}:${entry.forgeTest}`,
+        behaviorDimensions: entry.behaviorDimensions,
+      })),
+    },
+    removedFiles: [...STAGE_14_REMOVED_FILES],
+    removedDevDependencies: [...STAGE_14_REMOVED_DEV_DEPENDENCIES],
+    gateArtifacts: stage14ArtifactBindings(),
+  });
+}
+
+function expectStage14Rejection(name, operation) {
+  try {
+    operation();
+  } catch (_error) {
+    return name;
+  }
+  throw new Error(`Stage 14 negative probe unexpectedly passed: ${name}`);
+}
+
+function stage14NegativeProbes(baseline, candidate) {
+  const probes = [];
+  for (const [name, mutate] of [
+    ["Hardhat inventory resurrection", (value) => { value.tests.hardhat.count = 1; }],
+    ["Forge inventory drift", (value) => { value.tests.forge.names[0] += " drift"; }],
+    ["ABI drift", (value) => { value.contracts[STAGE_08_PRODUCTION_CONTRACTS[0]].abi.pop(); }],
+    ["storage drift", (value) => { value.contracts[STAGE_08_PRODUCTION_CONTRACTS[0]].storageLayout.storage.pop(); }],
+    ["metadata-stripped bytecode drift", (value) => { value.contracts[STAGE_08_PRODUCTION_CONTRACTS[0]].runtimeBytecode.metadataStrippedKeccak256 = `0x${"00".repeat(32)}`; }],
+    ["compiler source drift", (value) => { value.forgeBuild.logicalSourceClosureSha256 = "0".repeat(64); }],
+    ["ERC165 drift", (value) => { value.erc165.probes.Wrapper[0].supported = true; }],
+  ]) {
+    const drift = deepClone(candidate);
+    mutate(drift);
+    probes.push(
+      expectStage14Rejection(name, () => validateStage14Candidate(baseline, drift))
+    );
+  }
+  return probes;
+}
+
+function handleStage14Command(command, baselineBytes, baseline, candidate) {
+  validateStage14Candidate(baseline, candidate);
+  const expectedReview = stage14Review(baselineBytes, candidate);
+  if (command === "write-stage-14-review") {
+    fs.writeFileSync(REVIEW_PATH, stableJson(expectedReview));
+    console.log(`Wrote exact Stage 14 review to ${path.relative(ROOT, REVIEW_PATH)}`);
+    return true;
+  }
+  if (command === "diff") {
+    console.log(stableJson({ schemaVersion: 2, candidate: STAGE_14_CANDIDATE, differences: expectedReview.allowedDifferences }));
+    return true;
+  }
+  if (command === "stage-14-negative-probes") {
+    const probes = stage14NegativeProbes(baseline, candidate);
+    console.log(`Stage 14 negative probes passed: ${probes.join("; ")}`);
+    return true;
+  }
+  const checkedReview = readReviewedDifferences();
+  if (!valuesEqual(checkedReview, expectedReview)) {
+    throw new Error("Checked-in Stage 14 review is stale");
+  }
+  const expectedEvidence = stage14Evidence(baseline, candidate);
+  const expectedInventory = stage14Inventory(candidate);
+  if (command === "write-evidence") {
+    fs.writeFileSync(
+      path.join(ROOT, STAGE_14_EVIDENCE_PATH),
+      stableJson(expectedEvidence)
+    );
+    fs.writeFileSync(
+      path.join(ROOT, STAGE_14_INVENTORY_PATH),
+      stableJson(expectedInventory)
+    );
+    console.log("Wrote exact Stage 14 compatibility evidence and inventory");
+    return true;
+  }
+  for (const [relativePath, expected] of [
+    [STAGE_14_EVIDENCE_PATH, expectedEvidence],
+    [STAGE_14_INVENTORY_PATH, expectedInventory],
+  ]) {
+    const actual = JSON.parse(fs.readFileSync(path.join(ROOT, relativePath), "utf8"));
+    if (!valuesEqual(actual, expected)) {
+      throw new Error(`Checked-in Stage 14 artifact is stale: ${relativePath}`);
+    }
+  }
+  console.log(
+    `Compatibility check passed: 0 Hardhat + ${candidate.tests.forge.count} Forge tests; exact Stage 14 retirement evidence verified`
+  );
+  return true;
 }
 
 async function main() {
@@ -13621,6 +14752,7 @@ async function main() {
       "check",
       "diff",
       "revert-strings",
+      "stage-15-manifest",
       "stage-09-negative-probes",
       "security-01-negative-probes",
       "security-02-negative-probes",
@@ -13631,6 +14763,8 @@ async function main() {
       "stage-12a-negative-probes",
       "stage-12b-negative-probes",
       "stage-13-negative-probes",
+      "stage-14-negative-probes",
+      "stage-15-negative-probes",
       "write-stage-08-review",
       "write-stage-09-review",
       "write-security-01-review",
@@ -13642,11 +14776,13 @@ async function main() {
       "write-stage-12a-review",
       "write-stage-12b-review",
       "write-stage-13-review",
+      "write-stage-14-review",
+      "write-stage-15-review",
       "write-evidence",
     ].includes(command)
   ) {
     console.error(
-      "Usage: node scripts/compatibility.cjs <capture|check|diff|revert-strings|stage-09-negative-probes|security-01-negative-probes|security-02-negative-probes|security-03-negative-probes|security-04-negative-probes|stage-10-negative-probes|stage-11-negative-probes|stage-12a-negative-probes|stage-12b-negative-probes|stage-13-negative-probes|write-stage-08-review|write-stage-09-review|write-security-01-review|write-security-02-review|write-security-03-review|write-security-04-review|write-stage-10-review|write-stage-11-review|write-stage-12a-review|write-stage-12b-review|write-stage-13-review|write-evidence>"
+      "Usage: node scripts/compatibility.cjs <capture|check|diff|revert-strings|stage-15-manifest|stage-09-negative-probes|security-01-negative-probes|security-02-negative-probes|security-03-negative-probes|security-04-negative-probes|stage-10-negative-probes|stage-11-negative-probes|stage-12a-negative-probes|stage-12b-negative-probes|stage-13-negative-probes|stage-14-negative-probes|stage-15-negative-probes|write-stage-08-review|write-stage-09-review|write-security-01-review|write-security-02-review|write-security-03-review|write-security-04-review|write-stage-10-review|write-stage-11-review|write-stage-12a-review|write-stage-12b-review|write-stage-13-review|write-stage-14-review|write-stage-15-review|write-evidence>"
     );
     process.exitCode = 2;
     return;
@@ -13658,9 +14794,33 @@ async function main() {
     );
   }
 
-  validateMaintenanceLedger({ root: ROOT });
+  const stage15GenerationCommand =
+    command === "stage-15-manifest" ||
+    command === "write-stage-15-review" ||
+    (command === "write-evidence" &&
+      fs.existsSync(REVIEW_PATH) &&
+      readReviewedDifferences().policy === STAGE_15_POLICY);
+  if (!stage15GenerationCommand) {
+    validateMaintenanceLedger({ root: ROOT });
+  }
 
   const manifest = await generateManifest();
+  if (command === "stage-15-manifest") {
+    const outputPath = process.env.STAGE_15_MANIFEST_OUTPUT;
+    const captured = {
+      schemaVersion: 1,
+      candidate: "stage-15-custom-errors",
+      baseCommit: run("git", ["rev-parse", "HEAD"]).stdout.trim(),
+      manifest,
+    };
+    if (outputPath) {
+      fs.writeFileSync(path.resolve(outputPath), stableJson(captured));
+      console.log(`Wrote Stage 15 base manifest to ${path.resolve(outputPath)}`);
+    } else {
+      console.log(stableJson(captured));
+    }
+    return;
+  }
   if (command === "revert-strings") {
     console.log(
       stableJson({
@@ -13724,6 +14884,22 @@ async function main() {
   const existingReview = fs.existsSync(REVIEW_PATH)
     ? readReviewedDifferences()
     : null;
+  const stage14Command = [
+    "check",
+    "diff",
+    "stage-14-negative-probes",
+    "write-stage-14-review",
+    "write-evidence",
+  ].includes(command);
+  if (
+    command === "write-stage-14-review" ||
+    command === "stage-14-negative-probes" ||
+    command === "diff" ||
+    (stage14Command && existingReview?.policy === STAGE_14_POLICY)
+  ) {
+    handleStage14Command(command, baselineBytes, baseline, manifest);
+    return;
+  }
   const inheritedReviewCommand = [
     "check",
     "write-evidence",
@@ -13736,6 +14912,7 @@ async function main() {
     "stage-12a-negative-probes",
     "stage-12b-negative-probes",
     "stage-13-negative-probes",
+    "stage-15-negative-probes",
   ].includes(command);
   const security01ReviewActive =
     command === "write-security-01-review" ||
@@ -13764,7 +14941,12 @@ async function main() {
   const stage13ReviewActive =
     command === "write-stage-13-review" ||
     (inheritedReviewCommand && existingReview?.policy === STAGE_13_POLICY);
-  const comparisonBaseline = stage13ReviewActive
+  const stage15ReviewActive =
+    command === "write-stage-15-review" ||
+    (inheritedReviewCommand && existingReview?.policy === STAGE_15_POLICY);
+  const comparisonBaseline = stage15ReviewActive
+    ? stage15ComparisonBaseline(baseline, manifest)
+    : stage13ReviewActive
     ? stage13ComparisonBaseline(baseline, manifest)
     : stage12bReviewActive
     ? stage12bComparisonBaseline(baseline, manifest)
@@ -13981,6 +15163,20 @@ async function main() {
     );
     return;
   }
+  if (command === "write-stage-15-review") {
+    const review = stage15Review(baselineBytes, differences, manifest);
+    validateReviewedDifferences(review, baselineBytes, differences);
+    const policy = reviewPolicy(review);
+    policy.validateCandidate(baseline, manifest);
+    fs.writeFileSync(REVIEW_PATH, stableJson(review));
+    console.log(
+      `Wrote ${differences.length} exact Stage 15 reviewed differences to ${path.relative(
+        ROOT,
+        REVIEW_PATH
+      )}`
+    );
+    return;
+  }
   if (command === "stage-09-negative-probes") {
     const probes = stage09NegativeProbes(baseline, manifest);
     console.log(`Stage 9 negative probes passed: ${probes.join("; ")}`);
@@ -14124,6 +15320,21 @@ async function main() {
     validateOpcodeEvidence(review, baseline, manifest);
     const probes = stage13NegativeProbes(baseline, manifest, review);
     console.log(`Stage 13 negative probes passed: ${probes.join("; ")}`);
+    return;
+  }
+  if (command === "stage-15-negative-probes") {
+    const review = readReviewedDifferences();
+    if (!review || review.policy !== STAGE_15_POLICY) {
+      throw new Error(
+        "Stage 15 negative probes require the exact Stage 15 review"
+      );
+    }
+    validateReviewedDifferences(review, baselineBytes, differences);
+    const policy = reviewPolicy(review);
+    policy.validateCandidate(baseline, manifest);
+    validateOpcodeEvidence(review, baseline, manifest);
+    const probes = stage15NegativeProbes(baseline, manifest, review);
+    console.log(`Stage 15 negative probes passed: ${probes.join("; ")}`);
     return;
   }
   const review = existingReview;

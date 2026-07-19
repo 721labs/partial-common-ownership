@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.36;
 
-import {PCOFuzzBase} from "./PCOFuzzBase.t.sol";
+import {PCOFuzzBase, PCOFuzzHarness} from "./PCOFuzzBase.t.sol";
+import {ILease} from "../../../contracts/token/modules/interfaces/ILease.sol";
+import {ITaxation} from "../../../contracts/token/modules/interfaces/ITaxation.sol";
+import {IValuation} from "../../../contracts/token/modules/interfaces/IValuation.sol";
+import {IERC721Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 
 /* solhint-disable func-name-mixedcase */
 
@@ -17,7 +21,7 @@ contract PCOFuzzLeaseTest is PCOFuzzBase {
         uint256 suppliedCurrentValuation;
         uint256 value;
         address buyer;
-        string expectedRevert;
+        bytes expectedRevert;
     }
 
     struct DepositExitCase {
@@ -35,6 +39,19 @@ contract PCOFuzzLeaseTest is PCOFuzzBase {
         bool buyerIsBeneficiary_,
         uint8 outcomeSeed_
     ) public {
+        PCOFuzzHarness withdrawalHarness = new PCOFuzzHarness(beneficiary);
+        vm.deal(address(withdrawalHarness), 1 wei);
+        vm.prank(address(withdrawalHarness));
+        withdrawalHarness.deposit{value: 1 wei}(TOKEN_ID);
+
+        vm.expectRevert(abi.encodeWithSelector(ITaxation.WithdrawalToContract.selector, TOKEN_ID));
+        vm.prank(address(withdrawalHarness));
+        withdrawalHarness.withdrawDeposit(TOKEN_ID, 1 wei);
+
+        assertEq(withdrawalHarness.ownerOf(TOKEN_ID), address(withdrawalHarness));
+        assertEq(withdrawalHarness.depositOf(TOKEN_ID), 1 wei);
+        assertEq(address(withdrawalHarness).balance, 1 wei);
+
         uint256 valuation = bound(uint256(valuationSeed_), 1, 100 ether);
         uint256 positiveValue = bound(uint256(valueSeed_), 1, 100 ether);
         uint256 outcome = bound(uint256(outcomeSeed_), 0, 3);
@@ -42,24 +59,25 @@ contract PCOFuzzLeaseTest is PCOFuzzBase {
         uint256 newValuation = valuation;
         uint256 suppliedCurrentValuation;
         uint256 value = buyerIsBeneficiary_ ? 0 : positiveValue;
-        string memory expectedRevert;
+        bytes memory expectedRevert;
 
         if (outcome == 1) {
             value = buyerIsBeneficiary_ ? positiveValue : 0;
-            expectedRevert =
-                buyerIsBeneficiary_ ? "Msg contains value" : "Message does not contain surplus value for deposit";
+            expectedRevert = buyerIsBeneficiary_
+                ? abi.encodeWithSelector(ILease.IncorrectPayment.selector, TOKEN_ID, 0, positiveValue)
+                : abi.encodeWithSelector(ILease.DepositPaymentRequired.selector, TOKEN_ID, 0, 0);
         } else if (outcome == 2) {
             newValuation = 0;
-            expectedRevert = "New valuation cannot be zero";
+            expectedRevert = abi.encodeWithSelector(IValuation.InvalidValuation.selector, 0);
         } else if (outcome == 3) {
             suppliedCurrentValuation = 1;
-            expectedRevert = "Current valuation is incorrect";
+            expectedRevert = abi.encodeWithSelector(ILease.CurrentValuationMismatch.selector, TOKEN_ID, 1, 0);
         }
 
         uint256 buyerBalanceBefore = buyer.balance;
 
         if (outcome != 0) {
-            vm.expectRevert(_error(expectedRevert));
+            vm.expectRevert(expectedRevert);
             vm.prank(buyer);
             token.takeoverLease{value: value}(TOKEN_ID, newValuation, suppliedCurrentValuation);
 
@@ -113,18 +131,26 @@ contract PCOFuzzLeaseTest is PCOFuzzBase {
         if (outcome == 1) {
             c.value = buyerIsBeneficiary_ ? c.currentValuation + 1 : c.currentValuation;
             c.expectedRevert = buyerIsBeneficiary_
-                ? "Msg contains surplus value"
-                : "Message does not contain surplus value for deposit";
+                ? abi.encodeWithSelector(
+                    ILease.IncorrectPayment.selector, TOKEN_ID, c.currentValuation, c.currentValuation + 1
+                )
+                : abi.encodeWithSelector(
+                    ILease.DepositPaymentRequired.selector, TOKEN_ID, c.currentValuation, c.currentValuation
+                );
         } else if (outcome == 2) {
             c.newValuation = c.currentValuation - 1;
-            c.expectedRevert = "New valuation must be >= current valuation";
+            c.expectedRevert = abi.encodeWithSelector(
+                ILease.NewValuationBelowCurrent.selector, TOKEN_ID, c.newValuation, c.currentValuation
+            );
         } else if (outcome == 3) {
             c.suppliedCurrentValuation = c.currentValuation + 1;
-            c.expectedRevert = "Current valuation is incorrect";
+            c.expectedRevert = abi.encodeWithSelector(
+                ILease.CurrentValuationMismatch.selector, TOKEN_ID, c.suppliedCurrentValuation, c.currentValuation
+            );
         } else if (outcome == 4) {
             c.buyer = alice;
             c.value = c.currentValuation + c.buyerDeposit;
-            c.expectedRevert = "Buyer is already owner";
+            c.expectedRevert = abi.encodeWithSelector(ILease.BuyerAlreadyOwner.selector, TOKEN_ID, alice);
         }
 
         _buyFromContract(alice, c.currentValuation, c.existingDeposit);
@@ -133,7 +159,7 @@ contract PCOFuzzLeaseTest is PCOFuzzBase {
         uint256 sellerBalanceBefore = alice.balance;
 
         if (outcome != 0) {
-            vm.expectRevert(_error(c.expectedRevert));
+            vm.expectRevert(c.expectedRevert);
             vm.prank(c.buyer);
             token.takeoverLease{value: c.value}(TOKEN_ID, c.newValuation, c.suppliedCurrentValuation);
 
@@ -183,6 +209,19 @@ contract PCOFuzzLeaseTest is PCOFuzzBase {
         uint256 initialDeposit = due + cushion;
         uint256 buyerDeposit = bound(uint256(buyerDepositSeed_), 1, 20 ether);
         uint256 buyerValue = valuation + buyerDeposit;
+
+        token.forceLock(true);
+        uint256 bobBalanceBeforeLockRevert = bob.balance;
+        vm.expectRevert(abi.encodeWithSelector(ILease.TokenLocked.selector, TOKEN_ID));
+        vm.prank(bob);
+        token.takeoverLease{value: buyerValue}(TOKEN_ID, valuation, 0);
+        assertEq(token.ownerOf(TOKEN_ID), address(token));
+        assertEq(token.valuationOf(TOKEN_ID), 0);
+        assertEq(token.depositOf(TOKEN_ID), 0);
+        assertEq(address(token).balance, 0);
+        assertEq(bob.balance, bobBalanceBeforeLockRevert);
+        assertTrue(token.lockedOf(TOKEN_ID));
+        token.forceLock(false);
 
         token.configureTax(TAX_DENOMINATOR, 1);
         _buyFromContract(alice, valuation, initialDeposit);
@@ -249,11 +288,11 @@ contract PCOFuzzLeaseTest is PCOFuzzBase {
             uint256 bobBalanceBefore = bob.balance;
             uint256 beneficiaryBalanceBeforeUnauthorized = beneficiary.balance;
 
-            vm.expectRevert(_error("ERC721: caller is not owner nor approved"));
+            vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721InsufficientApproval.selector, bob, TOKEN_ID));
             vm.prank(bob);
             token.deposit{value: c.topUp}(TOKEN_ID);
 
-            vm.expectRevert(_error("ERC721: caller is not owner nor approved"));
+            vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721InsufficientApproval.selector, bob, TOKEN_ID));
             vm.prank(bob);
             token.exit(TOKEN_ID);
 

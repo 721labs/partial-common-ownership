@@ -2,6 +2,7 @@
 pragma solidity 0.8.36;
 
 import {PCOFuzzBase, PCOFuzzHarness, PCOFuzzRejectingActor} from "./PCOFuzzBase.t.sol";
+import {IERC721Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 
 /* solhint-disable func-name-mixedcase */
 
@@ -94,11 +95,11 @@ contract PCOFuzzRemittanceERC721Test is PCOFuzzBase {
         uint256 bobBalanceBefore = bob.balance;
 
         if (operation == 0) {
-            vm.expectRevert(_error("ERC721: approve caller is not owner nor approved for all"));
+            vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721InvalidApprover.selector, bob));
             vm.prank(bob);
             token.approve(recipient, TOKEN_ID);
         } else if (operation == 1) {
-            vm.expectRevert(_error("ERC721: caller is not owner nor approved"));
+            vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721InsufficientApproval.selector, bob, TOKEN_ID));
             vm.prank(bob);
             if (safeTransfer_) {
                 token.safeTransferFrom(beneficiary, recipient, TOKEN_ID);
@@ -106,15 +107,17 @@ contract PCOFuzzRemittanceERC721Test is PCOFuzzBase {
                 token.transferFrom(beneficiary, recipient, TOKEN_ID);
             }
         } else if (operation == 2) {
-            vm.expectRevert(_error("ERC721: transfer from incorrect owner"));
+            vm.expectRevert(
+                abi.encodeWithSelector(IERC721Errors.ERC721IncorrectOwner.selector, alice, TOKEN_ID, beneficiary)
+            );
             vm.prank(operator);
             token.transferFrom(alice, recipient, TOKEN_ID);
         } else if (operation == 3) {
-            vm.expectRevert(_error("ERC721: approval to current owner"));
+            vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721InvalidOperator.selector, beneficiary));
             vm.prank(beneficiary);
             token.approve(beneficiary, TOKEN_ID);
         } else {
-            vm.expectRevert(_error("ERC721: approve to caller"));
+            vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721InvalidOperator.selector, beneficiary));
             vm.prank(beneficiary);
             token.setApprovalForAll(beneficiary, true);
         }

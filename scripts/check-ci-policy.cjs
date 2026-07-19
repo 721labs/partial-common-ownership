@@ -34,7 +34,6 @@ if (!UPLOAD_ARTIFACT) {
 
 const EXPECTED_JOBS = new Map([
   ["forge-tests", 15],
-  ["hardhat-integration", 15],
   ["compatibility", 20],
   ["coverage", 15],
   ["gas", 15],
@@ -79,23 +78,6 @@ const REQUIRED_STEPS = new Map([
       exactStep(
         "Enforce EIP-170 contract sizes",
         '        run: "pnpm run size:check"'
-      ),
-    ],
-  ],
-  [
-    "hardhat-integration",
-    [
-      exactStep(
-        "Type-check Hardhat configuration and smokes",
-        '        run: "pnpm run typecheck"'
-      ),
-      exactStep(
-        "Build and enforce Hardhat compiler warnings",
-        '        run: "pnpm run compiler-warnings:hardhat"'
-      ),
-      exactStep(
-        "Run three interoperability smokes",
-        '        run: "pnpm run test:hardhat:smoke"'
       ),
     ],
   ],

@@ -1,0 +1,191 @@
+{
+  "actions": {
+    "actions/cache": {
+      "commit": "55cc8345863c7cc4c66a329aec7e433d2d1c52a9",
+      "count": 9,
+      "tag": "v6.1.0"
+    },
+    "actions/checkout": {
+      "commit": "9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0",
+      "count": 9,
+      "tag": "v7.0.0"
+    },
+    "actions/setup-node": {
+      "commit": "820762786026740c76f36085b0efc47a31fe5020",
+      "count": 9,
+      "tag": "v7.0.0"
+    },
+    "actions/setup-python": {
+      "commit": "ece7cb06caefa5fff74198d8649806c4678c61a1",
+      "count": 1,
+      "tag": "v6.3.0"
+    },
+    "actions/upload-artifact": {
+      "commit": "043fb46d1a93c77aae656e7c1c64a875d1fc6a0a",
+      "count": 1,
+      "tag": "v7.0.1"
+    },
+    "foundry-rs/foundry-toolchain": {
+      "commit": "b00af27efadbc7b4ca8b82abbd903b17cc874d2a",
+      "count": 7,
+      "tag": "v1.9.0"
+    }
+  },
+  "baseCommit": "29f71f7a237b1fb6fa2cc068e1da0a54ce9b5247",
+  "boundFiles": {
+    ".github/dependabot.yml": "b5e19b671186ac4e3541664d00a0ad13d4c30e64610847a0b59eaa71b40f77b4",
+    ".github/workflows/tests.yml": "f9080dd5db1a532cef3200f25e5dd7ec905bb2f8b88332b698500de7d0ebbe33",
+    ".gitignore": "f23c5424e95e4ebfb3fd15dd4a57bf6a9e2eff57cdb95bf57b9f398aac31e5b9",
+    ".gitmodules": "ff4ebffecc8ab2a2a7320aa95762463fe80a4bc8acf0a4664d90d7c1adae75df",
+    ".nvmrc": "8f9258d5e9da5443c42966a661aee09292b49d1c64e718dcc5f72976500bac48",
+    ".vscode/launch.json": null,
+    "compatibility/README.md": "d8560ddc1e3cac8966867a0f41a711a32bdf887c397b0dbfb3be810bc01b97cb",
+    "compatibility/audit-ratchet.json": "fc4fa90ddd1e9976339866df8497a5f4f697c79e4e28e66fe1d8f44e63845ffc",
+    "compatibility/baseline.json": "4ec069e1cdb046198456b1db9179522b604d8dab062838c79e4cf8aa1e9df55c",
+    "compatibility/compiler-warning-allowlist.json": "a9a86ffc34e7c14e67852338ff4a0fa3593d6776bd1d87c72358ce77f41e6788",
+    "compatibility/erc165.capture.ts": null,
+    "compatibility/evidence/stage-13-ci-security-maintenance.json": "c7df59ea50e3a374723dd44cd061dc4b9ddd2722d3f3c8f67f8a437b702b5d07",
+    "compatibility/evidence/stage-14-foundry-retirement.json": "b7017dd5b45474b20275004f9f8882bc1f4d60c720a795cddccb6a4a8a266082",
+    "compatibility/forge-lint-allowlist.json": "e34c7aaef60650d9e826535cef4d0b6ae24c773348baa36dab7f5c5ef9cc88a1",
+    "compatibility/interoperability-smoke-parity.json": "0c2f481a394fb9e04b9b7346f008c70658240f2e7db7995fe5ff2f8f2d65d658",
+    "compatibility/reviewed-differences.json": "2efaa6b829ac7f22a90774a71b8bc8e7223f479b16107431fc3c0f99ab928ea8",
+    "compatibility/safety-baselines.json": "fc20a5f95e1fca7b5200d0d78c369a3e681a5b61166be3f50878b5fc592cb497",
+    "compatibility/safety-test-inventory.json": "52f7c77b9ebec5093ad484f6695e46194b3ed0b9e737943946843e4f19c4d83a",
+    "compatibility/stage-13-ci-maintenance-inventory.json": "1ddf58ff2c58832c82c903b71180add027a18598633f9e39d81e5dffb5f9d420",
+    "compatibility/stage-14-foundry-retirement-inventory.json": "8b61eeb0eeb656ef05b6c0ceb5ad388e42ddeb755e1be2824597ff4f2020c1b6",
+    "coverage/lcov.info": "1dc0ab3b36b9c6c305784b1f85c7fad9b18e5e4228d3f31509ef2c446bdf66b1",
+    "docs/development.md": "29ce1a6e26d3a15c0295eb3a1b50508c653a55751a7276d0402cb050fee693a6",
+    "docs/security/custom-erc721-vs-openzeppelin-5.6.1.md": "23fee1fe3ffacc8f30da053d273eb9505ae20023143bb6c10419a2c93b35c241",
+    "foundry.toml": "15356b92e608367cc58458371448d51172a39ebc03fe461cd6fe77b21b3584a4",
+    "gas/key-flows.snap": "c57e387d3a71141ce69078dc051608e8eb1f5bccbddf5745f6d478d709b575f7",
+    "hardhat.config.ts": null,
+    "package.json": "6a255765800f20bca72529a474ff905603723ab055d85ac43131e3f153facab9",
+    "pnpm-lock.yaml": "1e7b03cd41d883b21ff9b273d7a4277e03d8d575f499488df366fb47b7d46c00",
+    "pnpm-workspace.yaml": null,
+    "remappings.txt": "ff6af4f5f016d740713659bae831093a516370283d19a66bc5f2c43147772b42",
+    "scripts/audit-ratchet.cjs": "d52d7c69861b35dba286c99764c00b86da1be7505931c267d4ea7a8e87905128",
+    "scripts/check-ci-policy.cjs": "1f5cfbd3cd651112d446f7e67f5db9bee98dc0d7e0a4afd9cdb5fe5b2c755ee1",
+    "scripts/check-compiler-warnings.cjs": "b56329b95826104e2200ea772064602004abd18fe639b4af1e6a6a6c4b894018",
+    "scripts/check-contract-sizes.cjs": "0c5e3e258c12fca1d946d0ecae7d36ad4ebbade97c3977179484977cd2cee6f7",
+    "scripts/check-coverage.cjs": "ec9d23cf30156793958b88fff8677170fd16cd8963515f30184df6ecc2216ee0",
+    "scripts/check-forge-lint.cjs": "409e188118effff4a0c4a25b1497b94adb779b9088c5a4fd2d859a98515a8416",
+    "scripts/check-gas.cjs": "22d9e8538b9e94379f80740cb054a1d48b2a5a1ee38d92b66583a6ef6876f3e8",
+    "scripts/check-parity.cjs": "09e08d0d62f2442e190930a5be0808c287b7ba1389e6714e8f7670b204d6cdad",
+    "scripts/check-safety-baselines.cjs": "9b2621e171cbad70df9badd72daaed38e50ba989b9ec3aa1917feef5df16b149",
+    "scripts/compatibility.cjs": "3493b63f73dac3a1ef470aaf87fe9f66b71fbad5f8dca5c78d723cdd468b0e4a",
+    "scripts/dependency-inventory.cjs": "6de23d7136ccef1dab89a1eefb082a07d542e50d54166c7641dfb032523e35e7",
+    "scripts/install.sh": "045b06f3d2f9705248aed669a252b41b5bd3285f44faf441127dbd62005a7b47",
+    "scripts/maintenance-policy.cjs": "868b84412818f9f47d844ae09988d93e7157edd15feede2bef5958d58a77b556",
+    "scripts/run-coverage.cjs": "03a4faf4616791c7ad306eef27ad85e9c7505a6d8ea63e474e1ab7b03913ccd7",
+    "scripts/run-slither.cjs": "c03934cfb6f09be5b7120a46f63b7c1fd28152033dde5f3fbe984f3e06de180f",
+    "scripts/test-package.cjs": "554500547866ead5b60c592c5d5f32dbb1568be8e01efcbacae22db302e9cd88",
+    "slither.config.json": "cb2e3107f3f00d822eea68f92ab56b03b8efac79870017fbc94702232299add1",
+    "test/solidity/parity/PCOMutationParity.t.sol": "2118a8370c8d3906ab97b8a862408bbb0e11fb9bb07ac4c3afd3f6adabd72fd8",
+    "test/solidity/parity/PCOReadTaxParity.t.sol": "86f119740c64e2aeb4295f33b956208c29d47b2d1011d6115317a3bd4132145b",
+    "test/solidity/parity/WrapperParity.t.sol": "87bb0e138e551e5b2b36ac71d7343c9ed7b87ecc86c1962b7fafe6b114adad8c",
+    "tests/Interoperability.smoke.ts": null,
+    "tsconfig.json": null
+  },
+  "category": "solidity",
+  "changedFiles": [
+    "compatibility/README.md",
+    "compatibility/compiler-warning-allowlist.json",
+    "compatibility/forge-lint-allowlist.json",
+    "compatibility/reviewed-differences.json",
+    "compatibility/safety-baselines.json",
+    "coverage/lcov.info",
+    "scripts/check-parity.cjs",
+    "scripts/compatibility.cjs",
+    "scripts/run-slither.cjs",
+    "scripts/test-package.cjs",
+    "test/solidity/parity/PCOMutationParity.t.sol",
+    "test/solidity/parity/PCOReadTaxParity.t.sol",
+    "test/solidity/parity/WrapperParity.t.sol"
+  ],
+  "id": "custom-errors",
+  "packages": {
+    "dependencies": {
+      "@openzeppelin/contracts": "5.6.1"
+    },
+    "devDependencies": {},
+    "packageManager": "pnpm@11.13.1"
+  },
+  "previous": {
+    "file": "0009-contract-surface-policy.json",
+    "kind": "maintenance",
+    "sha256": "159920f953ce4befc94a57cdf1559de11906131db030bbaa49f23ba5fbd078ef"
+  },
+  "productionImpact": "abi-breaking",
+  "schemaVersion": 2,
+  "sequence": 10,
+  "sourceIssues": [
+    75
+  ],
+  "sourcePullRequests": [],
+  "stateVersion": 2,
+  "summary": "Replace the complete reviewed production revert-string surface with stable typed custom errors while preserving downstream revert bubbling.",
+  "toolchain": {
+    "bytecodeHash": "\"ipfs\"",
+    "cborMetadata": "true",
+    "evmVersion": "london",
+    "forgeStd": "bf647bd6046f2f7da30d0c2bf435e5c76a780c1b",
+    "node": "24.18.0",
+    "optimizer": "false",
+    "optimizerRuns": "200",
+    "pnpm": "11.13.1",
+    "solidity": "0.8.36",
+    "useLiteralContent": "false",
+    "viaIR": "false"
+  },
+  "transition": {
+    "artifacts": {
+      "compatibility/evidence/stage-15-custom-errors.json": "382740ddafbfda99f42b23715dd028f5163fc46f7b2fd9ce61f8b41d9baad08a",
+      "compatibility/reviewed-differences.json": "2efaa6b829ac7f22a90774a71b8bc8e7223f479b16107431fc3c0f99ab928ea8",
+      "compatibility/stage-15-base-manifest.json": "27bcc5b12991fe9a6806c82f2d6a830bb5460f1fabc8d5f290e3d953de601640",
+      "compatibility/stage-15-custom-errors-inventory.json": "715b44e4accbea406812719bd2b1a6c9bd4976ad436c0c3d50595473ae4c82e4"
+    },
+    "kind": "solidity",
+    "repositoryPaths": [
+      "compatibility/README.md",
+      "compatibility/compiler-warning-allowlist.json",
+      "compatibility/evidence/stage-15-custom-errors.json",
+      "compatibility/forge-lint-allowlist.json",
+      "compatibility/reviewed-differences.json",
+      "compatibility/safety-baselines.json",
+      "compatibility/stage-15-base-manifest.json",
+      "compatibility/stage-15-custom-errors-inventory.json",
+      "contracts/Wrapper.sol",
+      "contracts/token/PartialCommonOwnership.sol",
+      "contracts/token/modules/Beneficiary.sol",
+      "contracts/token/modules/ERC721.sol",
+      "contracts/token/modules/Lease.sol",
+      "contracts/token/modules/Remittance.sol",
+      "contracts/token/modules/Taxation.sol",
+      "contracts/token/modules/interfaces/IBeneficiary.sol",
+      "contracts/token/modules/interfaces/ILease.sol",
+      "contracts/token/modules/interfaces/IRemittance.sol",
+      "contracts/token/modules/interfaces/ITaxation.sol",
+      "contracts/token/modules/interfaces/IValuation.sol",
+      "coverage/lcov.info",
+      "scripts/check-parity.cjs",
+      "scripts/compatibility.cjs",
+      "scripts/run-slither.cjs",
+      "scripts/test-package.cjs",
+      "test/solidity/fuzz/PCOFuzzBase.t.sol",
+      "test/solidity/fuzz/PCOFuzzLease.t.sol",
+      "test/solidity/fuzz/PCOFuzzRemittanceERC721.t.sol",
+      "test/solidity/fuzz/WrapperFuzz.t.sol",
+      "test/solidity/invariant/PCODeferredRegression.t.sol",
+      "test/solidity/invariant/PCOInvariant.t.sol",
+      "test/solidity/invariant/helpers/WrapperInvariantHarness.sol",
+      "test/solidity/parity/PCOMutationParity.t.sol",
+      "test/solidity/parity/PCOReadTaxParity.t.sol",
+      "test/solidity/parity/WrapperParity.t.sol"
+    ],
+    "sourceRevertStrings": {
+      "baselineInventorySha256": "027be662c5a30bc124afd2f8965e39fcd18c3681bd76fddd659bf78396190b68",
+      "from": 37,
+      "to": 0
+    }
+  }
+}

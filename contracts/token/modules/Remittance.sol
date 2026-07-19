@@ -29,21 +29,6 @@ abstract contract Remittance is IRemittance {
   mapping(address => uint256) public outstandingRemittances;
 
   //////////////////////////////
-  /// Errors
-  //////////////////////////////
-
-  error DestinationZeroAddress();
-
-  /// @dev Remitances cannot be to this contract's address.
-  error DestinationContractAddress();
-
-  error AmountZero();
-
-  error InsufficientBalance();
-
-  error NoOutstandingBalance();
-
-  //////////////////////////////
   /// Events
   //////////////////////////////
 

@@ -10,11 +10,6 @@ cache
 # Environment Variables
 .env
 
-# Hardhat files
-cache-hh
-artifacts
-bin
-
 # Dependencies
 node_modules
 

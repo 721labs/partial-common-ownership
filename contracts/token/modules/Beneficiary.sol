@@ -16,12 +16,6 @@ abstract contract Beneficiary is IBeneficiary {
   mapping(uint256 => address) internal _beneficiaries;
 
   //////////////////////////////
-  /// Errors
-  //////////////////////////////
-
-  error BeneficiaryOnly();
-
-  //////////////////////////////
   /// Events
   //////////////////////////////
 

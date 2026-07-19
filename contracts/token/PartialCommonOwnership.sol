@@ -37,10 +37,9 @@ contract PartialCommonOwnership is Lease {
     _setBeneficiary(tokenId_, beneficiary_);
     _setTaxRate(tokenId_, taxRate_);
     _setCollectionFrequency(tokenId_, collectionFrequency_);
-    require(
-      _checkOnERC721Received(address(0), leasee_, tokenId_, ""),
-      "ERC721: transfer to non ERC721Receiver implementer"
-    );
+    if (!_checkOnERC721Received(address(0), leasee_, tokenId_, "")) {
+      revert ERC721InvalidReceiver(leasee_);
+    }
   }
 
   /// @notice Burns a token.

@@ -1,14 +1,17 @@
 # Compatibility baseline
 
-This directory freezes the externally observable contract surface and the
-executed test inventory at source commit
-`ca72ca7f13dd0a2103d592b39a4fcaa749e9045f`.
+This directory retains the immutable original externally observable contract
+surface and executed test inventory captured at source commit
+`ca72ca7f13dd0a2103d592b39a4fcaa749e9045f`. The active Stage 14 candidate is
+Foundry-only and contains 143 Forge tests; historical Hardhat, ethers, and
+TypeScript material remains only as digest-bound provenance reconstructed from
+its recorded commits.
 
-Capture once, then run the check with the pinned Foundry 1.7.1 binaries on
+The original capture was performed once. Do not recapture it to bless a
+candidate. Run the read-only checks with the pinned Foundry 1.7.1 binaries on
 `PATH`:
 
 ```console
-node scripts/compatibility.cjs capture
 node scripts/compatibility.cjs check
 node scripts/compatibility.cjs diff
 ```
@@ -16,9 +19,10 @@ node scripts/compatibility.cjs diff
 The contract manifest includes canonical ABIs, method and error selectors,
 event topics, storage layouts, enum ordinals, expected ERC165 responses,
 compiler settings, bytecode hashes and sizes, and metadata-stripped runtime
-opcodes and a deterministic gas snapshot. It also executes and records all 89
-Hardhat tests and all 15 Forge tests and probes the actual ERC165 responses of
-both concrete contracts.
+opcodes and a deterministic gas snapshot. The original baseline also recorded
+all 89 then-active Hardhat tests and all 15 then-active Forge tests and probed
+the actual ERC165 responses of both concrete contracts. Those inventories are
+historical comparison inputs, not active test commands.
 
 Foundry's version and commit remain exact compatibility fields. Its official
 macOS and Linux binaries embed different build timestamps for the same release,
@@ -371,13 +375,92 @@ node scripts/compatibility.cjs check
 node scripts/compatibility.cjs stage-13-negative-probes
 ```
 
+Stage 14 completes the Hardhat retirement and makes Foundry the sole active
+compiler and test integration. Its reviewed inventory and evidence are
+`stage-14-foundry-retirement-inventory.json` and
+`evidence/stage-14-foundry-retirement.json`. The stage removes the active
+Hardhat configuration, dependency graph, scripts, TypeScript smoke bridge,
+Hardhat warning and package-consumer paths, Hardhat-specific development
+instructions, and CI job. The former Stage 11 through Stage 13 inventories,
+evidence, source digests, and maintenance records remain immutable and are
+replayed from their historical commits rather than copied into the active
+toolchain.
+
+`interoperability-smoke-parity.json` proves the behavioral handoff before the
+bridge is deleted. It maps each of the three final smoke names and the exact
+retired source digest one-to-one to these Forge successors:
+
+- `PCOReadTaxParityTest:test_interoperabilitySmoke_deploysAndReadsDeterministicPCOConfiguration`
+- `PCOMutationParityTest:test_interoperabilitySmoke_acquiresCollectsTaxAndExitsWithOrderedEventsAndConservedBalances`
+- `WrapperParityTest:test_interoperabilitySmoke_approvesWrapsTakesOverAndUnwrapsWithCustodyAndMetadataCleanup`
+
+The map binds every covered behavior dimension, the three Forge source digests,
+and the complete 143-name inventory digest
+`ff02c3d8a133d928555279fd30d720afc6d01f8baf78551ff32a9e91367ab990`.
+The 140 prior Forge identifiers remain unchanged; exactly these three
+successors are added. Production source closure, compiler settings, ABI,
+selectors, events, errors, storage, interfaces, enum ordinals, ERC165 answers,
+revert callsites, bytecode, opcodes, sizes, coverage thresholds, the 15 legacy
+gas entries, and all 12 key-flow gas entries remain compatibility-gated.
+
+The active warning and packed-consumer gates are Forge-only. Pull requests run
+eight jobs—Forge tests, compatibility, coverage, gas, package consumers,
+formatting/linting, Slither, and dependency audit—while Scheduled Foundry Safety
+remains a separate weekly/manual job. Reproduce the active release evidence
+from a clean recursive checkout with a frozen pnpm install, `pnpm test`,
+`pnpm compatibility`, `pnpm compiler-warnings:check`, and
+`pnpm test:package`; the full ordered sequence is documented in
+`docs/development.md`.
+
 The original baseline predated explicit revert-literal extraction.
 `project-revert-strings.json` is a SHA-256-bound supplement derived from the
-unchanged production sources at the recorded baseline commit. It binds all 35
+unchanged production sources at the recorded baseline commit. It binds all 37
 project-owned `require`/`revert` strings to their source contract, callable,
 call kind, and ordinal. The compatibility runner injects that supplement as a
 non-waivable field, so compiler-bytecode review cannot authorize a changed
 project revert payload.
+
+Stage 15 uses the named `stage-15-reviewed-custom-error-migration` policy. Its
+immutable pre-migration manifest is captured at the policy commit recorded in
+`stage-15-base-manifest.json`; the runner verifies that commit is an ancestor,
+the manifest digest is exact, all 143 behavior-test identifiers are unchanged,
+and all 37 compatibility-bound project revert strings are present before it
+compares the candidate.
+
+`stage-15-custom-errors-inventory.json` maps each old callsite to one stable,
+typed custom-error signature. It also binds every changed production source,
+every Forge parity/invariant assertion source, the package-consumer
+compile check, the exact published error set for `Wrapper`,
+`PartialCommonOwnership`, and each public module interface, and the ERC721
+receiver contract: empty reverts and wrong selectors become
+`ERC721InvalidReceiver(address)`, while arbitrary nonempty downstream revert
+bytes continue to bubble exactly.
+
+The Forge behavior runner continues to verify the immutable Stage 13 anchor,
+but permits the current review file to differ only when the latest append-only
+maintenance record binds the exact issue-75 Stage 15 review, inventory, base
+manifest, evidence, and 37-to-0 transition.
+The migration inventory also binds the Slither runner's two relocated
+Remittance suppression sites, so location drift cannot silently bypass the
+reviewed static-analysis triage.
+
+This is an intentional ABI-breaking error-surface change. The policy permits
+only the exact additions and reorderings in ABI/error manifests, removal of the
+37 revert-string entries, and the resulting creation/runtime bytecode delta.
+Functions, events, storage layout, interface IDs, enum ordinals, compiler and
+toolchain identity, gas inventory, and all active test identifiers remain hard
+equal to the Stage 15 base manifest. The checked-in evidence records the full
+metadata-stripped opcode diff, raw and stripped bytecode sizes and hashes, gas
+evidence, and EIP-170 results for both production contracts.
+
+Reproduce the Stage 15 review, evidence, gate, and adversarial probes with:
+
+```console
+node scripts/compatibility.cjs write-stage-15-review
+node scripts/compatibility.cjs write-evidence
+node scripts/compatibility.cjs check
+node scripts/compatibility.cjs stage-15-negative-probes
+```
 
 Do not overwrite these files to make a dependency or compiler upgrade pass.
 For an intentional compiler change, generate a separate candidate manifest and
