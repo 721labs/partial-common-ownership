@@ -32,7 +32,7 @@ contract WrapperParityTest is Test {
     uint256 private constant INTEROP_UNWRAP_TIME = INTEROP_TAKEOVER_TIME + 1;
     uint256 private constant INTEROP_BUYER_VALUATION = 2 ether;
     uint256 private constant TAX_DENOMINATOR = 1_000_000_000_000;
-    // Frozen by compatibility/baseline.json's Wrapper storage layout.
+    // Wrapper storage slot used for state-cleanup regression testing.
     uint256 private constant WRAPPED_TOKEN_MAP_SLOT = 14;
 
     bytes32 private constant APPROVAL_SIGNATURE = keccak256("Approval(address,address,uint256)");

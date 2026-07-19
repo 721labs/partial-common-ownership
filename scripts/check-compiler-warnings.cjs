@@ -10,7 +10,7 @@ const path = require("path");
 const ROOT = path.resolve(__dirname, "..");
 const ALLOWLIST_PATH = path.join(
   ROOT,
-  "compatibility",
+  "ci",
   "compiler-warning-allowlist.json"
 );
 const FORGE_MAX_BUFFER = 128 * 1024 * 1024;

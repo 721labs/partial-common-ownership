@@ -10,7 +10,6 @@ Run the gate with pinned Foundry 1.7.1:
 $ pnpm gas:check
 ```
 
-The snapshot is byte-bound by `compatibility/safety-baselines.json` and by the
-named compatibility-review policy. Do not regenerate it to conceal a
-regression. A compiler or dependency stage may update it only with an explicit
-old/new review and successful behavior, size, and compatibility gates.
+Do not regenerate the snapshot merely to conceal a regression. Review any
+intentional update together with its contract changes and confirm the behavior,
+gas, and size checks before committing the new values.

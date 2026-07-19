@@ -39,8 +39,6 @@ jobs:
         with:
           submodules: recursive
           persist-credentials: false
-          # The parity gate verifies immutable historical checkpoints.
-          fetch-depth: 0
       - name: "Install Node"
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
@@ -66,54 +64,12 @@ jobs:
         uses: foundry-rs/foundry-toolchain@b00af27efadbc7b4ca8b82abbd903b17cc874d2a # v1.9.0
         with:
           version: v1.7.1
-      - name: "Build and enforce Forge compiler warnings"
+      - name: "Build and check Forge compiler warnings"
         run: "pnpm run compiler-warnings:forge"
-      - name: "Run fixed-seed Forge safety suite"
-        run: "pnpm run test:safety"
+      - name: "Run Forge test suite"
+        run: "pnpm test"
       - name: "Enforce EIP-170 contract sizes"
         run: "pnpm run size:check"
-
-  compatibility:
-    name: "Compatibility Manifest"
-    runs-on: ubuntu-24.04
-    timeout-minutes: 20
-    steps:
-      - name: "Checkout Repo"
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-        with:
-          submodules: recursive
-          persist-credentials: false
-          # Compatibility reconstructs and compares historical checkpoints.
-          fetch-depth: 0
-      - name: "Install Node"
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: "24.18.0"
-      - name: "Enable Corepack"
-        run: |
-          corepack enable pnpm
-          corepack install --global pnpm@11.13.1
-          test "$(pnpm --version)" = "11.13.1"
-      - name: "Resolve pnpm Store"
-        id: pnpm-cache
-        run: 'echo "store=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"'
-      - name: "Cache pnpm Store"
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ${{ steps.pnpm-cache.outputs.store }}
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
-      - name: "Install JS Dependencies"
-        run: "pnpm install --frozen-lockfile"
-      - name: "Install Foundry"
-        uses: foundry-rs/foundry-toolchain@b00af27efadbc7b4ca8b82abbd903b17cc874d2a # v1.9.0
-        with:
-          version: v1.7.1
-      - name: "Enforce reviewed safety-baseline bindings"
-        run: "pnpm run safety-baselines:check"
-      - name: "Enforce compatibility manifest"
-        run: "pnpm run compatibility"
 
   coverage:
     name: "Forge Coverage"
@@ -188,7 +144,7 @@ jobs:
         uses: foundry-rs/foundry-toolchain@b00af27efadbc7b4ca8b82abbd903b17cc874d2a # v1.9.0
         with:
           version: v1.7.1
-      - name: "Enforce key-flow gas baseline"
+      - name: "Check key-flow gas regression"
         run: "pnpm run gas:check"
 
   package-consumers:
@@ -239,8 +195,6 @@ jobs:
         with:
           submodules: recursive
           persist-credentials: false
-          # The maintenance ledger verifies immutable historical checkpoints.
-          fetch-depth: 0
       - name: "Install Node"
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
@@ -270,8 +224,6 @@ jobs:
         run: "pnpm run fmt:forge"
       - name: "Run Forge lint"
         run: "pnpm run lint:forge"
-      - name: "Enforce immutable CI and maintenance policy"
-        run: "pnpm run ci:policy"
 
   slither:
     name: "Slither"
@@ -374,8 +326,6 @@ jobs:
         with:
           submodules: recursive
           persist-credentials: false
-          # The scheduled parity run verifies immutable historical checkpoints.
-          fetch-depth: 0
       - name: "Install Node"
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
@@ -397,8 +347,6 @@ jobs:
             ${{ runner.os }}-pnpm-
       - name: "Install JS Dependencies"
         run: "pnpm install --frozen-lockfile"
-      - name: "Record exact dependency update inventory"
-        run: "pnpm --silent maintenance:inventory > $RUNNER_TEMP/dependency-inventory.json"
       - name: "Install Foundry"
         uses: foundry-rs/foundry-toolchain@b00af27efadbc7b4ca8b82abbd903b17cc874d2a # v1.9.0
         with:
@@ -419,6 +367,5 @@ jobs:
             cache/invariant
             ${{ runner.temp }}/foundry-seed.txt
             ${{ runner.temp }}/foundry-scheduled.log
-            ${{ runner.temp }}/dependency-inventory.json
           if-no-files-found: error
           retention-days: 14

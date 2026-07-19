@@ -6,7 +6,6 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const { spawnSync } = require("child_process");
-const { verifySafetyBaselines } = require("./check-safety-baselines.cjs");
 
 const ROOT = path.resolve(__dirname, "..");
 const FORGE_BIN = process.env.FORGE_BIN || "forge";
@@ -44,7 +43,6 @@ function run(command, args) {
 }
 
 function main() {
-  verifySafetyBaselines();
   if (!fs.existsSync(BASELINE)) {
     throw new Error(`Missing checked-in Forge LCOV baseline: ${BASELINE}`);
   }

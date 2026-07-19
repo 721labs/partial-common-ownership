@@ -1,6 +1,6 @@
 # Slither 0.11.5 triage
 
-Stage 10 retains exact Slither 0.11.5 with solc 0.8.36 against
+The repository runs exact Slither 0.11.5 with solc 0.8.36 against
 `contracts/Wrapper.sol`. That root transitively includes every shipped
 production contract and interface while excluding test fixtures and dependency
 findings. CI fails on every unsuppressed high- or medium-impact result.
@@ -35,7 +35,7 @@ decisions; they do not suppress any high-impact finding.
 | `reentrancy-unlimited-gas` | Informational |    16 | The existing remittance paths use `send`/`transfer`, but Slither conservatively traces state and events after those calls. Replacing those operations or redesigning remittance reentrancy remains a separately reviewed semantic change.                                                                  |
 | `assembly`                 | Informational |     1 | The custom ERC721 uses assembly only to bubble an ERC721 receiver revert payload. This is preserved public revert behavior.                                                                                                                                                                                |
 | `dead-code`                | Informational |     2 | The two `_safeMint` overloads are no longer used by `PartialCommonOwnership`, but remain part of the custom ERC721's internal extension surface for source consumers. Removing them is unnecessary for this fix and would make the source-level contract less compatible.                                  |
-| `naming-convention`        | Informational |     4 | Existing modifier and parameter names are compatibility-protected. Renaming them is unrelated to dependency safety.                                                                                                                                                                                        |
+| `naming-convention`        | Informational |     4 | Existing modifier and parameter names are intentionally retained. Renaming them is unrelated to dependency safety.                                                                                                                                                                                         |
 | `unindexed-event-address`  | Informational |     1 | `LogTokenWrapped` indexing is part of the protected event interface and cannot change in this upgrade.                                                                                                                                                                                                     |
 
 The OpenZeppelin upgrade does not replace the custom ERC721. Its concrete
