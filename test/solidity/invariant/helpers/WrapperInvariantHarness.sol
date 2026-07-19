@@ -5,7 +5,7 @@ import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Recei
 import {IERC721Metadata} from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 import {TestWrapper} from "../../../../contracts/test/TestWrapper.sol";
 import {ERC721} from "../../../../contracts/token/modules/ERC721.sol";
-import {Remittance} from "../../../../contracts/token/modules/Remittance.sol";
+import {IRemittance} from "../../../../contracts/token/modules/interfaces/IRemittance.sol";
 
 interface WrapperInvariantVm {
     function deal(address account_, uint256 balance_) external;
@@ -441,7 +441,7 @@ contract WrapperInvariantHandler {
                 ghostUnexpectedInvalidCallSuccess = true;
             } else if (
                 keccak256(returnData)
-                    != keccak256(abi.encodeWithSelector(Remittance.DestinationContractAddress.selector))
+                    != keccak256(abi.encodeWithSelector(IRemittance.DestinationContractAddress.selector))
             ) {
                 ghostUnexpectedValidCallFailure = true;
             } else {

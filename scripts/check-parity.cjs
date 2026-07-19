@@ -74,6 +74,14 @@ const STAGE_13_REVIEW_PATH = path.join(
   "compatibility",
   "reviewed-differences.json"
 );
+const STAGE_15_CANDIDATE = "stage-15-custom-errors";
+const STAGE_15_POLICY = "stage-15-reviewed-custom-error-migration";
+const STAGE_15_EVIDENCE_PATH =
+  "compatibility/evidence/stage-15-custom-errors.json";
+const STAGE_15_BASE_MANIFEST_PATH =
+  "compatibility/stage-15-base-manifest.json";
+const STAGE_15_INVENTORY_PATH =
+  "compatibility/stage-15-custom-errors-inventory.json";
 const STAGE_13_STAGE_12B_EVIDENCE_SHA256 =
   "d5e4e569dd9698e5dad1326b29461b0fe01d25c13bc8ad72075e5a084bd0e998";
 const STAGE_13_STAGE_12B_REVIEW_SHA256 =
@@ -497,6 +505,52 @@ function stage13CheckpointBinding() {
   };
 }
 
+function validateCurrentCompatibilityReview(maintenance) {
+  const relativeReviewPath = path.relative(ROOT, STAGE_13_REVIEW_PATH);
+  const currentReviewBytes = fs.readFileSync(STAGE_13_REVIEW_PATH);
+  const latestSolidity = maintenance.records
+    .filter((record) => record.category === "solidity")
+    .at(-1);
+  if (!latestSolidity) {
+    if (
+      maintenance.latest.boundFiles?.[relativeReviewPath] !==
+      sha256(currentReviewBytes)
+    ) {
+      fail("Current compatibility review is not bound by maintenance policy");
+    }
+    return null;
+  }
+  const review = JSON.parse(currentReviewBytes);
+  const migration = review.migrationEvidence;
+  const artifacts = latestSolidity.transition?.artifacts;
+  if (
+    !valuesEqual(latestSolidity.sourceIssues, [75]) ||
+    !latestSolidity.transition.repositoryPaths.includes(
+      "scripts/check-parity.cjs"
+    ) ||
+    review.schemaVersion !== 1 ||
+    review.candidate !== STAGE_15_CANDIDATE ||
+    review.policy !== STAGE_15_POLICY ||
+    !Array.isArray(review.allowedDifferences) ||
+    review.allowedDifferences.length === 0 ||
+    migration?.baseCommit !== latestSolidity.baseCommit ||
+    migration?.projectRevertStringCount?.before !== 37 ||
+    migration?.projectRevertStringCount?.after !== 0 ||
+    migration?.baseManifest?.path !== STAGE_15_BASE_MANIFEST_PATH ||
+    migration.baseManifest.sha256 !==
+      artifacts?.[STAGE_15_BASE_MANIFEST_PATH] ||
+    migration?.inventory?.path !== STAGE_15_INVENTORY_PATH ||
+    migration.inventory.sha256 !== artifacts?.[STAGE_15_INVENTORY_PATH] ||
+    review.opcodeEvidence?.path !== STAGE_15_EVIDENCE_PATH ||
+    artifacts?.[relativeReviewPath] !== sha256(currentReviewBytes)
+  ) {
+    fail(
+      "Current compatibility review is not the exact maintenance-bound Stage 15 migration"
+    );
+  }
+  return latestSolidity;
+}
+
 function stage13Inventory(stage12b) {
   const inventoryBytes = checkpointFile(
     STAGE_13_CHECKPOINT_COMMIT,
@@ -669,7 +723,7 @@ function stage13Inventory(stage12b) {
   return inventory;
 }
 
-function interoperabilitySmokeParity(stage11, stage12b) {
+function interoperabilitySmokeParity(stage11, stage12b, activeSolidityRecord) {
   if (!fs.existsSync(STAGE_14_PARITY_PATH)) {
     fail("Missing Stage 14 interoperability-smoke parity evidence");
   }
@@ -815,9 +869,12 @@ function interoperabilitySmokeParity(stage11, stage12b) {
       "test/solidity",
       "Stage 14 mapped Forge source"
     );
+    const currentForgeSha256 =
+      activeSolidityRecord?.boundFiles?.[mapping.forgeFile] ??
+      mapping.forgeFileSha256;
     if (
       !fs.existsSync(forgePath) ||
-      sha256(fs.readFileSync(forgePath)) !== mapping.forgeFileSha256
+      sha256(fs.readFileSync(forgePath)) !== currentForgeSha256
     ) {
       fail(`Stage 14 mapped Forge source changed: ${mapping.forgeFile}`);
     }
@@ -1020,11 +1077,17 @@ function safetyForgeTests() {
 function main() {
   const map = readJson(MAP_PATH);
   const baseline = readJson(BASELINE_PATH);
+  const maintenance = validateMaintenanceLedger({ root: ROOT });
   const stage11 = stage11Inventory(baseline);
   const stage12a = stage12aInventory(stage11);
   const stage12b = stage12bInventory(stage12a);
   stage13Inventory(stage12b);
-  const stage14ForgeTargets = interoperabilitySmokeParity(stage11, stage12b);
+  const activeSolidityRecord = validateCurrentCompatibilityReview(maintenance);
+  const stage14ForgeTargets = interoperabilitySmokeParity(
+    stage11,
+    stage12b,
+    activeSolidityRecord
+  );
   validateMaintenanceLedger({ root: ROOT });
   if (map.schemaVersion !== 1) fail("Unsupported parity-map schema");
   if (!Array.isArray(map.fragments) || map.fragments.length === 0) {

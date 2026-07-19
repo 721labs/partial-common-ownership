@@ -3,7 +3,9 @@ pragma solidity 0.8.36;
 
 import {Test} from "forge-std/Test.sol";
 import {TestPCOToken} from "../../../contracts/test/TestPCOToken.sol";
-import {Remittance} from "../../../contracts/token/modules/Remittance.sol";
+import {ILease} from "../../../contracts/token/modules/interfaces/ILease.sol";
+import {IRemittance} from "../../../contracts/token/modules/interfaces/IRemittance.sol";
+import {IERC721Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 
 /// @dev A stateful actor that can deterministically reject `send`, then accept
 /// the one-time outstanding-remittance withdrawal. The assembly path keeps the
@@ -38,11 +40,6 @@ contract PCOInvariantHandler is Test {
     uint256 private constant MIN_DEPOSIT = 0.01 ether;
     uint256 private constant MAX_DEPOSIT = 10 ether;
     uint256 private constant ACTOR_BALANCE = 1_000_000 ether;
-
-    bytes32 private constant CURRENT_VALUATION_REVERT =
-        keccak256(abi.encodeWithSignature("Error(string)", "Current valuation is incorrect"));
-    bytes32 private constant POST_TAX_AUTHORIZATION_REVERT =
-        keccak256(abi.encodeWithSignature("Error(string)", "ERC721: caller is not owner nor approved"));
 
     TestPCOToken public immutable token;
     address payable public immutable beneficiary;
@@ -321,7 +318,8 @@ contract PCOInvariantHandler is Test {
 
         recipient.setRejectEther(false);
         vm.prank(address(recipient));
-        (bool success,) = address(token).call(abi.encodeWithSelector(Remittance.withdrawOutstandingRemittance.selector));
+        (bool success,) =
+            address(token).call(abi.encodeWithSelector(IRemittance.withdrawOutstandingRemittance.selector));
 
         if (!success || token.outstandingRemittances(address(recipient)) != 0) ghostOutstandingOneTime = false;
 
@@ -332,11 +330,11 @@ contract PCOInvariantHandler is Test {
 
         vm.prank(address(recipient));
         (bool repeated, bytes memory repeatedData) =
-            address(token).call(abi.encodeWithSelector(Remittance.withdrawOutstandingRemittance.selector));
+            address(token).call(abi.encodeWithSelector(IRemittance.withdrawOutstandingRemittance.selector));
         if (
             repeated
                 || keccak256(repeatedData)
-                    != keccak256(abi.encodeWithSelector(Remittance.NoOutstandingBalance.selector))
+                    != keccak256(abi.encodeWithSelector(IRemittance.NoOutstandingBalance.selector))
         ) ghostOutstandingOneTime = false;
 
         recipient.setRejectEther(true);
@@ -353,7 +351,7 @@ contract PCOInvariantHandler is Test {
         (, bytes memory revertData) =
             _takeover(tokenId, bob, _max(currentValuation, 2 ether), currentValuation, currentValuation + 1 ether);
 
-        if (keccak256(revertData) != keccak256(abi.encodeWithSelector(Remittance.DestinationContractAddress.selector)))
+        if (keccak256(revertData) != keccak256(abi.encodeWithSelector(IRemittance.DestinationContractAddress.selector)))
         {
             ghostTakeoverLockReleased = false;
         }
@@ -430,10 +428,11 @@ contract PCOInvariantHandler is Test {
         (bool success, bytes memory returnData) =
             address(token).call(abi.encodeWithSelector(token.exit.selector, tokenId_));
 
-        if (
-            success || keccak256(returnData) != POST_TAX_AUTHORIZATION_REVERT
-                || _postTaxMutationStateHash(tokenId_) != stateBefore
-        ) ghostPostTaxAuthorizationRollback = false;
+        bytes32 expectedRevert =
+            keccak256(abi.encodeWithSelector(IERC721Errors.ERC721InsufficientApproval.selector, caller_, tokenId_));
+        if (success || keccak256(returnData) != expectedRevert || _postTaxMutationStateHash(tokenId_) != stateBefore) {
+            ghostPostTaxAuthorizationRollback = false;
+        }
 
         _accountMutation(tokenId_, before);
         ghostPostTaxAuthorizationChecks++;
@@ -551,7 +550,13 @@ contract PCOInvariantHandler is Test {
         vm.prank(carol);
         (bool success, bytes memory returnData) = address(token)
             .call(abi.encodeWithSelector(token.takeoverLease.selector, tokenId_, MIN_VALUATION, type(uint256).max));
-        return !success && keccak256(returnData) == CURRENT_VALUATION_REVERT;
+        return !success
+            && keccak256(returnData)
+                == keccak256(
+                abi.encodeWithSelector(
+                ILease.CurrentValuationMismatch.selector, tokenId_, type(uint256).max, token.valuationOf(tokenId_)
+            )
+            );
     }
 
     function _takeoverValue(uint256 tokenId_, address buyer_, uint256 currentValuation_, uint256 desiredDeposit_)

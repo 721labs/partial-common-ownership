@@ -6,6 +6,11 @@ import {Vm} from "forge-std/Vm.sol";
 import {TestNFT} from "../../../contracts/test/TestNFT.sol";
 import {TestWrapper} from "../../../contracts/test/TestWrapper.sol";
 import {PCOInitializationReceiver, PCOReceiverAction} from "../../../contracts/test/PCOInitializationReceiver.sol";
+import {Wrapper} from "../../../contracts/Wrapper.sol";
+import {IBeneficiary} from "../../../contracts/token/modules/interfaces/IBeneficiary.sol";
+import {ITaxation} from "../../../contracts/token/modules/interfaces/ITaxation.sol";
+import {IValuation} from "../../../contracts/token/modules/interfaces/IValuation.sol";
+import {IERC721Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 
 /// @dev One-to-one deterministic ports of the 20 legacy Wrapper.ts scenarios.
 contract WrapperParityTest is Test {
@@ -78,10 +83,14 @@ contract WrapperParityTest is Test {
         assertEq(testNFT.balanceOf(address(wrapper)), 0);
 
         _assertReceiverCallbackRollback(
-            receiver, PCOReceiverAction.WrongSelector, bytes("ERC721: transfer to non ERC721Receiver implementer")
+            receiver,
+            PCOReceiverAction.WrongSelector,
+            abi.encodeWithSelector(IERC721Errors.ERC721InvalidReceiver.selector, address(receiver))
         );
         _assertReceiverCallbackRollback(
-            receiver, PCOReceiverAction.ApproveThenRevert, bytes("PCO receiver: intentional rollback")
+            receiver,
+            PCOReceiverAction.ApproveThenRevert,
+            abi.encodeWithSignature("Error(string)", "PCO receiver: intentional rollback")
         );
         _assertReceiverAcceptsInitializedToken(receiver);
         _assertReceiverTransfersInitializedToken(receiver);
@@ -93,7 +102,7 @@ contract WrapperParityTest is Test {
         uint256 wrapperBalanceBefore = testNFT.balanceOf(address(wrapper));
 
         vm.prank(DEPLOYER);
-        vm.expectRevert(bytes("Tokens can only be received via #wrap"));
+        vm.expectRevert(abi.encodeWithSelector(Wrapper.TokenReceivedOutsideWrap.selector, DEPLOYER));
         testNFT.safeTransferFrom(DEPLOYER, address(wrapper), TOKEN_ONE);
 
         assertEq(testNFT.ownerOf(TOKEN_ONE), DEPLOYER);
@@ -104,7 +113,7 @@ contract WrapperParityTest is Test {
     function test_tokenURI_nonexistentTokenReverts() public {
         uint256 wrappedId = wrapper.wrappedTokenId(address(testNFT), TOKEN_ONE);
 
-        vm.expectRevert(bytes("ERC721Metadata: URI query for nonexistent token"));
+        vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721NonexistentToken.selector, wrappedId));
         wrapper.tokenURI(wrappedId);
     }
 
@@ -119,7 +128,7 @@ contract WrapperParityTest is Test {
         uint256 wrappedBalanceBefore = wrapper.balanceOf(DEPLOYER);
 
         vm.prank(ALICE);
-        vm.expectRevert(bytes("Wrap originator only"));
+        vm.expectRevert(abi.encodeWithSelector(Wrapper.WrapOriginatorOnly.selector, ALICE, DEPLOYER));
         wrapper.unwrap(wrappedId);
 
         assertEq(wrapper.ownerOf(wrappedId), DEPLOYER);
@@ -129,7 +138,7 @@ contract WrapperParityTest is Test {
 
     function test_unwrap_nonexistentTokenReverts() public {
         vm.prank(DEPLOYER);
-        vm.expectRevert(bytes("ERC721: query for nonexistent token"));
+        vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721NonexistentToken.selector, TOKEN_ONE));
         wrapper.unwrap(TOKEN_ONE);
     }
 
@@ -310,7 +319,7 @@ contract WrapperParityTest is Test {
 
     function test_wrap_zeroBeneficiaryReverts() public {
         vm.prank(ALICE);
-        vm.expectRevert(bytes("Beneficiary cannot be address zero"));
+        vm.expectRevert(abi.encodeWithSelector(IBeneficiary.InvalidBeneficiary.selector, address(0)));
         wrapper.wrap(
             address(testNFT), TOKEN_ONE, WRAP_VALUATION, payable(address(0)), TAX_RATE, COLLECTION_FREQUENCY_DAYS
         );
@@ -321,7 +330,7 @@ contract WrapperParityTest is Test {
         uint256 contractBalanceBefore = address(wrapper).balance;
 
         vm.prank(DEPLOYER);
-        vm.expectRevert(bytes("No deposit required"));
+        vm.expectRevert(abi.encodeWithSelector(Wrapper.DepositNotAllowed.selector, DEPLOYER, 1 ether));
         wrapper.wrap{value: 1 ether}(
             address(testNFT), TOKEN_ONE, WRAP_VALUATION, payable(DEPLOYER), TAX_RATE, COLLECTION_FREQUENCY_DAYS
         );
@@ -332,7 +341,7 @@ contract WrapperParityTest is Test {
 
     function test_wrap_nonBeneficiaryMustIncludeDeposit() public {
         vm.prank(DEPLOYER);
-        vm.expectRevert(bytes("Deposit required"));
+        vm.expectRevert(abi.encodeWithSelector(Wrapper.DepositRequired.selector, DEPLOYER));
         wrapper.wrap(address(testNFT), TOKEN_ONE, WRAP_VALUATION, payable(BOB), TAX_RATE, COLLECTION_FREQUENCY_DAYS);
     }
 
@@ -360,19 +369,19 @@ contract WrapperParityTest is Test {
 
     function test_wrap_zeroTaxPeriodReverts() public {
         vm.prank(ALICE);
-        vm.expectRevert(bytes("Tax frequency must be > 0"));
+        vm.expectRevert(abi.encodeWithSelector(ITaxation.InvalidCollectionFrequency.selector, 0));
         wrapper.wrap(address(testNFT), TOKEN_ONE, WRAP_VALUATION, payable(ALICE), TAX_RATE, 0);
     }
 
     function test_wrap_zeroTaxRateReverts() public {
         vm.prank(ALICE);
-        vm.expectRevert(bytes("Tax rate must be > 0"));
+        vm.expectRevert(abi.encodeWithSelector(ITaxation.InvalidTaxRate.selector, 0));
         wrapper.wrap(address(testNFT), TOKEN_ONE, WRAP_VALUATION, payable(ALICE), 0, COLLECTION_FREQUENCY_DAYS);
     }
 
     function test_wrap_zeroValuationReverts() public {
         vm.prank(ALICE);
-        vm.expectRevert(bytes("Valuation must be > 0"));
+        vm.expectRevert(abi.encodeWithSelector(IValuation.InvalidValuation.selector, 0));
         wrapper.wrap(address(testNFT), TOKEN_ONE, 0, payable(ALICE), TAX_RATE, COLLECTION_FREQUENCY_DAYS);
     }
 
@@ -469,7 +478,7 @@ contract WrapperParityTest is Test {
         bytes memory caughtRevert = receiver_.attemptRejectedWrap(
             TOKEN_ONE, WRAP_VALUATION, payable(address(receiver_)), TAX_RATE, COLLECTION_FREQUENCY_DAYS, action_
         );
-        assertEq(caughtRevert, abi.encodeWithSignature("Error(string)", string(expectedRevert_)));
+        assertEq(caughtRevert, expectedRevert_);
         assertEq(testNFT.ownerOf(TOKEN_ONE), address(receiver_));
         assertEq(testNFT.getApproved(TOKEN_ONE), address(0));
         assertEq(testNFT.balanceOf(address(receiver_)), 3);
@@ -488,15 +497,15 @@ contract WrapperParityTest is Test {
         assertEq(address(wrapper).balance, wrapperBalanceBefore);
 
         _assertWrappedTokenDoesNotExist(wrappedId);
-        vm.expectRevert(bytes("ERC721: query for nonexistent token"));
+        vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721NonexistentToken.selector, wrappedId));
         wrapper.depositOf(wrappedId);
-        vm.expectRevert(bytes("ERC721: query for nonexistent token"));
+        vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721NonexistentToken.selector, wrappedId));
         wrapper.taxCollectedSinceLastTransferOf(wrappedId);
-        vm.expectRevert(bytes("ERC721: query for nonexistent token"));
+        vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721NonexistentToken.selector, wrappedId));
         wrapper.taxRateOf(wrappedId);
-        vm.expectRevert(bytes("ERC721: query for nonexistent token"));
+        vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721NonexistentToken.selector, wrappedId));
         wrapper.collectionFrequencyOf(wrappedId);
-        vm.expectRevert(bytes("ERC721Metadata: URI query for nonexistent token"));
+        vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721NonexistentToken.selector, wrappedId));
         wrapper.tokenURI(wrappedId);
 
         _assertWrappedTokenRawStateCleared(wrappedId);
@@ -619,15 +628,15 @@ contract WrapperParityTest is Test {
         assertEq(wrapper.beneficiaryOf(wrappedId), address(0));
         assertEq(wrapper.taxationCollected(wrappedId), 0);
         assertEq(wrapper.lastCollectionTimeOf(wrappedId), 0);
-        vm.expectRevert(bytes("ERC721: query for nonexistent token"));
+        vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721NonexistentToken.selector, wrappedId));
         wrapper.depositOf(wrappedId);
-        vm.expectRevert(bytes("ERC721: query for nonexistent token"));
+        vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721NonexistentToken.selector, wrappedId));
         wrapper.taxCollectedSinceLastTransferOf(wrappedId);
-        vm.expectRevert(bytes("ERC721: query for nonexistent token"));
+        vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721NonexistentToken.selector, wrappedId));
         wrapper.taxRateOf(wrappedId);
-        vm.expectRevert(bytes("ERC721: query for nonexistent token"));
+        vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721NonexistentToken.selector, wrappedId));
         wrapper.collectionFrequencyOf(wrappedId);
-        vm.expectRevert(bytes("ERC721Metadata: URI query for nonexistent token"));
+        vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721NonexistentToken.selector, wrappedId));
         wrapper.tokenURI(wrappedId);
         assertEq(testNFT.ownerOf(TOKEN_THREE), address(receiver_));
         assertEq(testNFT.getApproved(TOKEN_THREE), address(0));
@@ -727,21 +736,21 @@ contract WrapperParityTest is Test {
         _assertWrappedTokenDoesNotExist(wrappedId_);
         assertEq(wrapper.beneficiaryOf(wrappedId_), address(0));
 
-        vm.expectRevert(bytes("ERC721: query for nonexistent token"));
+        vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721NonexistentToken.selector, wrappedId_));
         wrapper.selfAssess(wrappedId_, 2 ether);
 
         assertEq(wrapper.valuationOf(wrappedId_), 0);
 
-        vm.expectRevert(bytes("ERC721: query for nonexistent token"));
+        vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721NonexistentToken.selector, wrappedId_));
         wrapper.taxRateOf(wrappedId_);
 
-        vm.expectRevert(bytes("ERC721: query for nonexistent token"));
+        vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721NonexistentToken.selector, wrappedId_));
         wrapper.collectionFrequencyOf(wrappedId_);
 
-        vm.expectRevert(bytes("ERC721: query for nonexistent token"));
+        vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721NonexistentToken.selector, wrappedId_));
         wrapper.depositOf(wrappedId_);
 
-        vm.expectRevert(bytes("ERC721Metadata: URI query for nonexistent token"));
+        vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721NonexistentToken.selector, wrappedId_));
         wrapper.tokenURI(wrappedId_);
 
         assertEq(testNFT.ownerOf(underlyingId_), expectedUnderlyingOwner_);
@@ -752,7 +761,7 @@ contract WrapperParityTest is Test {
     }
 
     function _assertWrappedTokenDoesNotExist(uint256 wrappedId_) internal {
-        vm.expectRevert(bytes("ERC721: owner query for nonexistent token"));
+        vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721NonexistentToken.selector, wrappedId_));
         wrapper.ownerOf(wrappedId_);
     }
 

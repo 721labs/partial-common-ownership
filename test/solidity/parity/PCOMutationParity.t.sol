@@ -4,6 +4,10 @@ pragma solidity 0.8.36;
 import {Test} from "forge-std/Test.sol";
 import {Vm} from "forge-std/Vm.sol";
 import {TestPCOToken} from "../../../contracts/test/TestPCOToken.sol";
+import {ILease} from "../../../contracts/token/modules/interfaces/ILease.sol";
+import {ITaxation} from "../../../contracts/token/modules/interfaces/ITaxation.sol";
+import {IValuation} from "../../../contracts/token/modules/interfaces/IValuation.sol";
+import {IERC721Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 
 /* solhint-disable func-name-mixedcase */
 
@@ -100,7 +104,14 @@ contract PCOMutationParityTest is Test {
         vm.warp(foreclosure + 1);
         assertTrue(token.foreclosed(TOKEN_ONE));
 
-        _expectTakeoverRevert(alice, TOKEN_ONE, ETH1, ETH1, ETH2, "Buyer is already owner");
+        _expectTakeoverRevert(
+            alice,
+            TOKEN_ONE,
+            ETH1,
+            ETH1,
+            ETH2,
+            abi.encodeWithSelector(ILease.BuyerAlreadyOwner.selector, TOKEN_ONE, alice)
+        );
 
         // The failed attempt cannot trigger the pending foreclosure.
         assertEq(token.ownerOf(TOKEN_ONE), alice);
@@ -115,7 +126,7 @@ contract PCOMutationParityTest is Test {
         uint256 contractTokensBefore = token.balanceOf(address(token));
 
         vm.recordLogs();
-        vm.expectRevert(_error("ERC721: query for nonexistent token"));
+        vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721NonexistentToken.selector, INVALID_TOKEN_ID));
         vm.prank(alice);
         token.takeoverLease{value: ETH1}(INVALID_TOKEN_ID, ETH1, ETH1);
 
@@ -128,22 +139,40 @@ contract PCOMutationParityTest is Test {
     }
 
     function test_takeoverLease_fails_incorrectCurrentValuation() public {
-        _expectTakeoverRevert(alice, TOKEN_ONE, ETH1, ETH1, ETH1, "Current valuation is incorrect");
+        _expectTakeoverRevert(
+            alice,
+            TOKEN_ONE,
+            ETH1,
+            ETH1,
+            ETH1,
+            abi.encodeWithSelector(ILease.CurrentValuationMismatch.selector, TOKEN_ONE, ETH1, 0)
+        );
     }
 
     function test_takeoverLease_fails_zeroWei() public {
-        _expectTakeoverRevert(alice, TOKEN_ONE, 0, 0, 0, "New valuation cannot be zero");
+        _expectTakeoverRevert(
+            alice, TOKEN_ONE, 0, 0, 0, abi.encodeWithSelector(IValuation.InvalidValuation.selector, 0)
+        );
     }
 
     function test_takeoverLease_fails_purchaseValuationLessThanMessageValue() public {
-        _expectTakeoverRevert(alice, TOKEN_ONE, 0, 0, ETH1, "New valuation cannot be zero");
+        _expectTakeoverRevert(
+            alice, TOKEN_ONE, 0, 0, ETH1, abi.encodeWithSelector(IValuation.InvalidValuation.selector, 0)
+        );
     }
 
     function test_takeoverLease_fails_valuationBelowCurrent() public {
         _takeoverFromContract(bob, TOKEN_TWO, ETH2, ETH3);
         vm.warp(block.timestamp + 1);
 
-        _expectTakeoverRevert(alice, TOKEN_TWO, ETH1, ETH2, ETH1, "New valuation must be >= current valuation");
+        _expectTakeoverRevert(
+            alice,
+            TOKEN_TWO,
+            ETH1,
+            ETH2,
+            ETH1,
+            abi.encodeWithSelector(ILease.NewValuationBelowCurrent.selector, TOKEN_TWO, ETH1, ETH2)
+        );
     }
 
     function test_takeoverLease_fails_withoutSurplusValue() public {
@@ -151,7 +180,12 @@ contract PCOMutationParityTest is Test {
         vm.warp(block.timestamp + 1);
 
         _expectTakeoverPaymentRevertAfterCollection(
-            alice, TOKEN_ONE, ETH2, ETH1, ETH1, "Message does not contain surplus value for deposit"
+            alice,
+            TOKEN_ONE,
+            ETH2,
+            ETH1,
+            ETH1,
+            abi.encodeWithSelector(ILease.DepositPaymentRequired.selector, TOKEN_ONE, ETH1, ETH1)
         );
     }
 
@@ -159,11 +193,25 @@ contract PCOMutationParityTest is Test {
         _takeoverFromContract(bob, TOKEN_TWO, ETH2, ETH3);
         vm.warp(block.timestamp + 1);
 
-        _expectTakeoverRevert(bob, TOKEN_TWO, ETH3, ETH2, ETH4, "Buyer is already owner");
+        _expectTakeoverRevert(
+            bob,
+            TOKEN_TWO,
+            ETH3,
+            ETH2,
+            ETH4,
+            abi.encodeWithSelector(ILease.BuyerAlreadyOwner.selector, TOKEN_TWO, bob)
+        );
     }
 
     function test_takeoverLease_fails_beneficiaryValueFromContract() public {
-        _expectTakeoverRevert(beneficiary, TOKEN_ONE, ETH1, 0, ETH2, "Msg contains value");
+        _expectTakeoverRevert(
+            beneficiary,
+            TOKEN_ONE,
+            ETH1,
+            0,
+            ETH2,
+            abi.encodeWithSelector(ILease.IncorrectPayment.selector, TOKEN_ONE, 0, ETH2)
+        );
     }
 
     function test_takeoverLease_fails_beneficiarySurplusFromAlice() public {
@@ -171,7 +219,12 @@ contract PCOMutationParityTest is Test {
         vm.warp(block.timestamp + 1);
 
         _expectTakeoverPaymentRevertAfterCollection(
-            beneficiary, TOKEN_ONE, ETH4, ETH1, ETH2, "Msg contains surplus value"
+            beneficiary,
+            TOKEN_ONE,
+            ETH4,
+            ETH1,
+            ETH2,
+            abi.encodeWithSelector(ILease.IncorrectPayment.selector, TOKEN_ONE, ETH1, ETH2)
         );
     }
 
@@ -275,7 +328,12 @@ contract PCOMutationParityTest is Test {
     //////////////////////////////
 
     function test_deposit_fails_notDepositedByOwner() public {
-        _expectDepositRevert(alice, TOKEN_ONE, ETH1, "ERC721: caller is not owner nor approved");
+        _expectDepositRevert(
+            alice,
+            TOKEN_ONE,
+            ETH1,
+            abi.encodeWithSelector(IERC721Errors.ERC721InsufficientApproval.selector, alice, TOKEN_ONE)
+        );
     }
 
     function test_deposit_succeeds_ownerCanDeposit() public {
@@ -313,19 +371,31 @@ contract PCOMutationParityTest is Test {
     //////////////////////////////
 
     function test_selfAssess_fails_onlyOwnerCanUpdateValuation() public {
-        _expectSelfAssessRevert(alice, TOKEN_ONE, 500, "ERC721: caller is not owner nor approved");
+        _expectSelfAssessRevert(
+            alice,
+            TOKEN_ONE,
+            500,
+            abi.encodeWithSelector(IERC721Errors.ERC721InsufficientApproval.selector, alice, TOKEN_ONE)
+        );
     }
 
     function test_selfAssess_fails_newValuationZero() public {
         _takeoverFromContract(alice, TOKEN_ONE, ETH1, ETH2);
         vm.warp(block.timestamp + 1);
-        _expectSelfAssessRevert(alice, TOKEN_ONE, 0, "New valuation cannot be zero");
+        _expectSelfAssessRevert(
+            alice, TOKEN_ONE, 0, abi.encodeWithSelector(IValuation.InvalidValuation.selector, 0)
+        );
     }
 
     function test_selfAssess_fails_newValuationSame() public {
         _takeoverFromContract(alice, TOKEN_ONE, ETH1, ETH2);
         vm.warp(block.timestamp + 1);
-        _expectSelfAssessRevert(alice, TOKEN_ONE, ETH1, "New valuation cannot be same");
+        _expectSelfAssessRevert(
+            alice,
+            TOKEN_ONE,
+            ETH1,
+            abi.encodeWithSelector(ILease.ValuationUnchanged.selector, TOKEN_ONE, ETH1)
+        );
     }
 
     function test_selfAssess_succeeds_ownerIncreasesValuation() public {
@@ -345,13 +415,25 @@ contract PCOMutationParityTest is Test {
     //////////////////////////////
 
     function test_withdrawDeposit_fails_nonOwner() public {
-        _expectWithdrawRevert(alice, TOKEN_ONE, 10, "ERC721: caller is not owner nor approved");
+        _expectWithdrawRevert(
+            alice,
+            TOKEN_ONE,
+            10,
+            abi.encodeWithSelector(IERC721Errors.ERC721InsufficientApproval.selector, alice, TOKEN_ONE)
+        );
     }
 
     function test_withdrawDeposit_fails_moreThanDeposited() public {
         _takeoverFromContract(alice, TOKEN_ONE, ETH1, ETH2);
         vm.warp(block.timestamp + 1);
-        _expectWithdrawRevert(alice, TOKEN_ONE, ETH2, "Cannot withdraw more than deposited");
+        uint256 available = token.depositOf(TOKEN_ONE)
+            - _taxDue(TOKEN_ONE, token.valuationOf(TOKEN_ONE), block.timestamp - token.lastCollectionTimeOf(TOKEN_ONE));
+        _expectWithdrawRevert(
+            alice,
+            TOKEN_ONE,
+            ETH2,
+            abi.encodeWithSelector(ITaxation.WithdrawalExceedsDeposit.selector, TOKEN_ONE, ETH2, available)
+        );
     }
 
     function test_withdrawDeposit_succeeds_expectedAmount() public {
@@ -393,7 +475,7 @@ contract PCOMutationParityTest is Test {
         TokenState memory beforeState = _state(TOKEN_ONE, alice);
 
         vm.recordLogs();
-        vm.expectRevert(_error("ERC721: caller is not owner nor approved"));
+        vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721InsufficientApproval.selector, alice, TOKEN_ONE));
         vm.prank(alice);
         token.withdrawDeposit(TOKEN_ONE, 10);
 
@@ -755,12 +837,12 @@ contract PCOMutationParityTest is Test {
         uint256 newValuation,
         uint256 currentValuation,
         uint256 value,
-        string memory reason
+        bytes memory expectedRevert
     ) internal {
         TokenState memory beforeState = _state(tokenId, caller);
 
         vm.recordLogs();
-        vm.expectRevert(_error(reason));
+        vm.expectRevert(expectedRevert);
         vm.prank(caller);
         token.takeoverLease{value: value}(tokenId, newValuation, currentValuation);
 
@@ -778,13 +860,13 @@ contract PCOMutationParityTest is Test {
         uint256 newValuation,
         uint256 currentValuation,
         uint256 value,
-        string memory reason
+        bytes memory expectedRevert
     ) internal {
         TokenState memory beforeState = _state(tokenId, caller);
         uint256 due = _taxDue(tokenId, currentValuation, block.timestamp - beforeState.lastCollectionTime);
 
         vm.recordLogs();
-        vm.expectRevert(_error(reason));
+        vm.expectRevert(expectedRevert);
         vm.prank(caller);
         token.takeoverLease{value: value}(tokenId, newValuation, currentValuation);
 
@@ -795,11 +877,13 @@ contract PCOMutationParityTest is Test {
         _assertStateUnchanged(tokenId, caller, beforeState);
     }
 
-    function _expectDepositRevert(address caller, uint256 tokenId, uint256 value, string memory reason) internal {
+    function _expectDepositRevert(address caller, uint256 tokenId, uint256 value, bytes memory expectedRevert)
+        internal
+    {
         TokenState memory beforeState = _state(tokenId, caller);
 
         vm.recordLogs();
-        vm.expectRevert(_error(reason));
+        vm.expectRevert(expectedRevert);
         vm.prank(caller);
         token.deposit{value: value}(tokenId);
 
@@ -832,13 +916,18 @@ contract PCOMutationParityTest is Test {
         assertEq(logs.length, 0);
     }
 
-    function _expectSelfAssessRevert(address caller, uint256 tokenId, uint256 newValuation, string memory reason)
+    function _expectSelfAssessRevert(
+        address caller,
+        uint256 tokenId,
+        uint256 newValuation,
+        bytes memory expectedRevert
+    )
         internal
     {
         TokenState memory beforeState = _state(tokenId, caller);
 
         vm.recordLogs();
-        vm.expectRevert(_error(reason));
+        vm.expectRevert(expectedRevert);
         vm.prank(caller);
         token.selfAssess(tokenId, newValuation);
 
@@ -847,11 +936,13 @@ contract PCOMutationParityTest is Test {
         _assertStateUnchanged(tokenId, caller, beforeState);
     }
 
-    function _expectWithdrawRevert(address caller, uint256 tokenId, uint256 amount, string memory reason) internal {
+    function _expectWithdrawRevert(address caller, uint256 tokenId, uint256 amount, bytes memory expectedRevert)
+        internal
+    {
         TokenState memory beforeState = _state(tokenId, caller);
 
         vm.recordLogs();
-        vm.expectRevert(_error(reason));
+        vm.expectRevert(expectedRevert);
         vm.prank(caller);
         token.withdrawDeposit(tokenId, amount);
 
@@ -904,11 +995,9 @@ contract PCOMutationParityTest is Test {
                 / TAX_DENOMINATOR;
     }
 
-    function _error(string memory reason) internal pure returns (bytes memory) {
-        return abi.encodeWithSignature("Error(string)", reason);
-    }
-
-    function _assertApproval(Vm.Log memory entry, address owner, address approved, uint256 tokenId) internal {
+    function _assertApproval(Vm.Log memory entry, address owner, address approved, uint256 tokenId)
+        internal
+    {
         _assertLogHeader(entry, APPROVAL_SIGNATURE, 4);
         assertEq(entry.topics[1], _addressTopic(owner));
         assertEq(entry.topics[2], _addressTopic(approved));

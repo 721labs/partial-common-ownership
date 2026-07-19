@@ -12,7 +12,9 @@ const {
   validateMaintenanceLedger,
 } = require("./maintenance-policy.cjs");
 
-const ROOT = path.resolve(__dirname, "..");
+const ROOT = process.env.COMPATIBILITY_ROOT
+  ? path.resolve(process.env.COMPATIBILITY_ROOT)
+  : path.resolve(__dirname, "..");
 const BASELINE_PATH = path.join(ROOT, "compatibility", "baseline.json");
 const REVIEW_PATH = process.env.COMPATIBILITY_REVIEW
   ? path.resolve(ROOT, process.env.COMPATIBILITY_REVIEW)
@@ -1103,6 +1105,106 @@ const STAGE_13_CHECKPOINT_BINDING = Object.freeze({
     path: "scripts/compatibility.cjs",
     sha256: STAGE_13_STAGE_12B_RUNNER_SHA256,
   }),
+});
+const STAGE_15_CANDIDATE = "stage-15-custom-errors";
+const STAGE_15_POLICY = "stage-15-reviewed-custom-error-migration";
+const STAGE_15_BASE_COMMIT = "29f71f7a237b1fb6fa2cc068e1da0a54ce9b5247";
+const STAGE_15_BASE_MANIFEST_PATH =
+  "compatibility/stage-15-base-manifest.json";
+const STAGE_15_BASE_MANIFEST_SHA256 =
+  "27bcc5b12991fe9a6806c82f2d6a830bb5460f1fabc8d5f290e3d953de601640";
+const STAGE_15_INVENTORY_PATH =
+  "compatibility/stage-15-custom-errors-inventory.json";
+const STAGE_15_EVIDENCE_PATH =
+  "compatibility/evidence/stage-15-custom-errors.json";
+const STAGE_15_PRODUCTION_SOURCES = Object.freeze([
+  "contracts/Wrapper.sol",
+  "contracts/token/PartialCommonOwnership.sol",
+  "contracts/token/modules/Beneficiary.sol",
+  "contracts/token/modules/ERC721.sol",
+  "contracts/token/modules/Lease.sol",
+  "contracts/token/modules/Remittance.sol",
+  "contracts/token/modules/Taxation.sol",
+  "contracts/token/modules/Valuation.sol",
+  "contracts/token/modules/interfaces/IBeneficiary.sol",
+  "contracts/token/modules/interfaces/ILease.sol",
+  "contracts/token/modules/interfaces/IRemittance.sol",
+  "contracts/token/modules/interfaces/ITaxation.sol",
+  "contracts/token/modules/interfaces/IValuation.sol",
+]);
+const STAGE_15_BEHAVIOR_SOURCES = Object.freeze([
+  "scripts/check-parity.cjs",
+  "scripts/run-slither.cjs",
+  "test/solidity/fuzz/PCOFuzzBase.t.sol",
+  "test/solidity/fuzz/PCOFuzzLease.t.sol",
+  "test/solidity/fuzz/PCOFuzzRemittanceERC721.t.sol",
+  "test/solidity/fuzz/WrapperFuzz.t.sol",
+  "test/solidity/invariant/PCODeferredRegression.t.sol",
+  "test/solidity/invariant/PCOInvariant.t.sol",
+  "test/solidity/invariant/helpers/WrapperInvariantHarness.sol",
+  "test/solidity/parity/PCOMutationParity.t.sol",
+  "test/solidity/parity/PCOReadTaxParity.t.sol",
+  "test/solidity/parity/WrapperParity.t.sol",
+]);
+const STAGE_15_CORE_ERROR_SIGNATURES = Object.freeze([
+  "AmountZero()",
+  "BeneficiaryOnly()",
+  "BuyerAlreadyOwner(uint256,address)",
+  "CurrentValuationMismatch(uint256,uint256,uint256)",
+  "DepositPaymentRequired(uint256,uint256,uint256)",
+  "DestinationContractAddress()",
+  "DestinationZeroAddress()",
+  "ERC721IncorrectOwner(address,uint256,address)",
+  "ERC721InsufficientApproval(address,uint256)",
+  "ERC721InvalidApprover(address)",
+  "ERC721InvalidOperator(address)",
+  "ERC721InvalidOwner(address)",
+  "ERC721InvalidReceiver(address)",
+  "ERC721InvalidSender(address)",
+  "ERC721NonexistentToken(uint256)",
+  "IncorrectPayment(uint256,uint256,uint256)",
+  "InsufficientBalance()",
+  "InvalidBeneficiary(address)",
+  "InvalidCollectionFrequency(uint256)",
+  "InvalidTaxRate(uint256)",
+  "InvalidValuation(uint256)",
+  "NewValuationBelowCurrent(uint256,uint256,uint256)",
+  "NoOutstandingBalance()",
+  "TokenLocked(uint256)",
+  "ValuationUnchanged(uint256,uint256)",
+  "WithdrawalExceedsDeposit(uint256,uint256,uint256)",
+  "WithdrawalToContract(uint256)",
+]);
+const STAGE_15_INTERFACE_ERROR_SIGNATURES = Object.freeze({
+  "contracts/token/modules/interfaces/IBeneficiary.sol:IBeneficiary": [
+    "BeneficiaryOnly()",
+    "InvalidBeneficiary(address)",
+  ],
+  "contracts/token/modules/interfaces/ILease.sol:ILease": [
+    "BuyerAlreadyOwner(uint256,address)",
+    "CurrentValuationMismatch(uint256,uint256,uint256)",
+    "DepositPaymentRequired(uint256,uint256,uint256)",
+    "IncorrectPayment(uint256,uint256,uint256)",
+    "NewValuationBelowCurrent(uint256,uint256,uint256)",
+    "TokenLocked(uint256)",
+    "ValuationUnchanged(uint256,uint256)",
+  ],
+  "contracts/token/modules/interfaces/IRemittance.sol:IRemittance": [
+    "AmountZero()",
+    "DestinationContractAddress()",
+    "DestinationZeroAddress()",
+    "InsufficientBalance()",
+    "NoOutstandingBalance()",
+  ],
+  "contracts/token/modules/interfaces/ITaxation.sol:ITaxation": [
+    "InvalidCollectionFrequency(uint256)",
+    "InvalidTaxRate(uint256)",
+    "WithdrawalExceedsDeposit(uint256,uint256,uint256)",
+    "WithdrawalToContract(uint256)",
+  ],
+  "contracts/token/modules/interfaces/IValuation.sol:IValuation": [
+    "InvalidValuation(uint256)",
+  ],
 });
 const PROJECT_REVERT_STRINGS_PATH = path.join(
   ROOT,
@@ -2214,6 +2316,36 @@ const REVIEW_POLICIES = Object.freeze({
       return false;
     },
     validateCandidate: validateStage13Candidate,
+  }),
+  [STAGE_15_POLICY]: Object.freeze({
+    candidate: STAGE_15_CANDIDATE,
+    requiredOpcodeEvidence: Object.freeze({
+      mode: "metadata-stripped-full-diff",
+      path: STAGE_15_EVIDENCE_PATH,
+      contracts: STAGE_08_PRODUCTION_CONTRACTS,
+    }),
+    requiresStage15MigrationEvidence: true,
+    permits(reviewPath) {
+      return (
+        /^\$\.contracts\..+\.(?:abi|errors|creationBytecode|runtimeBytecode)(?:\.|\[|$)/.test(
+          reviewPath
+        ) ||
+        /^\$\.projectRevertStrings(?:\.|\[|$)/.test(reviewPath) ||
+        /^\$\.forgeBuild\.(?:logicalSourceClosureSha256|normalizedCompilerInputSha256)$/.test(
+          reviewPath
+        )
+      );
+    },
+    permitsProtectedPath(reviewPath, protectedDomain) {
+      return (
+        (protectedDomain ===
+          "contract ABI, functions, events, errors, or storage layout" &&
+          /^\$\.contracts\..+\.(?:abi|errors)(?:\.|\[|$)/.test(reviewPath)) ||
+        (protectedDomain === "project-owned revert strings" &&
+          /^\$\.projectRevertStrings(?:\.|\[|$)/.test(reviewPath))
+      );
+    },
+    validateCandidate: validateStage15Candidate,
   }),
 });
 
@@ -6863,6 +6995,14 @@ function preview(value) {
   return rendered.length <= 180 ? rendered : `${rendered.slice(0, 177)}...`;
 }
 
+const MISSING_REVIEW_VALUE = Object.freeze({
+  compatibilityManifestValue: "missing",
+});
+
+function serializableReviewValue(value) {
+  return value === undefined ? MISSING_REVIEW_VALUE : value;
+}
+
 function collectDifferences(
   expected,
   actual,
@@ -6915,8 +7055,8 @@ function collectDifferences(
 
   differences.push({
     path: location,
-    baselineValue: expected,
-    candidateValue: actual,
+    baselineValue: serializableReviewValue(expected),
+    candidateValue: serializableReviewValue(actual),
   });
   return differences;
 }
@@ -7164,6 +7304,14 @@ function reviewPolicy(review) {
     if (!valuesEqual(review.maintenanceEvidence, expected)) {
       throw new Error(
         `Compatibility review policy ${review.policy} requires the exact Stage 13 CI and maintenance evidence`
+      );
+    }
+  }
+  if (policy.requiresStage15MigrationEvidence) {
+    const expected = stage15MigrationReviewEvidence();
+    if (!valuesEqual(review.migrationEvidence, expected)) {
+      throw new Error(
+        `Compatibility review policy ${review.policy} requires the exact Stage 15 custom-error migration evidence`
       );
     }
   }
@@ -7833,6 +7981,68 @@ function stage13Review(baselineBytes, differences, candidate) {
     },
     stage12bCheckpoint: STAGE_13_CHECKPOINT_BINDING,
     maintenanceEvidence: stage13MaintenanceEvidence(),
+  };
+}
+
+function stage15MigrationReviewEvidence() {
+  const inventory = stage15Inventory();
+  return sorted({
+    baseCommit: STAGE_15_BASE_COMMIT,
+    baseManifest: inventory.baseManifest,
+    inventory: {
+      path: STAGE_15_INVENTORY_PATH,
+      sha256: sha256(
+        fs.readFileSync(path.join(ROOT, STAGE_15_INVENTORY_PATH))
+      ),
+    },
+    productionSources: inventory.productionSources,
+    behaviorSources: inventory.behaviorSources,
+    packageConsumer: inventory.packageConsumer,
+    receiverSemantics: inventory.receiverSemantics,
+    projectRevertStringCount: {
+      before: 37,
+      after: 0,
+    },
+  });
+}
+
+function stage15ReviewReason(reviewPath) {
+  if (/^\$\.projectRevertStrings(?:\.|\[|$)/.test(reviewPath)) {
+    return "Replace one compatibility-bound project revert string with its reviewed custom error.";
+  }
+  if (/\.(?:abi|errors)(?:\.|\[|$)/.test(reviewPath)) {
+    return "Publish the exact reviewed custom-error selector and typed arguments in the contract ABI.";
+  }
+  if (/\.(?:creationBytecode|runtimeBytecode)(?:\.|\[|$)/.test(reviewPath)) {
+    return "Record the compiler output change caused only by the reviewed custom-error migration.";
+  }
+  if (
+    /^\$\.forgeBuild\.(?:logicalSourceClosureSha256|normalizedCompilerInputSha256)$/.test(
+      reviewPath
+    )
+  ) {
+    return "Bind the exact production-source content and normalized compiler input after the reviewed custom-error migration.";
+  }
+  throw new Error(`Stage 15 has no review reason for ${reviewPath}`);
+}
+
+function stage15Review(baselineBytes, differences, candidate) {
+  validateStage15Candidate(null, candidate);
+  return {
+    schemaVersion: 1,
+    candidate: STAGE_15_CANDIDATE,
+    policy: STAGE_15_POLICY,
+    baselineSha256: sha256(baselineBytes),
+    allowedDifferences: differences.map((difference) => ({
+      ...difference,
+      reason: stage15ReviewReason(difference.path),
+    })),
+    opcodeEvidence: {
+      mode: "metadata-stripped-full-diff",
+      path: STAGE_15_EVIDENCE_PATH,
+      contracts: [...STAGE_08_PRODUCTION_CONTRACTS],
+    },
+    migrationEvidence: stage15MigrationReviewEvidence(),
   };
 }
 
@@ -11638,6 +11848,174 @@ function stage13ComparisonBaseline(baseline, candidate) {
   return deepClone(candidate);
 }
 
+function stage15BaseManifest() {
+  const manifestPath = path.join(ROOT, STAGE_15_BASE_MANIFEST_PATH);
+  const bytes = fs.readFileSync(manifestPath);
+  const captured = JSON.parse(bytes);
+  if (
+    sha256(bytes) !== STAGE_15_BASE_MANIFEST_SHA256 ||
+    captured.schemaVersion !== 1 ||
+    captured.candidate !== STAGE_15_CANDIDATE ||
+    captured.baseCommit !== STAGE_15_BASE_COMMIT ||
+    !captured.manifest ||
+    captured.manifest.tests?.total !== 143 ||
+    captured.manifest.projectRevertStrings?.length !== 37
+  ) {
+    throw new Error("Stage 15 base manifest is stale or malformed");
+  }
+  run("git", ["merge-base", "--is-ancestor", STAGE_15_BASE_COMMIT, "HEAD"]);
+  return captured.manifest;
+}
+
+function stage15FileDigests(relativePaths) {
+  return Object.fromEntries(
+    [...relativePaths].sort().map((relativePath) => [
+      relativePath,
+      sha256(fs.readFileSync(path.join(ROOT, relativePath))),
+    ])
+  );
+}
+
+function stage15ExpectedContractErrors() {
+  const wrapperSpecific = [
+    "DepositNotAllowed(address,uint256)",
+    "DepositRequired(address)",
+    "TokenReceivedOutsideWrap(address)",
+    "WrapOriginatorOnly(address,address)",
+  ];
+  return sorted({
+    "contracts/Wrapper.sol:Wrapper": [
+      ...STAGE_15_CORE_ERROR_SIGNATURES,
+      ...wrapperSpecific,
+    ].sort(),
+    "contracts/token/PartialCommonOwnership.sol:PartialCommonOwnership": [
+      ...STAGE_15_CORE_ERROR_SIGNATURES,
+    ].sort(),
+    ...Object.fromEntries(
+      Object.entries(STAGE_15_INTERFACE_ERROR_SIGNATURES).map(
+        ([qualifiedName, signatures]) => [qualifiedName, [...signatures].sort()]
+      )
+    ),
+  });
+}
+
+function stage15Inventory() {
+  const inventoryPath = path.join(ROOT, STAGE_15_INVENTORY_PATH);
+  const inventory = JSON.parse(fs.readFileSync(inventoryPath));
+  const expectedKeys = [
+    "baseCommit",
+    "baseManifest",
+    "behaviorSources",
+    "candidate",
+    "contractErrors",
+    "migrations",
+    "packageConsumer",
+    "productionSources",
+    "receiverSemantics",
+    "schemaVersion",
+  ];
+  const baseManifest = stage15BaseManifest();
+  if (
+    !valuesEqual(Object.keys(inventory).sort(), expectedKeys.sort()) ||
+    inventory.schemaVersion !== 1 ||
+    inventory.candidate !== STAGE_15_CANDIDATE ||
+    inventory.baseCommit !== STAGE_15_BASE_COMMIT ||
+    !valuesEqual(inventory.baseManifest, {
+      path: STAGE_15_BASE_MANIFEST_PATH,
+      sha256: STAGE_15_BASE_MANIFEST_SHA256,
+    }) ||
+    !valuesEqual(
+      inventory.productionSources,
+      stage15FileDigests(STAGE_15_PRODUCTION_SOURCES)
+    ) ||
+    !valuesEqual(
+      inventory.behaviorSources,
+      stage15FileDigests(STAGE_15_BEHAVIOR_SOURCES)
+    ) ||
+    !valuesEqual(inventory.packageConsumer, {
+      path: "scripts/test-package.cjs",
+      sha256: sha256(
+        fs.readFileSync(path.join(ROOT, "scripts/test-package.cjs"))
+      ),
+    }) ||
+    !valuesEqual(inventory.contractErrors, stage15ExpectedContractErrors()) ||
+    !Array.isArray(inventory.migrations) ||
+    inventory.migrations.length !== 37 ||
+    !valuesEqual(
+      inventory.migrations.map(({ previous }) => previous),
+      baseManifest.projectRevertStrings
+    ) ||
+    inventory.migrations.some(
+      ({ customError }) =>
+        typeof customError !== "string" ||
+        ![
+          ...STAGE_15_CORE_ERROR_SIGNATURES,
+          "DepositNotAllowed(address,uint256)",
+          "DepositRequired(address)",
+          "TokenReceivedOutsideWrap(address)",
+          "WrapOriginatorOnly(address,address)",
+        ].includes(customError)
+    ) ||
+    !valuesEqual(inventory.receiverSemantics, {
+      emptyRevert: "ERC721InvalidReceiver(address)",
+      nonemptyRevert: "bubble exact downstream revert bytes",
+      wrongSelector: "ERC721InvalidReceiver(address)",
+    })
+  ) {
+    throw new Error("Stage 15 custom-error inventory is stale or malformed");
+  }
+  return inventory;
+}
+
+function validateStage15Candidate(_baseline, candidate) {
+  const comparison = stage15BaseManifest();
+  const inventory = stage15Inventory();
+  for (const pathName of [
+    "compiler",
+    "enums",
+    "erc165",
+    "gasSnapshot",
+    "interfaces",
+    "tests",
+    "toolchain",
+  ]) {
+    if (!valuesEqual(candidate[pathName], comparison[pathName])) {
+      throw new Error(`Stage 15 changed protected ${pathName} behavior`);
+    }
+  }
+  if (!valuesEqual(candidate.projectRevertStrings, [])) {
+    throw new Error("Stage 15 must remove every project-owned production revert string");
+  }
+  const protectedForgeBuild = deepClone(candidate.forgeBuild);
+  protectedForgeBuild.logicalSourceClosureSha256 =
+    comparison.forgeBuild.logicalSourceClosureSha256;
+  protectedForgeBuild.normalizedCompilerInputSha256 =
+    comparison.forgeBuild.normalizedCompilerInputSha256;
+  if (!valuesEqual(protectedForgeBuild, comparison.forgeBuild)) {
+    throw new Error("Stage 15 changed protected compiler-source provenance");
+  }
+  const actualErrors = {};
+  for (const [source, contractName] of TARGETS) {
+    const qualifiedName = `${source}:${contractName}`;
+    const before = comparison.contracts[qualifiedName];
+    const after = candidate.contracts[qualifiedName];
+    for (const property of ["events", "functions", "storageLayout"]) {
+      if (!valuesEqual(after[property], before[property])) {
+        throw new Error(`Stage 15 changed protected ${qualifiedName} ${property}`);
+      }
+    }
+    actualErrors[qualifiedName] = after.errors.map(({ signature }) => signature);
+  }
+  if (!valuesEqual(sorted(actualErrors), inventory.contractErrors)) {
+    throw new Error("Stage 15 custom-error ABI does not match the reviewed inventory");
+  }
+}
+
+function stage15ComparisonBaseline(baseline, candidate) {
+  validateStage15Candidate(baseline, candidate);
+  return deepClone(stage15BaseManifest());
+}
+
 function expectStage09Rejection(name, operation) {
   try {
     operation();
@@ -13491,9 +13869,68 @@ function stage13NegativeProbes(baseline, candidate, review) {
   return probes;
 }
 
+function expectStage15Rejection(name, operation) {
+  try {
+    operation();
+  } catch (_error) {
+    return name;
+  }
+  throw new Error(`Stage 15 negative probe unexpectedly passed: ${name}`);
+}
+
+function stage15NegativeProbes(baseline, candidate, review) {
+  const probes = [];
+  const reject = (name, operation) =>
+    probes.push(expectStage15Rejection(name, operation));
+
+  const revertStringDrift = deepClone(candidate);
+  revertStringDrift.projectRevertStrings = [
+    stage15BaseManifest().projectRevertStrings[0],
+  ];
+  reject("project revert string remains", () =>
+    validateStage15Candidate(baseline, revertStringDrift)
+  );
+
+  const functionDrift = deepClone(candidate);
+  functionDrift.contracts[
+    "contracts/Wrapper.sol:Wrapper"
+  ].functions[0].signature += "_drift";
+  reject("function ABI drift", () =>
+    validateStage15Candidate(baseline, functionDrift)
+  );
+
+  const protectedReview = deepClone(review);
+  const unauthorizedDifference = {
+    path: "$.contracts.contracts/Wrapper.sol:Wrapper.storageLayout.storage[0]",
+    baselineValue: null,
+    candidateValue: null,
+    reason: "probe",
+  };
+  protectedReview.allowedDifferences.push(unauthorizedDifference);
+  reject("storage-layout waiver", () =>
+    validateReviewedDifferences(
+      protectedReview,
+      fs.readFileSync(BASELINE_PATH),
+      [unauthorizedDifference]
+    )
+  );
+
+  const evidencePath = opcodeEvidencePath(review);
+  const checkedInEvidence = JSON.parse(fs.readFileSync(evidencePath, "utf8"));
+  const staleEvidence = deepClone(checkedInEvidence);
+  staleEvidence.contracts[
+    "contracts/Wrapper.sol:Wrapper"
+  ].eip170.candidateRuntimeSizeBytes += 1;
+  reject("stale opcode evidence", () =>
+    validateExactOpcodeEvidence(staleEvidence, checkedInEvidence)
+  );
+  return probes;
+}
+
 function reviewedOpcodeEvidence(review, baseline, candidate) {
   const configuration = review.opcodeEvidence;
   if (!configuration) return null;
+  if (review.policy === STAGE_15_POLICY) baseline = stage15BaseManifest();
   if (
     ![
       "metadata-stripped-equality",
@@ -13746,6 +14183,7 @@ function validateSafetyEvidence(review) {
 }
 
 function expectedProjectRevertStrings(command, protectedRevertStrings) {
+  const stage15Candidate = [];
   const security01Candidate = security01ProjectRevertStrings(
     protectedRevertStrings
   );
@@ -13768,6 +14206,7 @@ function expectedProjectRevertStrings(command, protectedRevertStrings) {
   if (command === "write-stage-12b-review") return security04Candidate;
   if (command === "write-stage-13-review") return security04Candidate;
   if (command === "write-stage-14-review") return security04Candidate;
+  if (command === "write-stage-15-review") return stage15Candidate;
   if (command === "diff") {
     return {
       baseline: protectedRevertStrings,
@@ -13775,6 +14214,7 @@ function expectedProjectRevertStrings(command, protectedRevertStrings) {
       security02Candidate,
       security03Candidate,
       security04Candidate,
+      stage15Candidate,
     };
   }
   if (
@@ -13791,6 +14231,7 @@ function expectedProjectRevertStrings(command, protectedRevertStrings) {
       "stage-12b-negative-probes",
       "stage-13-negative-probes",
       "stage-14-negative-probes",
+      "stage-15-negative-probes",
     ].includes(command) &&
     fs.existsSync(REVIEW_PATH)
   ) {
@@ -13805,6 +14246,7 @@ function expectedProjectRevertStrings(command, protectedRevertStrings) {
     if (review.policy === STAGE_12B_POLICY) return security04Candidate;
     if (review.policy === STAGE_13_POLICY) return security04Candidate;
     if (review.policy === STAGE_14_POLICY) return security04Candidate;
+    if (review.policy === STAGE_15_POLICY) return stage15Candidate;
   }
   return protectedRevertStrings;
 }
@@ -14310,6 +14752,7 @@ async function main() {
       "check",
       "diff",
       "revert-strings",
+      "stage-15-manifest",
       "stage-09-negative-probes",
       "security-01-negative-probes",
       "security-02-negative-probes",
@@ -14321,6 +14764,7 @@ async function main() {
       "stage-12b-negative-probes",
       "stage-13-negative-probes",
       "stage-14-negative-probes",
+      "stage-15-negative-probes",
       "write-stage-08-review",
       "write-stage-09-review",
       "write-security-01-review",
@@ -14333,11 +14777,12 @@ async function main() {
       "write-stage-12b-review",
       "write-stage-13-review",
       "write-stage-14-review",
+      "write-stage-15-review",
       "write-evidence",
     ].includes(command)
   ) {
     console.error(
-      "Usage: node scripts/compatibility.cjs <capture|check|diff|revert-strings|stage-09-negative-probes|security-01-negative-probes|security-02-negative-probes|security-03-negative-probes|security-04-negative-probes|stage-10-negative-probes|stage-11-negative-probes|stage-12a-negative-probes|stage-12b-negative-probes|stage-13-negative-probes|stage-14-negative-probes|write-stage-08-review|write-stage-09-review|write-security-01-review|write-security-02-review|write-security-03-review|write-security-04-review|write-stage-10-review|write-stage-11-review|write-stage-12a-review|write-stage-12b-review|write-stage-13-review|write-stage-14-review|write-evidence>"
+      "Usage: node scripts/compatibility.cjs <capture|check|diff|revert-strings|stage-15-manifest|stage-09-negative-probes|security-01-negative-probes|security-02-negative-probes|security-03-negative-probes|security-04-negative-probes|stage-10-negative-probes|stage-11-negative-probes|stage-12a-negative-probes|stage-12b-negative-probes|stage-13-negative-probes|stage-14-negative-probes|stage-15-negative-probes|write-stage-08-review|write-stage-09-review|write-security-01-review|write-security-02-review|write-security-03-review|write-security-04-review|write-stage-10-review|write-stage-11-review|write-stage-12a-review|write-stage-12b-review|write-stage-13-review|write-stage-14-review|write-stage-15-review|write-evidence>"
     );
     process.exitCode = 2;
     return;
@@ -14349,9 +14794,33 @@ async function main() {
     );
   }
 
-  validateMaintenanceLedger({ root: ROOT });
+  const stage15GenerationCommand =
+    command === "stage-15-manifest" ||
+    command === "write-stage-15-review" ||
+    (command === "write-evidence" &&
+      fs.existsSync(REVIEW_PATH) &&
+      readReviewedDifferences().policy === STAGE_15_POLICY);
+  if (!stage15GenerationCommand) {
+    validateMaintenanceLedger({ root: ROOT });
+  }
 
   const manifest = await generateManifest();
+  if (command === "stage-15-manifest") {
+    const outputPath = process.env.STAGE_15_MANIFEST_OUTPUT;
+    const captured = {
+      schemaVersion: 1,
+      candidate: "stage-15-custom-errors",
+      baseCommit: run("git", ["rev-parse", "HEAD"]).stdout.trim(),
+      manifest,
+    };
+    if (outputPath) {
+      fs.writeFileSync(path.resolve(outputPath), stableJson(captured));
+      console.log(`Wrote Stage 15 base manifest to ${path.resolve(outputPath)}`);
+    } else {
+      console.log(stableJson(captured));
+    }
+    return;
+  }
   if (command === "revert-strings") {
     console.log(
       stableJson({
@@ -14443,6 +14912,7 @@ async function main() {
     "stage-12a-negative-probes",
     "stage-12b-negative-probes",
     "stage-13-negative-probes",
+    "stage-15-negative-probes",
   ].includes(command);
   const security01ReviewActive =
     command === "write-security-01-review" ||
@@ -14471,7 +14941,12 @@ async function main() {
   const stage13ReviewActive =
     command === "write-stage-13-review" ||
     (inheritedReviewCommand && existingReview?.policy === STAGE_13_POLICY);
-  const comparisonBaseline = stage13ReviewActive
+  const stage15ReviewActive =
+    command === "write-stage-15-review" ||
+    (inheritedReviewCommand && existingReview?.policy === STAGE_15_POLICY);
+  const comparisonBaseline = stage15ReviewActive
+    ? stage15ComparisonBaseline(baseline, manifest)
+    : stage13ReviewActive
     ? stage13ComparisonBaseline(baseline, manifest)
     : stage12bReviewActive
     ? stage12bComparisonBaseline(baseline, manifest)
@@ -14688,6 +15163,20 @@ async function main() {
     );
     return;
   }
+  if (command === "write-stage-15-review") {
+    const review = stage15Review(baselineBytes, differences, manifest);
+    validateReviewedDifferences(review, baselineBytes, differences);
+    const policy = reviewPolicy(review);
+    policy.validateCandidate(baseline, manifest);
+    fs.writeFileSync(REVIEW_PATH, stableJson(review));
+    console.log(
+      `Wrote ${differences.length} exact Stage 15 reviewed differences to ${path.relative(
+        ROOT,
+        REVIEW_PATH
+      )}`
+    );
+    return;
+  }
   if (command === "stage-09-negative-probes") {
     const probes = stage09NegativeProbes(baseline, manifest);
     console.log(`Stage 9 negative probes passed: ${probes.join("; ")}`);
@@ -14831,6 +15320,21 @@ async function main() {
     validateOpcodeEvidence(review, baseline, manifest);
     const probes = stage13NegativeProbes(baseline, manifest, review);
     console.log(`Stage 13 negative probes passed: ${probes.join("; ")}`);
+    return;
+  }
+  if (command === "stage-15-negative-probes") {
+    const review = readReviewedDifferences();
+    if (!review || review.policy !== STAGE_15_POLICY) {
+      throw new Error(
+        "Stage 15 negative probes require the exact Stage 15 review"
+      );
+    }
+    validateReviewedDifferences(review, baselineBytes, differences);
+    const policy = reviewPolicy(review);
+    policy.validateCandidate(baseline, manifest);
+    validateOpcodeEvidence(review, baseline, manifest);
+    const probes = stage15NegativeProbes(baseline, manifest, review);
+    console.log(`Stage 15 negative probes passed: ${probes.join("; ")}`);
     return;
   }
   const review = existingReview;

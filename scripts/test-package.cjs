@@ -269,8 +269,52 @@ pragma solidity 0.8.36;
 
 import {Wrapper} from "${PACKAGE_NAME}/contracts/Wrapper.sol";
 import {PartialCommonOwnership} from "${PACKAGE_NAME}/contracts/token/PartialCommonOwnership.sol";
+import {IBeneficiary} from "${PACKAGE_NAME}/contracts/token/modules/interfaces/IBeneficiary.sol";
+import {ILease} from "${PACKAGE_NAME}/contracts/token/modules/interfaces/ILease.sol";
+import {IRemittance} from "${PACKAGE_NAME}/contracts/token/modules/interfaces/IRemittance.sol";
+import {ITaxation} from "${PACKAGE_NAME}/contracts/token/modules/interfaces/ITaxation.sol";
+import {IValuation} from "${PACKAGE_NAME}/contracts/token/modules/interfaces/IValuation.sol";
+import {IERC721Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 
-contract ConsumerWrapper is Wrapper {}
+contract ConsumerWrapper is Wrapper {
+  function customErrorSelectors()
+    external
+    pure
+    returns (bytes4[31] memory selectors)
+  {
+    selectors[0] = Wrapper.DepositNotAllowed.selector;
+    selectors[1] = Wrapper.DepositRequired.selector;
+    selectors[2] = Wrapper.TokenReceivedOutsideWrap.selector;
+    selectors[3] = Wrapper.WrapOriginatorOnly.selector;
+    selectors[4] = IBeneficiary.BeneficiaryOnly.selector;
+    selectors[5] = IBeneficiary.InvalidBeneficiary.selector;
+    selectors[6] = ILease.BuyerAlreadyOwner.selector;
+    selectors[7] = ILease.CurrentValuationMismatch.selector;
+    selectors[8] = ILease.DepositPaymentRequired.selector;
+    selectors[9] = ILease.IncorrectPayment.selector;
+    selectors[10] = ILease.NewValuationBelowCurrent.selector;
+    selectors[11] = ILease.TokenLocked.selector;
+    selectors[12] = ILease.ValuationUnchanged.selector;
+    selectors[13] = IRemittance.AmountZero.selector;
+    selectors[14] = IRemittance.DestinationContractAddress.selector;
+    selectors[15] = IRemittance.DestinationZeroAddress.selector;
+    selectors[16] = IRemittance.InsufficientBalance.selector;
+    selectors[17] = IRemittance.NoOutstandingBalance.selector;
+    selectors[18] = ITaxation.InvalidCollectionFrequency.selector;
+    selectors[19] = ITaxation.InvalidTaxRate.selector;
+    selectors[20] = ITaxation.WithdrawalExceedsDeposit.selector;
+    selectors[21] = ITaxation.WithdrawalToContract.selector;
+    selectors[22] = IValuation.InvalidValuation.selector;
+    selectors[23] = IERC721Errors.ERC721IncorrectOwner.selector;
+    selectors[24] = IERC721Errors.ERC721InsufficientApproval.selector;
+    selectors[25] = IERC721Errors.ERC721InvalidApprover.selector;
+    selectors[26] = IERC721Errors.ERC721InvalidOperator.selector;
+    selectors[27] = IERC721Errors.ERC721InvalidOwner.selector;
+    selectors[28] = IERC721Errors.ERC721InvalidReceiver.selector;
+    selectors[29] = IERC721Errors.ERC721InvalidSender.selector;
+    selectors[30] = IERC721Errors.ERC721NonexistentToken.selector;
+  }
+}
 
 contract ConsumerPCO is PartialCommonOwnership {
   function mintForConsumer(

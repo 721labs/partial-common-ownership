@@ -29,6 +29,10 @@ contract PCOFuzzHarness is PartialCommonOwnership {
     function lockedOf(uint256 tokenId_) external view returns (bool) {
         return _locked[tokenId_];
     }
+
+    function forceLock(bool locked_) external {
+        _locked[TOKEN_ID] = locked_;
+    }
 }
 
 /// @dev Contract owner/beneficiary fixture that can deterministically reject
@@ -110,9 +114,5 @@ abstract contract PCOFuzzBase is Test {
         // Match the production contract's intentional integer-rounding order.
         // forge-lint: disable-next-line(divide-before-multiply)
         return (((valuation_ * elapsed_) / frequency_) * rate_) / TAX_DENOMINATOR;
-    }
-
-    function _error(string memory reason_) internal pure returns (bytes memory) {
-        return abi.encodeWithSignature("Error(string)", reason_);
     }
 }
