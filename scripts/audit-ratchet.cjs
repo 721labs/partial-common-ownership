@@ -3,36 +3,10 @@
 const { spawnSync } = require("child_process");
 const path = require("path");
 
-const baseline = require(path.join(
-  __dirname,
-  "..",
-  "compatibility",
-  "audit-ratchet.json"
-));
-
 const pnpm = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
 const FINAL_POLICY = Object.freeze({ critical: 0, high: 0 });
 let report;
 const failures = [];
-
-if (
-  baseline.schemaVersion !== 1 ||
-  baseline.capturedWith !== "pnpm 11.13.1" ||
-  JSON.stringify(Object.keys(baseline.policy).sort()) !==
-    JSON.stringify(Object.keys(FINAL_POLICY).sort())
-) {
-  console.error("The checked-in audit policy has an invalid final schema.");
-  process.exit(2);
-}
-
-for (const [severity, expected] of Object.entries(FINAL_POLICY)) {
-  if (baseline.policy[severity] !== expected) {
-    console.error(
-      `Audit policy must remain ${severity}=${expected}; checked-in policy was ${baseline.policy[severity]}.`
-    );
-    process.exit(2);
-  }
-}
 
 // npm is retiring its legacy audit endpoint and intermittently returns HTTP
 // 410 while pnpm retries through the bulk advisory endpoint. Retry the command

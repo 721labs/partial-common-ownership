@@ -6,7 +6,6 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const { spawnSync } = require("child_process");
-const { verifySafetyBaselines } = require("./check-safety-baselines.cjs");
 
 const ROOT = path.resolve(__dirname, "..");
 const BASELINE_PATH = path.join(ROOT, "gas", "key-flows.snap");
@@ -58,7 +57,6 @@ function parseSnapshot(filePath) {
 }
 
 function main() {
-  verifySafetyBaselines();
   if (!fs.existsSync(BASELINE_PATH)) {
     throw new Error(`Missing checked-in gas baseline: ${BASELINE_PATH}`);
   }

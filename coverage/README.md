@@ -11,7 +11,5 @@ Run the gate with pinned Foundry 1.7.1:
 $ pnpm coverage:forge
 ```
 
-The LCOV report is byte-bound by `compatibility/safety-baselines.json` and by
-the named compatibility-review policy. Do not regenerate it to conceal a
-regression. Any deliberate baseline change requires explicit reviewed evidence
-in the dependency or compiler stage that caused it.
+Do not regenerate the report to conceal a regression. Review any deliberate
+baseline change together with the contract or test change that caused it.

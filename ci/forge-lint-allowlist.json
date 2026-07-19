@@ -21,8 +21,8 @@
     "contracts/token/modules/Taxation.sol": "d9b93acc0c88cb2d3a4f023a4c554b2038325538f265846267034744293ec430",
     "test/solidity/parity/PCOMutationParity.t.sol": "2118a8370c8d3906ab97b8a862408bbb0e11fb9bb07ac4c3afd3f6adabd72fd8",
     "test/solidity/parity/PCOReadTaxParity.t.sol": "86f119740c64e2aeb4295f33b956208c29d47b2d1011d6115317a3bd4132145b",
-    "test/solidity/parity/WrapperParity.t.sol": "87bb0e138e551e5b2b36ac71d7343c9ed7b87ecc86c1962b7fafe6b114adad8c",
-    "test/solidity/fuzz/WrapperFuzz.t.sol": "532451c52af11bccd621d32f2ce27393f3fffeafed4f729b6a5ec4a0533526c9",
+    "test/solidity/parity/WrapperParity.t.sol": "31cf19dae0adec2ef398e48ab430433c79a8e0e0c46bfc7fd2723daa84af695e",
+    "test/solidity/fuzz/WrapperFuzz.t.sol": "b951f8a6ea8f1fd5628887a04b8711fb79d34bc2248c9a18c8255aeefd3f572b",
     "test/solidity/invariant/PCOInvariant.t.sol": "5e78cfe676a47552f144b19ed042e73de930eb34822b5c8d0987d1e4e5375ad4"
   },
   "diagnostics": [

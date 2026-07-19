@@ -143,8 +143,8 @@ contract WrapperInvariantTest is Test {
         }
     }
 
-    /// @dev The legacy identifier is retained for compatibility-inventory
-    /// stability. A rejected self-destination unwrap must leave the wrapped
+    /// @dev This regression identifier is preserved for historical context.
+    /// A rejected self-destination unwrap must preserve the wrapped token
     /// token, its metadata, and the underlying custody live and recoverable.
     function invariant_deferredForeclosedUnwrapCustodyLossIsClassified() public {
         for (uint256 tokenId = 1; tokenId <= TOKEN_COUNT; tokenId++) {

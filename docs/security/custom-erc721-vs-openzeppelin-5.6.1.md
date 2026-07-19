@@ -2,7 +2,7 @@
 
 ## Scope and conclusion
 
-Stage 10 upgrades the declared runtime dependency to exact
+The dependency upgrade pins the declared runtime dependency to exact
 `@openzeppelin/contracts@5.6.1`, but it does not replace the project's custom
 ERC721 implementation. Production uses OpenZeppelin's `IERC721`,
 `IERC721Receiver`, `IERC721Metadata`, `Context`, and `ERC165` sources. Ownership,
@@ -12,14 +12,14 @@ revert behavior continues to come from
 
 The comparison found no critical or high-impact OpenZeppelin 5.6 hardening that
 can be applied to this implementation without either being structurally
-irrelevant or changing a compatibility-protected behavior. In particular, the
+irrelevant or changing externally observable behavior. In particular, the
 OpenZeppelin 5.6 zero-owner approval hardening addresses a hidden-mint path
 that this implementation cannot reach. The four project-specific findings
 identified by the Foundry safety work were corrected independently by Security
 01 through Security 04 and remain covered after the dependency upgrade.
 
 This is a source-level security comparison backed by the repository's behavior,
-fuzz, invariant, static-analysis, and compatibility gates. It is not an
+fuzz, invariant, static-analysis, and package-consumer gates. It is not an
 independent third-party audit.
 
 ## Dependency boundary
@@ -38,22 +38,21 @@ and [5.6.1 release](https://github.com/OpenZeppelin/openzeppelin-contracts/relea
 Because the project does not inherit OpenZeppelin's concrete `ERC721`, new
 concrete-implementation semantics do not silently enter the contracts. The
 dependency supplies reviewed interfaces and utility bases while the complete
-custom state machine remains visible and compatibility-tested in this
-repository.
+custom state machine remains visible and regression-tested in this repository.
 
 ## Behavior retained intentionally
 
-| Area                     | Project implementation                                                                                                                                                         | OpenZeppelin 5.6.1                                                                                | Stage 10 disposition                                      |
+| Area                     | Project implementation                                                                                                                                                         | OpenZeppelin 5.6.1                                                                                | Project disposition                                       |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
 | ERC165                   | Reports `IERC165` and core `IERC721`. Wrapper's metadata function does not change the base answer.                                                                             | Concrete ERC721 also reports `IERC721Metadata`.                                                   | Preserve the existing answers exactly.                    |
 | Metadata                 | The base has no name, symbol, or URI storage. Wrapper delegates `tokenURI` to the underlying NFT.                                                                              | Concrete ERC721 stores name and symbol and builds token URIs.                                     | Do not add storage or interfaces.                         |
-| Storage                  | Four mappings retain the frozen owner, balance, token-approval, and operator-approval order.                                                                                   | Concrete ERC721 has a different layout that includes name and symbol.                             | A rebase would violate storage compatibility.             |
+| Storage                  | Four mappings retain the current owner, balance, token-approval, and operator-approval order.                                                                                  | Concrete ERC721 has a different layout that includes name and symbol.                             | A rebase would require an explicit storage migration.     |
 | Transfer extension point | `_beforeTokenTransfer` collects tax; `_afterTokenTransfer` resets per-transfer tax.                                                                                            | Version 5 uses `_update` rather than the legacy before/after hook model.                          | Keep the hooks and their reviewed reentrancy protections. |
-| Authorization failures   | Legacy project-owned revert strings are part of the public behavior.                                                                                                           | Version 5 generally uses IERC-6093 custom errors.                                                 | Preserve every existing payload and call ordering.        |
+| Authorization failures   | Project and IERC-6093 custom errors are part of the public behavior.                                                                                                            | Version 5 generally uses IERC-6093 custom errors.                                                 | Test selectors, arguments, and call ordering.              |
 | Token approvals          | Approving the current owner reverts. Approval is cleared with an `Approval` event before each transfer or burn.                                                                | Approving the current owner is permitted; transfer-time clearing suppresses the `Approval` event. | Preserve approval behavior and event order.               |
 | Operator approvals       | Self-approval reverts. A nonzero owner may set the zero operator, producing inert state and an event.                                                                          | Self-approval is permitted, but zero owners and zero operators revert.                            | Preserve the existing externally observable semantics.    |
 | Mint and burn            | Dedicated `_mint` and `_burn` paths enforce existence and zero-address rules and invoke both hooks.                                                                            | Mint, transfer, and burn share `_update`.                                                         | Do not adopt `_update` or change hook/event ordering.     |
-| Safe receivers           | Calls receivers only when `to.code.length > 0`; accepts only the selector, converts an empty failure or wrong selector to the legacy string, and bubbles nonempty revert data. | Uses the same code-length boundary, but reports invalid receivers with a custom error.            | Preserve the legacy payloads and callback tuple.          |
+| Safe receivers           | Calls receivers only when `to.code.length > 0`; accepts only the selector, converts an empty failure or wrong selector to `ERC721InvalidReceiver`, and bubbles nonempty revert data. | Uses the same code-length boundary and custom error.                                           | Preserve the callback tuple and revert bubbling.          |
 
 These differences are not evidence that either design is generally preferable.
 They explain why replacing the custom implementation would be a semantic and
@@ -79,18 +78,18 @@ custom internal `_setApprovalForAll` does not add a new zero-owner guard:
 OpenZeppelin's affected shape relied on one `_update` operation representing
 mint, transfer, and burn. This implementation has no equivalent path. Adding a
 new internal zero-owner revert would therefore not close a reachable mint
-primitive, but could change inherited-extension behavior and revert data. Such
-a change is outside Stage 10.
+primitive, but could change inherited-extension behavior and revert data. It is
+not required to address the upstream issue.
 
 The adjacent zero-operator difference is also retained. An approval for
 `address(0)` cannot be exercised by an EVM caller, while its state and
-`ApprovalForAll` event are observable and compatibility-protected. Changing it
+`ApprovalForAll` event are observable and regression-tested. Changing it
 requires a separately authorized semantic proposal.
 
 ## Receiver behavior and construction-time addresses
 
 OpenZeppelin 4's removed `Address.isContract` helper returned
-`account.code.length > 0`. Stage 10 spells out that same expression directly,
+`account.code.length > 0`. The project spells out that same expression directly,
 so the receiver boundary is unchanged:
 
 - EOAs skip `onERC721Received`.
@@ -102,7 +101,7 @@ so the receiver boundary is unchanged:
   EOA. OpenZeppelin 5's `ERC721Utils` has the same construction-time behavior.
 
 The construction-time case is a property of the ERC721 receiver convention,
-not a new Stage 10 bypass. Dedicated regression coverage freezes it alongside
+not a new bypass. Dedicated regression coverage checks it alongside
 EOA, valid receiver, incorrect-return, and reverting-receiver outcomes.
 
 PCO minting has an additional project-specific rule established by Security
@@ -121,8 +120,8 @@ receiver is called. The receiver still observes the original operator, zero
 | Security 04 | An originator could unwrap after materialized Wrapper foreclosure, burn the wrapper record, and transfer the underlying from Wrapper to itself. | Unwrap rejects Wrapper as its own destination before deletion or burn, using the existing `DestinationContractAddress` error.                                                 |
 
 These fixes are described with their retained regression identifiers in
-[Deferred semantic findings](deferred-semantic-findings.md). Stage 10 neither
-reverts them nor broadens them into a general ERC721 rewrite.
+[Deferred semantic findings](deferred-semantic-findings.md). The dependency
+upgrade neither reverts them nor broadens them into a general ERC721 rewrite.
 
 ## Deferred and intentionally unchanged concerns
 
@@ -140,13 +139,13 @@ The following remain outside this dependency upgrade:
 - Raw transfers of wrapped or underlying tokens can have accounting or custody
   consequences outside the reviewed wrap/unwrap flow. Security 04 addresses
   only the proven self-destination metadata-loss path.
-- Approval-to-current-owner, self-operator, zero-operator, legacy revert, and
+- Approval-to-current-owner, self-operator, zero-operator, custom-error, and
   approval-event differences are not normalized to OpenZeppelin 5.
 
-Any change to those items needs an independently authorized compatibility,
+Any change to those items needs an independently authorized security,
 migration, and deployment review.
 
-## London and `mcopy` compatibility boundary
+## London and `mcopy` boundary
 
 The repository continues to compile production for the London EVM. The
 concrete OpenZeppelin 5.6.1
@@ -163,29 +162,14 @@ needed by the custom implementation, so all 13 production sources can advertise
 Test fixtures likewise avoid inheriting the concrete OpenZeppelin ERC721.
 
 The active packed-consumer gate proves direct Wrapper import and a concrete PCO
-subclass in a clean Forge consumer using London. The earlier clean Hardhat
-consumer result remains immutable Stage 10 through Stage 13 provenance, not an
-active package path. A downstream project that separately imports OpenZeppelin
+subclass in a clean Forge consumer using London. A downstream project that
+separately imports OpenZeppelin
 5.6.1's concrete ERC721 must use a compatible Cancun compiler profile for that
 source or avoid that import; this package does not silently change the
 downstream EVM target.
 
 ## Required verification
 
-At Stage 10, the upgrade was blocked unless all of the following held:
-
-- Production ABI, selectors, events, errors, storage, enums, ERC165 answers,
-  project revert strings, and deterministic behavior are hard-equal to the
-  Security 04 checkpoint.
-- Compiler-generated opcode, bytecode-size, and gas differences are captured
-  and reviewed, with both production contracts below EIP-170.
-- The then-active complete Hardhat oracle, mapped Forge suite, receiver matrix,
-  fuzzing, invariants, coverage, package consumers, and warning inventories
-  passed.
-- Slither 0.11.5 reports no untriaged high- or medium-impact finding.
-
-Stage 14 retains that evidence immutably while the active gate consists of 143
-Forge tests, the exact three-smoke-to-Forge mapping, the Forge-only warning and
-package-consumer checks, coverage, gas, size, Slither, and dependency audit. A
-mismatch stops the release; it is not grounds to regenerate or weaken a
-baseline.
+The active release gates run the complete Forge unit, regression, fuzz, and
+invariant suite; compile a clean packed-package consumer; check gas and EIP-170
+sizes; and run Slither 0.11.5 with no untriaged high- or medium-impact finding.

@@ -10,7 +10,7 @@ const { spawnSync } = require("child_process");
 const ROOT = path.resolve(__dirname, "..");
 const ALLOWLIST_PATH = path.join(
   ROOT,
-  "compatibility",
+  "ci",
   "forge-lint-allowlist.json"
 );
 const EXPECTED_TOOL = {

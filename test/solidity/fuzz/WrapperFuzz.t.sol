@@ -525,8 +525,8 @@ contract WrapperFuzzTest is Test, IERC721Receiver {
         assertEq(vm.load(address(wrapper), _mappingSlot(wrappedId, LOCKED_SLOT)), bytes32(0));
     }
 
-    /// @dev The legacy test identifier is retained for compatibility-manifest
-    /// inventory stability. The remediated behavior is an exact revert and
+    /// @dev The durable test identifier is retained for historical context.
+    /// The remediated behavior remains an exact revert across every path and
     /// complete rollback across all caller and ERC721 transfer entry points.
     function test_regression_deferredDelinquentTransferContinuesAfterNestedForeclosure() public {
         for (uint256 callerMode = 0; callerMode < 3; callerMode++) {
@@ -622,8 +622,8 @@ contract WrapperFuzzTest is Test, IERC721Receiver {
         vm.stopPrank();
     }
 
-    /// @dev The legacy identifier is retained for compatibility-inventory
-    /// stability. Payment is now validated against the owner after collection,
+    /// @dev This regression identifier is retained for historical context.
+    /// Payment is now validated against the owner after final tax collection,
     /// so crossing foreclosure cannot strand submitted value as surplus.
     function test_regression_deferredBeneficiaryTakeoverAcrossForeclosureLeavesUntrackedValuationSurplus() public {
         _assertBeneficiaryCrossingForeclosureIsStabilized();
@@ -865,8 +865,8 @@ contract WrapperFuzzTest is Test, IERC721Receiver {
         return bytes32(uint256(uint160(value_)));
     }
 
-    /// @dev The legacy identifier is retained for compatibility-inventory
-    /// stability. A self-destination unwrap now reverts before deleting or
+    /// @dev The regression identifier is retained for historical context.
+    /// A self-destination unwrap now reverts before state deletion or burn
     /// burning any state. Canonical foreclosure can be recovered by takeover,
     /// after which the original operator can deliver the underlying to the new
     /// wrapped-token owner.

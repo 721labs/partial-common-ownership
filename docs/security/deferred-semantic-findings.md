@@ -1,11 +1,9 @@
 # Deferred semantic findings
 
-The Stage 7 stateful safety work exposed the following pre-existing contract
-behaviors. They were not introduced by the dependency modernization and were
-initially frozen because the compatibility policy forbade an unreviewed ERC721
-semantic rewrite. The separately authorized security-remediation sequence now
-corrects them in independently reviewable changes while retaining the original
-finding, regression identifier, and versioned compatibility evidence.
+The stateful safety work exposed the following pre-existing contract behaviors.
+They were not introduced by the dependency modernization. The subsequent
+security-remediation sequence corrected them in independently reviewable
+changes while retaining the original findings and regression identifiers.
 
 ## Nested foreclosure during an ERC721 transfer
 
@@ -136,7 +134,7 @@ security correction, while public ABI and storage remain unchanged.
 
 ## Disposition
 
-The Stage 10
+The
 [custom-ERC721-versus-OpenZeppelin 5.6.1 comparison](custom-erc721-vs-openzeppelin-5.6.1.md)
 records these historical findings and their remediation status. Security 01
 fixes the nested-foreclosure transfer corruption, Security 02 fixes the
@@ -145,5 +143,5 @@ authorization plus takeover payment classification. Security 04 fixes
 self-destination unwrap custody and metadata loss. The beneficiary exemption
 and inherited collection timestamp remain unchanged, deferred mechanism
 semantics. Adjacent direct-transfer accounting concerns are not reclassified by
-this fix and require separately authorized compatibility, migration, and
+this fix and require separately authorized security, migration, and
 deployment review.

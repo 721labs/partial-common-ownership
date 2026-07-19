@@ -82,14 +82,14 @@
       "test/solidity/fuzz/PCOFuzzLease.t.sol": "2be2dac5a329530f4e3ca6f42968468a24e2f07862f52c0ccd394d9c9dad1520",
       "test/solidity/fuzz/PCOFuzzRemittanceERC721.t.sol": "2eb29e75affd48e8467277e5dfcb3e86249a55053b344f8bd62f7c71333bcf21",
       "test/solidity/fuzz/PCOFuzzTax.t.sol": "9636f544cc77cae0923ba670047f7fd0134cc51772bb7e9a1109cb54defe21f6",
-      "test/solidity/fuzz/WrapperFuzz.t.sol": "532451c52af11bccd621d32f2ce27393f3fffeafed4f729b6a5ec4a0533526c9",
+      "test/solidity/fuzz/WrapperFuzz.t.sol": "b951f8a6ea8f1fd5628887a04b8711fb79d34bc2248c9a18c8255aeefd3f572b",
       "test/solidity/helpers/EnhancedTest.sol": "8f0f905bceafb2003604984b4b2cfc8fef7a3e63b832bfbe36e848b01712bb08",
-      "test/solidity/invariant/PCODeferredRegression.t.sol": "417f06a32e7df2fe95394c4841eda56679cbcf724fff75275a8b29cb8a36f67c",
+      "test/solidity/invariant/PCODeferredRegression.t.sol": "40863c79bad5eda5cf4855909ab4cd884c3e5c6e4e1c9094fb3c33f09fadbe36",
       "test/solidity/invariant/PCOInvariant.t.sol": "5e78cfe676a47552f144b19ed042e73de930eb34822b5c8d0987d1e4e5375ad4",
-      "test/solidity/invariant/WrapperInvariant.t.sol": "aae1d8fbdef2d2793e8c6c39cd7da09cee146971c5909574fea8243875beb829",
+      "test/solidity/invariant/WrapperInvariant.t.sol": "2d1ee617328d6b85056df5e66cb12d02e2de8f4c723eb87afa4a1fcc6b445f6b",
       "test/solidity/parity/PCOMutationParity.t.sol": "2118a8370c8d3906ab97b8a862408bbb0e11fb9bb07ac4c3afd3f6adabd72fd8",
       "test/solidity/parity/PCOReadTaxParity.t.sol": "86f119740c64e2aeb4295f33b956208c29d47b2d1011d6115317a3bd4132145b",
-      "test/solidity/parity/WrapperParity.t.sol": "87bb0e138e551e5b2b36ac71d7343c9ed7b87ecc86c1962b7fafe6b114adad8c"
+      "test/solidity/parity/WrapperParity.t.sol": "31cf19dae0adec2ef398e48ab430433c79a8e0e0c46bfc7fd2723daa84af695e"
     },
     "warnings": [
       {

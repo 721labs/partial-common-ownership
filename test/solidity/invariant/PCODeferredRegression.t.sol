@@ -56,8 +56,8 @@ contract PCODeferredRegressionTest is Test {
     bytes32 private constant OUTSTANDING_SIGNATURE = keccak256("LogOutstandingRemittance(address)");
     bytes32 private constant VALUATION_SIGNATURE = keccak256("LogValuation(uint256,uint256)");
 
-    /// @dev The legacy identifier is retained for compatibility-inventory
-    /// stability. Each mutation now revalidates all three ERC721 authorization
+    /// @dev This regression identifier is retained for historic context.
+    /// Each mutation now revalidates all three ERC721 authorization entry modes
     /// modes after collection and rolls back when collection forecloses.
     function test_deferredStage10_pendingForeclosureSelfAssessPreservesLegacyBrickedState() public {
         for (uint256 authorizationMode = 0; authorizationMode < 3; authorizationMode++) {
