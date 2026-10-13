@@ -35,12 +35,12 @@ jobs:
       FOUNDRY_PROFILE: ci
     steps:
       - name: "Checkout Repo"
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: recursive
           persist-credentials: false
       - name: "Install Node"
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "24.18.0"
       - name: "Enable Corepack"
@@ -61,7 +61,7 @@ jobs:
       - name: "Install JS Dependencies"
         run: "pnpm install --frozen-lockfile"
       - name: "Install Foundry"
-        uses: foundry-rs/foundry-toolchain@b00af27efadbc7b4ca8b82abbd903b17cc874d2a # v1.9.0
+        uses: foundry-rs/foundry-toolchain@908c540300062bd5a7e473851cdb4282204cee09 # v1.9.1
         with:
           version: v1.7.1
       - name: "Build and check Forge compiler warnings"
@@ -77,12 +77,12 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: "Checkout Repo"
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: recursive
           persist-credentials: false
       - name: "Install Node"
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "24.18.0"
       - name: "Enable Corepack"
@@ -103,7 +103,7 @@ jobs:
       - name: "Install JS Dependencies"
         run: "pnpm install --frozen-lockfile"
       - name: "Install Foundry"
-        uses: foundry-rs/foundry-toolchain@b00af27efadbc7b4ca8b82abbd903b17cc874d2a # v1.9.0
+        uses: foundry-rs/foundry-toolchain@908c540300062bd5a7e473851cdb4282204cee09 # v1.9.1
         with:
           version: v1.7.1
       - name: "Enforce Forge LCOV baseline"
@@ -115,12 +115,12 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: "Checkout Repo"
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: recursive
           persist-credentials: false
       - name: "Install Node"
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "24.18.0"
       - name: "Enable Corepack"
@@ -141,7 +141,7 @@ jobs:
       - name: "Install JS Dependencies"
         run: "pnpm install --frozen-lockfile"
       - name: "Install Foundry"
-        uses: foundry-rs/foundry-toolchain@b00af27efadbc7b4ca8b82abbd903b17cc874d2a # v1.9.0
+        uses: foundry-rs/foundry-toolchain@908c540300062bd5a7e473851cdb4282204cee09 # v1.9.1
         with:
           version: v1.7.1
       - name: "Check key-flow gas regression"
@@ -153,12 +153,12 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: "Checkout Repo"
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: recursive
           persist-credentials: false
       - name: "Install Node"
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "24.18.0"
       - name: "Enable Corepack"
@@ -179,7 +179,7 @@ jobs:
       - name: "Install JS Dependencies"
         run: "pnpm install --frozen-lockfile"
       - name: "Install Foundry"
-        uses: foundry-rs/foundry-toolchain@b00af27efadbc7b4ca8b82abbd903b17cc874d2a # v1.9.0
+        uses: foundry-rs/foundry-toolchain@908c540300062bd5a7e473851cdb4282204cee09 # v1.9.1
         with:
           version: v1.7.1
       - name: "Test packed package consumers"
@@ -191,12 +191,12 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: "Checkout Repo"
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: recursive
           persist-credentials: false
       - name: "Install Node"
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "24.18.0"
       - name: "Enable Corepack"
@@ -217,7 +217,7 @@ jobs:
       - name: "Install JS Dependencies"
         run: "pnpm install --frozen-lockfile"
       - name: "Install Foundry"
-        uses: foundry-rs/foundry-toolchain@b00af27efadbc7b4ca8b82abbd903b17cc874d2a # v1.9.0
+        uses: foundry-rs/foundry-toolchain@908c540300062bd5a7e473851cdb4282204cee09 # v1.9.1
         with:
           version: v1.7.1
       - name: "Check Solidity formatting"
@@ -231,12 +231,12 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: "Checkout Repo"
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: recursive
           persist-credentials: false
       - name: "Install Node"
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "24.18.0"
       - name: "Install Python"
@@ -276,12 +276,12 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: "Checkout Repo"
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: recursive
           persist-credentials: false
       - name: "Install Node"
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "24.18.0"
       - name: "Enable Corepack"
@@ -322,12 +322,12 @@ jobs:
           printf '%s\n' "$seed" > "$RUNNER_TEMP/foundry-seed.txt"
           echo "Foundry seed: \`$seed\`" >> "$GITHUB_STEP_SUMMARY"
       - name: "Checkout Repo"
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: recursive
           persist-credentials: false
       - name: "Install Node"
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "24.18.0"
       - name: "Enable Corepack"
@@ -348,7 +348,7 @@ jobs:
       - name: "Install JS Dependencies"
         run: "pnpm install --frozen-lockfile"
       - name: "Install Foundry"
-        uses: foundry-rs/foundry-toolchain@b00af27efadbc7b4ca8b82abbd903b17cc874d2a # v1.9.0
+        uses: foundry-rs/foundry-toolchain@908c540300062bd5a7e473851cdb4282204cee09 # v1.9.1
         with:
           version: v1.7.1
       - name: "Run scheduled fuzz and invariant profile"
@@ -359,7 +359,7 @@ jobs:
           pnpm run test:safety:scheduled 2>&1 | tee "$RUNNER_TEMP/foundry-scheduled.log"
       - name: "Upload minimized failures, seed, and log"
         if: ${{ always() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: foundry-scheduled-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
